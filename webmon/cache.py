@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import os.path
+import pathlib
 
 
 class Cache(object):
@@ -8,6 +9,8 @@ class Cache(object):
     def __init__(self, directory):
         super(Cache, self).__init__()
         self.directory = directory
+        if not os.path.isdir(self.directory):
+            pathlib.Path(self.directory).mkdir(parents=True)
 
     def get(self, oid):
         name = self._get_filename(oid)

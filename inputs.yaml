@@ -1,0 +1,15 @@
+---
+kind: cmd
+cmd: date
+name: date
+interval: 10
+---
+kind: url
+url: https://lobste.rs/
+filters:
+    - name: get-elements-by-css
+      sel: .link a
+    - name: html2text
+    - name: strip
+interval: 1h
+---

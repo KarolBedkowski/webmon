@@ -1,0 +1,17 @@
+output:
+    text:
+        file: report.txt
+    console:
+    email:
+        enabled: true
+        report_all: false
+        to: k@localhost
+        from: k@localhost
+        subject: "WebMon"
+        smtp_host: "localhost"
+        smtp_port: 25
+        smtp_login: ""
+        smtp_password: ""
+        smtp_tls: false
+defaults:
+    interval: 10m

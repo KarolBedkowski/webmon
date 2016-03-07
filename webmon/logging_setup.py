@@ -30,13 +30,7 @@ class ColorFormatter(logging.Formatter):
         return logging.Formatter.format(self, record)
 
 
-def logging_setup(filename, debug=False):
-    """ Setup configuration.
-
-    Args:
-        filename: log file name
-        debug: (bool) set more messages
-    """
+def _create_dirs_for_log(filename):
     log_fullpath = os.path.abspath(filename)
     log_dir = os.path.dirname(log_fullpath)
     log_dir_access = os.access(log_dir, os.W_OK)
@@ -51,29 +45,33 @@ def logging_setup(filename, debug=False):
         spfname = os.path.splitext(basename)
         filename = spfname[0] + "_" + str(int(time.time())) + spfname[1]
         log_fullpath = os.path.join(tempfile.gettempdir(), filename)
+    return log_fullpath
 
-    if debug:
-        print("Logging to %s" % log_fullpath)
 
-    if debug:
-        level_console = logging.DEBUG
-        level_file = logging.DEBUG
-    else:
-        level_console = logging.INFO
-        level_file = logging.ERROR
+def logging_setup(filename, debug=False):
+    """ Setup configuration.
 
-    logging.basicConfig(level=level_file,
-                        format="%(asctime)s %(levelname)-8s %(name)s "
-                        "- %(message)s",
-                        filename=log_fullpath, filemode="w")
+    Args:
+        filename: optional log file name
+        debug: (bool) set more messages (debug messages)
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    if filename:
+        log_fullpath = _create_dirs_for_log(filename)
+        fileh = logging.FileHandler(log_fullpath)
+        fileh.setLevel(logging.DEBUG if debug else logging.INFO)
+        fileh.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)-8s %(name)s - %(message)s"))
+        logger.addHandler(fileh)
+
     console = logging.StreamHandler()
-    console.setLevel(level_console)
-
+    console.setLevel(logging.DEBUG if debug else logging.INFO)
     fmtr = logging.Formatter
     if sys.platform != "win32":
         fmtr = ColorFormatter
     console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
-    logging.getLogger("").addHandler(console)
+    logger.addHandler(console)
 
     log = logging.getLogger(__name__)
     log.debug("logging_setup() finished")

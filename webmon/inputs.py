@@ -4,9 +4,9 @@ import subprocess
 import hashlib
 import email.utils
 import logging
+import time
 
 import requests
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -53,6 +53,22 @@ class AbstractInput(object):
             csum.update(self.conf.get(key, "").encode("utf-8"))
         return csum.hexdigest()
 
+    def need_update(self, last):
+        # default - check interval
+        interval = self.conf.get("interval")
+        if not interval:
+            return True
+        interval = _parse_interval(interval)
+        return last + interval < time.time()
+
+    @property
+    def input_name(self):
+        name = self.conf.get('name')
+        if name:
+            return name
+        name = '; '.join([self.conf.get(key) or key for key in self._oid_keys])
+        return name
+
 
 class WebInput(AbstractInput):
     """docstring for WebInput"""
@@ -90,12 +106,13 @@ class CmdInput(AbstractInput):
         conf = self.conf
         process = subprocess.Popen(conf['cmd'],
                                    stdout=subprocess.PIPE, shell=True)
-        stdout, _ = process.communicate()
+        stdout, stderr = process.communicate()
         result = process.wait()
         if result == 0:
             return stdout.decode('utf-8')
 
-        raise CmdError(result)
+        raise CmdError(str(result) + "\n" + (stdout or b"").decode("utf-8") +
+                       "\n" + (stderr or b"").decode('utf-8'))
 
 
 def get_input(conf):
@@ -108,3 +125,27 @@ def get_input(conf):
             return inp
 
     return None
+
+
+def _parse_interval(instr):
+    if isinstance(instr, (int, float)):
+        return instr
+    mplt = 1
+    if instr.endswith("m"):
+        mplt = 60
+        instr = instr[:-1]
+    elif instr.endswith("h"):
+        mplt = 3600
+        instr = instr[:-1]
+    elif instr.endswith("d"):
+        mplt = 86400
+        instr = instr[:-1]
+    elif instr.endswith("w"):
+        mplt = 604800
+        instr = instr[:-1]
+    else:
+        raise ValueError("invalid interval '%s'" % instr)
+    try:
+        return int(instr) * mplt
+    except ValueError:
+        raise ValueError("invalid interval '%s'" % instr)

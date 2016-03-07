@@ -1,24 +1,34 @@
 #!/usr/bin/python3
 
+import os.path
 import difflib
 import datetime
 import logging
+import argparse
+import copy
 
-import cache
-import config
-import input
-import logging_setup
-import filters
-import outputs
+from . import cache
+from . import config
+from . import inputs
+from . import logging_setup
+from . import filters
+from . import outputs
 
 
 _LOG = logging.getLogger(__name__)
 
 
 def _load(inp, g_cache, output):
-    loader = input.get_input(inp)
+    _LOG.debug("loading %s", inp['name'])
+    loader = inputs.get_input(inp)
     oid = loader.get_oid()
     last = g_cache.get_mtime(oid)
+    if last and not loader.need_update(last):
+        _LOG.debug("no need update")
+        return
+
+    inp['input_name'] = loader.input_name
+    _LOG.info("loading %s", inp["input_name"])
     content = loader.load(last)
 
     for fltcfg in inp.get('filters') or []:
@@ -42,24 +52,52 @@ def _load(inp, g_cache, output):
         output.report_new(inp, content)
 
     g_cache.put(oid, content)
+    _LOG.debug("done")
+
+
+def _parse_options():
+    parser = argparse.ArgumentParser(description='WebMon')
+    parser.add_argument('-i', '--inputs',
+                        help='yaml file containing inputs definition',
+                        default="inputs.yaml")
+    parser.add_argument('-c', '--config',
+                        default="config.yaml",
+                        help='configuration filename')
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="increase output verbosity")
+    parser.add_argument('--log',
+                        help='log file name')
+    parser.add_argument('--cache-dir',
+                        default="~/.cache/webmon/cache",
+                        help='path to cache directory')
+    args = parser.parse_args()
+    return args
 
 
 def main():
-    logging_setup.logging_setup("webmon.log", __debug__)
+    args = _parse_options()
+    logging_setup.logging_setup(args.log, args.verbose)
 
-    g_cache = cache.Cache("cache")
-    conf = config.load_configuration("config.yaml")
-    inps = config.load_inputs("urls.yaml")
+    g_cache = cache.Cache(os.path.expanduser(args.cache_dir))
+    conf = config.load_configuration(os.path.expanduser(args.config))
+    inps = config.load_inputs(os.path.expanduser(args.inputs))
     output = outputs.Output(conf.get("output"))
 
+    defaults = conf.get("defaults") or {}
+    if 'kind' in defaults:
+        del defaults['kind']
+
     for idx, inp in enumerate(inps):
-        if not inp.get("name"):
-            inp["name"] = str(idx + 1)
+        params = copy.deepcopy(defaults)
+        params.update(inp)
+        if not params.get("name"):
+            params["name"] = str(idx + 1)
+        params['input_name'] = params["name"]
         try:
-            _load(inp, g_cache, output)
+            _load(params, g_cache, output)
         except RuntimeError as err:
             _LOG.exception("load error: %s", err)
-            output.report_error(inp, str(err))
+            output.report_error(params, str(err))
 
     output.end()
 

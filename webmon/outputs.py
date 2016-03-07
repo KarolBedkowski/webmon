@@ -42,19 +42,19 @@ class AbstractOutput(object):
 
     def report_new(self, inp, content):
         self.cnt_new += 1
-        self.report_raw(inp, "New: " + inp['name'], content)
+        self.report_raw(inp, "New: " + inp['input_name'], content)
 
     def report_changed(self, inp, diff):
         self.cnt_changed += 1
-        self.report_raw(inp, "CHANGED: " + inp['name'], diff)
+        self.report_raw(inp, "CHANGED: " + inp['input_name'], diff)
 
     def report_error(self, inp, error):
         self.cnt_error += 1
-        self.report_raw(inp, "ERR: " + inp['name'], error)
+        self.report_raw(inp, "ERR: " + inp['input_name'], error)
 
     def report_unchanged(self, inp):
         self.cnt_unchanged += 1
-        self.report_raw(inp, "UNCHANGED: " + inp['name'], None)
+        self.report_raw(inp, "UNCHANGED: " + inp['input_name'], None)
 
 
 class AbstractTextOutput(AbstractOutput):
@@ -120,7 +120,7 @@ class EMailOutput(AbstractTextOutput):
         body = "\n".join(self._body)
         msg = email.mime.text.MIMEText(body, 'plain', 'utf-8')
         conf = self.conf
-        msg['Subject'] = conf["subject"]
+        msg['Subject'] = conf["subject"] + self._get_subject()
         msg['From'] = conf["from"]
         msg['To'] = conf["to"]
         msg['Date'] = email.utils.formatdate()
@@ -133,6 +133,20 @@ class EMailOutput(AbstractTextOutput):
             smtp.login(conf["smtp_login"], conf["smtp_password"])
         smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
         smtp.quit()
+
+    def _get_subject(self):
+        out = []
+        if self.cnt_changed:
+            out.append("Changed: %s" % self.cnt_changed)
+        if self.cnt_new:
+            out.append("New: %s" % self.cnt_new)
+        if self.cnt_unchanged:
+            out.append("Unchanged: %s" % self.cnt_unchanged)
+        if self.cnt_error:
+            out.append("Error: %s" % self.cnt_error)
+        if out:
+            return "[" + '; '.join(out) + "]"
+        return ""
 
 
 def get_output(name, params):
