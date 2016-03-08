@@ -27,14 +27,17 @@ def _load(inp, g_cache, output):
         _LOG.debug("no need update")
         return
 
-    inp['input_name'] = loader.input_name
-    _LOG.info("loading %s", inp["input_name"])
+    inp['_input_name'] = loader.input_name
+    _LOG.info("loading %s; oid=%s", inp["_input_name"], oid)
     content = loader.load(last)
 
     for fltcfg in inp.get('filters') or []:
+        _LOG.debug("filtering by %r", fltcfg)
         flt = filters.get_filter(fltcfg)
         if flt:
             content = flt.filter(content)
+
+    content = "\n".join(content) or "<no data>"
 
     prev = g_cache.get(oid)
     if prev:
@@ -44,12 +47,12 @@ def _load(inp, g_cache, output):
                 fromfiledate=str(datetime.datetime.fromtimestamp(last)),
                 tofiledate=str(datetime.datetime.now()),
                 n=2, lineterm='\n'))
-            output.report_changed(inp, diff)
+            output.add_changed(inp, diff)
         else:
-            output.report_unchanged(inp)
+            output.add_unchanged(inp)
             g_cache.update_mtime(oid)
     else:
-        output.report_new(inp, content)
+        output.add_new(inp, content)
 
     g_cache.put(oid, content)
     _LOG.debug("done")
@@ -92,14 +95,14 @@ def main():
         params.update(inp)
         if not params.get("name"):
             params["name"] = str(idx + 1)
-        params['input_name'] = params["name"]
+        params['_input_name'] = params["name"]
         try:
             _load(params, g_cache, output)
         except RuntimeError as err:
-            _LOG.exception("load error: %s", err)
-            output.report_error(params, str(err))
+            _LOG.error("load error: %s", str(err).replace("\n", "; "))
+            output.add_error(params, str(err))
 
-    output.end()
+    output.write()
 
 
 if __name__ == "__main__":

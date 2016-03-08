@@ -8,23 +8,9 @@ import time
 
 import requests
 
+from . import common
+
 _LOG = logging.getLogger(__name__)
-
-
-class NotModifiedError(RuntimeError):
-    """Exception raised on HTTP 304 responses"""
-
-
-class NotFoundError(RuntimeError):
-    """Exception raised on HTTP 400 responses"""
-
-
-class ParamError(RuntimeError):
-    """Exception raised on missing param"""
-
-
-class CmdError(RuntimeError):
-    """Exception raised on command error"""
 
 
 class AbstractInput(object):
@@ -41,16 +27,32 @@ class AbstractInput(object):
     def validate(self):
         for param in self._required_params or []:
             if not self.conf.get(param):
-                raise ParamError("missing parameter " + param)
+                raise common.ParamError("missing parameter " + param)
 
     def load(self, last):
         raise NotImplementedError()
 
     def get_oid(self):
+        kvs = []
+
+        def append(parent, item):
+            if isinstance(item, dict):
+                for key, val in item.items():
+                    if not key.startswith("_"):
+                        append(parent + "." + key, val)
+            elif isinstance(item, (list, tuple)):
+                for idx, itm in enumerate(item):
+                    append(parent + "." + str(idx), itm)
+            else:
+                kvs.append(parent + ":" + str(item))
+
+        append("", self.conf)
+        kvs.sort()
+
         csum = hashlib.sha1()
         csum.update(self.name.encode("utf-8"))
-        for key in self._oid_keys or []:
-            csum.update(self.conf.get(key, "").encode("utf-8"))
+        for keyval in kvs:
+            csum.update(keyval.encode("utf-8"))
         return csum.hexdigest()
 
     def need_update(self, last):
@@ -89,10 +91,16 @@ class WebInput(AbstractInput):
                                     headers=headers)
         response.raise_for_status()
         if response.status_code == 304:
-            raise NotModifiedError()
+            response.close()
+            raise common.NotModifiedError()
         if response.status_code != 200:
-            raise NotModifiedError()
-        return response.text
+            err = "Response code: %d" % response.status_code
+            if response.text:
+                err += "\n" + response.text
+            response.close()
+            raise common.InputError(err)
+        yield response.text
+        response.close()
 
 
 class CmdInput(AbstractInput):
@@ -104,15 +112,22 @@ class CmdInput(AbstractInput):
 
     def load(self, last):
         conf = self.conf
+        _LOG.debug("CmdInput execute: %r", conf['cmd'])
         process = subprocess.Popen(conf['cmd'],
-                                   stdout=subprocess.PIPE, shell=True)
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   shell=True)
         stdout, stderr = process.communicate()
         result = process.wait()
         if result == 0:
-            return stdout.decode('utf-8')
+            yield stdout.decode('utf-8')
+            return
 
-        raise CmdError(str(result) + "\n" + (stdout or b"").decode("utf-8") +
-                       "\n" + (stderr or b"").decode('utf-8'))
+        err = ("Err: " + str(result),
+               (stdout or b"").decode("utf-8"),
+               (stderr or b"").decode('utf-8'))
+        errstr = "\n".join(line.strip() for line in err if line)
+        raise common.InputError(errstr.strip())
 
 
 def get_input(conf):
@@ -124,6 +139,7 @@ def get_input(conf):
             inp.validate()
             return inp
 
+    _LOG.warn("unknown input kind: %s", kind)
     return None
 
 

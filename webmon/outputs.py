@@ -2,9 +2,12 @@
 
 import smtplib
 import email.mime.text
+import email.mime.multipart
 import email.utils
 import logging
+from docutils.core import publish_string
 
+from . import common
 
 _LOG = logging.getLogger(__name__)
 
@@ -17,62 +20,65 @@ class AbstractOutput(object):
     def __init__(self, conf):
         super(AbstractOutput, self).__init__()
         self.conf = conf
-        self.cnt_changed = 0
-        self.cnt_unchanged = 0
-        self.cnt_new = 0
-        self.cnt_error = 0
-
-    @property
-    def _changed(self):
-        return self.cnt_changed or self.cnt_error or self.cnt_new
 
     def validate(self):
         for param in self._required_params or []:
             if not self.conf.get(param):
-                raise ValueError("missing parameter " + param)
+                raise common.ParamError("missing parameter " + param)
 
-    def begin(self):
-        pass
-
-    def end(self):
-        pass
-
-    def report_raw(self, inp, title, content):
-        pass
-
-    def report_new(self, inp, content):
-        self.cnt_new += 1
-        self.report_raw(inp, "New: " + inp['input_name'], content)
-
-    def report_changed(self, inp, diff):
-        self.cnt_changed += 1
-        self.report_raw(inp, "CHANGED: " + inp['input_name'], diff)
-
-    def report_error(self, inp, error):
-        self.cnt_error += 1
-        self.report_raw(inp, "ERR: " + inp['input_name'], error)
-
-    def report_unchanged(self, inp):
-        self.cnt_unchanged += 1
-        self.report_raw(inp, "UNCHANGED: " + inp['input_name'], None)
+    def report(self, new, changed, errors, unchanged):
+        raise NotImplementedError()
 
 
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def __init__(self, conf):
-        super(AbstractTextOutput, self).__init__(conf)
-        self._body = []
-
-    def report_raw(self, inp, title, content):
-        self._body.append(title)
-        self._body.append("")
+    def _format_item(self, inp, content):
+        title = inp["_input_name"]
+        yield title
+        yield "^" * len(title)
+        if 'url' in inp:
+            yield inp['url']
         if content:
-            self._body.append("")
-            self._body.append(content)
-            self._body.append("")
-            self._body.append("----------------------------")
-            self._body.append("")
+            content = content.strip() or "<no data>"
+            yield "::"
+            yield ""
+            for line in content.split("\n"):
+                yield "  " + line
+            yield ""
+        yield ""
+
+    def _get_stats_str(self, new, changed, errors, unchanged):
+        out = []
+        if changed:
+            out.append("Changed: %d" % len(changed))
+        if new:
+            out.append("New: %d" % len(new))
+        if unchanged:
+            out.append("Unchanged: %d" % len(unchanged))
+        if errors:
+            out.append("Error: %d" % len(errors))
+        return ";  ".join(out)
+
+    def _gen_section(self, title, items):
+        title = "%s [%d] " % (title, len(items))
+        yield title
+        yield '-' * len(title)
+        for inp, content in items:
+            yield from self._format_item(inp, content)
+
+    def _mk_report(self, new, changed, errors, unchanged):
+        if new or changed or errors or unchanged:
+            yield self._get_stats_str(new, changed, errors, unchanged)
+            yield ""
+            if new:
+                yield from self._gen_section("New", new)
+            if changed:
+                yield from self._gen_section("Changed", changed)
+            if errors:
+                yield from self._gen_section("Errors", errors)
+            if unchanged:
+                yield from self._gen_section("Unchanged", unchanged)
 
 
 class TextFileOutput(AbstractTextOutput):
@@ -81,14 +87,29 @@ class TextFileOutput(AbstractTextOutput):
     name = "text"
     _required_params = ("file", )
 
-    def end(self):
+    def report(self, new, changed, errors, unchanged):
         with open(self.conf["file"], "w") as ofile:
-            if not self._changed and (not self.cnt_changed or
-                                      not self.conf.get("report_all")):
-                return
-            for line in self._body:
-                ofile.write(line)
-                ofile.write("\n")
+            ofile.write("\n".join(self._mk_report(new, changed, errors,
+                                                  unchanged)))
+
+
+class HtmlFileOutput(AbstractTextOutput):
+    """Simple html reporter"""
+
+    name = "html"
+    _required_params = ("file", )
+
+    def report(self, new, changed, errors, unchanged):
+        content = [
+            "========",
+            " WebMon",
+            "========",
+            "",
+        ]
+        content.extend(self._mk_report(new, changed, errors, unchanged))
+        with open(self.conf["file"], "w") as ofile:
+            html = publish_string("\n".join(content), writer_name='html')
+            ofile.write(html.decode('utf-8'))
 
 
 class ConsoleOutput(AbstractTextOutput):
@@ -96,31 +117,30 @@ class ConsoleOutput(AbstractTextOutput):
 
     name = "console"
 
-    def end(self):
-        if not self._changed and (not self.cnt_changed or
-                                  not self.conf.get("report_all")):
-            return
-        for line in self._body:
-            print(line)
+    def report(self, new, changed, errors, unchanged):
+        print("\n".join(self._mk_report(new, changed, errors, unchanged)))
 
 
 class EMailOutput(AbstractTextOutput):
     """docstring for MailOutput"""
 
     name = "email"
-    _required_params = ("to", "from", "subject",
-                        "smtp_host", "smtp_port")
+    _required_params = ("to", "from", "subject", "smtp_host", "smtp_port")
 
-    def end(self):
-        if not self._body:
-            return
-        if not self._changed and (not self.cnt_changed or
-                                  not self.conf.get("report_all")):
-            return
-        body = "\n".join(self._body)
-        msg = email.mime.text.MIMEText(body, 'plain', 'utf-8')
+    def report(self, new, changed, errors, unchanged):
         conf = self.conf
-        msg['Subject'] = conf["subject"] + self._get_subject()
+        body = "\n".join(self._mk_report(new, changed, errors, unchanged))
+
+        if conf.get("html"):
+            msg = email.mime.multipart.MIMEMultipart('alternative')
+            msg.attach(email.mime.text.MIMEText(body, 'plain', 'utf-8'))
+            msg.attach(email.mime.text.MIMEText(self._get_body_html(body),
+                                                'html', 'utf-8'))
+        else:
+            msg = email.mime.text.MIMEText(body, 'plain', 'utf-8')
+        header = self._get_stats_str(new, changed, errors, unchanged)
+        msg['Subject'] = conf["subject"] + (" [" + header + "]"
+                                            if header else "")
         msg['From'] = conf["from"]
         msg['To'] = conf["to"]
         msg['Date'] = email.utils.formatdate()
@@ -134,23 +154,13 @@ class EMailOutput(AbstractTextOutput):
         smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
         smtp.quit()
 
-    def _get_subject(self):
-        out = []
-        if self.cnt_changed:
-            out.append("Changed: %s" % self.cnt_changed)
-        if self.cnt_new:
-            out.append("New: %s" % self.cnt_new)
-        if self.cnt_unchanged:
-            out.append("Unchanged: %s" % self.cnt_unchanged)
-        if self.cnt_error:
-            out.append("Error: %s" % self.cnt_error)
-        if out:
-            return "[" + '; '.join(out) + "]"
-        return ""
+    def _get_body_html(self, body):
+        html = publish_string(body, writer_name='html')
+        return html.decode('utf-8')
 
 
-def get_output(name, params):
-    _LOG.debug("get_output %s", name)
+def _get_output(name, params):
+    _LOG.debug("_get_output %s", name)
     if not params.get("enabled", True):
         return None
 
@@ -175,28 +185,37 @@ class Output(object):
         super(Output, self).__init__()
         self.conf = conf
         self._reps = []
+        self._new = []
+        self._changed = []
+        self._unchanged = []
+        self._errors = []
         for repname, repconf in (conf or {}).items():
-            rep = get_output(repname, repconf or {})
-            if rep:
-                rep.begin()
-                self._reps.append(rep)
+            try:
+                rep = _get_output(repname, repconf or {})
+                if rep:
+                    self._reps.append(rep)
+            finally:
+                pass
 
-    def report_new(self, inp, content):
-        for rep in self._reps:
-            rep.report_new(inp, content)
+    def add_new(self, inp, content):
+        self._new.append((inp, content))
 
-    def report_changed(self, inp, diff):
-        for rep in self._reps:
-            rep.report_changed(inp, diff)
+    def add_changed(self, inp, diff):
+        self._changed.append((inp, diff))
 
-    def report_error(self, inp, error):
-        for rep in self._reps:
-            rep.report_error(inp, error)
+    def add_error(self, inp, error):
+        self._errors.append((inp, error))
 
-    def report_unchanged(self, inp):
-        for rep in self._reps:
-            rep.report_unchanged(inp)
+    def add_unchanged(self, inp):
+        self._unchanged.append((inp, None))
 
-    def end(self):
+    def write(self):
+        if not (self.conf.get("report_unchanged") or self._new
+                or self._changed or self._errors):
+            return
         for rep in self._reps:
-            rep.end()
+            try:
+                rep.report(self._new, self._changed, self._errors,
+                           self._unchanged)
+            except:
+                _LOG.exception("Output.end %s error", rep)

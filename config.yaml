@@ -1,7 +1,9 @@
 output:
     text:
         file: report.txt
-    console:
+    html:
+        file: report.html
+    #console:
     email:
         enabled: true
         report_all: false
@@ -13,5 +15,6 @@ output:
         smtp_login: ""
         smtp_password: ""
         smtp_tls: false
+        html: true
 defaults:
     interval: 10m
