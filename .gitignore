@@ -1,0 +1,10 @@
+*-stamp
+*.bak
+*.pyc
+*.pyo
+*.cache
+*.log
+*~
+.*
+*.yaml
+report.*
