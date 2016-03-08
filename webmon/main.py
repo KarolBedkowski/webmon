@@ -48,13 +48,14 @@ def _load(inp, g_cache, output):
                 tofiledate=str(datetime.datetime.now()),
                 n=2, lineterm='\n'))
             output.add_changed(inp, diff)
+            g_cache.put(oid, content)
         else:
             output.add_unchanged(inp)
             g_cache.update_mtime(oid)
     else:
         output.add_new(inp, content)
+        g_cache.put(oid, content)
 
-    g_cache.put(oid, content)
     _LOG.debug("done")
 
 
@@ -103,6 +104,7 @@ def main():
             output.add_error(params, str(err))
 
     output.write()
+    g_cache.delete_unused()
 
 
 if __name__ == "__main__":
