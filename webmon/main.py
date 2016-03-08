@@ -18,12 +18,12 @@ from . import outputs
 _LOG = logging.getLogger(__name__)
 
 
-def _load(inp, g_cache, output):
+def _load(inp, g_cache, output, force):
     _LOG.debug("loading %s", inp['name'])
     loader = inputs.get_input(inp)
     oid = loader.get_oid()
     last = g_cache.get_mtime(oid)
-    if last and not loader.need_update(last):
+    if last and not force and not loader.need_update(last):
         _LOG.debug("no need update")
         return
 
@@ -50,7 +50,8 @@ def _load(inp, g_cache, output):
             output.add_changed(inp, diff)
             g_cache.put(oid, content)
         else:
-            output.add_unchanged(inp)
+            if inp.get("report_unchanged", False):
+                output.add_unchanged(inp)
             g_cache.update_mtime(oid)
     else:
         output.add_new(inp, content)
@@ -74,6 +75,8 @@ def _parse_options():
     parser.add_argument('--cache-dir',
                         default="~/.cache/webmon/cache",
                         help='path to cache directory')
+    parser.add_argument("--force", action="store_true",
+                        help="force update all sources")
     args = parser.parse_args()
     return args
 
@@ -98,7 +101,7 @@ def main():
             params["name"] = str(idx + 1)
         params['_input_name'] = params["name"]
         try:
-            _load(params, g_cache, output)
+            _load(params, g_cache, output, args.force)
         except RuntimeError as err:
             _LOG.error("load error: %s", str(err).replace("\n", "; "))
             output.add_error(params, str(err))

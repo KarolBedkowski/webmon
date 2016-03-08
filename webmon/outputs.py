@@ -6,6 +6,7 @@ import email.mime.multipart
 import email.utils
 import logging
 from docutils.core import publish_string
+from datetime import datetime
 
 from . import common
 
@@ -105,6 +106,8 @@ class HtmlFileOutput(AbstractTextOutput):
             " WebMon",
             "========",
             "",
+            "Updated " + datetime.now().strftime("%x %X"),
+            ""
         ]
         content.extend(self._mk_report(new, changed, errors, unchanged))
         with open(self.conf["file"], "w") as ofile:

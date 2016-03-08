@@ -6,7 +6,6 @@ output:
     #console:
     email:
         enabled: true
-        report_all: false
         to: k@localhost
         from: k@localhost
         subject: "WebMon"
@@ -18,3 +17,4 @@ output:
         html: true
 defaults:
     interval: 10m
+    report_unchanged: false
