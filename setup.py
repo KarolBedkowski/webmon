@@ -21,7 +21,7 @@ setup(
     name='webmon',
     version="0.1",
     description='webmon - monitor web page changes.',
-    long_description=open("README").read(),
+    long_description=open("README.rst").read(),
     classifiers=CLASSIFIERS,
     author='Karol Będkowski',
     author_email='karol.bedkowski at gmail.com',
