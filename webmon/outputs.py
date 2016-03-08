@@ -218,4 +218,4 @@ class Output(object):
                 rep.report(self._new, self._changed, self._errors,
                            self._unchanged)
             except:
-                _LOG.exception("Output.end %s error", rep)
+                _LOG.error("Output.end %s error", rep)
