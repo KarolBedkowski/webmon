@@ -1,0 +1,21 @@
+output:
+    text:
+        file: report.txt
+    html:
+        file: report.html
+    #console:
+    email:
+        enabled: false
+        to: foo@bar.com
+        from: foo@bar.com
+        subject: "WebMon"
+        smtp_host: smtp.foo.bar
+        smtp_port: 465
+        smtp_login: login
+        smtp_password: password
+        smtp_ssl: true
+        #smtp_tls: true
+        html: true
+defaults:
+    interval: 10m
+    report_unchanged: false

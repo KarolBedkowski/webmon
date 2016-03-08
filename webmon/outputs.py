@@ -147,10 +147,13 @@ class EMailOutput(AbstractTextOutput):
         msg['From'] = conf["from"]
         msg['To'] = conf["to"]
         msg['Date'] = email.utils.formatdate()
-        smtp = smtplib.SMTP()
+        if conf.get("smtp_ssl"):
+            smtp = smtplib.SMTP_SSL()
+        else:
+            smtp = smtplib.SMTP()
         smtp.connect(conf["smtp_host"], conf["smtp_port"])
         smtp.ehlo()
-        if conf.get("smtp_tls"):
+        if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
             smtp.starttls()
         if conf["smtp_login"]:
             smtp.login(conf["smtp_login"], conf["smtp_password"])
@@ -220,5 +223,5 @@ class Output(object):
             try:
                 rep.report(self._new, self._changed, self._errors,
                            self._unchanged)
-            except:
-                _LOG.error("Output.end %s error", rep)
+            except Exception as err:
+                _LOG.error("Output.end %s error: %s", rep, err)
