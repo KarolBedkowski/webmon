@@ -16,6 +16,7 @@ from . import inputs
 from . import logging_setup
 from . import filters
 from . import outputs
+from . import common
 
 
 _LOG = logging.getLogger(__name__)
@@ -32,15 +33,18 @@ def _load(inp, g_cache, output, force):
 
     inp['name'] = loader.input_name
     _LOG.info("loading %s; oid=%s", inp["name"], oid)
-    content = loader.load(last)
+    try:
+        content = loader.load(last)
+    except common.NotModifiedError:
+        content = last
+    else:
+        for fltcfg in inp.get('filters') or []:
+            _LOG.debug("filtering by %r", fltcfg)
+            flt = filters.get_filter(fltcfg)
+            if flt:
+                content = flt.filter(content)
 
-    for fltcfg in inp.get('filters') or []:
-        _LOG.debug("filtering by %r", fltcfg)
-        flt = filters.get_filter(fltcfg)
-        if flt:
-            content = flt.filter(content)
-
-    content = "\n\n".join(content) or "<no data>"
+        content = "\n\n".join(content) or "<no data>"
 
     prev = g_cache.get(oid)
     if prev:
