@@ -6,6 +6,7 @@ Configuration related functions.
 import logging
 import os.path
 import yaml
+import copy
 
 _LOG = logging.getLogger(__name__)
 
@@ -39,3 +40,22 @@ def load_inputs(filename):
     except Exception as err:
         _LOG.error("Loading inputs from file %s error: %s", filename, err)
     return None
+
+
+def apply_defaults(defaults, conf):
+    """ Deep copy & update `defaults` dict with `conf`."""
+    result = copy.deepcopy(defaults)
+
+    def update(dst, src):
+        for key, val in src.items():
+            if isinstance(val, dict):
+                if key not in dst:
+                    dst[key] = {}
+                update(dst[key], val)
+            else:
+                dst[key] = copy.deepcopy(val)
+
+    if conf:
+        update(result, conf)
+
+    return result

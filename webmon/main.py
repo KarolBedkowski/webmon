@@ -8,7 +8,6 @@ import difflib
 import datetime
 import logging
 import argparse
-import copy
 
 from . import cache
 from . import config
@@ -123,8 +122,7 @@ def main():
         defaults['kind'] = "url"
 
     for idx, inp in enumerate(inps):
-        params = copy.deepcopy(defaults)
-        params.update(inp)
+        params = config.apply_defaults(defaults, inp)
         if not params.get("name"):
             params["name"] = str(idx + 1)
         try:
