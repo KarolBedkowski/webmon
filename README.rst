@@ -35,6 +35,7 @@ Options
 --cache-dir DIR         path to store last version of pages; default 
                         ~/.cache/webmon/cache
 --force                 force update all sources; ignore `interval` parameter
+--diff-mode MODE        diff mode (unified, ndiff, context)
 
 
 Configuration
@@ -90,6 +91,7 @@ Common options::
       - name: strip
   interval: 1h                      # min update interval; optional
   report_unchanged: false           # skip in report when no changes
+  diff_mode: ndiff                  # diff mode (unified, ndiff, context)
 
 Interval
 ^^^^^^^^

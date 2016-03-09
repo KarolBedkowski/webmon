@@ -22,7 +22,7 @@ from . import common
 _LOG = logging.getLogger(__name__)
 
 
-def _load(inp, g_cache, output, force):
+def _load(inp, g_cache, output, force, diff_mode):
     _LOG.debug("loading %s", inp['name'])
     loader = inputs.get_input(inp)
     oid = loader.get_oid()
@@ -49,12 +49,22 @@ def _load(inp, g_cache, output, force):
     prev = g_cache.get(oid)
     if prev:
         if prev != content:
-            diff = '\n'.join(difflib.unified_diff(
-                prev.split("\n\n"), content.split("\n\n"),
-                fromfiledate=str(datetime.datetime.fromtimestamp(last)),
-                tofiledate=str(datetime.datetime.now()),
-                n=0, lineterm='\n'))
-            output.add_changed(inp, diff)
+            diff_mode = inp.get("diff_mode") or diff_mode
+            if diff_mode == 'context':
+                diff = difflib.context_diff(
+                    prev.split("\n\n"), content.split("\n\n"),
+                    fromfiledate=str(datetime.datetime.fromtimestamp(last)),
+                    tofiledate=str(datetime.datetime.now()),
+                    lineterm='\n')
+            elif diff_mode == 'unified':
+                diff = difflib.unified_diff(
+                    prev.split("\n\n"), content.split("\n\n"),
+                    fromfiledate=str(datetime.datetime.fromtimestamp(last)),
+                    tofiledate=str(datetime.datetime.now()),
+                    lineterm='\n')
+            else:
+                diff = difflib.ndiff(prev.split("\n\n"), content.split("\n\n"))
+            output.add_changed(inp, "\n".join(diff))
             g_cache.put(oid, content)
         else:
             if inp.get("report_unchanged", False):
@@ -86,6 +96,8 @@ def _parse_options():
                         help='path to cache directory')
     parser.add_argument("--force", action="store_true",
                         help="force update all sources")
+    parser.add_argument("--diff-mode", choices=['ndiff', 'unified', 'context'],
+                        help="default diff mode")
     args = parser.parse_args()
     return args
 
@@ -116,7 +128,7 @@ def main():
         if not params.get("name"):
             params["name"] = str(idx + 1)
         try:
-            _load(params, g_cache, output, args.force)
+            _load(params, g_cache, output, args.force, args.diff_mode)
         except RuntimeError as err:
             _LOG.error("load error: %s", str(err).replace("\n", "; "))
             output.add_error(params, str(err))
