@@ -26,13 +26,14 @@ Usage
 
 Options
 ^^^^^^^
--h, --help               display help
+-h, --help              display help
 -v                      verbose mode
 -s, --silent            silent mode
 -i FILE, --inputs FILE  file with definition of sources; default inputs.yaml
 -c FILE, --config FILE  global configuration, default config.yaml
 --log FILE              save log to file
---cache-dir DIR         path to store last version of pages, default ~/.cache/webmon/cache
+--cache-dir DIR         path to store last version of pages; default 
+                        ~/.cache/webmon/cache
 --force                 force update all sources; ignore `interval` parameter
 
 
@@ -113,7 +114,7 @@ Filters
   lines
 
 `get-elements-by-xpath`
-  Find all elements in html/xml by xpath defined in parameter `sel`.
+  Find all elements in html/xml by xpath defined in parameter `xpath`.
 
 `get-elements-by-css`
   Find all elements in html/xml by css selector defined in parameter `sel`.
