@@ -107,7 +107,9 @@ Filters
 ^^^^^^^
 
 `html2text`
-  Convert html to plain text
+  Convert html to plain text; options:
+
+  * `width` - maximum text width (wrapping)
 
 `strip`
   Remove white spaces from beginning and ending of each line; remove blank

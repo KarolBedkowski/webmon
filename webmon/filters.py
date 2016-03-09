@@ -38,7 +38,7 @@ class Html2Text(AbstractFilter):
     def filter(self, inp):
         import html2text as h2t
         for sinp in inp:
-            conv = h2t.HTML2Text()
+            conv = h2t.HTML2Text(bodywidth=self.conf.get("width", 9999999))
             yield conv.handle(sinp)
 
 
