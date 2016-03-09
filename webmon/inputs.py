@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+Standard inputs classes.
+"""
 
 import subprocess
 import hashlib
@@ -14,10 +17,13 @@ _LOG = logging.getLogger(__name__)
 
 
 class AbstractInput(object):
-    """docstring for AbstractInput"""
+    """ Abstract/Base class for all inputs """
 
+    # name used in configuration
     name = None
+    # key names used to generator name when it missing
     _oid_keys = None
+    # required param names
     _required_params = None
 
     def __init__(self, conf):
@@ -25,33 +31,20 @@ class AbstractInput(object):
         self.conf = conf
 
     def validate(self):
+        """ Validate input configuration """
         for param in self._required_params or []:
             if not self.conf.get(param):
                 raise common.ParamError("missing parameter " + param)
 
     def load(self, last):
+        """ Load data; return list/generator of items """
         raise NotImplementedError()
 
     def get_oid(self):
-        kvs = []
-
-        def append(parent, item):
-            if isinstance(item, dict):
-                for key, val in item.items():
-                    if not key.startswith("_"):
-                        append(parent + "." + key, val)
-            elif isinstance(item, (list, tuple)):
-                for idx, itm in enumerate(item):
-                    append(parent + "." + str(idx), itm)
-            else:
-                kvs.append(parent + ":" + str(item))
-
-        append("", self.conf)
-        kvs.sort()
-
+        """ Generate object id according to configuration. """
         csum = hashlib.sha1()
         csum.update(self.name.encode("utf-8"))
-        for keyval in kvs:
+        for keyval in _conf2string(self.conf):
             csum.update(keyval.encode("utf-8"))
         return csum.hexdigest()
 
@@ -73,7 +66,7 @@ class AbstractInput(object):
 
 
 class WebInput(AbstractInput):
-    """docstring for WebInput"""
+    """Load data from web (http/https)"""
 
     name = "url"
     _oid_keys = ("url", )
@@ -81,9 +74,7 @@ class WebInput(AbstractInput):
 
     def load(self, last):
         conf = self.conf
-        headers = {
-            'User-agent': "Mozilla"
-        }
+        headers = {'User-agent': "Mozilla"}
         if last:
             headers['If-Modified-Since'] = email.utils.formatdate(last)
         _LOG.debug("load_from_web headers: %r", headers)
@@ -104,7 +95,7 @@ class WebInput(AbstractInput):
 
 
 class CmdInput(AbstractInput):
-    """docstring for WebInput"""
+    """Load data from command"""
 
     name = "cmd"
     _oid_keys = ("cmd", )
@@ -119,28 +110,34 @@ class CmdInput(AbstractInput):
                                    shell=True)
         stdout, stderr = process.communicate()
         result = process.wait()
-        if result == 0:
-            yield stdout.decode('utf-8')
-            return
+        if result != 0:
+            err = ("Err: " + str(result), (stdout or b"").decode("utf-8"),
+                   (stderr or b"").decode('utf-8'))
+            errstr = "\n".join(line.strip() for line in err if line)
+            raise common.InputError(errstr.strip())
 
-        err = ("Err: " + str(result),
-               (stdout or b"").decode("utf-8"),
-               (stderr or b"").decode('utf-8'))
-        errstr = "\n".join(line.strip() for line in err if line)
-        raise common.InputError(errstr.strip())
+        yield stdout.decode('utf-8')
 
 
 def get_input(conf):
+    """ Get input class according to configuration """
     kind = conf.get("kind") or "url"
 
-    for rcls in getattr(AbstractInput, "__subclasses__")():
-        if getattr(rcls, 'name') == kind:
-            inp = rcls(conf)
-            inp.validate()
-            return inp
+    def find(parent_cls):
+        for rcls in getattr(parent_cls, "__subclasses__")():
+            if getattr(rcls, 'name') == kind:
+                inp = rcls(conf)
+                inp.validate()
+                return inp
+            out = find(rcls)
+            if out:
+                return out
+        return None
 
-    _LOG.warn("unknown input kind: %s", kind)
-    return None
+    icls = find(AbstractInput)
+    if not icls:
+        _LOG.warning("unknown input kind: %s; skipping input", kind)
+    return icls
 
 
 def _parse_interval(instr):
@@ -165,3 +162,23 @@ def _parse_interval(instr):
         return int(instr) * mplt
     except ValueError:
         raise ValueError("invalid interval '%s'" % instr)
+
+
+def _conf2string(conf):
+    """ Convert dictionary to list of strings. """
+    kvs = []
+
+    def append(parent, item):
+        if isinstance(item, dict):
+            for key, val in item.items():
+                if not key.startswith("_"):
+                    append(parent + "." + key, val)
+        elif isinstance(item, (list, tuple)):
+            for idx, itm in enumerate(item):
+                append(parent + "." + str(idx), itm)
+        else:
+            kvs.append(parent + ":" + str(item))
+
+    append("", conf)
+    kvs.sort()
+    return kvs

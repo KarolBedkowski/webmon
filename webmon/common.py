@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+Commons elements - errors etc
+"""
 
 
 class NotModifiedError(RuntimeError):
@@ -15,3 +18,7 @@ class ParamError(RuntimeError):
 
 class InputError(RuntimeError):
     """Exception raised on command error"""
+
+
+class ReportGenerateError(RuntimeError):
+    """Exception raised on generate report error"""

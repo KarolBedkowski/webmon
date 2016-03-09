@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+Default filters definition.
+"""
 
 import logging
 
@@ -8,17 +11,27 @@ _LOG = logging.getLogger(__name__)
 
 
 class AbstractFilter(object):
-    """docstring for AbstractFilter"""
+    """Base class for all filters """
+
+    name = None
+    _required_params = None
+
     def __init__(self, conf):
         super(AbstractFilter, self).__init__()
         self.conf = conf
+
+    def validate(self):
+        """ Validate filter parameters """
+        for key in self._required_params or []:
+            if not self.conf.get(key):
+                raise common.ParamError("missing %s parameter" % key)
 
     def filter(self, inp):
         raise NotImplementedError()
 
 
 class Html2Text(AbstractFilter):
-    """docstring for html2text"""
+    """Convert html to text using html2text module."""
 
     name = "html2text"
 
@@ -30,7 +43,7 @@ class Html2Text(AbstractFilter):
 
 
 class Strip(AbstractFilter):
-    """docstring for Strip"""
+    """Strip white spaces from input"""
 
     name = "strip"
 
@@ -56,16 +69,15 @@ def _get_elements_by_xpath(data, expression):
 
 
 class GetElementsByCss(AbstractFilter):
-    """docstring for GetElementByCss"""
+    """Extract elements from html/xml by css selector"""
 
     name = "get-elements-by-css"
+    _required_params = ("sel", )
 
     def filter(self, inp):
         from cssselect import GenericTranslator, SelectorError
 
         sel = self.conf.get("sel")
-        if not sel:
-            raise common.ParamError("missing 'sel' param")
         try:
             expression = GenericTranslator().css_to_xpath(sel)
         except SelectorError:
@@ -75,14 +87,13 @@ class GetElementsByCss(AbstractFilter):
 
 
 class GetElementsByXpath(AbstractFilter):
-    """docstring for GetElementByCss"""
+    """Extract elements from html/xml by xpath selector"""
 
     name = "get-elements-by-xpath"
+    _required_params = ("xpath", )
 
     def filter(self, inp):
         xpath = self.conf.get("xpath")
-        if not xpath:
-            raise common.ParamError("missing 'xpath' parameter")
         for sinp in inp:
             yield from _get_elements_by_xpath(sinp, xpath)
 
@@ -90,7 +101,7 @@ class GetElementsByXpath(AbstractFilter):
 def _get_elements_by_id(data, sel):
     from lxml import etree
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
-                                    strip_cdata=True)
+                                   strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
     for elem in document.findall(".//*[@id='" + sel + "']"):
         if isinstance(elem, etree._Element):
@@ -102,22 +113,24 @@ def _get_elements_by_id(data, sel):
 
 
 class GetElementsById(AbstractFilter):
-    """docstring for GetElementByCss"""
+    """Extract elements from html/xml by element id """
 
     name = "get-elements-by-id"
+    _required_params = ("sel", )
 
     def filter(self, inp):
         sel = self.conf.get("sel")
-        if not sel:
-            raise common.ParamError("missing 'sel' parameter")
         for sinp in inp:
             yield from _get_elements_by_id(sinp, sel)
 
 
 def get_filter(conf):
+    """ Get filter object by configuration """
     name = conf.get("name")
     for rcls in getattr(AbstractFilter, "__subclasses__")():
         if getattr(rcls, 'name') == name:
-            return rcls(conf)
-    _LOG.warn("unknown filter: %s", name)
+            fltr = rcls(conf)
+            fltr.validate()
+            return fltr
+    _LOG.warning("unknown filter: %s", name)
     return None

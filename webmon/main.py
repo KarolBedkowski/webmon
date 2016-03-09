@@ -1,4 +1,7 @@
 #!/usr/bin/python3
+"""
+Main functions.
+"""
 
 import os.path
 import difflib
@@ -27,8 +30,8 @@ def _load(inp, g_cache, output, force):
         _LOG.debug("no need update")
         return
 
-    inp['_input_name'] = loader.input_name
-    _LOG.info("loading %s; oid=%s", inp["_input_name"], oid)
+    inp['name'] = loader.input_name
+    _LOG.info("loading %s; oid=%s", inp["name"], oid)
     content = loader.load(last)
 
     for fltcfg in inp.get('filters') or []:
@@ -37,7 +40,7 @@ def _load(inp, g_cache, output, force):
         if flt:
             content = flt.filter(content)
 
-    content = "\n".join(content) or "<no data>"
+    content = "\n\n".join(content) or "<no data>"
 
     prev = g_cache.get(oid)
     if prev:
@@ -87,21 +90,27 @@ def main():
     args = _parse_options()
     logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
-    g_cache = cache.Cache(os.path.expanduser(args.cache_dir))
+    g_cache = cache.Cache(os.path.expanduser(args.cache_dir)).init()
     conf = config.load_configuration(os.path.expanduser(args.config))
     inps = config.load_inputs(os.path.expanduser(args.inputs))
-    output = outputs.Output(conf.get("output"))
+    if not g_cache or not conf or not inps:
+        return
 
+    output = outputs.Output(conf.get("output"))
+    if not output.valid:
+        _LOG.error("no valid outputs found")
+        return
+
+    # defaults for inputs
     defaults = conf.get("defaults") or {}
-    if 'kind' in defaults:
-        del defaults['kind']
+    if 'kind' not in defaults:
+        defaults['kind'] = "url"
 
     for idx, inp in enumerate(inps):
         params = copy.deepcopy(defaults)
         params.update(inp)
         if not params.get("name"):
             params["name"] = str(idx + 1)
-        params['_input_name'] = params["name"]
         try:
             _load(params, g_cache, output, args.force)
         except RuntimeError as err:

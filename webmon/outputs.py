@@ -1,12 +1,16 @@
 #!/usr/bin/python3
+"""
+Default outputs.
+"""
 
 import smtplib
 import email.mime.text
 import email.mime.multipart
 import email.utils
 import logging
-from docutils.core import publish_string
 from datetime import datetime
+
+from docutils.core import publish_string
 
 from . import common
 
@@ -14,8 +18,9 @@ _LOG = logging.getLogger(__name__)
 
 
 class AbstractOutput(object):
-    """docstring for Reporter"""
+    """Abstract/Base class for all outputs"""
 
+    # list of required parameters
     _required_params = None
 
     def __init__(self, conf):
@@ -28,6 +33,7 @@ class AbstractOutput(object):
                 raise common.ParamError("missing parameter " + param)
 
     def report(self, new, changed, errors, unchanged):
+        """ Generate report """
         raise NotImplementedError()
 
 
@@ -35,7 +41,8 @@ class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
     def _format_item(self, inp, content):
-        title = inp["_input_name"]
+        """ Generate section for one input """
+        title = inp["name"]
         yield title
         yield "^" * len(title)
         if 'url' in inp:
@@ -50,6 +57,7 @@ class AbstractTextOutput(AbstractOutput):
         yield ""
 
     def _get_stats_str(self, new, changed, errors, unchanged):
+        """ Generate header """
         out = []
         if changed:
             out.append("Changed: %d" % len(changed))
@@ -62,6 +70,7 @@ class AbstractTextOutput(AbstractOutput):
         return ";  ".join(out)
 
     def _gen_section(self, title, items):
+        """ Generate section for group of inputs """
         title = "%s [%d] " % (title, len(items))
         yield title
         yield '-' * len(title)
@@ -69,6 +78,7 @@ class AbstractTextOutput(AbstractOutput):
             yield from self._format_item(inp, content)
 
     def _mk_report(self, new, changed, errors, unchanged):
+        """ Generate whole report"""
         if new or changed or errors or unchanged:
             yield self._get_stats_str(new, changed, errors, unchanged)
             yield ""
@@ -89,9 +99,14 @@ class TextFileOutput(AbstractTextOutput):
     _required_params = ("file", )
 
     def report(self, new, changed, errors, unchanged):
-        with open(self.conf["file"], "w") as ofile:
-            ofile.write("\n".join(self._mk_report(new, changed, errors,
-                                                  unchanged)))
+        try:
+            with open(self.conf["file"], "w") as ofile:
+                ofile.write("\n".join(self._mk_report(new, changed, errors,
+                                                      unchanged)))
+        except IOError as err:
+            raise common.ReportGenerateError(
+                "Writing report file %s error : %s" %
+                (self.conf['file'], err))
 
 
 class HtmlFileOutput(AbstractTextOutput):
@@ -110,13 +125,18 @@ class HtmlFileOutput(AbstractTextOutput):
             ""
         ]
         content.extend(self._mk_report(new, changed, errors, unchanged))
-        with open(self.conf["file"], "w") as ofile:
-            html = publish_string("\n".join(content), writer_name='html')
-            ofile.write(html.decode('utf-8'))
+        try:
+            with open(self.conf["file"], "w") as ofile:
+                html = publish_string("\n".join(content), writer_name='html')
+                ofile.write(html.decode('utf-8'))
+        except IOError as err:
+            raise common.ReportGenerateError(
+                "Writing report file %s error : %s" %
+                (self.conf['file'], err))
 
 
 class ConsoleOutput(AbstractTextOutput):
-    """Simple text reporter"""
+    """Display report on console"""
 
     name = "console"
 
@@ -125,7 +145,7 @@ class ConsoleOutput(AbstractTextOutput):
 
 
 class EMailOutput(AbstractTextOutput):
-    """docstring for MailOutput"""
+    """Send report by smtp"""
 
     name = "email"
     _required_params = ("to", "from", "subject", "smtp_host", "smtp_port")
@@ -133,36 +153,38 @@ class EMailOutput(AbstractTextOutput):
     def report(self, new, changed, errors, unchanged):
         conf = self.conf
         body = "\n".join(self._mk_report(new, changed, errors, unchanged))
-
-        if conf.get("html"):
-            msg = email.mime.multipart.MIMEMultipart('alternative')
-            msg.attach(email.mime.text.MIMEText(body, 'plain', 'utf-8'))
-            msg.attach(email.mime.text.MIMEText(self._get_body_html(body),
-                                                'html', 'utf-8'))
-        else:
-            msg = email.mime.text.MIMEText(body, 'plain', 'utf-8')
+        msg = self._get_msg(conf.get("html"), body)
         header = self._get_stats_str(new, changed, errors, unchanged)
         msg['Subject'] = conf["subject"] + (" [" + header + "]"
                                             if header else "")
         msg['From'] = conf["from"]
         msg['To'] = conf["to"]
         msg['Date'] = email.utils.formatdate()
-        if conf.get("smtp_ssl"):
-            smtp = smtplib.SMTP_SSL()
-        else:
-            smtp = smtplib.SMTP()
-        smtp.connect(conf["smtp_host"], conf["smtp_port"])
-        smtp.ehlo()
-        if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
-            smtp.starttls()
-        if conf["smtp_login"]:
-            smtp.login(conf["smtp_login"], conf["smtp_password"])
-        smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
-        smtp.quit()
+        smtp = None
+        try:
+            smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") \
+                    else smtplib.SMTP()
+            smtp.connect(conf["smtp_host"], conf["smtp_port"])
+            smtp.ehlo()
+            if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
+                smtp.starttls()
+            if conf["smtp_login"]:
+                smtp.login(conf["smtp_login"], conf["smtp_password"])
+            smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
+        except Exception as err:
+            raise common.ReportGenerateError("Sending mail error: %s" % err)
+        finally:
+            smtp.quit()
 
-    def _get_body_html(self, body):
-        html = publish_string(body, writer_name='html')
-        return html.decode('utf-8')
+    def _get_msg(self, gen_html, body):
+        if gen_html:
+            msg = email.mime.multipart.MIMEMultipart('alternative')
+            msg.attach(email.mime.text.MIMEText(body, 'plain', 'utf-8'))
+
+            html = publish_string(body, writer_name='html').decode('utf-8')
+            msg.attach(email.mime.text.MIMEText(html, 'html', 'utf-8'))
+            return msg
+        return email.mime.text.MIMEText(body, 'plain', 'utf-8')
 
 
 def _get_output(name, params):
@@ -202,6 +224,10 @@ class Output(object):
                     self._reps.append(rep)
             finally:
                 pass
+
+    @property
+    def valid(self):
+        return bool(self._reps)
 
     def add_new(self, inp, content):
         self._new.append((inp, content))
