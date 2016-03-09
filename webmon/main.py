@@ -50,10 +50,10 @@ def _load(inp, g_cache, output, force):
     if prev:
         if prev != content:
             diff = '\n'.join(difflib.unified_diff(
-                prev.split("\n"), content.split("\n"),
+                prev.split("\n\n"), content.split("\n\n"),
                 fromfiledate=str(datetime.datetime.fromtimestamp(last)),
                 tofiledate=str(datetime.datetime.now()),
-                n=2, lineterm='\n'))
+                n=0, lineterm='\n'))
             output.add_changed(inp, diff)
             g_cache.put(oid, content)
         else:
