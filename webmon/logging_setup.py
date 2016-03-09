@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """ Logging setup.
-Copyright (c) Karol Będkowski, 2014
+Copyright (c) Karol Będkowski, 2014-2016
 
 This file is part of exifeditor
 Licence: GPLv2+
@@ -48,7 +48,7 @@ def _create_dirs_for_log(filename):
     return log_fullpath
 
 
-def logging_setup(filename, debug=False):
+def logging_setup(filename, debug=False, silent=False):
     """ Setup configuration.
 
     Args:
@@ -56,17 +56,20 @@ def logging_setup(filename, debug=False):
         debug: (bool) set more messages (debug messages)
     """
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)
+    if silent:
+        logger.setLevel(logging.WARN)
+    elif debug:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
         fileh = logging.FileHandler(log_fullpath)
-        fileh.setLevel(logging.DEBUG if debug else logging.INFO)
         fileh.setFormatter(logging.Formatter(
             "%(asctime)s %(levelname)-8s %(name)s - %(message)s"))
         logger.addHandler(fileh)
 
     console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG if debug else logging.INFO)
     fmtr = logging.Formatter
     if sys.platform != "win32":
         fmtr = ColorFormatter

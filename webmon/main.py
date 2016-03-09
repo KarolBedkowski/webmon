@@ -70,6 +70,8 @@ def _parse_options():
                         help='configuration filename')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
+    parser.add_argument("-s", "--silent", action="store_true",
+                        help="show only errors and warnings")
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument('--cache-dir',
@@ -83,7 +85,7 @@ def _parse_options():
 
 def main():
     args = _parse_options()
-    logging_setup.logging_setup(args.log, args.verbose)
+    logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
     g_cache = cache.Cache(os.path.expanduser(args.cache_dir))
     conf = config.load_configuration(os.path.expanduser(args.config))

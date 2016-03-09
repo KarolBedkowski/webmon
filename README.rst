@@ -28,6 +28,7 @@ Options
 ^^^^^^^
 -h, --help               display help
 -v                      verbose mode
+-s, --silent            silent mode
 -i FILE, --inputs FILE  file with definition of sources; default inputs.yaml
 -c FILE, --config FILE  global configuration, default config.yaml
 --log FILE              save log to file
