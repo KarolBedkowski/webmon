@@ -22,7 +22,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def _load(inp, g_cache, output, force, diff_mode):
-    _LOG.debug("loading %s", inp['name'])
+    _LOG.debug("loading %s", inp.get('name') or inp['_idx'])
     loader = inputs.get_input(inp)
     oid = loader.get_oid()
     last = g_cache.get_mtime(oid)
@@ -123,8 +123,7 @@ def main():
 
     for idx, inp in enumerate(inps):
         params = config.apply_defaults(defaults, inp)
-        if not params.get("name"):
-            params["name"] = str(idx + 1)
+        params["_idx"] = str(idx + 1)
         try:
             _load(params, g_cache, output, args.force, args.diff_mode)
         except RuntimeError as err:

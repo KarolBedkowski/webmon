@@ -62,7 +62,7 @@ class AbstractInput(object):
         if name:
             return name
         name = '; '.join([self.conf.get(key) or key for key in self._oid_keys])
-        return name
+        return self.conf['_idx'] + ": " + name
 
 
 class WebInput(AbstractInput):
