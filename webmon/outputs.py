@@ -9,6 +9,7 @@ import email.mime.multipart
 import email.utils
 import logging
 from datetime import datetime
+import subprocess
 
 from docutils.core import publish_string
 
@@ -177,6 +178,8 @@ class EMailOutput(AbstractTextOutput):
             smtp.quit()
 
     def _get_msg(self, gen_html, body):
+        if self.conf.get("encrypt") == 'gpg':
+            body = self._encrypt(body)
         if gen_html:
             msg = email.mime.multipart.MIMEMultipart('alternative')
             msg.attach(email.mime.text.MIMEText(body, 'plain', 'utf-8'))
@@ -185,6 +188,20 @@ class EMailOutput(AbstractTextOutput):
             msg.attach(email.mime.text.MIMEText(html, 'html', 'utf-8'))
             return msg
         return email.mime.text.MIMEText(body, 'plain', 'utf-8')
+
+
+    def _encrypt(self, message):
+        subp = subprocess.run(["gpg", "-e", "-a", "-r", self.conf["to"]],
+                              input=message.encode('utf-8'),
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+
+        if subp.returncode != 0:
+            err = subp.stderr
+            _LOG.error("email output encrypt error: %s", err)
+            return err
+        return subp.stdout
+
 
 
 def _get_output(name, params):

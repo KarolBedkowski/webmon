@@ -63,6 +63,7 @@ config.yaml
           smtp_ssl: true      # use ssl/tls
           #smtp_tls: true     # use starttls
           html: true          # send multipart mail with html 
+          encrypt: gpg        # optional encrypt email with gpg
   defaults:                   # optional default parameters for inputs
       interval: 10m
       report_unchanged: false
