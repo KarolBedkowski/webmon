@@ -127,6 +127,20 @@ Filters
 `get-elements-by-id`
   Find all elements in html/xml by ID defined in parameter `sel`.
 
+`sort`
+  Sort elements in `mode`:
+  * parts - sort whole parts
+  * lines - sort all lines in each parts
+  * full - sort parts and lines in it
+  * auto - if it is only one part - sort lines; else sort parts (default)
+
+`grep`
+  Grep elements by `pattern` - regular expressions in `mode`:
+  * parts - grep whole parts
+  * lines - grep all lines in each parts
+  * auto - if it is only one part - grep lines; else grep parts (default)
+
+
 
 Licence
 -------

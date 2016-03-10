@@ -4,6 +4,7 @@ Default filters definition.
 """
 
 import logging
+import re
 
 from . import common
 
@@ -51,6 +52,65 @@ class Strip(AbstractFilter):
         for sinp in inp:
             lines = (line.strip() for line in sinp.split("\n"))
             yield '\n'.join(line for line in lines if line)
+
+
+class Sort(AbstractFilter):
+    """ Sort items in one of mode:
+        * parts - sort whole parts
+        * lines - sort all lines in each parts
+        * full - sort parts and lines in it
+        * auto - if it is only one part - sort lines; else sort parts (default)
+    """
+
+    name = "sort"
+
+    def filter(self, inp):
+        mode = self.conf.get("mode", "auto")
+        if mode == "auto":
+            inp = list(inp)
+            mode = "lines" if len(inp) == 1 else "parts"
+        if mode == "parts":
+            yield from sorted(inp)
+            return
+        if mode == "lines":
+            for sinp in inp:
+                yield "\n".join(sorted(sinp.split("\n")))
+            return
+        if mode == "full":
+            for sinp in sorted(inp):
+                yield "\n".join(sorted(sinp.split("\n")))
+            return
+        raise common.ParamError("invalid mode %s" % mode)
+
+
+class Grep(AbstractFilter):
+    """Strip white spaces from input"""
+
+    name = "grep"
+    _required_params = ("pattern", )
+
+    def __init__(self, conf):
+        super(Grep, self).__init__(conf)
+        self._re = re.compile(conf["pattern"])
+
+    def filter(self, inp):
+        mode = self.conf.get("mode", "auto")
+        if mode == "auto":
+            inp = list(inp)
+            mode = "lines" if len(inp) == 1 else "parts"
+        if mode == "parts":
+            for sinp in inp:
+                if self._re.match(sinp):
+                    yield sinp
+            return
+        if mode == "lines":
+            for sinp in inp:
+                lines = "\n".join(line for line in sinp.split("\n")
+                                  if self._re.match(line))
+                if lines:
+                    yield lines
+            return
+        raise common.ParamError("invalid mode %s" % mode)
 
 
 def _get_elements_by_xpath(data, expression):
