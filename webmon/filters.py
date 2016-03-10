@@ -186,6 +186,9 @@ class GetElementsById(AbstractFilter):
 
 def get_filter(conf):
     """ Get filter object by configuration """
+    if 'name' not in conf:
+        _LOG.warning("missing filter name in: %r", conf)
+        return None
     name = conf.get("name")
     for rcls in getattr(AbstractFilter, "__subclasses__")():
         if getattr(rcls, 'name') == name:
