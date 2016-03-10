@@ -5,8 +5,9 @@ Configuration related functions.
 
 import logging
 import os.path
-import yaml
 import copy
+
+import yaml
 
 _LOG = logging.getLogger(__name__)
 

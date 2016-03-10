@@ -21,6 +21,23 @@ from . import common
 _LOG = logging.getLogger(__name__)
 
 
+def _gen_diff(prev, prev_date, current, diff_mode):
+    fromfiledate = str(datetime.datetime.fromtimestamp(prev_date))
+    tofiledate = str(datetime.datetime.now())
+
+    if diff_mode == 'context':
+        return difflib.context_diff(
+            prev.split("\n\n"), current.split("\n\n"),
+            fromfiledate=fromfiledate, tofiledate=tofiledate,
+            lineterm='\n')
+    elif diff_mode == 'unified':
+        return difflib.unified_diff(
+            prev.split("\n\n"), current.split("\n\n"),
+            fromfiledate=fromfiledate, tofiledate=tofiledate,
+            lineterm='\n')
+    return difflib.ndiff(prev.split("\n\n"), current.split("\n\n"))
+
+
 def _load(inp, g_cache, output, force, diff_mode):
     _LOG.debug("loading %s", inp.get('name') or inp['_idx'])
     loader = inputs.get_input(inp)
@@ -48,21 +65,8 @@ def _load(inp, g_cache, output, force, diff_mode):
     prev = g_cache.get(oid)
     if prev:
         if prev != content:
-            diff_mode = inp.get("diff_mode") or diff_mode
-            if diff_mode == 'context':
-                diff = difflib.context_diff(
-                    prev.split("\n\n"), content.split("\n\n"),
-                    fromfiledate=str(datetime.datetime.fromtimestamp(last)),
-                    tofiledate=str(datetime.datetime.now()),
-                    lineterm='\n')
-            elif diff_mode == 'unified':
-                diff = difflib.unified_diff(
-                    prev.split("\n\n"), content.split("\n\n"),
-                    fromfiledate=str(datetime.datetime.fromtimestamp(last)),
-                    tofiledate=str(datetime.datetime.now()),
-                    lineterm='\n')
-            else:
-                diff = difflib.ndiff(prev.split("\n\n"), content.split("\n\n"))
+            diff = _gen_diff(prev, last, content,
+                             inp.get("diff_mode") or diff_mode)
             output.add_changed(inp, "\n".join(diff))
             g_cache.put(oid, content)
         else:
