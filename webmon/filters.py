@@ -12,22 +12,41 @@ _LOG = logging.getLogger(__name__)
 
 
 class AbstractFilter(object):
-    """Base class for all filters """
+    """Base class for all filters.
+
+    Mode:
+        * parts - sort whole parts
+        * lines - sort all lines in each parts
+    """
 
     name = None
     _required_params = None
+    _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf):
         super(AbstractFilter, self).__init__()
         self.conf = conf
+        self._mode = conf.get("mode", "parts")
 
     def validate(self):
         """ Validate filter parameters """
         for key in self._required_params or []:
             if not self.conf.get(key):
                 raise common.ParamError("missing %s parameter" % key)
+        if self._mode not in self._accepted_modes:
+            raise common.ParamError("invalid mode: %s" % self._mode)
 
-    def filter(self, inp):
+    def filter(self, parts):
+        if self._mode == "parts":
+            for part in parts:
+                yield from self._filter_part(part)
+
+        elif self._mode == "lines":
+            for part in parts:
+                yield "\n".join("".join(self._filter_part(line)) for line
+                                in part.split("\n"))
+
+    def _filter_part(self, text):
         raise NotImplementedError()
 
 
@@ -36,11 +55,17 @@ class Html2Text(AbstractFilter):
 
     name = "html2text"
 
-    def filter(self, inp):
+    def validate(self):
+        super(Html2Text, self).validate()
+        width = self.conf.get("width", 9999999)
+        if not isinstance(width, int) or width < 1:
+            raise common.ParamError("invalid width: %r" % width)
+
+    def _filter_part(self, text):
+        assert isinstance(text, str)
         import html2text as h2t
-        for sinp in inp:
-            conv = h2t.HTML2Text(bodywidth=self.conf.get("width", 9999999))
-            yield conv.handle(sinp)
+        conv = h2t.HTML2Text(bodywidth=self.conf.get("width", 9999999))
+        yield conv.handle(text)
 
 
 class Strip(AbstractFilter):
@@ -48,39 +73,27 @@ class Strip(AbstractFilter):
 
     name = "strip"
 
-    def filter(self, inp):
-        for sinp in inp:
-            lines = (line.strip() for line in sinp.split("\n"))
-            yield '\n'.join(line for line in lines if line)
+    def _filter_part(self, text):
+        assert isinstance(text, str)
+        lines = (line.strip() for line in text.split("\n"))
+        yield '\n'.join(line for line in lines if line)
 
 
 class Sort(AbstractFilter):
-    """ Sort items in one of mode:
-        * parts - sort whole parts
-        * lines - sort all lines in each parts
-        * full - sort parts and lines in it
-        * auto - if it is only one part - sort lines; else sort parts (default)
-    """
+    """ Sort items. """
 
     name = "sort"
 
-    def filter(self, inp):
-        mode = self.conf.get("mode", "auto")
-        if mode == "auto":
-            inp = list(inp)
-            mode = "lines" if len(inp) == 1 else "parts"
-        if mode == "parts":
-            yield from sorted(inp)
-            return
-        if mode == "lines":
-            for sinp in inp:
-                yield "\n".join(sorted(sinp.split("\n")))
-            return
-        if mode == "full":
-            for sinp in sorted(inp):
-                yield "\n".join(sorted(sinp.split("\n")))
-            return
-        raise common.ParamError("invalid mode %s" % mode)
+    def filter(self, parts):
+        if self._mode == "parts":
+            yield from sorted(parts)
+
+        elif self._mode == "lines":
+            outp = []
+            for part in parts:
+                outp.append("\n".join(sorted(part.split("\n"))))
+            outp.sort()
+            yield from outp
 
 
 class Grep(AbstractFilter):
@@ -88,29 +101,16 @@ class Grep(AbstractFilter):
 
     name = "grep"
     _required_params = ("pattern", )
+    _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf):
         super(Grep, self).__init__(conf)
         self._re = re.compile(conf["pattern"])
 
-    def filter(self, inp):
-        mode = self.conf.get("mode", "auto")
-        if mode == "auto":
-            inp = list(inp)
-            mode = "lines" if len(inp) == 1 else "parts"
-        if mode == "parts":
-            for sinp in inp:
-                if self._re.match(sinp):
-                    yield sinp
-            return
-        if mode == "lines":
-            for sinp in inp:
-                lines = "\n".join(line for line in sinp.split("\n")
-                                  if self._re.match(line))
-                if lines:
-                    yield lines
-            return
-        raise common.ParamError("invalid mode %s" % mode)
+    def _filter_part(self, text):
+        assert isinstance(text, str)
+        if self._re.match(text):
+            yield text
 
 
 def _get_elements_by_xpath(data, expression):
@@ -133,17 +133,20 @@ class GetElementsByCss(AbstractFilter):
 
     name = "get-elements-by-css"
     _required_params = ("sel", )
+    _accepted_modes = ("parts", )
 
-    def filter(self, inp):
-        from cssselect import GenericTranslator, SelectorError
-
+    def validate(self):
+        super(GetElementsByCss, self).validate()
         sel = self.conf.get("sel")
+        from cssselect import GenericTranslator, SelectorError
         try:
-            expression = GenericTranslator().css_to_xpath(sel)
+            self._expression = GenericTranslator().css_to_xpath(sel)
         except SelectorError:
             raise ValueError('Invalid CSS selector for filtering')
-        for sinp in inp:
-            yield from _get_elements_by_xpath(sinp, expression)
+
+    def _filter_part(self, text):
+        assert isinstance(text, str), repr(text)
+        yield from _get_elements_by_xpath(text, self._expression)
 
 
 class GetElementsByXpath(AbstractFilter):
@@ -151,11 +154,12 @@ class GetElementsByXpath(AbstractFilter):
 
     name = "get-elements-by-xpath"
     _required_params = ("xpath", )
+    _accepted_modes = ("parts", )
 
-    def filter(self, inp):
+    def _filter_part(self, text):
+        assert isinstance(text, str)
         xpath = self.conf.get("xpath")
-        for sinp in inp:
-            yield from _get_elements_by_xpath(sinp, xpath)
+        yield from _get_elements_by_xpath(text, xpath)
 
 
 def _get_elements_by_id(data, sel):
@@ -177,11 +181,33 @@ class GetElementsById(AbstractFilter):
 
     name = "get-elements-by-id"
     _required_params = ("sel", )
+    _accepted_modes = ("parts", )
 
-    def filter(self, inp):
+    def _filter_part(self, text):
+        assert isinstance(text, str)
         sel = self.conf.get("sel")
-        for sinp in inp:
-            yield from _get_elements_by_id(sinp, sel)
+        yield from _get_elements_by_id(text, sel)
+
+
+class CommandFilter(AbstractFilter):
+    """Filter through command"""
+
+    name = "command"
+    _required_params = ("command", )
+
+    def _filter_part(self, text):
+        assert isinstance(text, str)
+        subp = subprocess.run(self.conf["command"],
+                              input=text,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              shell=True)
+
+        if subp.returncode != 0:
+            err = subp.stderr
+            _LOG.error("command error: %s", err)
+            return err
+        return subp.stdout
 
 
 def get_filter(conf):

@@ -128,18 +128,19 @@ Filters
   Find all elements in html/xml by ID defined in parameter `sel`.
 
 `sort`
-  Sort elements in `mode`:
-  * parts - sort whole parts
-  * lines - sort all lines in each parts
-  * full - sort parts and lines in it
-  * auto - if it is only one part - sort lines; else sort parts (default)
+  Sort elements.
 
 `grep`
-  Grep elements by `pattern` - regular expressions in `mode`:
-  * parts - grep whole parts
-  * lines - grep all lines in each parts
-  * auto - if it is only one part - grep lines; else grep parts (default)
+  Grep elements by `pattern` - regular expressions.
 
+
+**Common options**
+
+`mode`
+  Apply filter to given item:
+
+  * parts - apply filter for each part from input (default)
+  * lines - for each part - split into lines and apply filter for each line.
 
 
 Licence
