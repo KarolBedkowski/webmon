@@ -2,7 +2,7 @@
 """
 Default filters definition.
 """
-
+import subprocess
 import logging
 import re
 
@@ -197,17 +197,16 @@ class CommandFilter(AbstractFilter):
 
     def _filter_part(self, text):
         assert isinstance(text, str)
+        #_LOG.debug("CommandFilter %r, %r", self.conf["command"], text)
         subp = subprocess.run(self.conf["command"],
-                              input=text,
+                              input=text.encode('utf-8'),
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               shell=True)
 
-        if subp.returncode != 0:
-            err = subp.stderr
-            _LOG.error("command error: %s", err)
-            return err
-        return subp.stdout
+        res = subp.stdout or subp.stderr or b""
+        if res:
+            yield res.decode("utf-8")
 
 
 def get_filter(conf):
