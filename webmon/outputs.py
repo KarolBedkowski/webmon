@@ -151,6 +151,19 @@ class EMailOutput(AbstractTextOutput):
     name = "email"
     _required_params = ("to", "from", "subject", "smtp_host", "smtp_port")
 
+    def validate(self):
+        super(EMailOutput, self).validate()
+        conf = self.conf
+        if conf.get("smtp_login"):
+            if not conf.get("smtp_password"):
+                raise common.ParamError("missing password for login")
+        if conf.get("smtp_tls") and conf.get("smtp_ssl"):
+            _LOG.warning("configured tls and ssl; using ssl")
+
+        encrypt = self.conf.get("encrypt", "")
+        if encrypt not in ('gpg', ""):
+            raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
+
     def report(self, new, changed, errors, unchanged):
         conf = self.conf
         body = "\n".join(self._mk_report(new, changed, errors, unchanged))
@@ -169,7 +182,7 @@ class EMailOutput(AbstractTextOutput):
             smtp.ehlo()
             if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
                 smtp.starttls()
-            if conf["smtp_login"]:
+            if conf.get("smtp_login"):
                 smtp.login(conf["smtp_login"], conf["smtp_password"])
             smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
         except Exception as err:
