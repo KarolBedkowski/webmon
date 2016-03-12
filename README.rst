@@ -9,6 +9,7 @@ Inspired by https://github.com/thp/urlwatch
 Dependences
 -----------
 
+* Python 3.0+
 * requests 
 * yaml
 * html2text (for html2text filter)
