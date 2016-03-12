@@ -92,10 +92,9 @@ Common options::
       - name: strip
   interval: 1h                      # min update interval; optional
   report_unchanged: false           # skip in report when no changes
-  diff_mode: ndiff                  # diff mode (unified, ndiff, context)
+  diff_mode: ndiff                  # diff mode (unified, ndiff, etc.)
 
-Interval
-^^^^^^^^
+**Interval**
 Interval can be defined as:
 
 * number = seconds 
@@ -105,6 +104,17 @@ Interval can be defined as:
   * "h" = hours
   * "d" = days
   * "w" = weeks
+
+**diff_mode**
+Available modes:
+
+* `context` - context diff
+* `unified` - unified diff
+* `ndiff`   - ndiff (default)
+* `added`   - show only new items
+* `deleted` - show only deleted items
+* `modified`- make diff and return only modified items
+* `last`    - return last (current) items
 
 Filters
 ^^^^^^^

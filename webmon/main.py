@@ -4,7 +4,6 @@ Main functions.
 """
 
 import os.path
-import difflib
 import datetime
 import logging
 import argparse
@@ -16,6 +15,7 @@ from . import logging_setup
 from . import filters
 from . import outputs
 from . import common
+from . import comparators
 
 
 _LOG = logging.getLogger(__name__)
@@ -25,17 +25,13 @@ def _gen_diff(prev, prev_date, current, diff_mode):
     fromfiledate = str(datetime.datetime.fromtimestamp(prev_date))
     tofiledate = str(datetime.datetime.now())
 
-    if diff_mode == 'context':
-        return difflib.context_diff(
-            prev.split("\n\n"), current.split("\n\n"),
-            fromfiledate=fromfiledate, tofiledate=tofiledate,
-            lineterm='\n')
-    elif diff_mode == 'unified':
-        return difflib.unified_diff(
-            prev.split("\n\n"), current.split("\n\n"),
-            fromfiledate=fromfiledate, tofiledate=tofiledate,
-            lineterm='\n')
-    return difflib.ndiff(prev.split("\n\n"), current.split("\n\n"))
+    diff_mode = diff_mode or "ndiff"
+
+    previous = prev.split("\n\n")
+    current = current.split("\n\n")
+
+    return comparators.get_comparator(diff_mode)(previous, fromfiledate,
+                                                 current, tofiledate)
 
 
 def _load(inp, g_cache, output, force, diff_mode):
