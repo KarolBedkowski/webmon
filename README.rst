@@ -36,6 +36,7 @@ Options
                         ~/.cache/webmon/cache
 --force                 force update all sources; ignore `interval` parameter
 --diff-mode MODE        diff mode (unified, ndiff, context)
+--abilities             show available inputs, outputs, filters, comparators
 
 
 Configuration

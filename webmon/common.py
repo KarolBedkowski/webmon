@@ -38,3 +38,16 @@ def find_subclass(base_class, name):
         return None
 
     return find(base_class)
+
+
+def get_names_from_subclasses(base_class):
+    """ Iter over subclasses and yield `name` attribute """
+
+    def find(parent_cls):
+        for rcls in getattr(parent_cls, "__subclasses__")():
+            name = getattr(rcls, 'name')
+            if name:
+                yield name
+            yield from find(rcls)
+
+    yield from find(base_class)

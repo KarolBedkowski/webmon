@@ -99,12 +99,38 @@ def _parse_options():
                         help="force update all sources")
     parser.add_argument("--diff-mode", choices=['ndiff', 'unified', 'context'],
                         help="default diff mode")
+    parser.add_argument("--abilities", action="store_true",
+                        help="show available filters/inputs/outputs/"
+                        "comparators")
     args = parser.parse_args()
     return args
 
 
+def _show_abilities():
+    print("Inputs:")
+    for name in common.get_names_from_subclasses(inputs.AbstractInput):
+        print("  -", name)
+    print()
+    print("Outputs:")
+    for name in common.get_names_from_subclasses(outputs.AbstractOutput):
+        print("  -", name)
+    print()
+    print("Filters:")
+    for name in common.get_names_from_subclasses(filters.AbstractFilter):
+        print("  -", name)
+    print()
+    print("Comparators:")
+    for name in common.get_names_from_subclasses(
+            comparators.AbstractComparator):
+        print("  -", name)
+
+
 def main():
     args = _parse_options()
+    if args.abilities:
+        _show_abilities()
+        return
+
     logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
     g_cache = cache.Cache(os.path.expanduser(args.cache_dir)).init()
