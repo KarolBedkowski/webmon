@@ -108,8 +108,8 @@ Interval can be defined as:
 **diff_mode**
 Available modes:
 
-* `context` - context diff
-* `unified` - unified diff
+* `context_diff` - context diff
+* `unified_diff` - unified diff
 * `ndiff`   - ndiff (default)
 * `added`   - show only new items
 * `deleted` - show only deleted items

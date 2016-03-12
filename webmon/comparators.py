@@ -5,22 +5,41 @@ import difflib
 from . import common
 
 
-def context_diff(prev, fromfiledate, current, tofiledate):
-    return difflib.context_diff(
-        prev, current,
-        fromfiledate=fromfiledate, tofiledate=tofiledate,
-        lineterm='\n')
+class AbstractComparator(object):
+    """Abstract / base class for all comparators.
+    Comparator get two lists and return formatted result - diff, etc."""
+
+    name = None
+
+    def format(self, old, old_date, new, new_date):
+        raise NotImplementedError()
 
 
-def unified_diff(prev, fromfiledate, current, tofiledate):
-    return difflib.unified_diff(
-        prev, current,
-        fromfiledate=fromfiledate, tofiledate=tofiledate,
-        lineterm='\n')
+class ContextDiff(AbstractComparator):
+    name = "context_diff"
+
+    def format(self, old, old_date, new, new_date):
+        return difflib.context_diff(
+            old, new,
+            fromfiledate=old_date, tofiledate=new_date,
+            lineterm='\n')
 
 
-def ndiff(prev, _fromfiledate, current, _tofiledate):
-    return difflib.ndiff(prev, current)
+class UnifiedDiff(AbstractComparator):
+    name = "unified_diff"
+
+    def format(self, old, old_date, new, new_date):
+        return difflib.unified_diff(
+            old, new,
+            fromfiledate=old_date, tofiledate=new_date,
+            lineterm='\n')
+
+
+class NDiff(AbstractComparator):
+    name = "ndiff"
+
+    def format(self, old, _old_date, new, _new_date):
+        return difflib.ndiff(old, new)
 
 
 def _substract_lists(list1, list2):
@@ -29,48 +48,49 @@ def _substract_lists(list1, list2):
     return (item for item in list1 if item not in l2set)
 
 
-def added(prev, _fromfiledate, current, _tofiledate):
-    """ Get only added items """
-    result = _substract_lists(current, prev)
-    return "\n".join(map(str, result))
+class Added(AbstractComparator):
+    name = "added"
+
+    def format(self, old, _old_date, new, _new_date):
+        """ Get only added items """
+        result = _substract_lists(new, old)
+        return "\n".join(map(str, result))
 
 
-def deleted(prev, _fromfiledate, current, _tofiledate):
-    """ Get only deleted items """
-    result = _substract_lists(prev, current)
-    return "\n".join(map(str, result))
+class Deleted(AbstractComparator):
+    name = "deleted"
+
+    def format(self, old, _old_date, new, _new_date):
+        """ Get only deleted items """
+        result = _substract_lists(old, new)
+        return "\n".join(map(str, result))
 
 
-def modified(prev, _fromfiledate, current, _tofiledate):
-    """ Make diff and return only modified lines. """
-    def _mkdiff():
-        diff = difflib.SequenceMatcher(a=prev, b=current)
-        for change, _, _, begin2, end2 in diff.get_opcodes():
-            if change == 'replace':
-                for itm in current[begin2:end2]:
-                    yield itm
+class Modified(AbstractComparator):
+    name = "modified"
 
-    return "\n".join(_mkdiff())
+    def format(self, old, _old_date, new, _new_date):
+        """ Make diff and return only modified lines. """
+        def _mkdiff():
+            diff = difflib.SequenceMatcher(a=old, b=new)
+            for change, _, _, begin2, end2 in diff.get_opcodes():
+                if change == 'replace':
+                    for itm in new[begin2:end2]:
+                        yield itm
 
-
-def last(_prev, _fromfiledate, current, _tofiledate):
-    """ Return last (current) version """
-    return current
+        return "\n".join(_mkdiff())
 
 
-_COMPARATORS = {
-    "context": context_diff,
-    "unified": unified_diff,
-    "ndiff": ndiff,
-    "added": added,
-    "deleted": deleted,
-    "modified": modified,
-    "last": last,
-}
+class Last(AbstractComparator):
+    name = "last"
+
+    def format(self, _prev, _old_date, new, _new_date):
+        """ Return last (new) version """
+        return new
 
 
 def get_comparator(name):
-    cmpf = _COMPARATORS.get(name)
-    if not cmpf:
-        raise common.ParamError("Unknown comparator: %s" % name)
-    return cmpf
+    cmpcls = common.find_subclass(AbstractComparator, name)
+    if cmpcls:
+        return cmpcls()
+    raise common.ParamError("Unknown comparator: %s" % name)

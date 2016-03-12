@@ -30,8 +30,10 @@ def _gen_diff(prev, prev_date, current, diff_mode):
     previous = prev.split("\n\n")
     current = current.split("\n\n")
 
-    return comparators.get_comparator(diff_mode)(previous, fromfiledate,
-                                                 current, tofiledate)
+    comparator = comparators.get_comparator(diff_mode)
+    _LOG.debug("Using compare mode: %s", diff_mode)
+
+    return comparator.format(previous, fromfiledate, current, tofiledate)
 
 
 def _load(inp, g_cache, output, force, diff_mode):
