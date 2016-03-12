@@ -122,22 +122,13 @@ class CmdInput(AbstractInput):
 def get_input(conf):
     """ Get input class according to configuration """
     kind = conf.get("kind") or "url"
+    scls = common.find_subclass(AbstractInput, kind)
+    if scls:
+        inp = scls(conf)
+        inp.validate()
+        return inp
 
-    def find(parent_cls):
-        for rcls in getattr(parent_cls, "__subclasses__")():
-            if getattr(rcls, 'name') == kind:
-                inp = rcls(conf)
-                inp.validate()
-                return inp
-            out = find(rcls)
-            if out:
-                return out
-        return None
-
-    icls = find(AbstractInput)
-    if not icls:
-        _LOG.warning("unknown input kind: %s; skipping input", kind)
-    return icls
+    _LOG.warning("unknown input kind: %s; skipping input", kind)
 
 
 def _parse_interval(instr):

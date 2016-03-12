@@ -211,14 +211,15 @@ class CommandFilter(AbstractFilter):
 
 def get_filter(conf):
     """ Get filter object by configuration """
-    if 'name' not in conf:
+    name = conf.get("name")
+    if not name:
         _LOG.warning("missing filter name in: %r", conf)
         return None
-    name = conf.get("name")
-    for rcls in getattr(AbstractFilter, "__subclasses__")():
-        if getattr(rcls, 'name') == name:
-            fltr = rcls(conf)
-            fltr.validate()
-            return fltr
+
+    rcls = common.find_subclass(AbstractFilter, name)
+    if rcls:
+        fltr = rcls(conf)
+        fltr.validate()
+        return fltr
+
     _LOG.warning("unknown filter: %s", name)
-    return None

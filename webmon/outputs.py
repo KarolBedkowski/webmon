@@ -21,6 +21,7 @@ _LOG = logging.getLogger(__name__)
 class AbstractOutput(object):
     """Abstract/Base class for all outputs"""
 
+    name = ""
     # list of required parameters
     _required_params = None
 
@@ -222,20 +223,13 @@ def _get_output(name, params):
     if not params.get("enabled", True):
         return None
 
-    def find(parent_cls):
-        for rcls in getattr(parent_cls, "__subclasses__")():
-            if hasattr(rcls, "name") and getattr(rcls, 'name') == name:
-                out = rcls(params)
-                out.validate()
-                return out
-            # find in subclasses
-            out = find(rcls)
-            if out:
-                return out
+    rcls = common.find_subclass(AbstractOutput, name)
+    if rcls:
+        out = rcls(params)
+        out.validate()
+        return out
 
-        return None
-
-    return find(AbstractOutput)
+    _LOG.warning("unknown output: %s", name)
 
 
 class Output(object):
