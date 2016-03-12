@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 
+from webmon import main
+
 CLASSIFIERS = [
     "Development Status :: 4 - Beta",
     'License :: OSI Approved :: GNU General Public License (GPL)'
@@ -19,7 +21,7 @@ REQUIRES = [
 
 setup(
     name='webmon',
-    version="0.1",
+    version=main.VERSION,
     description='webmon - monitor web page changes.',
     long_description=open("README.rst").read(),
     classifiers=CLASSIFIERS,

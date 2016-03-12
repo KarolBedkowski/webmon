@@ -17,6 +17,7 @@ from . import outputs
 from . import common
 from . import comparators
 
+VERSION = "0.1"
 
 _LOG = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ def _load(inp, g_cache, output, force, diff_mode):
 
 
 def _parse_options():
-    parser = argparse.ArgumentParser(description='WebMon')
+    parser = argparse.ArgumentParser(description='WebMon ' + VERSION)
     parser.add_argument('-i', '--inputs',
                         help='yaml file containing inputs definition',
                         default="inputs.yaml")
