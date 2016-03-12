@@ -74,13 +74,20 @@ class WebInput(AbstractInput):
 
     def load(self, last):
         conf = self.conf
-        headers = {'User-agent': "Mozilla"}
+        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
+                                 "Gecko/20100101 Firefox/45.0"}
         if last:
             headers['If-Modified-Since'] = email.utils.formatdate(last)
         _LOG.debug("load_from_web headers: %r", headers)
-        response = requests.request(url=conf['url'], method='GET',
-                                    headers=headers)
-        response.raise_for_status()
+        try:
+            response = requests.request(url=conf['url'], method='GET',
+                                        headers=headers,
+                                        timeout=60)
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout:
+            raise common.InputError("timeout")
+        except Exception as err:
+            raise common.InputError(err)
         if response.status_code == 304:
             response.close()
             raise common.NotModifiedError()
@@ -109,7 +116,7 @@ class CmdInput(AbstractInput):
                                    stderr=subprocess.PIPE,
                                    shell=True)
         stdout, stderr = process.communicate()
-        result = process.wait()
+        result = process.wait(60)
         if result != 0:
             err = ("Err: " + str(result), (stdout or b"").decode("utf-8"),
                    (stderr or b"").decode('utf-8'))
