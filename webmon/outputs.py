@@ -205,16 +205,15 @@ class EMailOutput(AbstractTextOutput):
 
 
     def _encrypt(self, message):
-        subp = subprocess.run(["gpg", "-e", "-a", "-r", self.conf["to"]],
-                              input=message.encode('utf-8'),
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-
-        if subp.returncode != 0:
-            err = subp.stderr
-            _LOG.error("email output encrypt error: %s", err)
-            return err
-        return subp.stdout
+        subp = subprocess.Popen(["gpg", "-e", "-a", "-r", self.conf["to"]],
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE)
+        stdout, stderr = subp.communicate(message.encode('utf-8'))
+        if subp.wait(60) != 0:
+            _LOG.error("email output encrypt error: %s", stderr)
+            return stderr
+        return stdout
 
 
 

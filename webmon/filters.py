@@ -198,13 +198,14 @@ class CommandFilter(AbstractFilter):
     def _filter_part(self, text):
         assert isinstance(text, str)
         #_LOG.debug("CommandFilter %r, %r", self.conf["command"], text)
-        subp = subprocess.run(self.conf["command"],
-                              input=text.encode('utf-8'),
-                              stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE,
-                              shell=True)
+        subp = subprocess.Popen(self.conf["command"],
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE,
+                                shell=True)
 
-        res = subp.stdout or subp.stderr or b""
+        stdout, stderr = subp.communicate(text.encode('utf-8'))
+        res = stdout or stderr or b""
         if res:
             yield res.decode("utf-8")
 
