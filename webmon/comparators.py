@@ -53,8 +53,7 @@ class Added(AbstractComparator):
 
     def format(self, old, _old_date, new, _new_date):
         """ Get only added items """
-        result = _substract_lists(new, old)
-        return "\n".join(map(str, result))
+        return _substract_lists(new, old)
 
 
 class Deleted(AbstractComparator):
@@ -62,8 +61,7 @@ class Deleted(AbstractComparator):
 
     def format(self, old, _old_date, new, _new_date):
         """ Get only deleted items """
-        result = _substract_lists(old, new)
-        return "\n".join(map(str, result))
+        return _substract_lists(old, new)
 
 
 class Modified(AbstractComparator):
@@ -78,7 +76,7 @@ class Modified(AbstractComparator):
                     for itm in new[begin2:end2]:
                         yield itm
 
-        return "\n".join(_mkdiff())
+        return _mkdiff()
 
 
 class Last(AbstractComparator):
