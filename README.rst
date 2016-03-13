@@ -20,7 +20,7 @@ Usage
 -----
 
 1. create two config files:
-   config.yaml - define outputs, smtp etc
+   config.yaml - define outputs, smtp etc;
    inputs.yaml - list of website / commands to monitor
 
 2. launch `webmon.py`
@@ -42,9 +42,12 @@ Options
 
 Configuration
 -------------
+Configuration files may me placed in current dir, ~/.config/webmon/ direcrtory
+or direct specified by appropriate option.
 
 config.yaml
 ^^^^^^^^^^^
+Define program configuration and global / common options.
 ::
 
   output:
@@ -72,6 +75,7 @@ config.yaml
 
 inputs.yaml
 ^^^^^^^^^^^
+Define one or more data sources (each source separated by `---` line)
 
 Web sources::
 

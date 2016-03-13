@@ -82,11 +82,10 @@ def _load(inp, g_cache, output, force, diff_mode):
 def _parse_options():
     parser = argparse.ArgumentParser(description='WebMon ' + VERSION)
     parser.add_argument('-i', '--inputs',
-                        help='yaml file containing inputs definition',
-                        default="inputs.yaml")
+                        help='yaml file containing inputs definition'
+                        ' (default inputs.yaml)')
     parser.add_argument('-c', '--config',
-                        default="config.yaml",
-                        help='configuration filename')
+                        help='configuration filename (default config.yaml)')
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="increase output verbosity")
     parser.add_argument("-s", "--silent", action="store_true",
@@ -135,8 +134,8 @@ def main():
     logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
     g_cache = cache.Cache(os.path.expanduser(args.cache_dir)).init()
-    conf = config.load_configuration(os.path.expanduser(args.config))
-    inps = config.load_inputs(os.path.expanduser(args.inputs))
+    conf = config.load_configuration(args.config)
+    inps = config.load_inputs(args.inputs)
     if not g_cache or not conf or not inps:
         return
 
