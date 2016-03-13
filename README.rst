@@ -158,6 +158,17 @@ Filters
   * parts - apply filter for each part from input (default)
   * lines - for each part - split into lines and apply filter for each line.
 
+    
+Customizations
+--------------
+User my define own filters, inputs, outputs and comparators by creating .py
+file in ~/.local/share/webmon and creating subclass of:
+
+* webmon.filters.AbstractFilter
+* webmon.inputs.AbstractInput
+* webmon.outputs.AbstractOutput
+* webmon.comparators.AbstractComparator
+
 
 Licence
 -------

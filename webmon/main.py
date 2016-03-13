@@ -7,6 +7,7 @@ import os.path
 import datetime
 import logging
 import argparse
+import imp
 
 from . import cache
 from . import config
@@ -125,13 +126,31 @@ def _show_abilities():
         print("  -", name)
 
 
+def _load_user_classes():
+    users_scripts_dir = os.path.expanduser("~/.local/share/webmon")
+    if not os.path.isdir(users_scripts_dir):
+        return
+    for fname in os.listdir(users_scripts_dir):
+        fpath = os.path.join(users_scripts_dir, fname)
+        if os.path.isfile(fpath) and fname.endswith(".py") \
+                and not fname.startswith("_"):
+            _LOG.debug("loading %s", fpath)
+            try:
+                imp.load_source(fname[:-3], fpath)
+            except Exception as err:
+                _LOG.error("Importing %s error %s", fpath, err)
+
+
 def main():
     args = _parse_options()
+
+    logging_setup.logging_setup(args.log, args.verbose, args.silent)
+
+    _load_user_classes()
+
     if args.abilities:
         _show_abilities()
         return
-
-    logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
     g_cache = cache.Cache(os.path.expanduser(args.cache_dir)).init()
     conf = config.load_configuration(args.config)
