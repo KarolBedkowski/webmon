@@ -1,6 +1,6 @@
 import unittest
 
-import config
+from . import config
 
 
 class TestApplyDefaults(unittest.TestCase):
