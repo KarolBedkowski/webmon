@@ -102,6 +102,61 @@ class WebInput(AbstractInput):
         response.close()
 
 
+class RssInput(AbstractInput):
+    """Load data from web (http/https)"""
+
+    name = "rss"
+    _oid_keys = ("url", )
+    _required_params = ("url", )
+
+    def load(self, last):
+        import feedparser
+        feedparser.PARSE_MICROFORMATS = 0
+        feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
+                                 "Gecko/20100101 Firefox/45.0"
+        conf = self.conf
+        modified = time.localtime(last) if last else None
+        doc = feedparser.parse(conf.get('url'),
+                               etag=self.metadata.get('etag'),
+                               modified=modified)
+        status = doc.get('status') if doc else 400
+        if status == 304:
+            raise common.NotModifiedError()
+        if status == 301:  # permanent redirects
+            yield 'Permanently redirects: ' + doc.href
+            return
+        if status == 302:
+            yield 'Temporary redirects: ' + doc.href
+            return
+        if status != 200:
+            print(repr(doc))
+            raise common.InputError('load document error %s' % status)
+        for entry in doc.get('entries'):
+            res = "\n".join(_get_existing_from_entry(
+                entry,
+                ("title", "Title"),
+                ("updated", "Updated"),
+                ("published", "Published"),
+                ("link", "Link"),
+                ("author", "Author"),
+            ))
+            content = entry['content'][0].value if 'content' in entry \
+                else entry.get('value')
+            if content:
+                res += "\n" + content
+            yield res
+        etag = doc.get('etag')
+        if etag:
+            self.metadata['etag'] = etag
+
+
+def _get_existing_from_entry(entry, *keynames):
+    for key, name in keynames:
+        val = entry.get(key)
+        if val:
+            yield name + ": " + val
+
+
 class CmdInput(AbstractInput):
     """Load data from command"""
 

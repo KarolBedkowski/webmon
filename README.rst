@@ -15,6 +15,7 @@ Dependences
 * html2text (for html2text filter)
 * docutils (for html output/reports/mails)
 * ElementTree (for get-elements-* filters)
+* feedparser (for rss input)
 
 Usage
 -----
@@ -80,7 +81,7 @@ Define one or more data sources (each source separated by `---` line)
 Web sources::
 
   kind: url
-  url: https://lobste.rs/           # url to monitor; required
+  url: https://foo.bar/           # url to monitor; required
   name: date                        # name of input
 
 Command sources::
@@ -88,6 +89,12 @@ Command sources::
   kind: cmd
   cmd: date       # command to launch
   name: date
+
+Rss sources::
+
+  kind: rss
+  url: http://foo.bar/rss.xml
+  name: foo bar rss feed
 
 Common options::
 
