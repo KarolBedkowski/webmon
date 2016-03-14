@@ -49,6 +49,7 @@ def _load(inp, g_cache, output, force, diff_mode):
 
     inp['name'] = loader.input_name
     _LOG.info("loading %s; oid=%s", inp["name"], oid)
+    loader.metadata = g_cache.get_meta(oid) or {}
     prev = g_cache.get(oid)
 
     try:
@@ -76,6 +77,7 @@ def _load(inp, g_cache, output, force, diff_mode):
     else:
         output.add_new(inp, content)
         g_cache.put(oid, content)
+    g_cache.put_meta(oid, loader.metadata)
 
     _LOG.debug("done")
 

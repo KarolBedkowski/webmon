@@ -29,6 +29,7 @@ class AbstractInput(object):
     def __init__(self, conf):
         super(AbstractInput, self).__init__()
         self.conf = conf
+        self.metadata = {}
 
     def validate(self):
         """ Validate input configuration """
