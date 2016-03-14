@@ -49,11 +49,10 @@ def _load(inp, g_cache, output, force, diff_mode):
 
     inp['name'] = loader.input_name
     _LOG.info("loading %s; oid=%s", inp["name"], oid)
+    prev = g_cache.get(oid)
+
     try:
         content = loader.load(last)
-    except common.NotModifiedError:
-        content = last
-    else:
         for fltcfg in inp.get('filters') or []:
             _LOG.debug("filtering by %r", fltcfg)
             flt = filters.get_filter(fltcfg)
@@ -61,8 +60,9 @@ def _load(inp, g_cache, output, force, diff_mode):
                 content = flt.filter(content)
 
         content = "\n\n".join(content) or "<no data>"
+    except common.NotModifiedError:
+        content = prev
 
-    prev = g_cache.get(oid)
     if prev:
         if prev != content:
             diff = _gen_diff(prev, last, content,
