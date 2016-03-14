@@ -129,7 +129,6 @@ class RssInput(AbstractInput):
             yield 'Temporary redirects: ' + doc.href
             return
         if status != 200:
-            print(repr(doc))
             raise common.InputError('load document error %s' % status)
         for entry in doc.get('entries'):
             res = "\n".join(_get_existing_from_entry(
@@ -140,10 +139,20 @@ class RssInput(AbstractInput):
                 ("link", "Link"),
                 ("author", "Author"),
             ))
-            content = entry['content'][0].value if 'content' in entry \
-                else entry.get('value')
+
+            content = entry.get('summary')
+            if not content:
+                content = entry['content'][0].value if 'content' in entry \
+                    else entry.get('value')
             if content:
-                res += "\n" + content
+                if self.conf.get("html2text"):
+                    try:
+                        import html2text as h2t
+                        content = h2t.HTML2Text(bodywidth=9999999). \
+                                handle(content)
+                    except ImportError:
+                        pass
+                res += "\n" + content.strip() + "\n"
             yield res
         etag = doc.get('etag')
         if etag:
