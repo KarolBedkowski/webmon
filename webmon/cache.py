@@ -7,6 +7,8 @@ import os.path
 import pathlib
 import logging
 
+import yaml
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -40,12 +42,38 @@ class Cache(object):
                            err)
         return None
 
+    def get_meta(self, oid):
+        """ Put metadata into cache. """
+        name = self._get_filename_meta(oid)
+        if os.path.isfile(name):
+            try:
+                with open(name) as fin:
+                    return yaml.load(fin)
+            except IOError as err:
+                _LOG.error("Cache: load file %s from cache error: %s", name,
+                           err)
+        return None
+
     def put(self, oid, content):
         """ Put file into cache. """
         name = self._get_filename(oid)
         try:
             with open(name, "w") as fout:
                 fout.write(content)
+        except IOError as err:
+            _LOG.error("Cache: error writing file %s into cache: %s", name,
+                       err)
+
+    def put_meta(self, oid, metadata):
+        """ Put metadata into cache. """
+        name = self._get_filename_meta(oid)
+        try:
+            if metadata:
+                with open(name, "w") as fout:
+                    yaml.dump(metadata, fout)
+            else:
+                if os.path.isfile(name):
+                    os.unlink(name)
         except IOError as err:
             _LOG.error("Cache: error writing file %s into cache: %s", name,
                        err)
@@ -70,13 +98,17 @@ class Cache(object):
         self._touched.add(oid)
         return os.path.join(self._directory, oid)
 
+    def _get_filename_meta(self, oid):
+        return os.path.join(self._directory, oid + ".meta")
+
     def delete_unused(self):
         """ Remove unused files from cache"""
         _LOG.info("cache.delete_unused; used=%d", len(self._touched))
         deleted = 0
         for fname in os.listdir(self._directory):
             fpath = os.path.join(self._directory, fname)
-            if os.path.isfile(fpath) and fname not in self._touched:
+            foid = fname[:-5] if fname.endswith(".meta") else fname
+            if os.path.isfile(fpath) and foid not in self._touched:
                 try:
                     os.remove(fpath)
                     deleted += 1
