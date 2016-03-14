@@ -29,13 +29,17 @@ def _gen_diff(prev, prev_date, current, diff_mode):
 
     diff_mode = diff_mode or "ndiff"
 
-    previous = prev.split("\n\n")
-    current = current.split("\n\n")
+    previous = prev.split("\n")
+    current = current.split("\n")
 
     comparator = comparators.get_comparator(diff_mode)
     _LOG.debug("Using compare mode: %s", diff_mode)
 
     return comparator.format(previous, fromfiledate, current, tofiledate)
+
+
+def _clean_part(part):
+    return part.strip().replace("\n", common.PART_LINES_SEPARATOR)
 
 
 def _load(inp, g_cache, output, force, diff_mode):
@@ -54,13 +58,16 @@ def _load(inp, g_cache, output, force, diff_mode):
 
     try:
         content = loader.load(last)
+        # load return list of parts
+
         for fltcfg in inp.get('filters') or []:
             _LOG.debug("filtering by %r", fltcfg)
             flt = filters.get_filter(fltcfg)
             if flt:
                 content = flt.filter(content)
 
-        content = "\n\n".join(content) or "<no data>"
+        content = "\n\n".join(_clean_part(part) for part in content) \
+            or "<no data>"
     except common.NotModifiedError:
         content = prev
 

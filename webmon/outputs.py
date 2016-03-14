@@ -50,9 +50,10 @@ class AbstractTextOutput(AbstractOutput):
         if 'url' in inp:
             yield inp['url']
         if content:
-            content = content.strip() or "<no data>"
             yield "::"
             yield ""
+            content = content.strip() or "<no data>"
+            content = content.replace(common.PART_LINES_SEPARATOR, "\n")
             for line in content.split("\n"):
                 yield "  " + line
             yield ""

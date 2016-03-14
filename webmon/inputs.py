@@ -38,7 +38,8 @@ class AbstractInput(object):
                 raise common.ParamError("missing parameter " + param)
 
     def load(self, last):
-        """ Load data; return list/generator of items """
+        """ Load data; return list/generator of items (parts).
+        """
         raise NotImplementedError()
 
     def get_oid(self):
@@ -74,6 +75,7 @@ class WebInput(AbstractInput):
     _required_params = ("url", )
 
     def load(self, last):
+        """ Return one part - page content. """
         conf = self.conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
@@ -110,6 +112,7 @@ class RssInput(AbstractInput):
     _required_params = ("url", )
 
     def load(self, last):
+        """ Return rss items as one or many parts; each part is on article. """
         import feedparser
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
@@ -130,33 +133,42 @@ class RssInput(AbstractInput):
             return
         if status != 200:
             raise common.InputError('load document error %s' % status)
-        for entry in doc.get('entries'):
-            res = "\n".join(_get_existing_from_entry(
-                entry,
-                ("title", "Title"),
-                ("updated", "Updated"),
-                ("published", "Published"),
-                ("link", "Link"),
-                ("author", "Author"),
-            ))
 
-            content = entry.get('summary')
-            if not content:
-                content = entry['content'][0].value if 'content' in entry \
-                    else entry.get('value')
-            if content:
-                if self.conf.get("html2text"):
-                    try:
-                        import html2text as h2t
-                        content = h2t.HTML2Text(bodywidth=9999999). \
-                                handle(content)
-                    except ImportError:
-                        pass
-                res += "\n" + content.strip() + "\n"
-            yield res
+        entries = doc.get('entries')
+        max_items = self.conf.get("max_items")
+        if max_items and len(entries) > max_items:
+            entries = entries[:max_items]
+
+        yield from (self._load_entry(entry) for entry in entries)
+
         etag = doc.get('etag')
         if etag:
             self.metadata['etag'] = etag
+
+
+    def _load_entry(self, entry):
+        res = "\n".join(_get_existing_from_entry(
+            entry,
+            ("title", "Title"),
+            ("updated", "Updated"),
+            ("published", "Published"),
+            ("link", "Link"),
+            ("author", "Author"),
+        ))
+
+        content = entry.get('summary')
+        if not content:
+            content = entry['content'][0].value if 'content' in entry \
+                else entry.get('value')
+        if content:
+            if self.conf.get("html2text"):
+                try:
+                    import html2text as h2t
+                    content = h2t.HTML2Text(bodywidth=9999999).handle(content)
+                except ImportError:
+                    pass
+            res += "\n" + content.strip()
+        return res
 
 
 def _get_existing_from_entry(entry, *keynames):
@@ -174,6 +186,7 @@ class CmdInput(AbstractInput):
     _required_params = ("cmd", )
 
     def load(self, last):
+        """ Return command output as one part """
         conf = self.conf
         _LOG.debug("CmdInput execute: %r", conf['cmd'])
         process = subprocess.Popen(conf['cmd'],

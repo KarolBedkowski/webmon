@@ -3,6 +3,8 @@
 Commons elements - errors etc
 """
 
+PART_LINES_SEPARATOR = "\\n"
+
 
 class NotModifiedError(RuntimeError):
     """Exception raised on HTTP 304 responses"""
