@@ -156,6 +156,10 @@ Filters
 `grep`
   Grep elements by `pattern` - regular expressions.
 
+`wrap`
+  Wrap long lines to `width` characters (default 76) and optionally limit 
+  number of lines to `max_lines`.
+
 
 **Common options**
 

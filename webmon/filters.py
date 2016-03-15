@@ -5,6 +5,7 @@ Default filters definition.
 import subprocess
 import logging
 import re
+import textwrap
 
 from . import common
 
@@ -111,6 +112,27 @@ class Grep(AbstractFilter):
         assert isinstance(text, str)
         if self._re.match(text):
             yield text
+
+class Wrap(AbstractFilter):
+    """Wrap long lines.
+
+    Params:
+        - width: max line len (default=76)
+        - max_lines: return at most max_lines
+    """
+    name = "wrap"
+
+    def __init__(self, conf):
+        super(Wrap, self).__init__(conf)
+        self._tw = textwrap.TextWrapper()
+
+    def filter(self, parts):
+        self._tw.text = self.conf.get("width") or 76
+        self._tw.max_lines = self.conf.get("max_lines") or None
+        return super(Wrap, self).filter(parts)
+
+    def _filter_part(self, text):
+        yield "\n".join(self._tw.fill(line) for line in text.split('\n'))
 
 
 def _get_elements_by_xpath(data, expression):
