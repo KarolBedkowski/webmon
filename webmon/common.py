@@ -3,7 +3,8 @@
 Commons elements - errors etc
 """
 
-PART_LINES_SEPARATOR = "\\n"
+# replace new line character with this character
+PART_LINES_SEPARATOR = "\x01"
 
 
 class NotModifiedError(RuntimeError):

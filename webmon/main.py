@@ -66,8 +66,9 @@ def _load(inp, g_cache, output, force, diff_mode):
             if flt:
                 content = flt.filter(content)
 
-        content = "\n\n".join(_clean_part(part) for part in content) \
-            or "<no data>"
+        if content:
+            content = "\n".join(_clean_part(part) for part in content)
+        content = content or "<no data>"
     except common.NotModifiedError:
         content = prev
 
