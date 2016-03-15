@@ -95,6 +95,11 @@ Rss sources::
   kind: rss
   url: http://foo.bar/rss.xml
   name: foo bar rss feed
+  max_items: 100   # optionally limit numbers of items
+  html2text: true  # optionally clean content from html tags
+  field: title, updated_parsed, published_parsed, link, author, content
+     # optionally specify fields to show
+  
 
 Common options::
 

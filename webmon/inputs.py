@@ -139,43 +139,65 @@ class RssInput(AbstractInput):
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
 
-        yield from (self._load_entry(entry) for entry in entries)
+        fields, add_content = self._get_fields_to_load()
+        yield from (self._load_entry(entry, fields, add_content)
+                    for entry in entries)
 
         etag = doc.get('etag')
         if etag:
             self.metadata['etag'] = etag
 
 
-    def _load_entry(self, entry):
-        res = "\n".join(_get_existing_from_entry(
-            entry,
-            ("title", "Title"),
-            ("updated", "Updated"),
-            ("published", "Published"),
-            ("link", "Link"),
-            ("author", "Author"),
-        ))
-
-        content = entry.get('summary')
-        if not content:
-            content = entry['content'][0].value if 'content' in entry \
-                else entry.get('value')
-        if content:
-            if self.conf.get("html2text"):
-                try:
-                    import html2text as h2t
-                    content = h2t.HTML2Text(bodywidth=9999999).handle(content)
-                except ImportError:
-                    pass
-            res += "\n" + content.strip()
+    def _load_entry(self, entry, fields, add_content):
+        res = "\n".join(_get_existing_from_entry(entry, fields))
+        if add_content:
+            content = _get_content(entry)
+            if content:
+                if self.conf.get("html2text"):
+                    try:
+                        import html2text as h2t
+                        content = h2t.HTML2Text(bodywidth=9999999)\
+                            .handle(content)
+                    except ImportError:
+                        pass
+                res += "\n" + content.strip()
+        res += "\n------------------"
         return res
 
+    def _get_fields_to_load(self):
+        add_content = False
+        fields = (field.strip() for field
+                  in self.conf.get("fields", "").split(","))
+        fields = [field for field in fields if field]
+        if fields:
+            if 'content' in fields:
+                fields.remove('content')
+                add_content = True
+        else:
+            fields = ["title", "updated_parsed", "published_parsed", "link",
+                      "author"]
+        return fields, add_content
 
-def _get_existing_from_entry(entry, *keynames):
-    for key, name in keynames:
+
+def _get_content(entry):
+    content = entry.get('summary')
+    if not content:
+        content = entry['content'][0].value if 'content' in entry \
+            else entry.get('value')
+    return content
+
+
+def _get_existing_from_entry(entry, keys):
+    for key in keys:
+        if not key:
+            continue
         val = entry.get(key)
         if val:
-            yield name + ": " + val
+            name = key.split("_", 1)[0].capitalize()
+            if isinstance(val, time.struct_time):
+                yield name + ": " + time.strftime("%x %X", val)
+            else:
+                yield name + ": " + str(val)
 
 
 class CmdInput(AbstractInput):
