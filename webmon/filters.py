@@ -7,6 +7,17 @@ import logging
 import re
 import textwrap
 
+try:
+    from lxml import etree
+except ImportError:
+    try:
+        import xml.etree.cElementTree as etree
+    except ImportError:
+        try:
+            import xml.etree.ElementTree as etree
+        except ImportError:
+            etree = None
+
 from . import common
 
 _LOG = logging.getLogger(__name__)
@@ -16,24 +27,29 @@ class AbstractFilter(object):
     """Base class for all filters.
 
     Mode:
-        * parts - sort whole parts
-        * lines - sort all lines in each parts
+        * parts - filter whole parts
+        * lines - filter all lines in each parts
     """
 
     name = None
-    _required_params = None
+    # parameters - list of tuples (name, description, default, required)
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+    ]
     _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf):
         super(AbstractFilter, self).__init__()
-        self.conf = conf
+        self.conf = {key: val for key, _, val, _ in self.params}
+        self.conf.update(conf)
         self._mode = conf.get("mode", "parts")
 
     def validate(self):
         """ Validate filter parameters """
-        for key in self._required_params or []:
-            if not self.conf.get(key):
-                raise common.ParamError("missing %s parameter" % key)
+        for name, _, _, required in self.params or []:
+            val = self.conf.get(name)
+            if required and not val:
+                raise common.ParamError("missing parameter " + name)
         if self._mode not in self._accepted_modes:
             raise common.ParamError("invalid mode: %s" % self._mode)
 
@@ -55,17 +71,21 @@ class Html2Text(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "html2text"
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("width", "Max line width", 999999, True),
+    ]
 
     def validate(self):
         super(Html2Text, self).validate()
-        width = self.conf.get("width", 9999999)
+        width = self.conf.get("width")
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
 
     def _filter_part(self, text):
         assert isinstance(text, str)
         import html2text as h2t
-        conv = h2t.HTML2Text(bodywidth=self.conf.get("width", 9999999))
+        conv = h2t.HTML2Text(bodywidth=self.conf.get("width"))
         yield conv.handle(text)
 
 
@@ -101,7 +121,10 @@ class Grep(AbstractFilter):
     """Strip white spaces from input"""
 
     name = "grep"
-    _required_params = ("pattern", )
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("pattern", "Regular expression", None, True),
+    ]
     _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf):
@@ -121,6 +144,11 @@ class Wrap(AbstractFilter):
         - max_lines: return at most max_lines
     """
     name = "wrap"
+    params = [
+        ("mode", "Filtering mode", "lines", False),
+        ("width", "Maximal line width", 76, False),
+        ("max_lines", "Max number of lines", None, False),
+    ]
 
     def __init__(self, conf):
         super(Wrap, self).__init__(conf)
@@ -136,8 +164,8 @@ class Wrap(AbstractFilter):
 
 
 def _get_elements_by_xpath(data, expression):
-    from lxml import etree
-
+    if not etree:
+        raise common.InputError("module etree not found")
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
@@ -154,12 +182,15 @@ class GetElementsByCss(AbstractFilter):
     """Extract elements from html/xml by css selector"""
 
     name = "get-elements-by-css"
-    _required_params = ("sel", )
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("sel", "selector", None, True),
+    ]
     _accepted_modes = ("parts", )
 
     def validate(self):
         super(GetElementsByCss, self).validate()
-        sel = self.conf.get("sel")
+        sel = self.conf["sel"]
         from cssselect import GenericTranslator, SelectorError
         try:
             self._expression = GenericTranslator().css_to_xpath(sel)
@@ -175,17 +206,21 @@ class GetElementsByXpath(AbstractFilter):
     """Extract elements from html/xml by xpath selector"""
 
     name = "get-elements-by-xpath"
-    _required_params = ("xpath", )
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("xpath", "selector", None, True),
+    ]
     _accepted_modes = ("parts", )
 
     def _filter_part(self, text):
         assert isinstance(text, str)
-        xpath = self.conf.get("xpath")
+        xpath = self.conf["xpath"]
         yield from _get_elements_by_xpath(text, xpath)
 
 
 def _get_elements_by_id(data, sel):
-    from lxml import etree
+    if not etree:
+        raise common.InputError("module etree not found")
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
@@ -202,12 +237,15 @@ class GetElementsById(AbstractFilter):
     """Extract elements from html/xml by element id """
 
     name = "get-elements-by-id"
-    _required_params = ("sel", )
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("sel", "selector", None, True),
+    ]
     _accepted_modes = ("parts", )
 
     def _filter_part(self, text):
         assert isinstance(text, str)
-        sel = self.conf.get("sel")
+        sel = self.conf["sel"]
         yield from _get_elements_by_id(text, sel)
 
 
@@ -215,9 +253,13 @@ class CommandFilter(AbstractFilter):
     """Filter through command"""
 
     name = "command"
-    _required_params = ("command", )
+    params = [
+        ("mode", "Filtering mode", "parts", False),
+        ("command", "command to run", None, True),
+    ]
 
     def _filter_part(self, text):
+        # TODO: convert new line charactes
         assert isinstance(text, str)
         #_LOG.debug("CommandFilter %r, %r", self.conf["command"], text)
         subp = subprocess.Popen(self.conf["command"],

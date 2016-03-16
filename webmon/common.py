@@ -6,6 +6,10 @@ Commons elements - errors etc
 # replace new line character with this character
 PART_LINES_SEPARATOR = "\x01"
 
+# options
+OPTS_PREFORMATTED = "preformatted"
+
+
 
 class NotModifiedError(RuntimeError):
     """Exception raised on HTTP 304 responses"""
@@ -43,14 +47,14 @@ def find_subclass(base_class, name):
     return find(base_class)
 
 
-def get_names_from_subclasses(base_class):
+def get_subclasses_with_name(base_class):
     """ Iter over subclasses and yield `name` attribute """
 
     def find(parent_cls):
         for rcls in getattr(parent_cls, "__subclasses__")():
             name = getattr(rcls, 'name')
             if name:
-                yield name
+                yield name, rcls
             yield from find(rcls)
 
     yield from find(base_class)

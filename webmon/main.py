@@ -19,6 +19,7 @@ from . import common
 from . import comparators
 
 VERSION = "0.1"
+DEFAULT_DIFF_MODE = "ndiff"
 
 _LOG = logging.getLogger(__name__)
 
@@ -26,16 +27,14 @@ _LOG = logging.getLogger(__name__)
 def _gen_diff(prev, prev_date, current, diff_mode):
     fromfiledate = str(datetime.datetime.fromtimestamp(prev_date))
     tofiledate = str(datetime.datetime.now())
-
-    diff_mode = diff_mode or "ndiff"
-
     previous = prev.split("\n")
     current = current.split("\n")
-
-    comparator = comparators.get_comparator(diff_mode)
+    comparator = comparators.get_comparator(diff_mode or DEFAULT_DIFF_MODE)
     _LOG.debug("Using compare mode: %s", diff_mode)
 
-    return comparator.format(previous, fromfiledate, current, tofiledate)
+    diff = "\n".join(comparator.format(
+        previous, fromfiledate, current, tofiledate))
+    return (diff, comparator.opts)
 
 
 def _clean_part(part):
@@ -45,10 +44,10 @@ def _clean_part(part):
 def _load(inp, g_cache, output, force, diff_mode):
     _LOG.debug("loading %s", inp.get('name') or inp['_idx'])
     loader = inputs.get_input(inp)
-    oid = loader.get_oid()
-    last = g_cache.get_mtime(oid)
-    if last and not force and not loader.need_update(last):
-        _LOG.debug("no need update")
+    oid = loader.oid
+    loader.last_updated = g_cache.get_mtime(oid)
+    if loader.last_updated and not force and not loader.need_update():
+        _LOG.debug("%s no need update", oid)
         return
 
     inp['name'] = loader.input_name
@@ -57,7 +56,7 @@ def _load(inp, g_cache, output, force, diff_mode):
     prev = g_cache.get(oid)
 
     try:
-        content = loader.load(last)
+        content = loader.load()
         # load return list of parts
 
         for fltcfg in inp.get('filters') or []:
@@ -74,13 +73,13 @@ def _load(inp, g_cache, output, force, diff_mode):
 
     if prev:
         if prev != content:
-            diff = _gen_diff(prev, last, content,
-                             inp.get("diff_mode") or diff_mode)
-            output.add_changed(inp, "\n".join(diff))
+            diff, opts = _gen_diff(prev, loader.last_updated, content,
+                                   inp.get("diff_mode") or diff_mode)
+            output.add_changed(inp, diff, opts)
             g_cache.put(oid, content)
         else:
             if inp.get("report_unchanged", False):
-                output.add_unchanged(inp)
+                output.add_unchanged(inp, prev)
             g_cache.update_mtime(oid)
     else:
         output.add_new(inp, content)
@@ -117,23 +116,37 @@ def _parse_options():
     return args
 
 
+def _show_abilities_cls(cls):
+    if hasattr(cls, "description"):
+        print("    " + cls.description)
+    if not hasattr(cls, "params") or not cls.params:
+        return
+    print("    Parameters:")
+    for param in cls.params:
+        print("     - %-15s\t%-20s\tdef=%-10r\treq=%r" % param)
+
+
 def _show_abilities():
     print("Inputs:")
-    for name in common.get_names_from_subclasses(inputs.AbstractInput):
+    for name, cls in common.get_subclasses_with_name(inputs.AbstractInput):
         print("  -", name)
+        _show_abilities_cls(cls)
     print()
     print("Outputs:")
-    for name in common.get_names_from_subclasses(outputs.AbstractOutput):
+    for name, cls in common.get_subclasses_with_name(outputs.AbstractOutput):
         print("  -", name)
+        _show_abilities_cls(cls)
     print()
     print("Filters:")
-    for name in common.get_names_from_subclasses(filters.AbstractFilter):
+    for name, cls in common.get_subclasses_with_name(filters.AbstractFilter):
         print("  -", name)
+        _show_abilities_cls(cls)
     print()
     print("Comparators:")
-    for name in common.get_names_from_subclasses(
+    for name, cls in common.get_subclasses_with_name(
             comparators.AbstractComparator):
         print("  -", name)
+        _show_abilities_cls(cls)
 
 
 def _load_user_classes():
@@ -184,7 +197,11 @@ def main():
         try:
             _load(params, g_cache, output, args.force, args.diff_mode)
         except RuntimeError as err:
-            _LOG.error("load error: %s", str(err).replace("\n", "; "))
+            _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
+            output.add_error(params, str(err))
+        except Exception as err:
+            _LOG.exception("load %d error: %s", idx,
+                           str(err).replace("\n", "; "))
             output.add_error(params, str(err))
 
     output.write()

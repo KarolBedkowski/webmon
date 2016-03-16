@@ -22,27 +22,37 @@ class AbstractInput(object):
     # name used in configuration
     name = None
     # key names used to generator name when it missing
-    _oid_keys = None
-    # required param names
-    _required_params = None
+    _name_keys = None
+    # parameters - list of tuples (name, description, default, required)
+    params = [
+        ("name", "input name", None, False),
+        ("interval", "update interval", None, False),
+        ("report_unchanged", "report data even is not changed", False, False),
+    ]
 
     def __init__(self, conf):
         super(AbstractInput, self).__init__()
-        self.conf = conf
+        # TODO: apply_defaults?
+        self.conf = {key: val for key, _, val, _ in self.params}
+        self.conf.update(conf)
+        self.last_updated = None
         self.metadata = {}
+        self.input_name = self._gen_input_name()
+        self.oid = self._get_oid()
 
     def validate(self):
         """ Validate input configuration """
-        for param in self._required_params or []:
-            if not self.conf.get(param):
-                raise common.ParamError("missing parameter " + param)
+        for name, _, _, required in self.params or []:
+            val = self.conf.get(name)
+            if required and not val:
+                raise common.ParamError("missing parameter " + name)
 
-    def load(self, last):
+    def load(self):
         """ Load data; return list/generator of items (parts).
         """
         raise NotImplementedError()
 
-    def get_oid(self):
+    def _get_oid(self):
         """ Generate object id according to configuration. """
         csum = hashlib.sha1()
         csum.update(self.name.encode("utf-8"))
@@ -50,20 +60,22 @@ class AbstractInput(object):
             csum.update(keyval.encode("utf-8"))
         return csum.hexdigest()
 
-    def need_update(self, last):
+    def need_update(self):
+        if not self.last_updated:
+            return True
         # default - check interval
-        interval = self.conf.get("interval")
+        interval = self.conf["interval"]
         if not interval:
             return True
         interval = _parse_interval(interval)
-        return last + interval < time.time()
+        return self.last_updated + interval < time.time()
 
-    @property
-    def input_name(self):
-        name = self.conf.get('name')
+    def _gen_input_name(self):
+        name = self.conf['name']
         if name:
             return name
-        name = '; '.join([self.conf.get(key) or key for key in self._oid_keys])
+        values = (self.conf.get(key) or key for key in self._name_keys)
+        name = '; '.join(filter(None, values))
         return self.conf['_idx'] + ": " + name
 
 
@@ -71,21 +83,25 @@ class WebInput(AbstractInput):
     """Load data from web (http/https)"""
 
     name = "url"
-    _oid_keys = ("url", )
-    _required_params = ("url", )
+    _name_keys = ("url", )
+    params = AbstractInput.params + [
+        ("url", "Web page url", None, True),
+        ("timeout", "loading timeout", 30, True),
+    ]
 
-    def load(self, last):
+    def load(self):
         """ Return one part - page content. """
         conf = self.conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
-        if last:
-            headers['If-Modified-Since'] = email.utils.formatdate(last)
+        if self.last_updated:
+            headers['If-Modified-Since'] = email.utils.formatdate(
+                self.last_updated)
         _LOG.debug("load_from_web headers: %r", headers)
         try:
             response = requests.request(url=conf['url'], method='GET',
                                         headers=headers,
-                                        timeout=60)
+                                        timeout=conf['timeout'])
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
             raise common.InputError("timeout")
@@ -104,22 +120,34 @@ class WebInput(AbstractInput):
         response.close()
 
 
+
+_RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
+
 class RssInput(AbstractInput):
     """Load data from web (http/https)"""
 
     name = "rss"
-    _oid_keys = ("url", )
-    _required_params = ("url", )
+    _name_keys = ("url", )
+    params = AbstractInput.params + [
+        ("url", "RSS xml url", None, True),
+        ("max_items", "Maximal number of articles to load", None, False),
+        ("html2text", "Convert html content to plain text", False, False),
+        ("fields", "Fields to load from rss", _RSS_DEFAULT_FIELDS, True),
+    ]
 
-    def load(self, last):
+    def load(self):
         """ Return rss items as one or many parts; each part is on article. """
-        import feedparser
+        try:
+            import feedparser
+        except ImportError:
+            raise common.InputError("feedparser module not found")
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
                                  "Gecko/20100101 Firefox/45.0"
         conf = self.conf
-        modified = time.localtime(last) if last else None
-        doc = feedparser.parse(conf.get('url'),
+        modified = time.localtime(self.last_updated) \
+            if self.last_updated else None
+        doc = feedparser.parse(conf['url'],
                                etag=self.metadata.get('etag'),
                                modified=modified)
         status = doc.get('status') if doc else 400
@@ -135,51 +163,51 @@ class RssInput(AbstractInput):
             raise common.InputError('load document error %s' % status)
 
         entries = doc.get('entries')
-        max_items = self.conf.get("max_items")
+
+        # limit number of entries
+        max_items = self.conf["max_items"]
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
 
         fields, add_content = self._get_fields_to_load()
+        # parse entries
         yield from (self._load_entry(entry, fields, add_content)
                     for entry in entries)
 
+        # update metadata
         etag = doc.get('etag')
         if etag:
             self.metadata['etag'] = etag
 
 
     def _load_entry(self, entry, fields, add_content):
-        res = "\n".join(_get_existing_from_entry(entry, fields))
+        res = "\n".join(_get_val_from_rss_entry(entry, fields))
         if add_content:
-            content = _get_content(entry)
+            content = _get_content_from_rss_entry(entry)
             if content:
-                if self.conf.get("html2text"):
+                if self.conf["html2text"]:
                     try:
                         import html2text as h2t
                         content = h2t.HTML2Text(bodywidth=9999999)\
                             .handle(content)
                     except ImportError:
-                        pass
+                        _LOG.warning("RssInput - loading HTML2Text error "
+                                     "(module not found)")
                 res += "\n" + content.strip()
         res += "\n------------------"
         return res
 
     def _get_fields_to_load(self):
         add_content = False
-        fields = (field.strip() for field
-                  in self.conf.get("fields", "").split(","))
+        fields = (field.strip() for field in self.conf["fields"].split(","))
         fields = [field for field in fields if field]
-        if fields:
-            if 'content' in fields:
-                fields.remove('content')
-                add_content = True
-        else:
-            fields = ["title", "updated_parsed", "published_parsed", "link",
-                      "author"]
+        if 'content' in fields:
+            fields.remove('content')
+            add_content = True
         return fields, add_content
 
 
-def _get_content(entry):
+def _get_content_from_rss_entry(entry):
     content = entry.get('summary')
     if not content:
         content = entry['content'][0].value if 'content' in entry \
@@ -187,7 +215,7 @@ def _get_content(entry):
     return content
 
 
-def _get_existing_from_entry(entry, keys):
+def _get_val_from_rss_entry(entry, keys):
     for key in keys:
         if not key:
             continue
@@ -204,10 +232,12 @@ class CmdInput(AbstractInput):
     """Load data from command"""
 
     name = "cmd"
-    _oid_keys = ("cmd", )
-    _required_params = ("cmd", )
+    _name_keys = ("cmd", )
+    params = AbstractInput.params + [
+        ("cmd", "Command to run", None, True),
+    ]
 
-    def load(self, last):
+    def load(self):
         """ Return command output as one part """
         conf = self.conf
         _LOG.debug("CmdInput execute: %r", conf['cmd'])
@@ -223,7 +253,7 @@ class CmdInput(AbstractInput):
             errstr = "\n".join(line.strip() for line in err if line)
             raise common.InputError(errstr.strip())
 
-        yield stdout.decode('utf-8')
+        yield from stdout.decode('utf-8').split("\n")
 
 
 def get_input(conf):

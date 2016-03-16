@@ -5,11 +5,16 @@ import difflib
 from . import common
 
 
+
+
 class AbstractComparator(object):
     """Abstract / base class for all comparators.
     Comparator get two lists and return formatted result - diff, etc."""
 
     name = None
+    opts = {
+        common.OPTS_PREFORMATTED: False,
+    }
 
     def format(self, old, old_date, new, new_date):
         raise NotImplementedError()
@@ -17,29 +22,38 @@ class AbstractComparator(object):
 
 class ContextDiff(AbstractComparator):
     name = "context_diff"
+    opts = {
+        common.OPTS_PREFORMATTED: True,
+    }
 
     def format(self, old, old_date, new, new_date):
-        return difflib.context_diff(
+        yield "\n".join(difflib.context_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n')
+            lineterm='\n'))
 
 
 class UnifiedDiff(AbstractComparator):
     name = "unified_diff"
+    opts = {
+        common.OPTS_PREFORMATTED: True,
+    }
 
     def format(self, old, old_date, new, new_date):
-        return difflib.unified_diff(
+        yield "\n".join(difflib.unified_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n')
+            lineterm='\n'))
 
 
 class NDiff(AbstractComparator):
     name = "ndiff"
+    opts = {
+        common.OPTS_PREFORMATTED: True,
+    }
 
     def format(self, old, _old_date, new, _new_date):
-        return difflib.ndiff(old, new)
+        yield "\n".join(difflib.ndiff(old, new))
 
 
 def _substract_lists(list1, list2):

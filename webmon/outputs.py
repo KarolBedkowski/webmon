@@ -22,17 +22,19 @@ class AbstractOutput(object):
     """Abstract/Base class for all outputs"""
 
     name = ""
-    # list of required parameters
-    _required_params = None
+    # parameters - list of tuples (name, description, default, required)
+    params = []
 
     def __init__(self, conf):
         super(AbstractOutput, self).__init__()
-        self.conf = conf
+        self.conf = {key: val for key, _, val, _ in self.params}
+        self.conf.update(conf)
 
     def validate(self):
-        for param in self._required_params or []:
-            if not self.conf.get(param):
-                raise common.ParamError("missing parameter " + param)
+        for name, _, _, required in self.params or []:
+            val = self.conf.get(name)
+            if required and not val:
+                raise common.ParamError("missing parameter " + name)
 
     def report(self, new, changed, errors, unchanged):
         """ Generate report """
@@ -42,46 +44,55 @@ class AbstractOutput(object):
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item(self, inp, content):
+    def _format_item(self, inp, content, opts):
         """ Generate section for one input """
         title = inp["name"]
         yield title
-        yield "^" * len(title)
+        yield "'" * len(title)
         if 'url' in inp:
             yield inp['url']
         if content:
-            yield "::"
-            yield ""
             content = content.strip() or "<no data>"
             content = content.replace(common.PART_LINES_SEPARATOR, "\n")
-            for line in content.split("\n"):
-                yield "  " + line
-            yield ""
+            if opts.get(common.OPTS_PREFORMATTED):
+                yield "::"
+                yield ""
+                for line in content.split("\n"):
+                    yield "  " + line
+                yield ""
+            else:
+                for line in content.split("\n"):
+                    yield ""
+                    yield line
         yield ""
 
     def _get_stats_str(self, new, changed, errors, unchanged):
         """ Generate header """
-        out = []
-        if changed:
-            out.append("Changed: %d" % len(changed))
-        if new:
-            out.append("New: %d" % len(new))
-        if unchanged:
-            out.append("Unchanged: %d" % len(unchanged))
-        if errors:
-            out.append("Error: %d" % len(errors))
-        return ";  ".join(out)
+        return ";  ".join(
+            "*%s*: %d" % (title, len(items)) for title, items in [
+                ("Changed", changed), ("New", new),
+                ("Unchanged", unchanged), ("Error", errors)
+            ] if items)
 
     def _gen_section(self, title, items):
         """ Generate section for group of inputs """
-        title = "%s [%d] " % (title, len(items))
+        title = "%s [%d]" % (title, len(items))
         yield title
         yield '-' * len(title)
-        for inp, content in items:
-            yield from self._format_item(inp, content)
+        for inp, content, opts in items:
+            yield from self._format_item(inp, content, opts)
+        yield ''
 
     def _mk_report(self, new, changed, errors, unchanged):
         """ Generate whole report"""
+        yield from [
+            "========",
+            " WebMon",
+            "========",
+            "",
+            "Updated " + datetime.now().strftime("%x %X"),
+            ""
+        ]
         if new or changed or errors or unchanged:
             yield self._get_stats_str(new, changed, errors, unchanged)
             yield ""
@@ -93,13 +104,20 @@ class AbstractTextOutput(AbstractOutput):
                 yield from self._gen_section("Errors", errors)
             if unchanged:
                 yield from self._gen_section("Unchanged", unchanged)
+        yield from self._gen_footer()
+
+    def _gen_footer(self):
+        yield ""
+        yield str(datetime.now())
 
 
 class TextFileOutput(AbstractTextOutput):
     """Simple text reporter"""
 
     name = "text"
-    _required_params = ("file", )
+    params = [
+        ("file", "Destination file name", None, True),
+    ]
 
     def report(self, new, changed, errors, unchanged):
         try:
@@ -116,18 +134,12 @@ class HtmlFileOutput(AbstractTextOutput):
     """Simple html reporter"""
 
     name = "html"
-    _required_params = ("file", )
+    params = [
+        ("file", "Destination file name", None, True),
+    ]
 
     def report(self, new, changed, errors, unchanged):
-        content = [
-            "========",
-            " WebMon",
-            "========",
-            "",
-            "Updated " + datetime.now().strftime("%x %X"),
-            ""
-        ]
-        content.extend(self._mk_report(new, changed, errors, unchanged))
+        content =  self._mk_report(new, changed, errors, unchanged)
         try:
             with open(self.conf["file"], "w") as ofile:
                 html = publish_string("\n".join(content), writer_name='html')
@@ -151,7 +163,19 @@ class EMailOutput(AbstractTextOutput):
     """Send report by smtp"""
 
     name = "email"
-    _required_params = ("to", "from", "subject", "smtp_host", "smtp_port")
+    params = [
+        ("to", "email recipient", None, True),
+        ("from", "email sender", None, True),
+        ("subject", "email subject", "WebMail Report", True),
+        ("smtp_host", "SMTP server address", None, True),
+        ("smtp_port", "SMTP server port", None, True),
+        ("smtp_login", "SMTP user login", None, False),
+        ("smtp_password", "SMTP user password", None, False),
+        ("smtp_tls", "Enable TLS", None, False),
+        ("smtp_ssl", "Enable SSL", None, False),
+        ("encrypt", "Encrypt email", False, False),
+        ("html", "Send miltipart email with html content", False, False),
+    ]
 
     def validate(self):
         super(EMailOutput, self).validate()
@@ -163,7 +187,7 @@ class EMailOutput(AbstractTextOutput):
             _LOG.warning("configured tls and ssl; using ssl")
 
         encrypt = self.conf.get("encrypt", "")
-        if encrypt not in ('gpg', ""):
+        if encrypt and encrypt not in ('gpg', ):
             raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
 
     def report(self, new, changed, errors, unchanged):
@@ -236,7 +260,7 @@ class Output(object):
     def __init__(self, conf):
         super(Output, self).__init__()
         self.conf = conf
-        self._reps = []
+        self._outputs = []
         self._new = []
         self._changed = []
         self._unchanged = []
@@ -245,31 +269,35 @@ class Output(object):
             try:
                 rep = _get_output(repname, repconf or {})
                 if rep:
-                    self._reps.append(rep)
+                    self._outputs.append(rep)
             finally:
                 pass
 
     @property
     def valid(self):
-        return bool(self._reps)
+        return bool(self._outputs)
 
-    def add_new(self, inp, content):
-        self._new.append((inp, content))
+    def add_new(self, inp, content, opts=None):
+        _LOG.debug("Output.add_new: %r, %r, %r", inp, content, opts)
+        self._new.append((inp, content, opts or {}))
 
-    def add_changed(self, inp, diff):
-        self._changed.append((inp, diff))
+    def add_changed(self, inp, diff, opts=None):
+        _LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, opts)
+        self._changed.append((inp, diff, opts or {}))
 
-    def add_error(self, inp, error):
-        self._errors.append((inp, error))
+    def add_error(self, inp, error, opts=None):
+        _LOG.debug("Output.add_error: %r, %r, %r", inp, error, opts)
+        self._errors.append((inp, error, opts or {}))
 
-    def add_unchanged(self, inp):
-        self._unchanged.append((inp, None))
+    def add_unchanged(self, inp, content, opts=None):
+        _LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, opts)
+        self._unchanged.append((inp, content, opts or {}))
 
     def write(self):
         if not (self.conf.get("report_unchanged") or self._new
                 or self._changed or self._errors):
             return
-        for rep in self._reps:
+        for rep in self._outputs:
             try:
                 rep.report(self._new, self._changed, self._errors,
                            self._unchanged)
