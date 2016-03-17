@@ -5,22 +5,34 @@ import difflib
 from . import common
 
 
-
-
 class AbstractComparator(object):
     """Abstract / base class for all comparators.
     Comparator get two lists and return formatted result - diff, etc."""
 
     name = None
+
+    # some information about comparator & result
     opts = {
         common.OPTS_PREFORMATTED: False,
     }
 
     def format(self, old, old_date, new, new_date):
+        """ Compare `old` and `new` lists and return formatted result.
+
+        Arguments:
+        :param old: previous value [list of string]
+        :param old_date: previous value date [string]
+        :param new: new value [list of string]
+        :param new_date: new value date [string]
+
+        Return:
+            iter<strings>
+        """
         raise NotImplementedError()
 
 
 class ContextDiff(AbstractComparator):
+    """ Generate formatted context diff of string lists """
     name = "context_diff"
     opts = {
         common.OPTS_PREFORMATTED: True,
@@ -34,6 +46,7 @@ class ContextDiff(AbstractComparator):
 
 
 class UnifiedDiff(AbstractComparator):
+    """ Generate formatted unified diff of string lists """
     name = "unified_diff"
     opts = {
         common.OPTS_PREFORMATTED: True,
@@ -47,6 +60,7 @@ class UnifiedDiff(AbstractComparator):
 
 
 class NDiff(AbstractComparator):
+    """ Generate formatted diff in ndiff format of two strings lists """
     name = "ndiff"
     opts = {
         common.OPTS_PREFORMATTED: True,
@@ -63,6 +77,7 @@ def _substract_lists(list1, list2):
 
 
 class Added(AbstractComparator):
+    """ Generate list of added (new) items """
     name = "added"
 
     def format(self, old, _old_date, new, _new_date):
@@ -71,6 +86,7 @@ class Added(AbstractComparator):
 
 
 class Deleted(AbstractComparator):
+    """ Generate list of deleted (misssing) items """
     name = "deleted"
 
     def format(self, old, _old_date, new, _new_date):
@@ -79,6 +95,7 @@ class Deleted(AbstractComparator):
 
 
 class Modified(AbstractComparator):
+    """ Generate list of modified items """
     name = "modified"
 
     def format(self, old, _old_date, new, _new_date):
@@ -94,6 +111,7 @@ class Modified(AbstractComparator):
 
 
 class Last(AbstractComparator):
+    """ Return current version """
     name = "last"
 
     def format(self, _prev, _old_date, new, _new_date):
@@ -102,6 +120,7 @@ class Last(AbstractComparator):
 
 
 def get_comparator(name):
+    """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:
         return cmpcls()

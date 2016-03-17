@@ -13,6 +13,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def load_configuration(filename):
+    """ Load app configuration from `filename`."""
     if not filename:
         filename = _find_config_file("config.yaml")
 
@@ -30,6 +31,7 @@ def load_configuration(filename):
 
 
 def load_inputs(filename):
+    """ Load inputs configuration from `filename`"""
     if not filename:
         filename = _find_config_file("inputs.yaml")
 

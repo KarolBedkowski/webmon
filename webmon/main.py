@@ -38,7 +38,7 @@ def _gen_diff(prev, prev_date, current, diff_mode):
 
 
 def _clean_part(part):
-    return part.strip().replace("\n", common.PART_LINES_SEPARATOR)
+    return part.rstrip().replace("\n", common.PART_LINES_SEPARATOR)
 
 
 def _load(inp, g_cache, output, force, diff_mode):

@@ -41,6 +41,10 @@ class AbstractOutput(object):
         raise NotImplementedError()
 
 
+def _rst_escape(text):
+    return text.replace('`', '\\')
+
+
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
@@ -58,12 +62,12 @@ class AbstractTextOutput(AbstractOutput):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
-                    yield "  " + line
+                    yield "  " + _rst_escape(line)
                 yield ""
             else:
                 for line in content.split("\n"):
                     yield ""
-                    yield line
+                    yield _rst_escape(line)
         yield ""
 
     def _get_stats_str(self, new, changed, errors, unchanged):
@@ -278,19 +282,19 @@ class Output(object):
         return bool(self._outputs)
 
     def add_new(self, inp, content, opts=None):
-        _LOG.debug("Output.add_new: %r, %r, %r", inp, content, opts)
+        #_LOG.debug("Output.add_new: %r, %r, %r", inp, content, opts)
         self._new.append((inp, content, opts or {}))
 
     def add_changed(self, inp, diff, opts=None):
-        _LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, opts)
+        #_LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, opts)
         self._changed.append((inp, diff, opts or {}))
 
     def add_error(self, inp, error, opts=None):
-        _LOG.debug("Output.add_error: %r, %r, %r", inp, error, opts)
+        #_LOG.debug("Output.add_error: %r, %r, %r", inp, error, opts)
         self._errors.append((inp, error, opts or {}))
 
     def add_unchanged(self, inp, content, opts=None):
-        _LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, opts)
+        #_LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, opts)
         self._unchanged.append((inp, content, opts or {}))
 
     def write(self):

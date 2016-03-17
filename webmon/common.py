@@ -10,7 +10,6 @@ PART_LINES_SEPARATOR = "\x01"
 OPTS_PREFORMATTED = "preformatted"
 
 
-
 class NotModifiedError(RuntimeError):
     """Exception raised on HTTP 304 responses"""
 
