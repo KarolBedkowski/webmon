@@ -165,6 +165,14 @@ Filters
   Wrap long lines to `width` characters (default 76) and optionally limit 
   number of lines to `max_lines`.
 
+`split`
+  Split input to lines on `separator` and (optioanl) `max_split` lines.
+
+`de-csv`
+  Convert lines in csv-format to lines. Options: `delimiter`, `quote_char`,
+  `strip` (remove whitespaces) and `generate_parts` (generate parts instead
+  of lines)
+
 
 **Common options**
 
