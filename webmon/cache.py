@@ -21,15 +21,14 @@ class Cache(object):
         # log cache files used in this session
         self._touched = set()
 
-    def init(self):
+        # init
         if not os.path.isdir(self._directory):
             try:
                 pathlib.Path(self._directory).mkdir(parents=True)
             except IOError as err:
                 _LOG.debug("Cache: creating directory %s for cache error: %s",
                            self._directory, err)
-                return None
-        return self
+                raise
 
     def get(self, oid):
         name = self._get_filename(oid)

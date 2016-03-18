@@ -30,15 +30,18 @@ class AbstractInput(object):
         ("report_unchanged", "report data even is not changed", False, False),
     ]
 
-    def __init__(self, conf):
+    def __init__(self, conf, context):
         super(AbstractInput, self).__init__()
         # TODO: apply_defaults?
+        self.context = context
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
-        self.last_updated = None
-        self.metadata = {}
-        self.input_name = self._gen_input_name()
+        self.context['name'] = self.input_name = self._gen_input_name()
         self.oid = self._get_oid()
+
+    @property
+    def last_updated(self):
+        return self.context.get('last_updated')
 
     def validate(self):
         """ Validate input configuration """
@@ -61,14 +64,15 @@ class AbstractInput(object):
         return csum.hexdigest()
 
     def need_update(self):
-        if not self.last_updated:
+        last = self.last_updated
+        if not last:
             return True
         # default - check interval
         interval = self.conf["interval"]
         if not interval:
             return True
         interval = _parse_interval(interval)
-        return self.last_updated + interval < time.time()
+        return last + interval < time.time()
 
     def _gen_input_name(self):
         name = self.conf['name']
@@ -76,7 +80,7 @@ class AbstractInput(object):
             return name
         values = (self.conf.get(key) or key for key in self._name_keys)
         name = '; '.join(filter(None, values))
-        return self.conf['_idx'] + ": " + name
+        return str(self.context['_idx']) + ": " + name
 
 
 class WebInput(AbstractInput):
@@ -148,7 +152,7 @@ class RssInput(AbstractInput):
         modified = time.localtime(self.last_updated) \
             if self.last_updated else None
         doc = feedparser.parse(conf['url'],
-                               etag=self.metadata.get('etag'),
+                               etag=self.context['metadata'].get('etag'),
                                modified=modified)
         status = doc.get('status') if doc else 400
         if status == 304:
@@ -177,7 +181,7 @@ class RssInput(AbstractInput):
         # update metadata
         etag = doc.get('etag')
         if etag:
-            self.metadata['etag'] = etag
+            self.context['metadata']['etag'] = etag
 
 
     def _load_entry(self, entry, fields, add_content):
@@ -256,12 +260,12 @@ class CmdInput(AbstractInput):
         yield from stdout.decode('utf-8').split("\n")
 
 
-def get_input(conf):
+def get_input(conf, context):
     """ Get input class according to configuration """
     kind = conf.get("kind") or "url"
     scls = common.find_subclass(AbstractInput, kind)
     if scls:
-        inp = scls(conf)
+        inp = scls(conf, context)
         inp.validate()
         return inp
 

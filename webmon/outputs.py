@@ -48,9 +48,9 @@ def _rst_escape(text):
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item(self, inp, content, opts):
+    def _format_item(self, inp, content, context):
         """ Generate section for one input """
-        title = inp["name"]
+        title = context["name"]
         yield title
         yield "'" * len(title)
         if 'url' in inp:
@@ -58,7 +58,7 @@ class AbstractTextOutput(AbstractOutput):
         if content:
             content = content.strip() or "<no data>"
             content = content.replace(common.PART_LINES_SEPARATOR, "\n")
-            if opts.get(common.OPTS_PREFORMATTED):
+            if context.get(common.OPTS_PREFORMATTED):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
@@ -83,8 +83,8 @@ class AbstractTextOutput(AbstractOutput):
         title = "%s [%d]" % (title, len(items))
         yield title
         yield '-' * len(title)
-        for inp, content, opts in items:
-            yield from self._format_item(inp, content, opts)
+        for inp, content, context in items:
+            yield from self._format_item(inp, content, context)
         yield ''
 
     def _mk_report(self, new, changed, errors, unchanged):
@@ -143,7 +143,7 @@ class HtmlFileOutput(AbstractTextOutput):
     ]
 
     def report(self, new, changed, errors, unchanged):
-        content =  self._mk_report(new, changed, errors, unchanged)
+        content = self._mk_report(new, changed, errors, unchanged)
         try:
             with open(self.conf["file"], "w") as ofile:
                 html = publish_string("\n".join(content), writer_name='html')
@@ -281,21 +281,21 @@ class Output(object):
     def valid(self):
         return bool(self._outputs)
 
-    def add_new(self, inp, content, opts=None):
-        #_LOG.debug("Output.add_new: %r, %r, %r", inp, content, opts)
-        self._new.append((inp, content, opts or {}))
+    def add_new(self, inp, content, context):
+        #_LOG.debug("Output.add_new: %r, %r, %r", inp, content, context)
+        self._new.append((inp, content, context))
 
-    def add_changed(self, inp, diff, opts=None):
-        #_LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, opts)
-        self._changed.append((inp, diff, opts or {}))
+    def add_changed(self, inp, diff, context):
+        #_LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, context)
+        self._changed.append((inp, diff, context))
 
-    def add_error(self, inp, error, opts=None):
-        #_LOG.debug("Output.add_error: %r, %r, %r", inp, error, opts)
-        self._errors.append((inp, error, opts or {}))
+    def add_error(self, inp, error, context):
+        #_LOG.debug("Output.add_error: %r, %r, %r", inp, error, context)
+        self._errors.append((inp, error, context))
 
-    def add_unchanged(self, inp, content, opts=None):
-        #_LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, opts)
-        self._unchanged.append((inp, content, opts or {}))
+    def add_unchanged(self, inp, content, context):
+        #_LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, context)
+        self._unchanged.append((inp, content, context))
 
     def write(self):
         if not (self.conf.get("report_unchanged") or self._new
