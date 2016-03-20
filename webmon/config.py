@@ -1,13 +1,22 @@
 #!/usr/bin/python3
 """
 Configuration related functions.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 
 import logging
 import os.path
 import copy
+import hashlib
 
 import yaml
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger(__name__)
 
@@ -76,5 +85,51 @@ def _find_config_file(name):
     # try ~/.config/webmon/
     bname = os.path.basename(name)
     fpath = os.path.expanduser(os.path.join("~", ".config", "webmon", bname))
-    if os.path.isfile(fpath):
-        return fpath
+    return fpath if os.path.isfile(fpath) else None
+
+
+def gen_input_oid(conf):
+    """ Generate object id according to configuration. """
+    oid = conf.get('oid') or conf.get('id')
+    if oid:
+        return oid
+    csum = hashlib.sha1()
+    for keyval in _conf2string(conf):
+        csum.update(keyval.encode("utf-8"))
+    return csum.hexdigest()
+
+
+# ignored keys when calculating oid
+_OID_IGNORED_KEYS = {"interval", "diff_mode"}
+
+def _conf2string(conf):
+    """ Convert dictionary to list of strings. """
+    kvs = []
+
+    def append(parent, item):
+        if isinstance(item, dict):
+            for key, val in item.items():
+                if not key.startswith("_") and key not in _OID_IGNORED_KEYS:
+                    append(parent + "." + key, val)
+        elif isinstance(item, (list, tuple)):
+            for idx, itm in enumerate(item):
+                append(parent + "." + str(idx), itm)
+        else:
+            kvs.append(parent + ":" + str(item))
+
+    append("", conf)
+    kvs.sort()
+    return kvs
+
+
+# keys to use as name
+_NAME_KEY_TO_TRY = ["name", "url", "cmd"]
+
+
+def get_input_name(conf, idx):
+    """ Return input name according to configuration. """
+    for key in _NAME_KEY_TO_TRY:
+        name = conf.get(key)
+        if name:
+            return name
+    return "Source %d" % idx

@@ -3,7 +3,7 @@
 """ Logging setup.
 Copyright (c) Karol Będkowski, 2014-2016
 
-This file is part of exifeditor
+This file is part of webmon.
 Licence: GPLv2+
 """
 
@@ -14,12 +14,12 @@ import tempfile
 import time
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2014-2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 
 class ColorFormatter(logging.Formatter):
     """ Formatter for logs that color messages according to level. """
-    FORMAT_MAP = {level: ("\033[1;%dm%s\033[0m" % (color, level))
+    FORMAT_MAP = {level: ("\033[1;%dm%-8s\033[0m" % (color, level))
                   for level, color in
                   (("DEBUG", 34), ("INFO", 37), ("WARNING", 33), ("ERROR", 31),
                    ("CRITICAL", 31))}

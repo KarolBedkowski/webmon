@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 """
 Cache storage functions.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 
 import os.path
@@ -8,6 +13,9 @@ import pathlib
 import logging
 
 import yaml
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger(__name__)
 

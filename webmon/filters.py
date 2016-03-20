@@ -1,6 +1,12 @@
 #!/usr/bin/python3
 """
 Default filters definition.
+Filters get one content and transform it to another.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 import subprocess
 import logging
@@ -20,6 +26,9 @@ except ImportError:
             etree = None
 
 from . import common
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger(__name__)
 

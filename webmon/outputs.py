@@ -1,6 +1,13 @@
 #!/usr/bin/python3
 """
 Default outputs.
+Output get new/changed/deleted contents and present it in human-readable format.
+I.e. generate report, send mail.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 
 import smtplib
@@ -29,6 +36,7 @@ class AbstractOutput(object):
         super(AbstractOutput, self).__init__()
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
+        self.footer = None
 
     def validate(self):
         for name, _, _, required in self.params or []:
@@ -42,7 +50,7 @@ class AbstractOutput(object):
 
 
 def _rst_escape(text):
-    return text.replace('`', '\\')
+    return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*")
 
 
 class AbstractTextOutput(AbstractOutput):
@@ -62,7 +70,7 @@ class AbstractTextOutput(AbstractOutput):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
-                    yield "  " + _rst_escape(line)
+                    yield "  " + line
                 yield ""
             else:
                 for line in content.split("\n"):
@@ -112,7 +120,11 @@ class AbstractTextOutput(AbstractOutput):
 
     def _gen_footer(self):
         yield ""
-        yield str(datetime.now())
+        yield self.footer or str(datetime.now())
+
+    def report(self, new, changed, errors, unchanged):
+        """ Generate report """
+        raise NotImplementedError()
 
 
 class TextFileOutput(AbstractTextOutput):
@@ -260,9 +272,10 @@ def _get_output(name, params):
     _LOG.warning("unknown output: %s", name)
 
 
-class Output(object):
+class OutputManager(object):
+    """ Object group all outputs. """
     def __init__(self, conf):
-        super(Output, self).__init__()
+        super(OutputManager, self).__init__()
         self.conf = conf
         self._outputs = []
         self._new = []
@@ -282,27 +295,29 @@ class Output(object):
         return bool(self._outputs)
 
     def add_new(self, inp, content, context):
-        #_LOG.debug("Output.add_new: %r, %r, %r", inp, content, context)
+        #_LOG.debug("OutputManager.add_new: %r, %r, %r", inp, content, context)
         self._new.append((inp, content, context))
 
     def add_changed(self, inp, diff, context):
-        #_LOG.debug("Output.add_changed: %r, %r, %r", inp, diff, context)
+        #_LOG.debug("OutputManager.add_changed: %r, %r, %r", inp, diff, context)
         self._changed.append((inp, diff, context))
 
     def add_error(self, inp, error, context):
-        #_LOG.debug("Output.add_error: %r, %r, %r", inp, error, context)
+        #_LOG.debug("OutputManager.add_error: %r, %r, %r", inp, error, context)
         self._errors.append((inp, error, context))
 
     def add_unchanged(self, inp, content, context):
-        #_LOG.debug("Output.add_unchanged: %r, %r, %r", inp, content, context)
+        #_LOG.debug("OutputManager.add_unchanged: %r, %r, %r", inp, content, context)
         self._unchanged.append((inp, content, context))
 
-    def write(self):
+    def write(self, footer=None):
+        """ Write all reports; footer is optionally included. """
         if not (self.conf.get("report_unchanged") or self._new
                 or self._changed or self._errors):
             return
         for rep in self._outputs:
             try:
+                rep.footer = footer
                 rep.report(self._new, self._changed, self._errors,
                            self._unchanged)
             except Exception as err:

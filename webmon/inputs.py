@@ -1,10 +1,16 @@
 #!/usr/bin/python3
 """
 Standard inputs classes.
+Input generate some content according to given configuration (i.e. download it
+from internet).
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 
 import subprocess
-import hashlib
 import email.utils
 import logging
 import time
@@ -12,6 +18,9 @@ import time
 import requests
 
 from . import common
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger(__name__)
 
@@ -21,8 +30,6 @@ class AbstractInput(object):
 
     # name used in configuration
     name = None
-    # key names used to generator name when it missing
-    _name_keys = None
     # parameters - list of tuples (name, description, default, required)
     params = [
         ("name", "input name", None, False),
@@ -36,11 +43,10 @@ class AbstractInput(object):
         self.context = context
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
-        self.context['name'] = self.input_name = self._gen_input_name()
-        self.oid = self._get_oid()
 
     @property
     def last_updated(self):
+        """ Helper - get last_updated from context """
         return self.context.get('last_updated')
 
     def validate(self):
@@ -51,19 +57,11 @@ class AbstractInput(object):
                 raise common.ParamError("missing parameter " + name)
 
     def load(self):
-        """ Load data; return list/generator of items (parts).
-        """
+        """ Load data; return list/generator of items (parts).  """
         raise NotImplementedError()
 
-    def _get_oid(self):
-        """ Generate object id according to configuration. """
-        csum = hashlib.sha1()
-        csum.update(self.name.encode("utf-8"))
-        for keyval in _conf2string(self.conf):
-            csum.update(keyval.encode("utf-8"))
-        return csum.hexdigest()
-
     def need_update(self):
+        """ Check last update time and return True if input need update."""
         last = self.last_updated
         if not last:
             return True
@@ -74,20 +72,11 @@ class AbstractInput(object):
         interval = _parse_interval(interval)
         return last + interval < time.time()
 
-    def _gen_input_name(self):
-        name = self.conf['name']
-        if name:
-            return name
-        values = (self.conf.get(key) or key for key in self._name_keys)
-        name = '; '.join(filter(None, values))
-        return str(self.context['_idx']) + ": " + name
-
 
 class WebInput(AbstractInput):
     """Load data from web (http/https)"""
 
     name = "url"
-    _name_keys = ("url", )
     params = AbstractInput.params + [
         ("url", "Web page url", None, True),
         ("timeout", "loading timeout", 30, True),
@@ -131,7 +120,6 @@ class RssInput(AbstractInput):
     """Load data from web (http/https)"""
 
     name = "rss"
-    _name_keys = ("url", )
     params = AbstractInput.params + [
         ("url", "RSS xml url", None, True),
         ("max_items", "Maximal number of articles to load", None, False),
@@ -170,13 +158,18 @@ class RssInput(AbstractInput):
 
         # limit number of entries
         max_items = self.conf["max_items"]
+        limited = False
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
+            limited = True
 
         fields, add_content = self._get_fields_to_load()
         # parse entries
         yield from (self._load_entry(entry, fields, add_content)
                     for entry in entries)
+
+        yield "Loaded only last %d items" % max_items if limited \
+            else "All items loaded"
 
         # update metadata
         etag = doc.get('etag')
@@ -236,7 +229,6 @@ class CmdInput(AbstractInput):
     """Load data from command"""
 
     name = "cmd"
-    _name_keys = ("cmd", )
     params = AbstractInput.params + [
         ("cmd", "Command to run", None, True),
     ]
@@ -294,23 +286,3 @@ def _parse_interval(instr):
         return int(instr) * mplt
     except ValueError:
         raise ValueError("invalid interval '%s'" % instr)
-
-
-def _conf2string(conf):
-    """ Convert dictionary to list of strings. """
-    kvs = []
-
-    def append(parent, item):
-        if isinstance(item, dict):
-            for key, val in item.items():
-                if not key.startswith("_"):
-                    append(parent + "." + key, val)
-        elif isinstance(item, (list, tuple)):
-            for idx, itm in enumerate(item):
-                append(parent + "." + str(idx), itm)
-        else:
-            kvs.append(parent + ":" + str(item))
-
-    append("", conf)
-    kvs.sort()
-    return kvs

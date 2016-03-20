@@ -1,3 +1,10 @@
+"""
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
+"""
+
 import unittest
 
 from . import config

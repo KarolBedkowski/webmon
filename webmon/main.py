@@ -1,6 +1,11 @@
 #!/usr/bin/python3
 """
 Main functions.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
 """
 
 import os.path
@@ -8,6 +13,7 @@ import datetime
 import logging
 import argparse
 import imp
+import time
 
 from . import cache
 from . import config
@@ -18,23 +24,25 @@ from . import outputs
 from . import common
 from . import comparators
 
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+
 VERSION = "0.1"
 DEFAULT_DIFF_MODE = "ndiff"
 
 _LOG = logging.getLogger(__name__)
 
 
-def _gen_diff(prev, prev_date, current, diff_mode, context):
-    fromfiledate = str(datetime.datetime.fromtimestamp(prev_date))
-    tofiledate = str(datetime.datetime.now())
-    previous = prev.split("\n")
-    current = current.split("\n")
+def _gen_diff(prev_content, content, diff_mode, context):
     comparator = comparators.get_comparator(
         diff_mode or DEFAULT_DIFF_MODE, context)
     _LOG.debug("Using compare mode: %s", diff_mode)
 
-    diff = "\n".join(comparator.format(
-        previous, fromfiledate, current, tofiledate))
+    diff = "\n".join(comparator.compare(
+        prev_content.split("\n"),
+        str(datetime.datetime.fromtimestamp(context["last_updated"])),
+        content.split("\n"),
+        str(datetime.datetime.now())))
     return diff
 
 
@@ -51,44 +59,48 @@ def _apply_filters(content, input_filters, context):
     return content
 
 
-def _load(inp, gcache, output, force, diff_mode, context):
-    _LOG.debug("loading %s", inp.get('name') or str(context['_idx']))
+def _load(inp_conf, gcache, output, app_args, context):
+    oid = config.gen_input_oid(inp_conf)
+    _LOG.debug("loading: oid=%s", oid)
+    context['name'] = config.get_input_name(inp_conf, context['_idx'])
+    context['last_updated'] = gcache.get_mtime(oid)
+    context['metadata'] = gcache.get_meta(oid) or {}
 
-    loader = inputs.get_input(inp, context)
-    oid, name = loader.oid, loader.input_name
-    context['last_updated'] = last_updated = gcache.get_mtime(oid)
-    if last_updated and not force and not loader.need_update():
-        _LOG.debug("%s no need update", oid)
+    loader = inputs.get_input(inp_conf, context)
+    if not app_args.force and not loader.need_update():
+        _LOG.info("loading: %s no need update", context['name'])
         return
 
-    context['metadata'] = gcache.get_meta(oid) or {}
-    prev = gcache.get(oid)
-
-    _LOG.info("loading %s; oid=%s", name, oid)
+    _LOG.info("loading: %s...", context['name'])
+    prev_content = gcache.get(oid)
     try:
         # load return list of parts
         content = loader.load()
-        content = _apply_filters(content, inp.get('filters'), context)
+
+        # filters also here - loader return generator, so exception may occur
+        # during filtering
+        content = _apply_filters(content, inp_conf.get('filters'), context)
         if content:
             content = "\n".join(_clean_part(part) for part in content)
         content = content or "<no data>"
     except common.NotModifiedError:
-        content = prev
+        content = prev_content
 
-    if prev:
-        if prev != content:
-            diff = _gen_diff(prev, loader.last_updated, content,
-                             inp.get("diff_mode") or diff_mode, context)
-            output.add_changed(inp, diff, context)
+    if prev_content:
+        if prev_content != content:
+            diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
+                             context)
+            output.add_changed(inp_conf, diff, context)
             gcache.put(oid, content)
         else:
-            if inp.get("report_unchanged", False):
-                output.add_unchanged(inp, prev, context)
+            if inp_conf.get("report_unchanged", False):
+                output.add_unchanged(inp_conf, prev_content, context)
             gcache.update_mtime(oid)
     else:
-        output.add_new(inp, content, context)
+        output.add_new(inp_conf, content, context)
         gcache.put(oid, content)
 
+    # save metadata back to store
     gcache.put_meta(oid, context['metadata'])
     _LOG.debug("done")
 
@@ -176,6 +188,8 @@ def main():
         _show_abilities()
         return
 
+    start_time = time.time()
+
     inps = config.load_inputs(args.inputs)
     if not inps:
         _LOG.warning("No defined inputs")
@@ -192,21 +206,24 @@ def main():
         _LOG.warning("Init cache error")
         return
 
-    output = outputs.Output(conf.get("output"))
+    output = outputs.OutputManager(conf.get("output"))
     if not output.valid:
         _LOG.error("no valid outputs found")
         return
 
     # defaults for inputs
-    defaults = {"kind": "url"}
-    defaults.update(conf.get("defaults"))
+    defaults = {
+        "kind": "url",
+        "diff_mode": args.diff_mode,
+    }
+    defaults.update(conf.get("defaults") or {})
 
-    for idx, inp in enumerate(inps):
+    for idx, inp_conf in enumerate(inps):
         # context is state object for one processing input
         context = {'_idx': idx + 1}
-        params = config.apply_defaults(defaults, inp)
+        params = config.apply_defaults(defaults, inp_conf)
         try:
-            _load(params, gcache, output, args.force, args.diff_mode, context)
+            _load(params, gcache, output, args, context)
         except RuntimeError as err:
             _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
             output.add_error(params, str(err), context)
@@ -215,7 +232,9 @@ def main():
                            str(err).replace("\n", "; "))
             output.add_error(params, str(err), context)
 
-    output.write()
+    footer = "Generate time: %.2f" % (time.time() - start_time)
+
+    output.write(footer)
     gcache.delete_unused()
 
 

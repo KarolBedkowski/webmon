@@ -1,8 +1,20 @@
 #!/usr/bin/python3
+"""
+Comparators - classes that get previous and current version and return
+human-readable differences.
+
+Copyright (c) Karol Będkowski, 2016
+
+This file is part of webmon.
+Licence: GPLv2+
+"""
 
 import difflib
 
 from . import common
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 
 class AbstractComparator(object):
@@ -22,7 +34,7 @@ class AbstractComparator(object):
         if self.opts:
             self.context.update(self.opts)
 
-    def format(self, old, old_date, new, new_date):
+    def compare(self, old, old_date, new, new_date):
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
@@ -44,7 +56,7 @@ class ContextDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def format(self, old, old_date, new, new_date):
+    def compare(self, old, old_date, new, new_date):
         yield "\n".join(difflib.context_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
@@ -58,7 +70,7 @@ class UnifiedDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def format(self, old, old_date, new, new_date):
+    def compare(self, old, old_date, new, new_date):
         yield "\n".join(difflib.unified_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
@@ -66,13 +78,13 @@ class UnifiedDiff(AbstractComparator):
 
 
 class NDiff(AbstractComparator):
-    """ Generate formatted diff in ndiff format of two strings lists """
+    """ Generate formatted diff in ndiff compare of two strings lists """
     name = "ndiff"
     opts = {
         common.OPTS_PREFORMATTED: True,
     }
 
-    def format(self, old, _old_date, new, _new_date):
+    def compare(self, old, _old_date, new, _new_date):
         yield "\n".join(difflib.ndiff(old, new))
 
 
@@ -86,7 +98,7 @@ class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
 
-    def format(self, old, _old_date, new, _new_date):
+    def compare(self, old, _old_date, new, _new_date):
         """ Get only added items """
         return _substract_lists(new, old)
 
@@ -95,7 +107,7 @@ class Deleted(AbstractComparator):
     """ Generate list of deleted (misssing) items """
     name = "deleted"
 
-    def format(self, old, _old_date, new, _new_date):
+    def compare(self, old, _old_date, new, _new_date):
         """ Get only deleted items """
         return _substract_lists(old, new)
 
@@ -104,7 +116,7 @@ class Modified(AbstractComparator):
     """ Generate list of modified items """
     name = "modified"
 
-    def format(self, old, _old_date, new, _new_date):
+    def compare(self, old, _old_date, new, _new_date):
         """ Make diff and return only modified lines. """
         def _mkdiff():
             diff = difflib.SequenceMatcher(a=old, b=new)
@@ -120,7 +132,7 @@ class Last(AbstractComparator):
     """ Return current version """
     name = "last"
 
-    def format(self, _prev, _old_date, new, _new_date):
+    def compare(self, _prev, _old_date, new, _new_date):
         """ Return last (new) version """
         return new
 
