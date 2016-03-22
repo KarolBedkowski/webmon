@@ -128,38 +128,30 @@ def _parse_options():
     parser.add_argument("--abilities", action="store_true",
                         help="show available filters/inputs/outputs/"
                         "comparators")
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
-def _show_abilities_cls(name, cls):
-    print("  -", name)
-    if hasattr(cls, "description"):
-        print("    " + cls.description)
-    if not hasattr(cls, "params") or not cls.params:
-        return
-    print("    Parameters:")
-    for param in cls.params:
-        print("     - %-15s\t%-20s\tdef=%-10r\treq=%r" % param)
+def _show_abilities_cls(title, base_cls):
+    print(title)
+    for name, cls in common.get_subclasses_with_name(base_cls):
+        print("  -", name)
+        if hasattr(cls, "description"):
+            print("    " + cls.description)
+        if not hasattr(cls, "params") or not cls.params:
+            continue
+        print("    Parameters:")
+        for param in cls.params:
+            print("     - %-15s\t%-20s\tdef=%-10r\treq=%r" % param)
 
 
 def _show_abilities():
-    print("Inputs:")
-    for name, cls in common.get_subclasses_with_name(inputs.AbstractInput):
-        _show_abilities_cls(name, cls)
+    _show_abilities_cls("Inputs:", inputs.AbstractInput)
     print()
-    print("Outputs:")
-    for name, cls in common.get_subclasses_with_name(outputs.AbstractOutput):
-        _show_abilities_cls(name, cls)
+    _show_abilities_cls("Outputs:", outputs.AbstractOutput)
     print()
-    print("Filters:")
-    for name, cls in common.get_subclasses_with_name(filters.AbstractFilter):
-        _show_abilities_cls(name, cls)
+    _show_abilities_cls("Filters:", filters.AbstractFilter)
     print()
-    print("Comparators:")
-    for name, cls in common.get_subclasses_with_name(
-            comparators.AbstractComparator):
-        _show_abilities_cls(name, cls)
+    _show_abilities_cls("Comparators:", comparators.AbstractComparator)
 
 
 def _load_user_classes():

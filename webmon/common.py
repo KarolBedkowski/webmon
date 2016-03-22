@@ -42,16 +42,11 @@ def find_subclass(base_class, name):
     """ Find subclass to given `base_class` with given value of
     attribute `name` """
 
-    def find(parent_cls):
-        for rcls in getattr(parent_cls, "__subclasses__")():
-            if getattr(rcls, 'name') == name:
-                return rcls
-            out = find(rcls)
-            if out:
-                return out
-        return None
+    for cname, clazz in get_subclasses_with_name(base_class):
+        if cname == name:
+            return clazz
 
-    return find(base_class)
+    return None
 
 
 def get_subclasses_with_name(base_class):
