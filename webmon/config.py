@@ -18,7 +18,7 @@ import yaml
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("conf")
 
 
 def load_configuration(filename):
@@ -26,15 +26,16 @@ def load_configuration(filename):
     if not filename:
         filename = _find_config_file("config.yaml")
 
-    _LOG.debug("load_configuration from %s", filename)
+    _LOG.debug("loading configuration from %s", filename)
     if not filename or not os.path.isfile(filename):
-        _LOG.error("Loading configuration file %s error: not found", filename)
+        _LOG.error("loading configuration file error: '%s' not found",
+                   filename)
         return None
     try:
         with open(filename) as fin:
             return yaml.load(fin)
     except Exception as err:
-        _LOG.error("Loading configuration from file %s error: %s", filename,
+        _LOG.error("loading configuration from file %s error: %s", filename,
                    err)
     return None
 
@@ -44,16 +45,19 @@ def load_inputs(filename):
     if not filename:
         filename = _find_config_file("inputs.yaml")
 
-    _LOG.debug("load_inputs from %s", filename)
+    _LOG.debug("loading inputs from %s", filename)
     if not os.path.isfile(filename):
-        _LOG.error("Loading inputs file %s error: not found", filename)
+        _LOG.error("loading inputs file error: '%s' not found", filename)
         return None
     try:
         with open(filename) as fin:
             inps = [doc for doc in yaml.load_all(fin)
                     if doc and doc.get("enable", True)]
+            _LOG.debug("loading inputs - found %d enabled inputs",
+                       len(inps))
             if not inps:
-                _LOG.error("no valid/enabled inputs found")
+                _LOG.error("loading inputs error: no valid/enabled "
+                           "inputs found")
             return inps
     except Exception as err:
         _LOG.error("Loading inputs from file %s error: %s", filename, err)
@@ -101,6 +105,7 @@ def gen_input_oid(conf):
 
 # ignored keys when calculating oid
 _OID_IGNORED_KEYS = {"interval", "diff_mode"}
+
 
 def _conf2string(conf):
     """ Convert dictionary to list of strings. """

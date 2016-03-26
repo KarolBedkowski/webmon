@@ -56,12 +56,16 @@ def logging_setup(filename, debug=False, silent=False):
         debug: (bool) set more messages (debug messages)
     """
     logger = logging.getLogger()
+    log_req = logging.getLogger("requests")
     if silent:
         logger.setLevel(logging.WARN)
+        log_req.setLevel(logging.WARN)
     elif debug:
         logger.setLevel(logging.DEBUG)
+        log_req.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
+        log_req.setLevel(logging.WARN)
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
         fileh = logging.FileHandler(log_fullpath)
@@ -76,5 +80,5 @@ def logging_setup(filename, debug=False, silent=False):
     console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
     logger.addHandler(console)
 
-    log = logging.getLogger(__name__)
+    log = logging.getLogger("logging")
     log.debug("logging_setup() finished")

@@ -30,7 +30,7 @@ from . import common
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("filters")
 
 
 class AbstractFilter(object):
@@ -209,10 +209,8 @@ class DeCSVlise(AbstractFilter):
     def _filter(self, text):
         reader = csv.reader([text], delimiter=self.conf['delimiter'],
                             quotechar=self.conf['quote_char'])
-        if self.conf['strip']:
-            convfunc = lambda x: str(x).strip()
-        else:
-            convfunc = str
+        convfunc = lambda x: str(x).strip() if self.conf['strip'] \
+            else str
 
         if self.conf['generate_parts']:
             yield from map(convfunc, reader)
@@ -345,3 +343,4 @@ def get_filter(conf, context):
         return fltr
 
     _LOG.warning("unknown filter: %s", name)
+    return None

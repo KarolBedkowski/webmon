@@ -30,14 +30,12 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 VERSION = "0.1"
 DEFAULT_DIFF_MODE = "ndiff"
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("main")
 
 
 def _gen_diff(prev_content, content, diff_mode, context):
     comparator = comparators.get_comparator(
         diff_mode or DEFAULT_DIFF_MODE, context)
-    _LOG.debug("Using compare mode: %s", diff_mode)
-
     diff = "\n".join(comparator.compare(
         prev_content.split("\n"),
         str(datetime.datetime.fromtimestamp(context["last_updated"])),
@@ -61,17 +59,17 @@ def _apply_filters(content, input_filters, context):
 
 def _load(inp_conf, gcache, output, app_args, context):
     oid = config.gen_input_oid(inp_conf)
-    _LOG.debug("loading: oid=%s", oid)
+    _LOG.debug("load: loading oid=%r", oid)
     context['name'] = config.get_input_name(inp_conf, context['_idx'])
     context['last_updated'] = gcache.get_mtime(oid)
     context['metadata'] = gcache.get_meta(oid) or {}
 
     loader = inputs.get_input(inp_conf, context)
     if not app_args.force and not loader.need_update():
-        _LOG.info("loading: %s no need update", context['name'])
+        _LOG.info("loading '%s' - no need update", context['name'])
         return
 
-    _LOG.info("loading: %s...", context['name'])
+    _LOG.info("loading '%s'...", context['name'])
     prev_content = gcache.get(oid)
     try:
         # load return list of parts
@@ -102,7 +100,7 @@ def _load(inp_conf, gcache, output, app_args, context):
 
     # save metadata back to store
     gcache.put_meta(oid, context['metadata'])
-    _LOG.debug("done")
+    _LOG.debug("load: loading %r done", oid)
 
 
 def _parse_options():
@@ -162,11 +160,11 @@ def _load_user_classes():
         fpath = os.path.join(users_scripts_dir, fname)
         if os.path.isfile(fpath) and fname.endswith(".py") \
                 and not fname.startswith("_"):
-            _LOG.debug("loading %s", fpath)
+            _LOG.debug("loading %r", fpath)
             try:
                 imp.load_source(fname[:-3], fpath)
             except Exception as err:
-                _LOG.error("Importing %s error %s", fpath, err)
+                _LOG.error("Importing '%s' error %s", fpath, err)
 
 
 def main():
@@ -217,7 +215,12 @@ def main():
         try:
             _load(params, gcache, output, args, context)
         except RuntimeError as err:
-            _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
+            if args.verbose:
+                _LOG.exception("load %d error: %s", idx,
+                               str(err).replace("\n", "; "))
+            else:
+                _LOG.error("load %d error: %s", idx,
+                           str(err).replace("\n", "; "))
             output.add_error(params, str(err), context)
         except Exception as err:
             _LOG.exception("load %d error: %s", idx,

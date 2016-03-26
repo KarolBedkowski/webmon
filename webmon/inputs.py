@@ -22,7 +22,7 @@ from . import common
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("inputs")
 
 
 class AbstractInput(object):
@@ -90,9 +90,10 @@ class WebInput(AbstractInput):
         if self.last_updated:
             headers['If-Modified-Since'] = email.utils.formatdate(
                 self.last_updated)
-        _LOG.debug("load_from_web headers: %r", headers)
+        url = conf['url']
+        _LOG.debug("WebInput: loading url: %s; headers: %r", url, headers)
         try:
-            response = requests.request(url=conf['url'], method='GET',
+            response = requests.request(url=url, method='GET',
                                         headers=headers,
                                         timeout=conf['timeout'])
             response.raise_for_status()
@@ -111,6 +112,7 @@ class WebInput(AbstractInput):
             raise common.InputError(err)
         yield response.text
         response.close()
+        _LOG.debug("WebInput: load done")
 
 
 
@@ -139,9 +141,11 @@ class RssInput(AbstractInput):
         conf = self.conf
         modified = time.localtime(self.last_updated) \
             if self.last_updated else None
-        doc = feedparser.parse(conf['url'],
-                               etag=self.context['metadata'].get('etag'),
-                               modified=modified)
+        url = conf['url']
+        etag = self.context['metadata'].get('etag')
+        _LOG.debug("RssInput: loading from %s, etag=%r, modified=%r",
+                   url, etag, modified)
+        doc = feedparser.parse(url, etag=etag, modified=modified)
         status = doc.get('status') if doc else 400
         if status == 304:
             raise common.NotModifiedError()
@@ -152,7 +156,8 @@ class RssInput(AbstractInput):
             yield 'Temporary redirects: ' + doc.href
             return
         if status != 200:
-            raise common.InputError('load document error %s' % status)
+            raise common.InputError('load document error %s, %r' % (status,
+                                                                    doc))
 
         entries = doc.get('entries')
 
@@ -175,6 +180,7 @@ class RssInput(AbstractInput):
         etag = doc.get('etag')
         if etag:
             self.context['metadata']['etag'] = etag
+        _LOG.debug("RssInput: loading done")
 
 
     def _load_entry(self, entry, fields, add_content):
@@ -188,7 +194,7 @@ class RssInput(AbstractInput):
                         content = h2t.HTML2Text(bodywidth=9999999)\
                             .handle(content)
                     except ImportError:
-                        _LOG.warning("RssInput - loading HTML2Text error "
+                        _LOG.warning("RssInput: loading HTML2Text error "
                                      "(module not found)")
                 res += "\n" + content.strip()
         res += "\n------------------"
@@ -236,7 +242,7 @@ class CmdInput(AbstractInput):
     def load(self):
         """ Return command output as one part """
         conf = self.conf
-        _LOG.debug("CmdInput execute: %r", conf['cmd'])
+        _LOG.debug("CmdInput: execute: %r", conf['cmd'])
         process = subprocess.Popen(conf['cmd'],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
@@ -250,6 +256,7 @@ class CmdInput(AbstractInput):
             raise common.InputError(errstr.strip())
 
         yield from stdout.decode('utf-8').split("\n")
+        _LOG.debug("CmdInput: loading done")
 
 
 def get_input(conf, context):

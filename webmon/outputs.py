@@ -22,7 +22,7 @@ from docutils.core import publish_string
 
 from . import common
 
-_LOG = logging.getLogger(__name__)
+_LOG = logging.getLogger("outputs")
 
 
 class AbstractOutput(object):
@@ -200,7 +200,7 @@ class EMailOutput(AbstractTextOutput):
             if not conf.get("smtp_password"):
                 raise common.ParamError("missing password for login")
         if conf.get("smtp_tls") and conf.get("smtp_ssl"):
-            _LOG.warning("configured tls and ssl; using ssl")
+            _LOG.warning("EMailOutput: configured tls and ssl; using ssl")
 
         encrypt = self.conf.get("encrypt", "")
         if encrypt and encrypt not in ('gpg', ):
@@ -252,14 +252,14 @@ class EMailOutput(AbstractTextOutput):
                                 stderr=subprocess.PIPE)
         stdout, stderr = subp.communicate(message.encode('utf-8'))
         if subp.wait(60) != 0:
-            _LOG.error("email output encrypt error: %s", stderr)
+            _LOG.error("EMailOutput: encrypt error: %s", stderr)
             return stderr
         return stdout
 
 
 
 def _get_output(name, params):
-    _LOG.debug("_get_output %s", name)
+    _LOG.debug("_get_output %r", name)
     if not params.get("enabled", True):
         return None
 
@@ -312,6 +312,7 @@ class OutputManager(object):
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """
+        _LOG.debug("OutputManager: writing...")
         if not (self.conf.get("report_unchanged") or self._new
                 or self._changed or self._errors):
             return
@@ -321,4 +322,5 @@ class OutputManager(object):
                 rep.report(self._new, self._changed, self._errors,
                            self._unchanged)
             except Exception as err:
-                _LOG.error("Output.end %s error: %s", rep, err)
+                _LOG.error("OutputManager: write %s error: %s", rep, err)
+        _LOG.debug("OutputManager: write done")
