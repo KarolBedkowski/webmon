@@ -12,6 +12,10 @@ import logging
 import os.path
 import copy
 import hashlib
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 import yaml
 
@@ -83,13 +87,13 @@ def apply_defaults(defaults, conf):
     return result
 
 
-def _find_config_file(name):
+def _find_config_file(name, must_exists=True):
     if os.path.isfile(name):
         return name
     # try ~/.config/webmon/
     bname = os.path.basename(name)
     fpath = os.path.expanduser(os.path.join("~", ".config", "webmon", bname))
-    return fpath if os.path.isfile(fpath) else None
+    return fpath if not must_exists or os.path.isfile(fpath) else None
 
 
 def gen_input_oid(conf):
@@ -138,3 +142,39 @@ def get_input_name(conf, idx):
         if name:
             return name
     return "Source %d" % idx
+
+
+# locking
+
+def try_lock():
+    """Check and create lock file - prevent running application twice.
+    Return lock file handler. """
+    lock_file_path = _find_config_file("app.lock", False)
+    try:
+        if fcntl is not None:
+            lock_file = open(lock_file_path, "w")
+            fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        else:
+            if os.path.isfile(lock_file_path):
+                _LOG.error("another instance detected (lock file exists) "
+                           "- exiting")
+                return None
+            lock_file = open(lock_file_path, "w")
+        return lock_file
+    except IOError as err:
+        import errno
+        if err.errno == errno.EAGAIN:
+            _LOG.error("another instance detected - exiting")
+        else:
+            _LOG.error("locking failed: %s", err)
+    return None
+
+
+def unlock(fhandler):
+    """ Unlock app - remove lock file ``fhandler``."""
+    fname = fhandler.name
+    try:
+        fhandler.close()
+        os.unlink(fname)
+    except IOError as err:
+        _LOG.error("unlock error: %s", err)

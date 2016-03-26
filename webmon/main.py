@@ -180,6 +180,10 @@ def main():
 
     start_time = time.time()
 
+    lock_file = config.try_lock()
+    if not lock_file:
+        return
+
     inps = config.load_inputs(args.inputs)
     if not inps:
         _LOG.warning("No defined inputs")
@@ -231,6 +235,7 @@ def main():
 
     output.write(footer)
     gcache.delete_unused()
+    config.unlock(lock_file)
 
 
 if __name__ == "__main__":
