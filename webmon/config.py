@@ -9,6 +9,7 @@ Licence: GPLv2+
 """
 
 import logging
+import os
 import os.path
 import copy
 import hashlib
@@ -145,12 +146,19 @@ def get_input_name(conf, idx):
     return "Source %d" % idx
 
 
-# locking
+def _check_dir_for_file(fpath):
+    """ Check is directory for file exists; create if missing."""
+    lock_file_dir = os.path.dirname(fpath)
+    if not os.path.isdir(lock_file_dir):
+        os.makedirs(lock_file_dir)
 
+
+# locking
 def _try_lock():
     """Check and create lock file - prevent running application twice.
     Return lock file handler. """
     lock_file_path = _find_config_file("app.lock", False)
+    _check_dir_for_file(lock_file_path)
     try:
         if fcntl is not None:
             lock_file = open(lock_file_path, "w")
@@ -167,7 +175,7 @@ def _try_lock():
         if err.errno == errno.EAGAIN:
             _LOG.error("another instance detected - exiting")
         else:
-            _LOG.error("locking failed: %s", err)
+            _LOG.exception("locking failed: %s", err)
     return None
 
 
@@ -184,9 +192,9 @@ def _unlock(fhandler):
 @contextmanager
 def lock():
     fhandler = _try_lock()
-    if not fhandler:
-        return
     try:
-        yield
+        if fhandler:
+            yield
     finally:
-        _unlock(fhandler)
+        if fhandler:
+            _unlock(fhandler)
