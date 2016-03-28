@@ -126,6 +126,8 @@ def _parse_options():
     parser.add_argument("--abilities", action="store_true",
                         help="show available filters/inputs/outputs/"
                         "comparators")
+    parser.add_argument("--list-inputs", action="store_true",
+                        help="show configured inputs")
     return parser.parse_args()
 
 
@@ -167,32 +169,16 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def main():
-    args = _parse_options()
+def list_inputs(inps):
+    print("Inputs:")
+    for idx, inp_conf in enumerate(inps, 1):
+        name = config.get_input_name(inp_conf, idx)
+        act = "" if inp_conf.get("enable", True) else "DISABLE"
+        print(" %2d '%s'" % (idx, name), act)
 
-    logging_setup.logging_setup(args.log, args.verbose, args.silent)
 
-    _load_user_classes()
-
-    if args.abilities:
-        _show_abilities()
-        return
-
+def all_update(args, inps, conf):
     start_time = time.time()
-
-    lock_file = config.try_lock()
-    if not lock_file:
-        return
-
-    inps = config.load_inputs(args.inputs)
-    if not inps:
-        _LOG.warning("No defined inputs")
-        return
-
-    conf = config.load_configuration(args.config)
-    if not conf:
-        _LOG.warning("Missing configuration")
-        return
 
     try:
         gcache = cache.Cache(os.path.expanduser(args.cache_dir))
@@ -235,7 +221,36 @@ def main():
 
     output.write(footer)
     gcache.delete_unused()
-    config.unlock(lock_file)
+
+
+def main():
+    args = _parse_options()
+
+    logging_setup.logging_setup(args.log, args.verbose, args.silent)
+
+    _load_user_classes()
+
+    if args.abilities:
+        _show_abilities()
+        return
+
+    inps = config.load_inputs(args.inputs)
+    if not inps:
+        _LOG.warning("No defined inputs")
+        return
+
+    if args.list_inputs:
+        with config.lock():
+            list_inputs(inps)
+        return
+
+    conf = config.load_configuration(args.config)
+    if not conf:
+        _LOG.warning("Missing configuration")
+        return
+
+    with config.lock():
+        all_update(args, inps, conf)
 
 
 if __name__ == "__main__":

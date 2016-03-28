@@ -12,6 +12,7 @@ import logging
 import os.path
 import copy
 import hashlib
+from contextlib import contextmanager
 try:
     import fcntl
 except ImportError:
@@ -146,7 +147,7 @@ def get_input_name(conf, idx):
 
 # locking
 
-def try_lock():
+def _try_lock():
     """Check and create lock file - prevent running application twice.
     Return lock file handler. """
     lock_file_path = _find_config_file("app.lock", False)
@@ -170,7 +171,7 @@ def try_lock():
     return None
 
 
-def unlock(fhandler):
+def _unlock(fhandler):
     """ Unlock app - remove lock file ``fhandler``."""
     fname = fhandler.name
     try:
@@ -178,3 +179,14 @@ def unlock(fhandler):
         os.unlink(fname)
     except IOError as err:
         _LOG.error("unlock error: %s", err)
+
+
+@contextmanager
+def lock():
+    fhandler = _try_lock()
+    if not fhandler:
+        return
+    try:
+        yield
+    finally:
+        _unlock(fhandler)
