@@ -128,6 +128,8 @@ def _parse_options():
                         "comparators")
     parser.add_argument("--list-inputs", action="store_true",
                         help="show configured inputs")
+    parser.add_argument("--sel", help="select (by idx, separated by comma) "
+                        "inputs to update")
     return parser.parse_args()
 
 
@@ -177,7 +179,25 @@ def list_inputs(inps):
         print(" %2d '%s'" % (idx, name), act)
 
 
-def all_update(args, inps, conf):
+def update_one(args, inp, idx, defaults, output, gcache):
+    # context is state object for one processing input
+    context = {'_idx': idx}
+    params = config.apply_defaults(defaults, inp)
+    try:
+        _load(params, gcache, output, args, context)
+    except RuntimeError as err:
+        if args.verbose:
+            _LOG.exception("load %d error: %s", idx,
+                            str(err).replace("\n", "; "))
+        else:
+            _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
+        output.add_error(params, str(err), context)
+    except Exception as err:
+        _LOG.exception("load %d error: %s", idx, str(err).replace("\n", "; "))
+        output.add_error(params, str(err), context)
+
+
+def update(args, inps, conf, selection=None):
     start_time = time.time()
 
     try:
@@ -198,29 +218,17 @@ def all_update(args, inps, conf):
     }
     defaults.update(conf.get("defaults") or {})
 
-    for idx, inp_conf in enumerate(inps):
-        # context is state object for one processing input
-        context = {'_idx': idx + 1}
-        params = config.apply_defaults(defaults, inp_conf)
-        try:
-            _load(params, gcache, output, args, context)
-        except RuntimeError as err:
-            if args.verbose:
-                _LOG.exception("load %d error: %s", idx,
-                               str(err).replace("\n", "; "))
-            else:
-                _LOG.error("load %d error: %s", idx,
-                           str(err).replace("\n", "; "))
-            output.add_error(params, str(err), context)
-        except Exception as err:
-            _LOG.exception("load %d error: %s", idx,
-                           str(err).replace("\n", "; "))
-            output.add_error(params, str(err), context)
+    for idx, inp_conf in enumerate(inps, 1):
+        if selection and idx not in selection:
+            continue
+        update_one(args, inp_conf, idx, defaults, output, gcache)
 
     footer = "Generate time: %.2f" % (time.time() - start_time)
 
     output.write(footer)
-    gcache.delete_unused()
+    if not selection:
+        # do not delete items from cache when partial update
+        gcache.delete_unused()
 
 
 def main():
@@ -249,8 +257,17 @@ def main():
         _LOG.warning("Missing configuration")
         return
 
+    selection = None
+    if args.sel:
+        try:
+            selection = set(int(idx.strip()) for idx in args.sel.split(","))
+        except ValueError:
+            _LOG.error("Invalid --sel parameter - expected numbers separated"
+                       "by comma")
+            return
+
     with config.lock():
-        all_update(args, inps, conf)
+        update(args, inps, conf, selection)
 
 
 if __name__ == "__main__":
