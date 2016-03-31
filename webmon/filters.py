@@ -182,7 +182,9 @@ class Wrap(AbstractFilter):
 
     def __init__(self, conf, context):
         super(Wrap, self).__init__(conf, context)
-        self._tw = textwrap.TextWrapper()
+        self._tw = textwrap.TextWrapper(
+            break_long_words=False,
+            break_on_hyphens=False)
 
     def filter(self, parts):
         self._tw.text = self.conf.get("width") or 76
