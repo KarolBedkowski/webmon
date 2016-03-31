@@ -209,7 +209,7 @@ class DeCSVlise(AbstractFilter):
     def _filter(self, text):
         reader = csv.reader([text], delimiter=self.conf['delimiter'],
                             quotechar=self.conf['quote_char'])
-        convfunc = lambda x: str(x).strip() if self.conf['strip'] \
+        convfunc = (lambda x: str(x).strip()) if self.conf['strip'] \
             else str
 
         if self.conf['generate_parts']:
