@@ -110,7 +110,16 @@ def gen_input_oid(conf):
 
 
 # ignored keys when calculating oid
-_OID_IGNORED_KEYS = {"interval", "diff_mode"}
+_OID_IGNORED_KEYS = {
+    "interval", "diff_mode", "on_error_wait", "report_unchanged",
+}
+
+# configuration defaults for inputs
+DEFAULTS = {
+    "kind": "url",
+    "on_error_wait": "12h",
+    "diff_mode": "ndiff",
+}
 
 
 def _conf2string(conf):
@@ -120,7 +129,8 @@ def _conf2string(conf):
     def append(parent, item):
         if isinstance(item, dict):
             for key, val in item.items():
-                if not key.startswith("_") and key not in _OID_IGNORED_KEYS:
+                if not key.startswith("_") and key not in _OID_IGNORED_KEYS \
+                        and val != DEFAULTS.get(key):
                     append(parent + "." + key, val)
         elif isinstance(item, (list, tuple)):
             for idx, itm in enumerate(item):

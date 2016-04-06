@@ -240,12 +240,10 @@ def update(args, inps, conf, selection=None):
         return
 
     # defaults for inputs
-    defaults = {
-        "kind": "url",
-        "diff_mode": args.diff_mode,
-        "on_error_wait": "12h",
-    }
+    defaults = {}
+    defaults.update(config.DEFAULTS)
     defaults.update(conf.get("defaults") or {})
+    defaults["diff_mode"] = args.diff_mode
 
     for idx, inp_conf in enumerate(inps, 1):
         if selection and idx not in selection:
