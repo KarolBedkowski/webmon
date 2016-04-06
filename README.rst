@@ -111,6 +111,8 @@ Common options::
   interval: 1h                      # min update interval; optional
   report_unchanged: false           # skip in report when no changes
   diff_mode: ndiff                  # diff mode (unified, ndiff, etc.)
+  on_error_wait: 12h                # wait some time after loadin error 
+                                    # (params like interval)
 
 **Interval**
 Interval can be defined as:

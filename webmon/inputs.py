@@ -69,7 +69,7 @@ class AbstractInput(object):
         interval = self.conf["interval"]
         if not interval:
             return True
-        interval = _parse_interval(interval)
+        interval = common.parse_interval(interval)
         return last + interval < time.time()
 
 
@@ -269,27 +269,3 @@ def get_input(conf, context):
         return inp
 
     _LOG.warning("unknown input kind: %s; skipping input", kind)
-
-
-def _parse_interval(instr):
-    if isinstance(instr, (int, float)):
-        return instr
-    mplt = 1
-    if instr.endswith("m"):
-        mplt = 60
-        instr = instr[:-1]
-    elif instr.endswith("h"):
-        mplt = 3600
-        instr = instr[:-1]
-    elif instr.endswith("d"):
-        mplt = 86400
-        instr = instr[:-1]
-    elif instr.endswith("w"):
-        mplt = 604800
-        instr = instr[:-1]
-    else:
-        raise ValueError("invalid interval '%s'" % instr)
-    try:
-        return int(instr) * mplt
-    except ValueError:
-        raise ValueError("invalid interval '%s'" % instr)

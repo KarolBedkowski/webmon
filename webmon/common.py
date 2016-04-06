@@ -60,3 +60,28 @@ def get_subclasses_with_name(base_class):
             yield from find(rcls)
 
     yield from find(base_class)
+
+
+def parse_interval(instr):
+    """Parse interval in human readable format and return interval in sec."""
+    if isinstance(instr, (int, float)):
+        return instr
+    mplt = 1
+    if instr.endswith("m"):
+        mplt = 60
+        instr = instr[:-1]
+    elif instr.endswith("h"):
+        mplt = 3600
+        instr = instr[:-1]
+    elif instr.endswith("d"):
+        mplt = 86400
+        instr = instr[:-1]
+    elif instr.endswith("w"):
+        mplt = 604800
+        instr = instr[:-1]
+    else:
+        raise ValueError("invalid interval '%s'" % instr)
+    try:
+        return int(instr) * mplt
+    except ValueError:
+        raise ValueError("invalid interval '%s'" % instr)

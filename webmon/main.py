@@ -57,12 +57,29 @@ def _apply_filters(content, input_filters, context):
     return content
 
 
+def _check_last_error_time(context, inp_conf):
+    """Return true when load error occurred and still `on_error_wait` interval
+    not pass."""
+    last_error = context['metadata'].get('last_error')
+    if last_error:
+        on_error_wait = inp_conf['on_error_wait']
+        if on_error_wait:
+            on_error_wait = common.parse_interval(on_error_wait)
+            return time.time() < last_error + on_error_wait
+    return False
+
+
 def _load(inp_conf, gcache, output, app_args, context):
     oid = config.gen_input_oid(inp_conf)
     _LOG.debug("load: loading oid=%r", oid)
     context['name'] = config.get_input_name(inp_conf, context['_idx'])
     context['last_updated'] = gcache.get_mtime(oid)
     context['metadata'] = gcache.get_meta(oid) or {}
+
+    if _check_last_error_time(context, inp_conf):
+        _LOG.info("loading '%s' - skipping - still waiting after error",
+                  context['name'])
+        return
 
     loader = inputs.get_input(inp_conf, context)
     if not app_args.force and not loader.need_update():
@@ -83,6 +100,17 @@ def _load(inp_conf, gcache, output, app_args, context):
         content = content or "<no data>"
     except common.NotModifiedError:
         content = prev_content
+    except common.InputError as err:
+        context['metadata']['last_error'] = time.time()
+        context['metadata']['last_error_msg'] = str(err)
+        gcache.put_meta(oid, context['metadata'])
+        raise
+
+    meta = context['metadata']
+    if 'last_error' in meta:
+        del meta['last_error']
+    if 'last_error_msg' in meta:
+        del meta['last_error_msg']
 
     if prev_content:
         if prev_content != content:
@@ -215,6 +243,7 @@ def update(args, inps, conf, selection=None):
     defaults = {
         "kind": "url",
         "diff_mode": args.diff_mode,
+        "on_error_wait": "12h",
     }
     defaults.update(conf.get("defaults") or {})
 
