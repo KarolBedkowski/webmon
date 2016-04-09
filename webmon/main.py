@@ -69,25 +69,13 @@ def _check_last_error_time(context, inp_conf):
     return False
 
 
-def _load(inp_conf, gcache, output, app_args, context):
-    oid = config.gen_input_oid(inp_conf)
-    _LOG.debug("load: loading oid=%r", oid)
-    context['name'] = config.get_input_name(inp_conf, context['_idx'])
-    context['last_updated'] = gcache.get_mtime(oid)
-    context['metadata'] = gcache.get_meta(oid) or {}
+def _is_recovery_accepted(mtime, inp_conf):
+    interval = common.parse_interval(inp_conf['interval'])
+    return time.time() - mtime < interval
 
-    if _check_last_error_time(context, inp_conf):
-        _LOG.info("loading '%s' - skipping - still waiting after error",
-                  context['name'])
-        return
 
-    loader = inputs.get_input(inp_conf, context)
-    if not app_args.force and not loader.need_update():
-        _LOG.info("loading '%s' - no need update", context['name'])
-        return
-
-    _LOG.info("loading '%s'...", context['name'])
-    prev_content = gcache.get(oid)
+def _load_content(oid, loader, inp_conf, context, prev_content, gcache):
+    content = None
     try:
         # load return list of parts
         content = loader.load()
@@ -105,6 +93,41 @@ def _load(inp_conf, gcache, output, app_args, context):
         context['metadata']['last_error_msg'] = str(err)
         gcache.put_meta(oid, context['metadata'])
         raise
+    return content
+
+
+def _load(inp_conf, gcache, output, app_args, context):
+    oid = config.gen_input_oid(inp_conf)
+    _LOG.debug("load: loading oid=%r", oid)
+    context['name'] = config.get_input_name(inp_conf, context['_idx'])
+
+    # try to recover
+    recovered = False
+    content, mtime, meta = gcache.get_recovered(oid)
+    if content is not None and _is_recovery_accepted(mtime, inp_conf):
+        context['last_updated'] = mtime
+        context['metadata'] = meta or {}
+        recovered = True
+        _LOG.info("loading '%s' - recovered", context['name'])
+    else:
+        context['last_updated'] = gcache.get_mtime(oid)
+        context['metadata'] = gcache.get_meta(oid) or {}
+
+    if _check_last_error_time(context, inp_conf):
+        _LOG.info("loading '%s' - skipping - still waiting after error",
+                  context['name'])
+        return
+
+    loader = inputs.get_input(inp_conf, context)
+    if not app_args.force and not loader.need_update() and not recovered:
+        _LOG.info("loading '%s' - no need update", context['name'])
+        return
+
+    _LOG.info("loading '%s'...", context['name'])
+    prev_content = gcache.get(oid)
+    if not recovered:
+        content = _load_content(oid, loader, inp_conf, context, prev_content,
+                                gcache)
 
     meta = context['metadata']
     if 'last_error' in meta:
@@ -117,11 +140,10 @@ def _load(inp_conf, gcache, output, app_args, context):
             diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
                              context)
             output.add_changed(inp_conf, diff, context)
-            gcache.put(oid, content)
         else:
             if inp_conf.get("report_unchanged", False):
                 output.add_unchanged(inp_conf, prev_content, context)
-            gcache.update_mtime(oid)
+        gcache.put(oid, content)
     else:
         output.add_new(inp_conf, content, context)
         gcache.put(oid, content)
@@ -253,9 +275,7 @@ def update(args, inps, conf, selection=None):
     footer = "Generate time: %.2f" % (time.time() - start_time)
 
     output.write(footer)
-    if not selection:
-        # do not delete items from cache when partial update
-        gcache.delete_unused()
+    gcache.commmit_temps()
 
 
 def main():

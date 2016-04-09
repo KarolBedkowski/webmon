@@ -20,6 +20,26 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 _LOG = logging.getLogger("cache")
 
 
+def _get_content(fname):
+    if os.path.isfile(fname):
+        try:
+            with open(fname) as fin:
+                return fin.read()
+        except IOError as err:
+            _LOG.error("load file %s from cache error: %s", fname, err)
+    return None
+
+
+def _get_meta(fname):
+    if os.path.isfile(fname):
+        try:
+            with open(fname) as fin:
+                return yaml.load(fin)
+        except IOError as err:
+            _LOG.error("load meta file %s from cache error: %s", fname, err)
+    return None
+
+
 class Cache(object):
     """Cache for previous data"""
     def __init__(self, directory):
@@ -41,30 +61,31 @@ class Cache(object):
     def get(self, oid):
         _LOG.debug("get %r", oid)
         name = self._get_filename(oid)
-        if os.path.isfile(name):
-            try:
-                with open(name) as fin:
-                    return fin.read()
-            except IOError as err:
-                _LOG.error("load file %s from cache error: %s", name, err)
-        return None
+        return _get_content(name)
 
     def get_meta(self, oid):
         """ Put metadata into cache. """
         _LOG.debug("get_meta %r", oid)
         name = self._get_filename_meta(oid)
+        return _get_meta(name)
+
+    def get_recovered(self, oid):
+        """Find temp files for `oid` and return content, mtime and meta."""
+        _LOG.debug("get_mtime %r", oid)
+        name = self._get_filename(oid) + ".tmp"
+        content, mtime, meta = None, None, None
         if os.path.isfile(name):
-            try:
-                with open(name) as fin:
-                    return yaml.load(fin)
-            except IOError as err:
-                _LOG.error("load file %s from cache error: %s", name, err)
-        return None
+            mtime = os.path.getmtime(name)
+            content = _get_content(name)
+
+        meta_name = self._get_filename_meta(oid) + ".tmp"
+        meta = _get_meta(meta_name)
+        return content, mtime, meta
 
     def put(self, oid, content):
-        """ Put file into cache. """
+        """ Put file into cache as temp file. """
         _LOG.debug("put %r", oid)
-        name = self._get_filename(oid)
+        name = self._get_filename(oid) + ".tmp"
         try:
             with open(name, "w") as fout:
                 fout.write(content)
@@ -74,7 +95,7 @@ class Cache(object):
     def put_meta(self, oid, metadata):
         """ Put metadata into cache. """
         _LOG.debug("put_meta %r", oid)
-        name = self._get_filename_meta(oid)
+        name = self._get_filename_meta(oid) + ".tmp"
         try:
             if metadata:
                 with open(name, "w") as fout:
@@ -102,6 +123,34 @@ class Cache(object):
             os.utime(name, None)
         except IOError as err:
             _LOG.error("change mtime for file %s error: %s", name, err)
+
+    def commmit_temps(self):
+        """Commit new files into cache."""
+        # delete old file
+        for fname in os.listdir(self._directory):
+            fpath = os.path.join(self._directory, fname)
+            if fname.endswith(".tmp") or \
+                    os.path.splitext(fname)[0] in self._touched or \
+                    not os.path.isfile(fpath):
+                continue
+            _LOG.debug("commmit_temps - delete: '%s'", fpath)
+            try:
+                os.remove(fpath)
+            except IOError as err:
+                _LOG.error("delete unused file %s error: %s", fpath, err)
+
+        # rename temp file
+        for fname in os.listdir(self._directory):
+            fpath = os.path.join(self._directory, fname)
+            if not fname.endswith(".tmp") or not os.path.isfile(fpath):
+                continue
+            dst_fpath = fpath[:-4]
+            try:
+                _LOG.debug("commmit_temps - rename: '%s' -> '%s'", fpath,
+                           dst_fpath)
+                os.rename(fpath, dst_fpath)
+            except IOError as err:
+                _LOG.error("rename temp file %s error: %s", fpath, err)
 
     def _get_filename(self, oid):
         self._touched.add(oid)
