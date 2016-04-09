@@ -9,8 +9,8 @@ Licence: GPLv2+
 """
 
 import os.path
-import pathlib
 import logging
+import pathlib
 
 import yaml
 
@@ -115,15 +115,6 @@ class Cache(object):
             return None
         return os.path.getmtime(name)
 
-    def update_mtime(self, oid):
-        """ Update modification time file in cache by oid. """
-        _LOG.debug("update_mtime %r", oid)
-        name = self._get_filename(oid)
-        try:
-            os.utime(name, None)
-        except IOError as err:
-            _LOG.error("change mtime for file %s error: %s", name, err)
-
     def commmit_temps(self):
         """Commit new files into cache."""
         # delete old file
@@ -158,19 +149,3 @@ class Cache(object):
 
     def _get_filename_meta(self, oid):
         return os.path.join(self._directory, oid + ".meta")
-
-    def delete_unused(self):
-        """ Remove unused files from cache"""
-        _LOG.debug("deleting unused; touched=%d", len(self._touched))
-        deleted = 0
-        for fname in os.listdir(self._directory):
-            fpath = os.path.join(self._directory, fname)
-            foid = fname[:-5] if fname.endswith(".meta") else fname
-            if os.path.isfile(fpath) and foid not in self._touched:
-                try:
-                    os.remove(fpath)
-                    deleted += 1
-                    _LOG.debug("delete unused file %s", fpath)
-                except IOError as err:
-                    _LOG.error("delete unused file %s error: %s", fpath, err)
-        _LOG.debug("delete_unused done; deleted: %d", deleted)

@@ -74,26 +74,27 @@ def _is_recovery_accepted(mtime, inp_conf):
     return time.time() - mtime < interval
 
 
-def _load_content(oid, loader, inp_conf, context, prev_content, gcache):
+def _load_content(loader, inp_conf, context):
     content = None
-    try:
-        # load return list of parts
-        content = loader.load()
+    # load return list of parts
+    content = loader.load()
 
-        # filters also here - loader return generator, so exception may occur
-        # during filtering
-        content = _apply_filters(content, inp_conf.get('filters'), context)
-        if content:
-            content = "\n".join(_clean_part(part) for part in content)
-        content = content or "<no data>"
-    except common.NotModifiedError:
-        content = prev_content
-    except common.InputError as err:
-        context['metadata']['last_error'] = time.time()
-        context['metadata']['last_error_msg'] = str(err)
-        gcache.put_meta(oid, context['metadata'])
-        raise
+    # filters also here - loader return generator, so exception may occur
+    # during filtering
+    content = _apply_filters(content, inp_conf.get('filters'), context)
+    if content:
+        content = "\n".join(_clean_part(part) for part in content)
+    content = content or "<no data>"
     return content
+
+
+def _clean_meta_on_success(context):
+    meta = context['metadata']
+    if 'last_error' in meta:
+        del meta['last_error']
+    if 'last_error_msg' in meta:
+        del meta['last_error_msg']
+    return meta
 
 
 def _load(inp_conf, gcache, output, app_args, context):
@@ -123,33 +124,38 @@ def _load(inp_conf, gcache, output, app_args, context):
         _LOG.info("loading '%s' - no need update", context['name'])
         return
 
-    _LOG.info("loading '%s'...", context['name'])
     prev_content = gcache.get(oid)
     if not recovered:
-        content = _load_content(oid, loader, inp_conf, context, prev_content,
-                                gcache)
+        _LOG.info("loading '%s'...", context['name'])
+        try:
+            content = _load_content(loader, inp_conf, context)
+        except common.NotModifiedError:
+            content = prev_content
+        except common.InputError as err:
+            context['metadata']['last_error'] = time.time()
+            context['metadata']['last_error_msg'] = str(err)
+            gcache.put_meta(oid, context['metadata'])
+            raise
 
-    meta = context['metadata']
-    if 'last_error' in meta:
-        del meta['last_error']
-    if 'last_error_msg' in meta:
-        del meta['last_error_msg']
+    meta = _clean_meta_on_success(context)
 
-    if prev_content:
-        if prev_content != content:
-            diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
-                             context)
-            output.add_changed(inp_conf, diff, context)
-        else:
-            if inp_conf.get("report_unchanged", False):
-                output.add_unchanged(inp_conf, prev_content, context)
-        gcache.put(oid, content)
-    else:
+    if not prev_content:
+        # new content
         output.add_new(inp_conf, content, context)
+        gcache.put(oid, content)
+    elif prev_content != content:
+        # changed content
+        diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
+                         context)
+        output.add_changed(inp_conf, diff, context)
+        gcache.put(oid, content)
+    elif inp_conf.get("report_unchanged", False):
+        # unchanged content, but report
+        output.add_unchanged(inp_conf, prev_content, context)
         gcache.put(oid, content)
 
     # save metadata back to store
-    gcache.put_meta(oid, context['metadata'])
+    gcache.put_meta(oid, meta)
     _LOG.debug("load: loading %r done", oid)
 
 
@@ -238,7 +244,7 @@ def update_one(args, inp, idx, defaults, output, gcache):
     except RuntimeError as err:
         if args.verbose:
             _LOG.exception("load %d error: %s", idx,
-                            str(err).replace("\n", "; "))
+                           str(err).replace("\n", "; "))
         else:
             _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
         output.add_error(params, str(err), context)
