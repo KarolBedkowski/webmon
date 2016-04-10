@@ -313,10 +313,11 @@ class CommandFilter(AbstractFilter):
     params = [
         ("mode", "Filtering mode", "parts", True),
         ("command", "command to run", None, True),
+        ("split_lines", "split filter results on newline character",
+         False, True),
     ]
 
     def _filter(self, text):
-        # TODO: convert new line charactes
         assert isinstance(text, str)
         #_LOG.debug("CommandFilter %r, %r", self.conf["command"], text)
         subp = subprocess.Popen(self.conf["command"],
@@ -328,7 +329,10 @@ class CommandFilter(AbstractFilter):
         stdout, stderr = subp.communicate(text.encode('utf-8'))
         res = stdout or stderr or b""
         if res:
-            yield res.decode("utf-8")
+            if self.conf['split_lines']:
+                yield from res.decode("utf-8").split("\n")
+            else:
+                yield res.decode("utf-8")
 
 
 def get_filter(conf, context):
