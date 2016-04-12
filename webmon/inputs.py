@@ -115,8 +115,8 @@ class WebInput(AbstractInput):
         _LOG.debug("WebInput: load done")
 
 
-
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
+
 
 class RssInput(AbstractInput):
     """Load data from web (http/https)"""
@@ -156,8 +156,12 @@ class RssInput(AbstractInput):
             yield 'Temporary redirects: ' + doc.href
             return
         if status != 200:
-            raise common.InputError('load document error %s, %r' % (status,
-                                                                    doc))
+            _LOG.error("load document error %s: %s", status, doc)
+            summary = "Loading page error: %s" % status
+            feed = doc.get('feed')
+            if feed:
+                summary = feed.get('summary') or summary
+            raise common.InputError(summary)
 
         entries = doc.get('entries')
 
