@@ -10,7 +10,7 @@ import unittest
 from . import comparators
 
 
-class TestComaratorAdded(unittest.TestCase):
+class TestComparatorAdded(unittest.TestCase):
     def test_empty_prev(self):
         curr = [1, 2, 3, 4]
         prev = []
@@ -60,7 +60,7 @@ class TestComaratorAdded(unittest.TestCase):
         self.assertEqual(diff, [6, 7])
 
 
-class TestComaratorDeleted(unittest.TestCase):
+class TestComparatorDeleted(unittest.TestCase):
     def test_empty_prev(self):
         curr = [1, 2, 3, 4]
         prev = []

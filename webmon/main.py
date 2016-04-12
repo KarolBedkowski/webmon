@@ -242,7 +242,7 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def list_inputs(inps):
+def _list_inputs(inps):
     print("Inputs:")
     for idx, inp_conf in enumerate(inps, 1):
         name = config.get_input_name(inp_conf, idx)
@@ -250,7 +250,7 @@ def list_inputs(inps):
         print(" %2d '%s'" % (idx, name), act)
 
 
-def update_one(args, inp, idx, defaults, output, gcache):
+def _update_one(args, inp, idx, defaults, output, gcache):
     # context is state object for one processing input
     context = {'_idx': idx}
     params = config.apply_defaults(defaults, inp)
@@ -268,7 +268,7 @@ def update_one(args, inp, idx, defaults, output, gcache):
         output.add_error(params, str(err), context)
 
 
-def update(args, inps, conf, selection=None):
+def _update(args, inps, conf, selection=None):
     start_time = time.time()
 
     try:
@@ -291,7 +291,7 @@ def update(args, inps, conf, selection=None):
     for idx, inp_conf in enumerate(inps, 1):
         if selection and idx not in selection:
             continue
-        update_one(args, inp_conf, idx, defaults, output, gcache)
+        _update_one(args, inp_conf, idx, defaults, output, gcache)
 
     footer = "Generate time: %.2f" % (time.time() - start_time)
 
@@ -318,7 +318,7 @@ def main():
 
     if args.list_inputs:
         with config.lock():
-            list_inputs(inps)
+            _list_inputs(inps)
         return
 
     conf = config.load_configuration(args.config)
@@ -335,8 +335,11 @@ def main():
                        "by comma")
             return
 
-    with config.lock():
-        update(args, inps, conf, selection)
+    try:
+        with config.lock():
+            _update(args, inps, conf, selection)
+    except RuntimeError:
+        pass
 
 
 if __name__ == "__main__":
