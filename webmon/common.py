@@ -65,7 +65,10 @@ def get_subclasses_with_name(base_class):
 def parse_interval(instr):
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
+        if instr < 1:
+            raise ValueError("invalid interval '%s'" % instr)
         return instr
+
     mplt = 1
     if instr.endswith("m"):
         mplt = 60
@@ -79,9 +82,10 @@ def parse_interval(instr):
     elif instr.endswith("w"):
         mplt = 604800
         instr = instr[:-1]
-    else:
-        raise ValueError("invalid interval '%s'" % instr)
     try:
-        return int(instr) * mplt
+        val = int(instr) * mplt
+        if val < 1:
+            raise ValueError()
+        return val
     except ValueError:
         raise ValueError("invalid interval '%s'" % instr)
