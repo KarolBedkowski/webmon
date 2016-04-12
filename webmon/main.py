@@ -73,8 +73,17 @@ def _check_last_error_time(context, inp_conf):
     return False
 
 
-def _is_recovery_accepted(mtime, inp_conf):
+def _is_recovery_accepted(mtime, inp_conf, last_updated):
+    """Check is recovered file is valid by modified time.
+
+    :param mtime: timestamp of recovered file
+    :param inp_conf: source configuration
+    :param last_updated: last updated valid file
+    """
     interval = common.parse_interval(inp_conf['interval'])
+    if last_updated:
+        return last_updated + interval < mtime
+    # no previous valid file found
     return time.time() - mtime < interval
 
 
@@ -108,14 +117,16 @@ def _load(inp_conf, gcache, output, app_args, context):
 
     # try to recover
     recovered = False
+    last_updated = gcache.get_mtime(oid)
     content, mtime, meta = gcache.get_recovered(oid)
-    if content is not None and _is_recovery_accepted(mtime, inp_conf):
+    if content is not None \
+            and _is_recovery_accepted(mtime, inp_conf, last_updated):
         context['last_updated'] = mtime
         context['metadata'] = meta or {}
         recovered = True
         _LOG.info("loading '%s' - recovered", context['name'])
     else:
-        context['last_updated'] = gcache.get_mtime(oid)
+        context['last_updated'] = last_updated
         context['metadata'] = gcache.get_meta(oid) or {}
 
     if _check_last_error_time(context, inp_conf):
