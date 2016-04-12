@@ -157,18 +157,16 @@ def _load(inp_conf, gcache, output, app_args, context):
     if not prev_content:
         # new content
         output.add_new(inp_conf, content, context)
-        gcache.put(oid, content)
     elif prev_content != content:
         # changed content
         diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
                          context)
         output.add_changed(inp_conf, diff, context)
-        gcache.put(oid, content)
     elif inp_conf.get("report_unchanged", False):
         # unchanged content, but report
         output.add_unchanged(inp_conf, prev_content, context)
-        gcache.put(oid, content)
 
+    gcache.put(oid, content)
     # save metadata back to store
     gcache.put_meta(oid, meta)
     _LOG.debug("load: loading %r done", oid)
