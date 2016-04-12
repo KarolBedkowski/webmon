@@ -48,8 +48,14 @@ def _get_meta(fname):
 
 
 class Cache(object):
-    """Cache for previous data"""
+    """Cache for previous data."""
+
     def __init__(self, directory):
+        """
+        Constructor.
+
+        :param directory: path to cache in local filesystem
+        """
         _LOG.debug("init; directory: %s", directory)
         super(Cache, self).__init__()
         self._directory = directory
@@ -66,12 +72,13 @@ class Cache(object):
                 raise
 
     def get(self, oid):
+        """Get file from cache by `oid`."""
         _LOG.debug("get %r", oid)
         name = self._get_filename(oid)
         return _get_content(name)
 
     def get_meta(self, oid):
-        """ Put metadata into cache. """
+        """Get metadata from cache for file by `oid`."""
         _LOG.debug("get_meta %r", oid)
         name = self._get_filename_meta(oid)
         return _get_meta(name)
@@ -92,7 +99,7 @@ class Cache(object):
         return content, mtime, meta
 
     def put(self, oid, content):
-        """ Put file into cache as temp file. """
+        """Put `content` into cache as temp file identified by `oid`."""
         _LOG.debug("put %r", oid)
         name = self._get_filename(oid) + _TEMP_EXT
         try:
@@ -102,7 +109,7 @@ class Cache(object):
             _LOG.error("error writing file %s into cache: %s", name, err)
 
     def put_meta(self, oid, metadata):
-        """ Put metadata into cache. """
+        """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
         name = self._get_filename_meta(oid) + _TEMP_EXT
         try:
@@ -116,8 +123,10 @@ class Cache(object):
             _LOG.error("error writing file %s into cache: %s", name, err)
 
     def get_mtime(self, oid):
-        """ Get modification time file in cache for `oid`. Return None when
-        previous file not exist. """
+        """Get modification time of cached file identified by `oid`.
+
+        Return None when previous file not exist.
+        """
         _LOG.debug("get_mtime %r", oid)
         name = self._get_filename(oid)
         if not os.path.isfile(name):
@@ -125,7 +134,11 @@ class Cache(object):
         return os.path.getmtime(name)
 
     def commmit_temps(self):
-        """Commit new files into cache."""
+        """Commit new files into cache.
+
+        Delete non-tmp and not-touched files from cached.
+        Rename tmp-files.
+        """
         # delete old file
         for fname in os.listdir(self._directory):
             fpath = os.path.join(self._directory, fname)

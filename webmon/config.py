@@ -28,7 +28,7 @@ _LOG = logging.getLogger("conf")
 
 
 def load_configuration(filename):
-    """ Load app configuration from `filename`."""
+    """Load app configuration from `filename`."""
     if not filename:
         filename = _find_config_file("config.yaml")
 
@@ -50,7 +50,7 @@ def load_configuration(filename):
 
 
 def load_inputs(filename):
-    """ Load inputs configuration from `filename`"""
+    """Load inputs configuration from `filename`."""
     if not filename:
         filename = _find_config_file("inputs.yaml")
 
@@ -78,7 +78,7 @@ def load_inputs(filename):
 
 
 def apply_defaults(defaults, conf):
-    """ Deep copy & update `defaults` dict with `conf`."""
+    """Deep copy & update `defaults` dict with `conf`."""
     result = copy.deepcopy(defaults)
 
     def update(dst, src):
@@ -106,7 +106,7 @@ def _find_config_file(name, must_exists=True):
 
 
 def gen_input_oid(conf):
-    """ Generate object id according to configuration. """
+    """Generate object id according to configuration."""
     oid = conf.get('oid') or conf.get('id')
     if oid:
         return oid
@@ -130,7 +130,7 @@ DEFAULTS = {
 
 
 def _conf2string(conf):
-    """ Convert dictionary to list of strings. """
+    """Convert `conf` dictionary to list of strings."""
     kvs = []
 
     def append(parent, item):
@@ -155,7 +155,7 @@ _NAME_KEY_TO_TRY = ["name", "url", "cmd"]
 
 
 def get_input_name(conf, idx):
-    """ Return input name according to configuration. """
+    """Return input name according to configuration."""
     for key in _NAME_KEY_TO_TRY:
         name = conf.get(key)
         if name:
@@ -164,7 +164,7 @@ def get_input_name(conf, idx):
 
 
 def _check_dir_for_file(fpath):
-    """ Check is directory for file exists; create if missing."""
+    """Check is directory for file exists; create if missing."""
     lock_file_dir = os.path.dirname(fpath)
     if not os.path.isdir(lock_file_dir):
         os.makedirs(lock_file_dir)
@@ -173,7 +173,9 @@ def _check_dir_for_file(fpath):
 # locking
 def _try_lock():
     """Check and create lock file - prevent running application twice.
-    Return lock file handler. """
+
+    Return lock file handler.
+    """
     lock_file_path = _find_config_file("app.lock", False)
     _check_dir_for_file(lock_file_path)
     try:
@@ -197,7 +199,7 @@ def _try_lock():
 
 
 def _unlock(fhandler):
-    """ Unlock app - remove lock file ``fhandler``."""
+    """Unlock app - remove lock file ``fhandler``."""
     fname = fhandler.name
     try:
         fhandler.close()
@@ -208,6 +210,7 @@ def _unlock(fhandler):
 
 @contextmanager
 def lock():
+    """Lock application by lock file."""
     fhandler = _try_lock()
     try:
         if fhandler:

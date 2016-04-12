@@ -58,8 +58,12 @@ def _apply_filters(content, input_filters, context):
 
 
 def _check_last_error_time(context, inp_conf):
-    """Return true when load error occurred and still `on_error_wait` interval
-    not pass."""
+    """
+    Check if recovered file may be useful.
+
+    Return true when load error occurred and still `on_error_wait` interval
+    not pass.
+    """
     last_error = context['metadata'].get('last_error')
     if last_error:
         on_error_wait = inp_conf['on_error_wait']
@@ -285,6 +289,7 @@ def update(args, inps, conf, selection=None):
 
 
 def main():
+    """Main function."""
     args = _parse_options()
 
     logging_setup.logging_setup(args.log, args.verbose, args.silent)
