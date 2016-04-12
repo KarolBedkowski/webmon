@@ -40,9 +40,12 @@ def load_configuration(filename):
     try:
         with open(filename) as fin:
             return yaml.load(fin)
-    except Exception as err:
+    except IOError as err:
         _LOG.error("loading configuration from file %s error: %s", filename,
                    err)
+    except yaml.error.YAMLError as err:
+        _LOG.error("loading configuration from file %s - invalid YAML: %s",
+                   filename, err)
     return None
 
 
@@ -65,8 +68,12 @@ def load_inputs(filename):
                 _LOG.error("loading inputs error: no valid/enabled "
                            "inputs found")
             return inps
-    except Exception as err:
-        _LOG.error("Loading inputs from file %s error: %s", filename, err)
+    except IOError as err:
+        _LOG.error("loading inputs from file %s error: %s", filename,
+                   err)
+    except yaml.error.YAMLError as err:
+        _LOG.error("loading inputs from file %s - invalid YAML: %s",
+                   filename, err)
     return None
 
 

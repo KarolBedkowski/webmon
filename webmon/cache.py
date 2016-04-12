@@ -18,6 +18,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger("cache")
+_TEMP_EXT = ".tmp"
 
 
 def _get_content(fname):
@@ -27,6 +28,9 @@ def _get_content(fname):
                 return fin.read()
         except IOError as err:
             _LOG.error("load file %s from cache error: %s", fname, err)
+        except yaml.error.YAMLError as err:
+            _LOG.error("load meta file %s from cache error - broken YAML: %s",
+                       fname, err)
     return None
 
 
@@ -37,6 +41,9 @@ def _get_meta(fname):
                 return yaml.load(fin)
         except IOError as err:
             _LOG.error("load meta file %s from cache error: %s", fname, err)
+        except yaml.error.YAMLError as err:
+            _LOG.error("load meta file %s from cache error - broken YAML: %s",
+                       fname, err)
     return None
 
 
@@ -70,22 +77,24 @@ class Cache(object):
         return _get_meta(name)
 
     def get_recovered(self, oid):
-        """Find temp files for `oid` and return content, mtime and meta."""
-        _LOG.debug("get_mtime %r", oid)
-        name = self._get_filename(oid) + ".tmp"
+        """Find temp files for `oid` and return content, mtime and meta.
+        Temp files contains new loaded content are renamed when application end
+        without errors."""
+        _LOG.debug("get_recovered %r", oid)
+        name = self._get_filename(oid) + _TEMP_EXT
         content, mtime, meta = None, None, None
         if os.path.isfile(name):
             mtime = os.path.getmtime(name)
             content = _get_content(name)
 
-        meta_name = self._get_filename_meta(oid) + ".tmp"
+        meta_name = self._get_filename_meta(oid) + _TEMP_EXT
         meta = _get_meta(meta_name)
         return content, mtime, meta
 
     def put(self, oid, content):
         """ Put file into cache as temp file. """
         _LOG.debug("put %r", oid)
-        name = self._get_filename(oid) + ".tmp"
+        name = self._get_filename(oid) + _TEMP_EXT
         try:
             with open(name, "w") as fout:
                 fout.write(content)
@@ -95,7 +104,7 @@ class Cache(object):
     def put_meta(self, oid, metadata):
         """ Put metadata into cache. """
         _LOG.debug("put_meta %r", oid)
-        name = self._get_filename_meta(oid) + ".tmp"
+        name = self._get_filename_meta(oid) + _TEMP_EXT
         try:
             if metadata:
                 with open(name, "w") as fout:
@@ -103,7 +112,7 @@ class Cache(object):
             else:
                 if os.path.isfile(name):
                     os.unlink(name)
-        except IOError as err:
+        except (IOError, yaml.error.YAMLError) as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
     def get_mtime(self, oid):
@@ -120,7 +129,7 @@ class Cache(object):
         # delete old file
         for fname in os.listdir(self._directory):
             fpath = os.path.join(self._directory, fname)
-            if fname.endswith(".tmp") or \
+            if fname.endswith(_TEMP_EXT) or \
                     os.path.splitext(fname)[0] in self._touched or \
                     not os.path.isfile(fpath):
                 continue
@@ -133,7 +142,7 @@ class Cache(object):
         # rename temp file
         for fname in os.listdir(self._directory):
             fpath = os.path.join(self._directory, fname)
-            if not fname.endswith(".tmp") or not os.path.isfile(fpath):
+            if not fname.endswith(_TEMP_EXT) or not os.path.isfile(fpath):
                 continue
             dst_fpath = fpath[:-4]
             try:
