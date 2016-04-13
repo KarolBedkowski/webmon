@@ -73,34 +73,43 @@ class Cache(object):
 
     def get(self, oid):
         """Get file from cache by `oid`."""
-        _LOG.debug("get %r", oid)
         name = self._get_filename(oid)
-        return _get_content(name)
+        content = _get_content(name)
+        _LOG.debug("get %r, content_len=%d", oid, len(content or ''))
+        return content
 
     def get_meta(self, oid):
         """Get metadata from cache for file by `oid`."""
-        _LOG.debug("get_meta %r", oid)
         name = self._get_filename_meta(oid)
-        return _get_meta(name)
+        meta = _get_meta(name)
+        _LOG.debug("get_meta %r: meta=%r", oid, meta)
+        return meta
 
     def get_recovered(self, oid):
         """Find temp files for `oid` and return content, mtime and meta.
-        Temp files contains new loaded content are renamed when application end
-        without errors."""
-        _LOG.debug("get_recovered %r", oid)
-        name = self._get_filename(oid) + _TEMP_EXT
-        content, mtime, meta = None, None, None
-        if os.path.isfile(name):
-            mtime = os.path.getmtime(name)
-            content = _get_content(name)
 
+        Temp files contains new loaded content are renamed when application end
+        without errors.
+        """
+        name = self._get_filename(oid) + _TEMP_EXT
+        if not os.path.isfile(name):
+            _LOG.debug("get_recovered %r - not found", oid)
+            return None, None, None
+
+        content, mtime, meta = None, None, None
+        mtime = os.path.getmtime(name)
+        content = _get_content(name)
         meta_name = self._get_filename_meta(oid) + _TEMP_EXT
         meta = _get_meta(meta_name)
+
+        _LOG.debug("get_recovered %r: mtime=%s, content_len=%d, meta=%r",
+                   oid, mtime, len(content or ''), meta)
         return content, mtime, meta
 
     def put(self, oid, content):
         """Put `content` into cache as temp file identified by `oid`."""
-        _LOG.debug("put %r", oid)
+        content = content or ''
+        _LOG.debug("put %r, content_len=%d", oid, len(content))
         name = self._get_filename(oid) + _TEMP_EXT
         try:
             with open(name, "w") as fout:
@@ -127,11 +136,13 @@ class Cache(object):
 
         Return None when previous file not exist.
         """
-        _LOG.debug("get_mtime %r", oid)
         name = self._get_filename(oid)
         if not os.path.isfile(name):
+            _LOG.debug("get_mtime %r - file not found", oid)
             return None
-        return os.path.getmtime(name)
+        mtime = os.path.getmtime(name)
+        _LOG.debug("get_mtime %r - ts: %s", oid, mtime)
+        return mtime
 
     def commmit_temps(self):
         """Commit new files into cache.

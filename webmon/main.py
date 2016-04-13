@@ -132,12 +132,12 @@ def _load(inp_conf, gcache, output, app_args, context):
     if _check_last_error_time(context, inp_conf):
         _LOG.info("loading '%s' - skipping - still waiting after error",
                   context['name'])
-        return
+        return False
 
     loader = inputs.get_input(inp_conf, context)
     if not app_args.force and not loader.need_update() and not recovered:
         _LOG.info("loading '%s' - no need update", context['name'])
-        return
+        return False
 
     prev_content = gcache.get(oid)
     if not recovered:
@@ -156,20 +156,25 @@ def _load(inp_conf, gcache, output, app_args, context):
 
     if not prev_content:
         # new content
+        _LOG.debug("load: loading oid=%r - new content", oid)
         output.add_new(inp_conf, content, context)
     elif prev_content != content:
         # changed content
+        _LOG.debug("load: loading oid=%r - changed content", oid)
         diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
                          context)
         output.add_changed(inp_conf, diff, context)
-    elif inp_conf.get("report_unchanged", False):
-        # unchanged content, but report
-        output.add_unchanged(inp_conf, prev_content, context)
+    else:
+        _LOG.debug("load: loading oid=%r - unchanged content", oid)
+        if inp_conf.get("report_unchanged", False):
+            # unchanged content, but report
+            output.add_unchanged(inp_conf, prev_content, context)
 
     gcache.put(oid, content)
     # save metadata back to store
     gcache.put_meta(oid, meta)
     _LOG.debug("load: loading %r done", oid)
+    return True
 
 
 def _parse_options():
@@ -253,7 +258,7 @@ def _update_one(args, inp, idx, defaults, output, gcache):
     context = {'_idx': idx}
     params = config.apply_defaults(defaults, inp)
     try:
-        _load(params, gcache, output, args, context)
+        return _load(params, gcache, output, args, context)
     except RuntimeError as err:
         if args.verbose:
             _LOG.exception("load %d error: %s", idx,
@@ -264,6 +269,7 @@ def _update_one(args, inp, idx, defaults, output, gcache):
     except Exception as err:
         _LOG.exception("load %d error: %s", idx, str(err).replace("\n", "; "))
         output.add_error(params, str(err), context)
+    return True
 
 
 def _update(args, inps, conf, selection=None):
@@ -286,14 +292,21 @@ def _update(args, inps, conf, selection=None):
     defaults.update(conf.get("defaults") or {})
     defaults["diff_mode"] = args.diff_mode
 
+    processed = 0
+
     for idx, inp_conf in enumerate(inps, 1):
         if selection and idx not in selection:
             continue
-        _update_one(args, inp_conf, idx, defaults, output, gcache)
+        if _update_one(args, inp_conf, idx, defaults, output, gcache):
+            processed += 1
 
     footer = "Generate time: %.2f" % (time.time() - start_time)
 
     output.write(footer)
+    _LOG.info("Result: %s, inputs: %d, processed: %d",
+              ", ".join(key + ": " + str(val)
+                        for key, val in output.status().items()),
+              len(inps), processed)
     gcache.commmit_temps()
 
 

@@ -290,6 +290,14 @@ class OutputManager(object):
             finally:
                 pass
 
+    def status(self):
+        return {
+            'new': len(self._new),
+            'changed': len(self._changed),
+            'unchanged': len(self._unchanged),
+            'error': len(self._errors)
+        }
+
     @property
     def valid(self):
         return bool(self._outputs)
