@@ -144,24 +144,25 @@ class Cache(object):
         _LOG.debug("get_mtime %r - ts: %s", oid, mtime)
         return mtime
 
-    def commmit_temps(self):
+    def commmit_temps(self, delete_not_used=False):
         """Commit new files into cache.
 
         Delete non-tmp and not-touched files from cached.
         Rename tmp-files.
         """
         # delete old file
-        for fname in os.listdir(self._directory):
-            fpath = os.path.join(self._directory, fname)
-            if fname.endswith(_TEMP_EXT) or \
-                    os.path.splitext(fname)[0] in self._touched or \
-                    not os.path.isfile(fpath):
-                continue
-            _LOG.debug("commmit_temps - delete: '%s'", fpath)
-            try:
-                os.remove(fpath)
-            except IOError as err:
-                _LOG.error("delete unused file %s error: %s", fpath, err)
+        if delete_not_used:
+            for fname in os.listdir(self._directory):
+                fpath = os.path.join(self._directory, fname)
+                if fname.endswith(_TEMP_EXT) or \
+                        os.path.splitext(fname)[0] in self._touched or \
+                        not os.path.isfile(fpath):
+                    continue
+                _LOG.debug("commmit_temps - delete: '%s'", fpath)
+                try:
+                    os.remove(fpath)
+                except IOError as err:
+                    _LOG.error("delete unused file %s error: %s", fpath, err)
 
         # rename temp file
         for fname in os.listdir(self._directory):
