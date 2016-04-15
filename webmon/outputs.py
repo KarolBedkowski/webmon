@@ -299,6 +299,10 @@ class OutputManager(object):
         }
 
     @property
+    def errors_cnt(self):
+        return len(self._errors)
+
+    @property
     def valid(self):
         return bool(self._outputs)
 

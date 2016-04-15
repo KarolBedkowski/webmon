@@ -307,7 +307,10 @@ def _update(args, inps, conf, selection=None):
               ", ".join(key + ": " + str(val)
                         for key, val in output.status().items()),
               len(inps), processed)
-    gcache.commmit_temps(not selection)
+
+    if output.errors_cnt < processed:
+        # do not commit changes when all inputs failed
+        gcache.commmit_temps(not selection)
 
 
 def main():
