@@ -319,7 +319,6 @@ class CommandFilter(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        #_LOG.debug("CommandFilter %r, %r", self.conf["command"], text)
         subp = subprocess.Popen(self.conf["command"],
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,

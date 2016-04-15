@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 """
 Default outputs.
-Output get new/changed/deleted contents and present it in human-readable format.
-I.e. generate report, send mail.
+Output get new/changed/deleted contents and present it in human-readable
+format. I.e. generate report, send mail.
 
 Copyright (c) Karol Będkowski, 2016
 
@@ -219,7 +219,7 @@ class EMailOutput(AbstractTextOutput):
         smtp = None
         try:
             smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") \
-                    else smtplib.SMTP()
+                else smtplib.SMTP()
             smtp.connect(conf["smtp_host"], conf["smtp_port"])
             smtp.ehlo()
             if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
@@ -244,7 +244,6 @@ class EMailOutput(AbstractTextOutput):
             return msg
         return email.mime.text.MIMEText(body, 'plain', 'utf-8')
 
-
     def _encrypt(self, message):
         subp = subprocess.Popen(["gpg", "-e", "-a", "-r", self.conf["to"]],
                                 stdin=subprocess.PIPE,
@@ -255,7 +254,6 @@ class EMailOutput(AbstractTextOutput):
             _LOG.error("EMailOutput: encrypt error: %s", stderr)
             return stderr
         return stdout
-
 
 
 def _get_output(name, params):
@@ -307,26 +305,22 @@ class OutputManager(object):
         return bool(self._outputs)
 
     def add_new(self, inp, content, context):
-        #_LOG.debug("OutputManager.add_new: %r, %r, %r", inp, content, context)
         self._new.append((inp, content, context))
 
     def add_changed(self, inp, diff, context):
-        #_LOG.debug("OutputManager.add_changed: %r, %r, %r", inp, diff, context)
         self._changed.append((inp, diff, context))
 
     def add_error(self, inp, error, context):
-        #_LOG.debug("OutputManager.add_error: %r, %r, %r", inp, error, context)
         self._errors.append((inp, error, context))
 
     def add_unchanged(self, inp, content, context):
-        #_LOG.debug("OutputManager.add_unchanged: %r, %r, %r", inp, content, context)
         self._unchanged.append((inp, content, context))
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """
         _LOG.debug("OutputManager: writing...")
-        if not (self.conf.get("report_unchanged") or self._new
-                or self._changed or self._errors):
+        if not (self.conf.get("report_unchanged") or self._new or
+                self._changed or self._errors):
             return
         for rep in self._outputs:
             try:

@@ -39,7 +39,6 @@ class AbstractInput(object):
 
     def __init__(self, conf, context):
         super(AbstractInput, self).__init__()
-        # TODO: apply_defaults?
         self.context = context
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
@@ -185,7 +184,6 @@ class RssInput(AbstractInput):
         if etag:
             self.context['metadata']['etag'] = etag
         _LOG.debug("RssInput: loading done")
-
 
     def _load_entry(self, entry, fields, add_content):
         res = "\n".join(_get_val_from_rss_entry(entry, fields))

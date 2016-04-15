@@ -45,16 +45,9 @@ def _gen_diff(prev_content, content, diff_mode, context):
 
 
 def _clean_part(part):
+    """Clean one loaded part - strip whitespaces, replace invalid characters.
+    """
     return part.rstrip().replace("\n", common.PART_LINES_SEPARATOR)
-
-
-def _apply_filters(content, input_filters, context):
-    for fltcfg in input_filters or []:
-        _LOG.debug("filtering by %r", fltcfg)
-        flt = filters.get_filter(fltcfg, context)
-        if flt:
-            content = flt.filter(content)
-    return content
 
 
 def _check_last_error_time(context, inp_conf):
@@ -88,13 +81,16 @@ def _is_recovery_accepted(mtime, inp_conf, last_updated):
 
 
 def _load_content(loader, inp_conf, context):
-    content = None
-    # load return list of parts
+    # load list of parts
     content = loader.load()
 
-    # filters also here - loader return generator, so exception may occur
-    # during filtering
-    content = _apply_filters(content, inp_conf.get('filters'), context)
+    # apply filters
+    for fltcfg in inp_conf.get('filters') or []:
+        _LOG.debug("filtering by %r", fltcfg)
+        flt = filters.get_filter(fltcfg, context)
+        if flt:
+            content = flt.filter(content)
+
     if content:
         content = "\n".join(_clean_part(part) for part in content)
     content = content or "<no data>"
