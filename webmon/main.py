@@ -154,7 +154,7 @@ def _load(inp_conf, gcache, output, app_args, context):
 
     meta = _clean_meta_on_success(context)
 
-    if not prev_content:
+    if prev_content is None:
         # new content
         _LOG.debug("load: loading oid=%r - new content", oid)
         output.add_new(inp_conf, content, context)
