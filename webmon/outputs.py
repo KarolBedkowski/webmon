@@ -56,9 +56,9 @@ def _rst_escape(text):
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item(self, inp, content, context):
+    def _format_item(self, inp, content):
         """ Generate section for one input """
-        title = context["name"]
+        title = inp["_name"]
         yield title
         yield "'" * len(title)
         if 'url' in inp:
@@ -66,7 +66,7 @@ class AbstractTextOutput(AbstractOutput):
         if content:
             content = content.strip() or "<no data>"
             content = content.replace(common.PART_LINES_SEPARATOR, "\n")
-            if context.get(common.OPTS_PREFORMATTED):
+            if inp['_opt'].get(common.OPTS_PREFORMATTED):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
@@ -91,8 +91,8 @@ class AbstractTextOutput(AbstractOutput):
         title = "%s [%d]" % (title, len(items))
         yield title
         yield '-' * len(title)
-        for inp, content, context in items:
-            yield from self._format_item(inp, content, context)
+        for inp, content in items:
+            yield from self._format_item(inp, content)
         yield ''
 
     def _mk_report(self, new, changed, errors, unchanged):
@@ -304,17 +304,17 @@ class OutputManager(object):
     def valid(self):
         return bool(self._outputs)
 
-    def add_new(self, inp, content, context):
-        self._new.append((inp, content, context))
+    def add_new(self, inp, content):
+        self._new.append((inp, content))
 
-    def add_changed(self, inp, diff, context):
-        self._changed.append((inp, diff, context))
+    def add_changed(self, inp, diff):
+        self._changed.append((inp, diff))
 
-    def add_error(self, inp, error, context):
-        self._errors.append((inp, error, context))
+    def add_error(self, inp, error):
+        self._errors.append((inp, error))
 
-    def add_unchanged(self, inp, content, context):
-        self._unchanged.append((inp, content, context))
+    def add_unchanged(self, inp, content):
+        self._unchanged.append((inp, content))
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """

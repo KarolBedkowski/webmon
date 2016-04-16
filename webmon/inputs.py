@@ -37,16 +37,15 @@ class AbstractInput(object):
         ("report_unchanged", "report data even is not changed", False, False),
     ]
 
-    def __init__(self, conf, context):
+    def __init__(self, conf):
         super(AbstractInput, self).__init__()
-        self.context = context
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
 
     @property
     def last_updated(self):
         """ Helper - get last_updated from context """
-        return self.context.get('last_updated')
+        return self.conf.get('_last_updated')
 
     def validate(self):
         """ Validate input configuration """
@@ -141,7 +140,7 @@ class RssInput(AbstractInput):
         modified = time.localtime(self.last_updated) \
             if self.last_updated else None
         url = conf['url']
-        etag = self.context['metadata'].get('etag')
+        etag = self.conf['_metadata'].get('etag')
         _LOG.debug("RssInput: loading from %s, etag=%r, modified=%r",
                    url, etag, modified)
         doc = feedparser.parse(url, etag=etag, modified=modified)
@@ -182,7 +181,7 @@ class RssInput(AbstractInput):
         # update metadata
         etag = doc.get('etag')
         if etag:
-            self.context['metadata']['etag'] = etag
+            self.conf['_metadata']['etag'] = etag
         _LOG.debug("RssInput: loading done")
 
     def _load_entry(self, entry, fields, add_content):
@@ -261,12 +260,12 @@ class CmdInput(AbstractInput):
         _LOG.debug("CmdInput: loading done")
 
 
-def get_input(conf, context):
+def get_input(conf):
     """ Get input class according to configuration """
     kind = conf.get("kind") or "url"
     scls = common.find_subclass(AbstractInput, kind)
     if scls:
-        inp = scls(conf, context)
+        inp = scls(conf)
         inp.validate()
         return inp
 

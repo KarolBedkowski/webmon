@@ -154,13 +154,13 @@ def _conf2string(conf):
 _NAME_KEY_TO_TRY = ["name", "url", "cmd"]
 
 
-def get_input_name(conf, idx):
+def get_input_name(conf):
     """Return input name according to configuration."""
     for key in _NAME_KEY_TO_TRY:
         name = conf.get(key)
         if name:
             return name
-    return "Source %d" % idx
+    return "Source %d" % conf['_idx']
 
 
 def _check_dir_for_file(fpath):

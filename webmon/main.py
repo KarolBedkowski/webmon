@@ -33,12 +33,12 @@ DEFAULT_DIFF_MODE = "ndiff"
 _LOG = logging.getLogger("main")
 
 
-def _gen_diff(prev_content, content, diff_mode, context):
+def _gen_diff(prev_content, content, inp_conf):
     comparator = comparators.get_comparator(
-        diff_mode or DEFAULT_DIFF_MODE, context)
+        inp_conf["diff_mode"] or DEFAULT_DIFF_MODE, inp_conf)
     diff = "\n".join(comparator.compare(
         prev_content.split("\n"),
-        str(datetime.datetime.fromtimestamp(context["last_updated"])),
+        str(datetime.datetime.fromtimestamp(inp_conf["_last_updated"])),
         content.split("\n"),
         str(datetime.datetime.now())))
     return diff
@@ -50,14 +50,14 @@ def _clean_part(part):
     return part.rstrip().replace("\n", common.PART_LINES_SEPARATOR)
 
 
-def _check_last_error_time(context, inp_conf):
+def _check_last_error_time(inp_conf):
     """
     Check if recovered file may be useful.
 
     Return true when load error occurred and still `on_error_wait` interval
     not pass.
     """
-    last_error = context['metadata'].get('last_error')
+    last_error = inp_conf['_metadata'].get('last_error')
     if last_error:
         on_error_wait = inp_conf['on_error_wait']
         if on_error_wait:
@@ -80,14 +80,14 @@ def _is_recovery_accepted(mtime, inp_conf, last_updated):
     return time.time() - mtime < interval
 
 
-def _load_content(loader, inp_conf, context):
+def _load_content(loader, inp_conf):
     # load list of parts
     content = loader.load()
 
     # apply filters
     for fltcfg in inp_conf.get('filters') or []:
         _LOG.debug("filtering by %r", fltcfg)
-        flt = filters.get_filter(fltcfg, context)
+        flt = filters.get_filter(fltcfg, inp_conf)
         if flt:
             content = flt.filter(content)
 
@@ -97,8 +97,8 @@ def _load_content(loader, inp_conf, context):
     return content
 
 
-def _clean_meta_on_success(context):
-    meta = context['metadata']
+def _clean_meta_on_success(inp_conf):
+    meta = inp_conf['_metadata']
     if 'last_error' in meta:
         del meta['last_error']
     if 'last_error_msg' in meta:
@@ -106,10 +106,10 @@ def _clean_meta_on_success(context):
     return meta
 
 
-def _load(inp_conf, gcache, output, app_args, context):
+def _load(inp_conf, gcache, output, app_args):
     oid = config.gen_input_oid(inp_conf)
     _LOG.debug("load: loading oid=%r", oid)
-    context['name'] = config.get_input_name(inp_conf, context['_idx'])
+    inp_conf['_name'] = config.get_input_name(inp_conf)
 
     # try to recover
     recovered = False
@@ -117,54 +117,53 @@ def _load(inp_conf, gcache, output, app_args, context):
     content, mtime, meta = gcache.get_recovered(oid)
     if content is not None \
             and _is_recovery_accepted(mtime, inp_conf, last_updated):
-        context['last_updated'] = mtime
-        context['metadata'] = meta or {}
+        inp_conf['_last_updated'] = mtime
+        inp_conf['_metadata'] = meta or {}
         recovered = True
-        _LOG.info("loading '%s' - recovered", context['name'])
+        _LOG.info("loading '%s' - recovered", inp_conf['_name'])
     else:
-        context['last_updated'] = last_updated
-        context['metadata'] = gcache.get_meta(oid) or {}
+        inp_conf['_last_updated'] = last_updated
+        inp_conf['_metadata'] = gcache.get_meta(oid) or {}
 
-    if _check_last_error_time(context, inp_conf):
+    if _check_last_error_time(inp_conf):
         _LOG.info("loading '%s' - skipping - still waiting after error",
-                  context['name'])
+                  inp_conf['_name'])
         return False
 
-    loader = inputs.get_input(inp_conf, context)
+    loader = inputs.get_input(inp_conf)
     if not app_args.force and not loader.need_update() and not recovered:
-        _LOG.info("loading '%s' - no need update", context['name'])
+        _LOG.info("loading '%s' - no need update", inp_conf['_name'])
         return False
 
     prev_content = gcache.get(oid)
     if not recovered:
-        _LOG.info("loading '%s'...", context['name'])
+        _LOG.info("loading '%s'...", inp_conf['_name'])
         try:
-            content = _load_content(loader, inp_conf, context)
+            content = _load_content(loader, inp_conf)
         except common.NotModifiedError:
             content = prev_content
         except common.InputError as err:
-            context['metadata']['last_error'] = time.time()
-            context['metadata']['last_error_msg'] = str(err)
-            gcache.put_meta(oid, context['metadata'])
+            inp_conf['_metadata']['last_error'] = time.time()
+            inp_conf['_metadata']['last_error_msg'] = str(err)
+            gcache.put_meta(oid, inp_conf['_metadata'])
             raise
 
-    meta = _clean_meta_on_success(context)
+    meta = _clean_meta_on_success(inp_conf)
 
     if prev_content is None:
         # new content
         _LOG.debug("load: loading oid=%r - new content", oid)
-        output.add_new(inp_conf, content, context)
+        output.add_new(inp_conf, content)
     elif prev_content != content:
         # changed content
         _LOG.debug("load: loading oid=%r - changed content", oid)
-        diff = _gen_diff(prev_content, content, inp_conf["diff_mode"],
-                         context)
-        output.add_changed(inp_conf, diff, context)
+        diff = _gen_diff(prev_content, content, inp_conf)
+        output.add_changed(inp_conf, diff)
     else:
         _LOG.debug("load: loading oid=%r - unchanged content", oid)
         if inp_conf.get("report_unchanged", False):
             # unchanged content, but report
-            output.add_unchanged(inp_conf, prev_content, context)
+            output.add_unchanged(inp_conf, prev_content)
 
     gcache.put(oid, content)
     # save metadata back to store
@@ -244,27 +243,27 @@ def _load_user_classes():
 def _list_inputs(inps):
     print("Inputs:")
     for idx, inp_conf in enumerate(inps, 1):
-        name = config.get_input_name(inp_conf, idx)
+        inp_conf['_idx'] = idx
+        name = config.get_input_name(inp_conf)
         act = "" if inp_conf.get("enable", True) else "DISABLE"
         print(" %2d '%s'" % (idx, name), act)
 
 
-def _update_one(args, inp, idx, defaults, output, gcache):
-    # context is state object for one processing input
-    context = {'_idx': idx}
-    params = config.apply_defaults(defaults, inp)
+def _update_one(args, inp_conf, output, gcache):
     try:
-        return _load(params, gcache, output, args, context)
+        return _load(inp_conf, gcache, output, args)
     except RuntimeError as err:
         if args.verbose:
-            _LOG.exception("load %d error: %s", idx,
+            _LOG.exception("load %d error: %s", inp_conf['_idx'],
                            str(err).replace("\n", "; "))
         else:
-            _LOG.error("load %d error: %s", idx, str(err).replace("\n", "; "))
-        output.add_error(params, str(err), context)
+            _LOG.error("load %d error: %s", inp_conf['_idx'],
+                       str(err).replace("\n", "; "))
+        output.add_error(inp_conf, str(err))
     except Exception as err:
-        _LOG.exception("load %d error: %s", idx, str(err).replace("\n", "; "))
-        output.add_error(params, str(err), context)
+        _LOG.exception("load %d error: %s", inp_conf['idx'],
+                       str(err).replace("\n", "; "))
+        output.add_error(inp_conf, str(err))
     return True
 
 
@@ -293,7 +292,10 @@ def _update(args, inps, conf, selection=None):
     for idx, inp_conf in enumerate(inps, 1):
         if selection and idx not in selection:
             continue
-        if _update_one(args, inp_conf, idx, defaults, output, gcache):
+        params = config.apply_defaults(defaults, inp_conf)
+        params['_opt'] = {}
+        params['_idx'] = idx
+        if _update_one(args, params, output, gcache):
             processed += 1
 
     footer = "Generate time: %.2f" % (time.time() - start_time)

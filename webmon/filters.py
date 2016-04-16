@@ -48,9 +48,9 @@ class AbstractFilter(object):
     ]
     _accepted_modes = ("lines", "parts")
 
-    def __init__(self, conf, context):
+    def __init__(self, conf, inp_conf):
         super(AbstractFilter, self).__init__()
-        self.context = context
+        self.inp_conf = inp_conf
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
         self._mode = conf.get("mode", "parts")
@@ -156,8 +156,8 @@ class Grep(AbstractFilter):
     ]
     _accepted_modes = ("lines", "parts")
 
-    def __init__(self, conf, context):
-        super(Grep, self).__init__(conf, context)
+    def __init__(self, conf, inp_conf):
+        super(Grep, self).__init__(conf, inp_conf)
         self._re = re.compile(conf["pattern"])
 
     def _filter(self, text):
@@ -180,8 +180,8 @@ class Wrap(AbstractFilter):
         ("max_lines", "Max number of lines", None, False),
     ]
 
-    def __init__(self, conf, context):
-        super(Wrap, self).__init__(conf, context)
+    def __init__(self, conf, inp_conf):
+        super(Wrap, self).__init__(conf, inp_conf)
         self._tw = textwrap.TextWrapper(
             break_long_words=False,
             break_on_hyphens=False)
@@ -334,7 +334,7 @@ class CommandFilter(AbstractFilter):
                 yield res.decode("utf-8")
 
 
-def get_filter(conf, context):
+def get_filter(conf, inp_conf):
     """ Get filter object by configuration """
     name = conf.get("name")
     if not name:
@@ -343,7 +343,7 @@ def get_filter(conf, context):
 
     rcls = common.find_subclass(AbstractFilter, name)
     if rcls:
-        fltr = rcls(conf, context)
+        fltr = rcls(conf, inp_conf)
         fltr.validate()
         return fltr
 
