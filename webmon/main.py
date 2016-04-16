@@ -103,27 +103,51 @@ def _clean_meta_on_success(inp_conf):
         del meta['last_error']
     if 'last_error_msg' in meta:
         del meta['last_error_msg']
-    return meta
+    return inp_conf
 
 
-def _load(inp_conf, gcache, output, app_args):
-    oid = config.gen_input_oid(inp_conf)
-    _LOG.debug("load: loading oid=%r", oid)
-    inp_conf['_name'] = config.get_input_name(inp_conf)
+def _add_to_output(output, prev_content, content, inp_conf):
+    oid = inp_conf['_oid']
+    if prev_content is None:
+        # new content
+        _LOG.debug("load: loading oid=%r - new content", oid)
+        output.add_new(inp_conf, content)
+    elif prev_content != content:
+        # changed content
+        _LOG.debug("load: loading oid=%r - changed content", oid)
+        diff = _gen_diff(prev_content, content, inp_conf)
+        output.add_changed(inp_conf, diff)
+    else:
+        _LOG.debug("load: loading oid=%r - unchanged content", oid)
+        if inp_conf.get("report_unchanged", False):
+            # unchanged content, but report
+            output.add_unchanged(inp_conf, prev_content)
 
-    # try to recover
+
+def _try_recover(inp_conf, gcache):
+    """Try recover content & metadata; if not success - load last metadata."""
+    oid = inp_conf['_oid']
     recovered = False
     last_updated = gcache.get_mtime(oid)
     content, mtime, meta = gcache.get_recovered(oid)
     if content is not None \
             and _is_recovery_accepted(mtime, inp_conf, last_updated):
+        recovered = True
         inp_conf['_last_updated'] = mtime
         inp_conf['_metadata'] = meta or {}
-        recovered = True
         _LOG.info("loading '%s' - recovered", inp_conf['_name'])
     else:
         inp_conf['_last_updated'] = last_updated
         inp_conf['_metadata'] = gcache.get_meta(oid) or {}
+    return recovered, content, inp_conf
+
+
+def _load(inp_conf, gcache, output, app_args):
+    oid = inp_conf['_oid']
+    _LOG.debug("load: loading oid=%r", oid)
+
+    # try to recover, load meta
+    recovered, content, inp_conf = _try_recover(inp_conf, gcache)
 
     if _check_last_error_time(inp_conf):
         _LOG.info("loading '%s' - skipping - still waiting after error",
@@ -148,26 +172,10 @@ def _load(inp_conf, gcache, output, app_args):
             gcache.put_meta(oid, inp_conf['_metadata'])
             raise
 
-    meta = _clean_meta_on_success(inp_conf)
-
-    if prev_content is None:
-        # new content
-        _LOG.debug("load: loading oid=%r - new content", oid)
-        output.add_new(inp_conf, content)
-    elif prev_content != content:
-        # changed content
-        _LOG.debug("load: loading oid=%r - changed content", oid)
-        diff = _gen_diff(prev_content, content, inp_conf)
-        output.add_changed(inp_conf, diff)
-    else:
-        _LOG.debug("load: loading oid=%r - unchanged content", oid)
-        if inp_conf.get("report_unchanged", False):
-            # unchanged content, but report
-            output.add_unchanged(inp_conf, prev_content)
-
+    inp_conf = _clean_meta_on_success(inp_conf)
+    _add_to_output(output, prev_content, content, inp_conf)
     gcache.put(oid, content)
-    # save metadata back to store
-    gcache.put_meta(oid, meta)
+    gcache.put_meta(oid, inp_conf['_metadata'])
     _LOG.debug("load: loading %r done", oid)
     return True
 
@@ -295,6 +303,8 @@ def _update(args, inps, conf, selection=None):
         params = config.apply_defaults(defaults, inp_conf)
         params['_opt'] = {}
         params['_idx'] = idx
+        params['_name'] = config.get_input_name(params)
+        params['_oid'] = config.gen_input_oid(inp_conf)
         if _update_one(args, params, output, gcache):
             processed += 1
 
