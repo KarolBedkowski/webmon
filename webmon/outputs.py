@@ -68,17 +68,18 @@ class AbstractTextOutput(AbstractOutput):
             yield repr(inp)
         if content:
             content = content.strip() or "<no data>"
-            content = content.replace(common.PART_LINES_SEPARATOR, "\n")
-            if inp['_opt'].get(common.OPTS_PREFORMATTED):
-                yield "::"
-                yield ""
-                for line in content.split("\n"):
-                    yield "  " + line
-                yield ""
-            else:
-                for line in content.split("\n"):
+            for item in content.split("\n"):
+                item = item.replace(common.PART_LINES_SEPARATOR, "\n")
+                if inp['_opt'].get(common.OPTS_PREFORMATTED):
+                    yield "::"
                     yield ""
-                    yield _rst_escape(line)
+                    for line in item.split("\n"):
+                        yield "  " + line
+                    yield ""
+                else:
+                    yield ""
+                    for line in item.split("\n"):
+                        yield _rst_escape(line)
         yield ""
 
     def _get_stats_str(self, new, changed, errors, unchanged):
