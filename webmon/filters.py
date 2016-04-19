@@ -53,7 +53,7 @@ class AbstractFilter(object):
         self.inp_conf = inp_conf
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
-        self._mode = conf.get("mode", "parts")
+        self._mode = self.conf.get("mode")
 
     def validate(self):
         """ Validate filter parameters """
