@@ -81,6 +81,7 @@ def _is_recovery_accepted(mtime, inp_conf, last_updated):
 
 
 def _load_content(loader, inp_conf):
+    start = time.time()
     # load list of parts
     content = loader.load()
 
@@ -90,11 +91,11 @@ def _load_content(loader, inp_conf):
         flt = filters.get_filter(fltcfg, inp_conf)
         if flt:
             content = flt.filter(content)
-
     if content:
         content = "\n".join(_clean_part(part) for part in content)
     content = content or "<no data>"
-    return content
+    inp_conf['_debug']['load_time'] = time.time() - start
+    return content, inp_conf
 
 
 def _clean_meta_on_success(inp_conf):
@@ -163,7 +164,7 @@ def _load(inp_conf, gcache, output, app_args):
     if not recovered:
         _LOG.info("loading '%s'...", inp_conf['_name'])
         try:
-            content = _load_content(loader, inp_conf)
+            content, inp_conf = _load_content(loader, inp_conf)
         except common.NotModifiedError:
             content = prev_content
         except common.InputError as err:
@@ -191,6 +192,8 @@ def _parse_options():
                         help="increase output verbosity")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="show only errors and warnings")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="add some debug informations")
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument('--cache-dir',
@@ -244,7 +247,7 @@ def _load_user_classes():
             _LOG.debug("loading %r", fpath)
             try:
                 imp.load_source(fname[:-3], fpath)
-            except Exception as err:
+            except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
@@ -284,7 +287,7 @@ def _update(args, inps, conf, selection=None):
         _LOG.warning("Init cache error")
         return
 
-    output = outputs.OutputManager(conf.get("output"))
+    output = outputs.OutputManager(conf.get("output"), args)
     if not output.valid:
         _LOG.error("no valid outputs found")
         return
@@ -302,6 +305,7 @@ def _update(args, inps, conf, selection=None):
             continue
         params = config.apply_defaults(defaults, inp_conf)
         params['_opt'] = {}
+        params['_debug'] = {}
         params['_idx'] = idx
         params['_name'] = config.get_input_name(params)
         params['_oid'] = config.gen_input_oid(inp_conf)

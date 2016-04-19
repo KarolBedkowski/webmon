@@ -37,6 +37,7 @@ class AbstractOutput(object):
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
         self.footer = None
+        self.args = None
 
     def validate(self):
         for name, _, _, required in self.params or []:
@@ -63,6 +64,8 @@ class AbstractTextOutput(AbstractOutput):
         yield "'" * len(title)
         if 'url' in inp:
             yield inp['url']
+        if self.args.debug:
+            yield repr(inp)
         if content:
             content = content.strip() or "<no data>"
             content = content.replace(common.PART_LINES_SEPARATOR, "\n")
@@ -272,9 +275,10 @@ def _get_output(name, params):
 
 class OutputManager(object):
     """ Object group all outputs. """
-    def __init__(self, conf):
+    def __init__(self, conf, args):
         super(OutputManager, self).__init__()
         self.conf = conf
+        self.args = args
         self._outputs = []
         self._new = []
         self._changed = []
@@ -284,6 +288,7 @@ class OutputManager(object):
             try:
                 rep = _get_output(repname, repconf or {})
                 if rep:
+                    rep.args = args
                     self._outputs.append(rep)
             finally:
                 pass
