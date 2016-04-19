@@ -70,8 +70,8 @@ class AbstractFilter(object):
 
         elif self._mode == "lines":
             for part in parts:
-                yield from ("\n".join(self._filter(line))
-                            for line in part.split("\n"))
+                for line in part.split("\n"):
+                    yield from self._filter(line)
 
     def _filter(self, text):
         """ Filter text and return iter<str> new one or more items"""
