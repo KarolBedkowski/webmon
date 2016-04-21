@@ -80,10 +80,13 @@ def _is_recovery_accepted(mtime, inp_conf, last_updated):
     return time.time() - mtime < interval
 
 
-def _load_content(loader, inp_conf):
+def _load_content(loader, inp_conf, debug):
     start = time.time()
     # load list of parts
     content = loader.load()
+    if debug:
+        content = list(content)
+        _LOG.debug("Loaded: %r", content)
 
     # apply filters
     for fltcfg in inp_conf.get('filters') or []:
@@ -91,9 +94,15 @@ def _load_content(loader, inp_conf):
         flt = filters.get_filter(fltcfg, inp_conf)
         if flt:
             content = flt.filter(content)
+            if debug:
+                content = list(content)
+                _LOG.debug("Filtered by %s: %r", flt, content)
+
     if content:
         content = "\n".join(_clean_part(part) for part in content)
     content = content or "<no data>"
+    if debug:
+        _LOG.debug("Result: %r", content)
     inp_conf['_debug']['load_time'] = time.time() - start
     return content, inp_conf
 
@@ -164,7 +173,7 @@ def _load(inp_conf, gcache, output, app_args):
     if not recovered:
         _LOG.info("loading '%s'...", inp_conf['_name'])
         try:
-            content, inp_conf = _load_content(loader, inp_conf)
+            content, inp_conf = _load_content(loader, inp_conf, app_args.debug)
         except common.NotModifiedError:
             content = prev_content
         except common.InputError as err:
