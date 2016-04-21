@@ -119,16 +119,22 @@ class Split(AbstractFilter):
 
     name = "split"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
         ("separator", "Delimiter string (default \\n)", None, False),
         ("max_split", "Maximum number of lines", -1, False),
+        ("generate_parts", "Generate parts instead of split into lines",
+         False, False),
     ]
 
     def _filter(self, text):
         assert isinstance(text, str)
         sep = self.conf['separator']
-        yield from text.split("\n" if sep is None else sep,
-                              self.conf['max_split'])
+        if self.conf['generate_parts']:
+            yield from text.split("\n" if sep is None else sep,
+                                  self.conf['max_split'])
+        else:
+            yield "\n".join(text.split("\n" if sep is None else sep,
+                                       self.conf['max_split']))
 
 
 class Sort(AbstractFilter):
@@ -195,6 +201,12 @@ class Wrap(AbstractFilter):
         yield "\n".join(self._tw.fill(line) for line in text.split('\n'))
 
 
+
+def _strip_str(inp):
+    return str(x).strip()
+
+
+
 class DeCSVlise(AbstractFilter):
     """Split csv input into lines"""
 
@@ -211,8 +223,7 @@ class DeCSVlise(AbstractFilter):
     def _filter(self, text):
         reader = csv.reader([text], delimiter=self.conf['delimiter'],
                             quotechar=self.conf['quote_char'])
-        convfunc = (lambda x: str(x).strip()) if self.conf['strip'] \
-            else str
+        convfunc = _strip_str if self.conf['strip'] else str
 
         if self.conf['generate_parts']:
             yield from map(convfunc, reader)
