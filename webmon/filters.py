@@ -44,7 +44,7 @@ class AbstractFilter(object):
     name = None
     # parameters - list of tuples (name, description, default, required)
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
     ]
     _accepted_modes = ("lines", "parts")
 
@@ -53,7 +53,12 @@ class AbstractFilter(object):
         self.inp_conf = inp_conf
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
-        self._mode = self.conf.get("mode")
+
+        # if only one mode is available - use it
+        if len(self._accepted_modes) == 1:
+            self._mode = self._accepted_modes[0]
+        else:
+            self._mode = self.conf.get("mode")
 
     def validate(self):
         """ Validate filter parameters """
@@ -70,11 +75,13 @@ class AbstractFilter(object):
 
         elif self._mode == "lines":
             for part in parts:
-                for line in part.split("\n"):
-                    yield from self._filter(line)
+                lines = "\n".join(
+                    "\n".join(self._filter(line))
+                    for line in part.split("\n"))
+                yield lines
 
     def _filter(self, text):
-        """ Filter text and return iter<str> new one or more items"""
+        """Filter text and return iter<str> new one or more items"""
         raise NotImplementedError()
 
 
@@ -83,7 +90,7 @@ class Html2Text(AbstractFilter):
 
     name = "html2text"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
         ("width", "Max line width", 999999, True),
     ]
 
@@ -105,7 +112,7 @@ class Strip(AbstractFilter):
 
     name = "strip"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "lines", False),
         ("chars", "Characters to strip", None, False),
     ]
 
@@ -119,7 +126,7 @@ class Split(AbstractFilter):
 
     name = "split"
     params = [
-        ("mode", "Filtering mode", "parts", False),
+        ("mode", "Filtering mode", "lines", False),
         ("separator", "Delimiter string (default \\n)", None, False),
         ("max_split", "Maximum number of lines", -1, False),
         ("generate_parts", "Generate parts instead of split into lines",
@@ -133,8 +140,9 @@ class Split(AbstractFilter):
             yield from text.split("\n" if sep is None else sep,
                                   self.conf['max_split'])
         else:
-            yield "\n".join(text.split("\n" if sep is None else sep,
-                                       self.conf['max_split']))
+            lines = text.split("\n" if sep is None else sep,
+                               self.conf['max_split'])
+            yield "\n".join(lines)
 
 
 class Sort(AbstractFilter):
@@ -157,7 +165,7 @@ class Grep(AbstractFilter):
 
     name = "grep"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
         ("pattern", "Regular expression", None, True),
     ]
     _accepted_modes = ("lines", "parts")
@@ -181,10 +189,10 @@ class Wrap(AbstractFilter):
     """
     name = "wrap"
     params = [
-        ("mode", "Filtering mode", "lines", True),
         ("width", "Maximal line width", 76, False),
         ("max_lines", "Max number of lines", None, False),
     ]
+    _accepted_modes = ("parts", )
 
     def __init__(self, conf, inp_conf):
         super(Wrap, self).__init__(conf, inp_conf)
@@ -212,7 +220,7 @@ class DeCSVlise(AbstractFilter):
 
     name = "de-csv"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
         ("delimiter", "Field delimiter", ",", False),
         ("quote_char", "character to quote fields", None, False),
         ("generate_parts", "Generate parts instead of split into lines",
@@ -251,7 +259,6 @@ class GetElementsByCss(AbstractFilter):
 
     name = "get-elements-by-css"
     params = [
-        ("mode", "Filtering mode", "parts", True),
         ("sel", "selector", None, True),
     ]
     _accepted_modes = ("parts", )
@@ -275,7 +282,6 @@ class GetElementsByXpath(AbstractFilter):
 
     name = "get-elements-by-xpath"
     params = [
-        ("mode", "Filtering mode", "parts", True),
         ("xpath", "selector", None, True),
     ]
     _accepted_modes = ("parts", )
@@ -306,7 +312,6 @@ class GetElementsById(AbstractFilter):
 
     name = "get-elements-by-id"
     params = [
-        ("mode", "Filtering mode", "parts", True),
         ("sel", "selector", None, True),
     ]
     _accepted_modes = ("parts", )
@@ -322,7 +327,7 @@ class CommandFilter(AbstractFilter):
 
     name = "command"
     params = [
-        ("mode", "Filtering mode", "parts", True),
+        ("mode", "Filtering mode", "parts", False),
         ("command", "command to run", None, True),
         ("split_lines", "split filter results on newline character",
          False, True),

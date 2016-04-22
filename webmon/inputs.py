@@ -185,7 +185,7 @@ class RssInput(AbstractInput):
         _LOG.debug("RssInput: loading done")
 
     def _load_entry(self, entry, fields, add_content):
-        res = "\n".join(_get_val_from_rss_entry(entry, fields))
+        res = "\n\n".join(_get_val_from_rss_entry(entry, fields))
         if add_content:
             content = _get_content_from_rss_entry(entry)
             if content:
@@ -197,8 +197,7 @@ class RssInput(AbstractInput):
                     except ImportError:
                         _LOG.warning("RssInput: loading HTML2Text error "
                                      "(module not found)")
-                res += "\n" + content.strip()
-        res += "\n------------------"
+                res += "\n\n" + content.strip()
         return res
 
     def _get_fields_to_load(self):
@@ -238,6 +237,7 @@ class CmdInput(AbstractInput):
     name = "cmd"
     params = AbstractInput.params + [
         ("cmd", "Command to run", None, True),
+        ("split", "Split content", False, False),
     ]
 
     def load(self):
@@ -256,7 +256,10 @@ class CmdInput(AbstractInput):
             errstr = "\n".join(line.strip() for line in err if line)
             raise common.InputError(errstr.strip())
 
-        yield from stdout.decode('utf-8').split("\n")
+        if conf['split']:
+            yield from stdout.decode('utf-8').split("\n")
+        else:
+            yield stdout.decode('utf-8')
         _LOG.debug("CmdInput: loading done")
 
 

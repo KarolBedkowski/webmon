@@ -14,6 +14,7 @@ import logging
 import argparse
 import imp
 import time
+import pprint
 
 from . import cache
 from . import config
@@ -29,11 +30,12 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 VERSION = "0.1"
 DEFAULT_DIFF_MODE = "ndiff"
+PARTS_SEP = "\n\n-----\n\n"
 
 _LOG = logging.getLogger("main")
 
 
-def _gen_diff(prev_content, content, inp_conf):
+def _compare(prev_content, content, inp_conf):
     comparator = comparators.get_comparator(
         inp_conf["diff_mode"] or DEFAULT_DIFF_MODE, inp_conf)
     diff = "\n".join(comparator.compare(
@@ -42,12 +44,6 @@ def _gen_diff(prev_content, content, inp_conf):
         content.split("\n"),
         str(datetime.datetime.now())))
     return diff
-
-
-def _clean_part(part):
-    """Clean one loaded part - strip whitespaces, replace invalid characters.
-    """
-    return part.rstrip().replace("\n", common.PART_LINES_SEPARATOR)
 
 
 def _check_last_error_time(inp_conf):
@@ -83,26 +79,29 @@ def _is_recovery_accepted(mtime, inp_conf, last_updated):
 def _load_content(loader, inp_conf, debug):
     start = time.time()
     # load list of parts
-    content = loader.load()
+    parts = loader.load()
     if debug:
-        content = list(content)
-        _LOG.debug("Loaded: %r", content)
+        parts = list(parts)
+        _LOG.debug("Loaded: %s", pprint.saferepr(parts))
 
     # apply filters
     for fltcfg in inp_conf.get('filters') or []:
         _LOG.debug("filtering by %r", fltcfg)
         flt = filters.get_filter(fltcfg, inp_conf)
         if flt:
-            content = flt.filter(content)
+            parts = flt.filter(parts)
             if debug:
-                content = list(content)
-                _LOG.debug("Filtered by %s: %r", flt, content)
+                parts = list(parts)
+                _LOG.debug("Filtered by %s: %s", flt, pprint.saferepr(parts))
 
-    if content:
-        content = "\n".join(_clean_part(part) for part in content)
+    content = None
+    if parts:
+        content = PARTS_SEP.join(ppart for ppart in
+                                 (part.rstrip() for part in parts)
+                                 if ppart)
     content = content or "<no data>"
     if debug:
-        _LOG.debug("Result: %r", content)
+        _LOG.debug("Result: %s", pprint.saferepr(content))
     inp_conf['_debug']['load_time'] = time.time() - start
     return content, inp_conf
 
@@ -125,7 +124,7 @@ def _add_to_output(output, prev_content, content, inp_conf):
     elif prev_content != content:
         # changed content
         _LOG.debug("load: loading oid=%r - changed content", oid)
-        diff = _gen_diff(prev_content, content, inp_conf)
+        diff = _compare(prev_content, content, inp_conf)
         output.add_changed(inp_conf, diff)
     else:
         _LOG.debug("load: loading oid=%r - unchanged content", oid)
@@ -183,6 +182,9 @@ def _load(inp_conf, gcache, output, app_args):
             raise
 
     inp_conf = _clean_meta_on_success(inp_conf)
+    if app_args.debug:
+        _LOG.debug("diff prev: %s", pprint.saferepr(prev_content))
+        _LOG.debug("diff content: %s", pprint.saferepr(content))
     _add_to_output(output, prev_content, content, inp_conf)
     gcache.put(oid, content)
     gcache.put_meta(oid, inp_conf['_metadata'])
@@ -281,7 +283,7 @@ def _update_one(args, inp_conf, output, gcache):
                        str(err).replace("\n", "; "))
         output.add_error(inp_conf, str(err))
     except Exception as err:
-        _LOG.exception("load %d error: %s", inp_conf['idx'],
+        _LOG.exception("load %d error: %s", inp_conf['_idx'],
                        str(err).replace("\n", "; "))
         output.add_error(inp_conf, str(err))
     return True

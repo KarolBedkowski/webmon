@@ -69,16 +69,15 @@ class AbstractTextOutput(AbstractOutput):
         if content:
             content = content.strip() or "<no data>"
             for item in content.split("\n"):
-                item = item.replace(common.PART_LINES_SEPARATOR, "\n")
                 if inp['_opt'].get(common.OPTS_PREFORMATTED):
                     yield "::"
-                    yield ""
                     for line in item.split("\n"):
+                        yield ""
                         yield "  " + line
                     yield ""
                 else:
-                    yield ""
                     for line in item.split("\n"):
+                        yield ""
                         yield _rst_escape(line)
         yield ""
 
