@@ -10,6 +10,7 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
+import os.path
 import smtplib
 import email.mime.text
 import email.mime.multipart
@@ -137,6 +138,7 @@ class TextFileOutput(AbstractTextOutput):
     ]
 
     def report(self, new, changed, errors, unchanged):
+        _make_backup(self.conf["file"])
         try:
             with open(self.conf["file"], "w") as ofile:
                 ofile.write("\n".join(self._mk_report(new, changed, errors,
@@ -156,6 +158,7 @@ class HtmlFileOutput(AbstractTextOutput):
     ]
 
     def report(self, new, changed, errors, unchanged):
+        _make_backup(self.conf["file"])
         content = self._mk_report(new, changed, errors, unchanged)
         try:
             with open(self.conf["file"], "w") as ofile:
@@ -333,3 +336,9 @@ class OutputManager(object):
             except Exception as err:
                 _LOG.error("OutputManager: write %s error: %s", rep, err)
         _LOG.debug("OutputManager: write done")
+
+
+def _make_backup(filename):
+    if not os.path.isfile(filename):
+        return
+    os.rename(filename, filename + ".bak")
