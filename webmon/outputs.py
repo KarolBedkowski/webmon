@@ -68,7 +68,7 @@ class AbstractTextOutput(AbstractOutput):
         if self.args.debug:
             yield repr(inp)
         if content:
-            content = content.strip() or "<no data>"
+            content = content.rstrip() or "<no data>"
             if inp['_opt'].get(common.OPTS_PREFORMATTED):
                 yield "::"
                 yield ""
