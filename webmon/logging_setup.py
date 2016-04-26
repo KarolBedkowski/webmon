@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-""" Logging setup.
+"""Logging setup.
 Copyright (c) Karol Będkowski, 2014-2016
 
 This file is part of webmon.
@@ -18,7 +18,7 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 
 class ColorFormatter(logging.Formatter):
-    """ Formatter for logs that color messages according to level. """
+    """Formatter for logs that color messages according to level."""
     FORMAT_MAP = {level: ("\033[1;%dm%-8s\033[0m" % (color, level))
                   for level, color in
                   (("DEBUG", 34), ("INFO", 37), ("WARNING", 33), ("ERROR", 31),
@@ -48,24 +48,27 @@ def _create_dirs_for_log(filename):
     return log_fullpath
 
 
-def logging_setup(filename, debug=False, silent=False):
-    """ Setup configuration.
+def setup(filename, debug=False, silent=False):
+    """Setup logging.
 
     Args:
-        filename: optional log file name
-        debug: (bool) set more messages (debug messages)
+    :param filename: (str, optional) log file name
+    :param debug: (bool) run in debug mode (all messages)
+    :param silent: (bool) show only warnings/errors
     """
     logger = logging.getLogger()
     log_req = logging.getLogger("requests")
-    if silent:
-        logger.setLevel(logging.WARN)
-        log_req.setLevel(logging.WARN)
-    elif debug:
+
+    if debug:
         logger.setLevel(logging.DEBUG)
         log_req.setLevel(logging.DEBUG)
+    elif silent:
+        logger.setLevel(logging.WARN)
+        log_req.setLevel(logging.WARN)
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
+
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
         fileh = logging.FileHandler(log_fullpath)
@@ -77,7 +80,11 @@ def logging_setup(filename, debug=False, silent=False):
     fmtr = logging.Formatter
     if sys.platform != "win32":
         fmtr = ColorFormatter
-    console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
+
+    if debug:
+        console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
+    else:
+        console.setFormatter(fmtr("%(message)s"))
     logger.addHandler(console)
 
     log = logging.getLogger("logging")

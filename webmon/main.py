@@ -199,12 +199,10 @@ def _parse_options():
                         ' (default inputs.yaml)')
     parser.add_argument('-c', '--config',
                         help='configuration filename (default config.yaml)')
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="increase output verbosity")
     parser.add_argument("-s", "--silent", action="store_true",
                         help="show only errors and warnings")
     parser.add_argument("-d", "--debug", action="store_true",
-                        help="add some debug informations")
+                        help="print debug informations")
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument('--cache-dir',
@@ -275,7 +273,7 @@ def _update_one(args, inp_conf, output, gcache):
     try:
         return _load(inp_conf, gcache, output, args)
     except RuntimeError as err:
-        if args.verbose:
+        if args.debug:
             _LOG.exception("load %d error: %s", inp_conf['_idx'],
                            str(err).replace("\n", "; "))
         else:
@@ -295,7 +293,7 @@ def _update(args, inps, conf, selection=None):
     try:
         gcache = cache.Cache(os.path.expanduser(args.cache_dir))
     except IOError:
-        _LOG.warning("Init cache error")
+        _LOG.error("Init cache error")
         return
 
     output = outputs.OutputManager(conf.get("output"), args)
@@ -339,8 +337,7 @@ def _update(args, inps, conf, selection=None):
 def main():
     """Main function."""
     args = _parse_options()
-
-    logging_setup.logging_setup(args.log, args.verbose, args.silent)
+    logging_setup.setup(args.log, args.debug, args.silent)
 
     _load_user_classes()
 
@@ -350,7 +347,7 @@ def main():
 
     inps = config.load_inputs(args.inputs)
     if not inps:
-        _LOG.warning("No defined inputs")
+        _LOG.error("No defined inputs")
         return
 
     if args.list_inputs:
@@ -360,7 +357,7 @@ def main():
 
     conf = config.load_configuration(args.config)
     if not conf:
-        _LOG.warning("Missing configuration")
+        _LOG.error("Missing configuration")
         return
 
     selection = None

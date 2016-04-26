@@ -29,7 +29,6 @@ Usage
 Options
 ^^^^^^^
 -h, --help              display help
--v                      verbose mode
 -s, --silent            silent mode
 -i FILE, --inputs FILE  file with definition of sources; default inputs.yaml
 -c FILE, --config FILE  global configuration, default config.yaml
@@ -39,6 +38,7 @@ Options
 --force                 force update all sources; ignore `interval` parameter
 --diff-mode MODE        diff mode (unified, ndiff, context)
 --abilities             show available inputs, outputs, filters, comparators
+-d, --debug             print debug informations
 
 
 Configuration
