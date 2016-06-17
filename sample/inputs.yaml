@@ -19,3 +19,8 @@ owner: KarolBedkowski
 repository: webmon
 interval: 6h
 full_message: true
+---
+name: "jamendo - "
+kind: jamendo_albums
+artist: artist
+interval: 1d

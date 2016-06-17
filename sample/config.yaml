@@ -21,3 +21,4 @@ defaults:
     report_unchanged: false
     github_user: login
     github_token: 1111111111111111111111111111111111111111
+    jamendo_client_id: 00000000

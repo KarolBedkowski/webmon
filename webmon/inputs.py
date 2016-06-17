@@ -14,6 +14,7 @@ import subprocess
 import email.utils
 import logging
 import time
+import json
 
 import requests
 
@@ -347,3 +348,70 @@ def _format_gh_commit(message, full_message):
     else:
         msg = msg.split("\n", 1)[0].strip()
     return msg
+
+
+class JamendoAlbumsInput(AbstractInput):
+    """Load data from jamendo - new albums"""
+
+    name = "jamendo_albums"
+    params = AbstractInput.params + [
+        ("artist_id", "artist id", None, False),
+        ("artist", "artist name", None, False),
+        ("jamendo_client_id", "jamendo client id", None, True),
+        ("short_list", "show compact list", True, False),
+    ]
+
+    def load(self):
+        """ Return one part - page content. """
+        conf = self.conf
+        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
+                                 "Gecko/20100101 Firefox/45.0"}
+        if not (conf.get("artist_id") or conf.get("artist")):
+            raise common.ParamError("missing parameter 'artist' or 'artist_id'")
+        last_updated = "0000-00-00"
+        if self.last_updated:
+            last_updated = time.strftime("%Y-%m-%d",
+                                         time.localtime(self.last_updated))
+        today = time.strftime("%Y-%m-%d")
+        artist = (("name=" + conf["artist"]) if conf.get('artist')
+                  else ("id=" + str(conf["artist_id"])))
+        url = 'https://api.jamendo.com/v3.0/artists/albums?'
+        url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
+                         "format=json&order=album_releasedate_desc",
+                         artist,
+                         "album_datebetween=" + last_updated + "_" + today))
+        _LOG.debug("JamendoAlbumsInput: loading url: %s", url)
+        try:
+            response = requests.request(url=url, method='GET',
+                                        headers=headers)
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout:
+            raise common.InputError("timeout")
+        except Exception as err:
+            raise common.InputError(err)
+        if response.status_code == 304:
+            response.close()
+            raise common.NotModifiedError()
+        if response.status_code != 200:
+            err = "Response code: %d" % response.status_code
+            if response.text:
+                err += "\n" + response.text
+            response.close()
+            raise common.InputError(err)
+        res = json.loads(response.text)
+        if res['headers']['status'] == 'success':
+            if conf.get('short_list'):
+                for result in res['results']:
+                    yield "\n".join(
+                        album['releasedate'] + " " + album["name"]
+                        for album in result.get('albums') or [])
+            else:
+                for result in res['results']:
+                    for album in result.get('albums') or []:
+                        yield album['releasedate'] + " " + album["name"]
+        else:
+            response.close()
+            raise common.InputError(res['headers']['error_message'])
+
+        response.close()
+        _LOG.debug("JamendoAlbumsInput: load done")
