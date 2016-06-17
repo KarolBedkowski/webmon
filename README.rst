@@ -16,6 +16,7 @@ Dependences
 * docutils (for html output/reports/mails)
 * ElementTree (for get-elements-* filters)
 * feedparser (for rss input)
+* github3py (for github api; pip install --pre github3.py)
 
 Usage
 -----
@@ -99,7 +100,17 @@ Rss sources::
   html2text: true  # optionally clean content from html tags
   field: title, updated_parsed, published_parsed, link, author, content
      # optionally specify fields to show
-  
+
+GitHub sources::
+
+  kind: github_commits
+  name: "Github - webmon"
+  owner: KarolBedkowski  # repository owner
+  repository: webmon     # repository name
+  interval: 6h           # update interval
+  full_message: true     # show whole commit message
+  github_user: login     # github user login, may be placed in config.yaml
+  github_token: 1111...  # github user token, may be placed in config.yaml
 
 Common options::
 

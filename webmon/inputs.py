@@ -273,3 +273,77 @@ def get_input(conf):
         return inp
 
     _LOG.warning("unknown input kind: %s; skipping input", kind)
+
+
+class GithubInput(AbstractInput):
+    """Load last commits from github."""
+
+    name = "github_commits"
+    params = AbstractInput.params + [
+        ("owner", "repository owner", None, True),
+        ("repository", "repository name", None, False),
+        ("github_user", "user login", None, False),
+        ("github_token", "user personal token", None, False),
+        ("short_list", "show commits as short list", True, False),
+    ]
+
+    def load(self):
+        """Return commits."""
+        try:
+            import github3
+        except ImportError:
+            raise common.InputError("github3 module not found")
+        conf = self.conf
+        gh = None
+        if conf.get("github_user") and conf.get("github_token"):
+            try:
+                gh = github3.login(username=conf.get("github_user"),
+                                   token=conf.get("github_token"))
+            except Exception as err:
+                raise common.InputError("Github auth error: " + err)
+        if not gh:
+            gh = github3.Github()
+        repository = gh.repository(conf["owner"], conf["repository"])
+        modified = None
+        if self.last_updated:
+            if repository.updated_at.timestamp() < self.last_updated:
+                _LOG.debug("GithubInput: not updated - repository timestamp")
+                raise common.NotModifiedError()
+            modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                     time.localtime(self.last_updated))
+        commits = list(repository.commits(since=modified))
+        if len(commits) == 0:
+            _LOG.debug("GithubInput: not updated - co commits")
+            raise common.NotModifiedError()
+        short_list = conf.get("short_list")
+        full_message = conf.get("full_message") and not short_list
+        try:
+            if short_list:
+                result = [commit.commit.committer['date'] + " " +
+                          _format_gh_commit(commit.commit.message, False)
+                          for commit in commits]
+                yield "\n".join(result)
+            else:
+                for commit in commits:
+                    cmt = commit.commit
+                    msg = _format_gh_commit(cmt.message, full_message)
+                    yield "".join((cmt.committer['date'], '\n',
+                                    msg, '\nAuthor: ',
+                                    cmt.author['name'],
+                                    cmt.author['date']))
+        except Exception as err:
+            raise common.InputError(err)
+
+        _LOG.debug("GithubInput: loading done")
+
+
+def _format_gh_commit(message, full_message):
+    msg = message.strip()
+    if full_message:
+        msg_parts = msg.split("\n", 1)
+        msg = msg_parts[0].strip()
+        if len(msg_parts) > 1:
+            msg += '\n' + msg_parts[1].strip().replace("\n", "")
+    else:
+        msg = msg.split("\n", 1)[0].strip()
+    return msg

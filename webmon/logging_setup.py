@@ -58,16 +58,20 @@ def setup(filename, debug=False, silent=False):
     """
     logger = logging.getLogger()
     log_req = logging.getLogger("requests")
+    log_github3 = logging.getLogger('github3')
 
     if debug:
         logger.setLevel(logging.DEBUG)
         log_req.setLevel(logging.DEBUG)
+        log_github3.setLevel(logging.DEBUG)
     elif silent:
         logger.setLevel(logging.WARN)
         log_req.setLevel(logging.WARN)
+        log_github3.setLevel(logging.WARN)
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
+        log_github3.setLevel(logging.WARN)
 
     if filename:
         log_fullpath = _create_dirs_for_log(filename)

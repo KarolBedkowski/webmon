@@ -19,3 +19,5 @@ output:
 defaults:
     interval: 10m
     report_unchanged: false
+    github_user: login
+    github_token: 1111111111111111111111111111111111111111

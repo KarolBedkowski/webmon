@@ -13,3 +13,9 @@ filters:
     - name: strip
 interval: 1h
 ---
+name: "Github - webmon"
+kind: github_commits
+owner: KarolBedkowski
+repository: webmon
+interval: 6h
+full_message: true
