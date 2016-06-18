@@ -211,7 +211,7 @@ class Wrap(AbstractFilter):
 
 
 def _strip_str(inp):
-    return str(x).strip()
+    return str(inp).strip()
 
 
 

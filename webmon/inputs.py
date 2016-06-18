@@ -295,16 +295,16 @@ class GithubInput(AbstractInput):
         except ImportError:
             raise common.InputError("github3 module not found")
         conf = self.conf
-        gh = None
+        github = None
         if conf.get("github_user") and conf.get("github_token"):
             try:
-                gh = github3.login(username=conf.get("github_user"),
-                                   token=conf.get("github_token"))
+                github = github3.login(username=conf.get("github_user"),
+                                       token=conf.get("github_token"))
             except Exception as err:
                 raise common.InputError("Github auth error: " + err)
-        if not gh:
-            gh = github3.Github()
-        repository = gh.repository(conf["owner"], conf["repository"])
+        if not github:
+            github = github3.GitHub()
+        repository = github.repository(conf["owner"], conf["repository"])
         modified = None
         if self.last_updated:
             if repository.updated_at.timestamp() < self.last_updated:
@@ -329,9 +329,9 @@ class GithubInput(AbstractInput):
                     cmt = commit.commit
                     msg = _format_gh_commit(cmt.message, full_message)
                     yield "".join((cmt.committer['date'], '\n',
-                                    msg, '\nAuthor: ',
-                                    cmt.author['name'],
-                                    cmt.author['date']))
+                                   msg, '\nAuthor: ',
+                                   cmt.author['name'],
+                                   cmt.author['date']))
         except Exception as err:
             raise common.InputError(err)
 
