@@ -158,7 +158,7 @@ def _load(inp_conf, gcache, output, app_args):
     # try to recover, load meta
     recovered, content, inp_conf = _try_recover(inp_conf, gcache)
 
-    if _check_last_error_time(inp_conf):
+    if not app_args.force and _check_last_error_time(inp_conf):
         _LOG.info("loading '%s' - skipping - still waiting after error",
                   inp_conf['_name'])
         return False
