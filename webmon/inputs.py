@@ -25,6 +25,7 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger("inputs")
 _GITHUB_MAX_AGE = 86400 * 90  # 90 days
+_JAMENDO_MAX_AGE = 86400 * 90  # 90 days
 
 
 class AbstractInput(object):
@@ -372,10 +373,11 @@ class JamendoAlbumsInput(AbstractInput):
                                  "Gecko/20100101 Firefox/45.0"}
         if not (conf.get("artist_id") or conf.get("artist")):
             raise common.ParamError("missing parameter 'artist' or 'artist_id'")
-        last_updated = "0000-00-00"
-        if self.last_updated:
-            last_updated = time.strftime("%Y-%m-%d",
-                                         time.localtime(self.last_updated))
+        last_updated = time.time() - _JAMENDO_MAX_AGE
+        if self.last_updated and self.last_updated > last_updated:
+            last_updated = self.last_updated
+        last_updated = time.strftime("%Y-%m-%d",
+                                     time.localtime(last_updated))
         today = time.strftime("%Y-%m-%d")
         artist = (("name=" + conf["artist"]) if conf.get('artist')
                   else ("id=" + str(conf["artist_id"])))
