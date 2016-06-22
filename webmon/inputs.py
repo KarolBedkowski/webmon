@@ -24,6 +24,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger("inputs")
+_GITHUB_MAX_AGE = 86400 * 90  # 90 days
 
 
 class AbstractInput(object):
@@ -305,13 +306,16 @@ class GithubInput(AbstractInput):
         if not github:
             github = github3.GitHub()
         repository = github.repository(conf["owner"], conf["repository"])
-        modified = None
+        modified = time.time() - _GITHUB_MAX_AGE
         if self.last_updated:
             if repository.updated_at.timestamp() < self.last_updated:
                 _LOG.debug("GithubInput: not updated - repository timestamp")
                 raise common.NotModifiedError()
-            modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                     time.localtime(self.last_updated))
+            if self.last_updated > modified:
+                modified = self.last_updated
+        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                 time.localtime(modified))
+
         commits = list(repository.commits(since=modified))
         if len(commits) == 0:
             _LOG.debug("GithubInput: not updated - co commits")
