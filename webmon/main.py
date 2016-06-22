@@ -260,13 +260,14 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def _list_inputs(inps):
+def _list_inputs(inps, debug):
     print("Inputs:")
     for idx, inp_conf in enumerate(inps, 1):
         inp_conf['_idx'] = idx
         name = config.get_input_name(inp_conf)
         act = "" if inp_conf.get("enable", True) else "DISABLE"
-        print(" %2d '%s'" % (idx, name), act)
+        oid = config.gen_input_oid(inp_conf) if debug else ""
+        print(" %2d %-40s" % (idx, name), act, oid)
 
 
 def _update_one(args, inp_conf, output, gcache):
@@ -352,7 +353,7 @@ def main():
 
     if args.list_inputs:
         with config.lock():
-            _list_inputs(inps)
+            _list_inputs(inps, args.debug)
         return
 
     conf = config.load_configuration(args.config)
