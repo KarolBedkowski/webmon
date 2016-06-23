@@ -408,16 +408,22 @@ class JamendoAlbumsInput(AbstractInput):
         if res['headers']['status'] == 'success':
             if conf.get('short_list'):
                 for result in res['results']:
-                    yield "\n".join(
-                        album['releasedate'] + " " + album["name"]
+                    yield "\n".join(" ".join((
+                        album['releasedate'], album["name"],
+                        _jamendo_album_to_url(album)))
                         for album in result.get('albums') or [])
             else:
                 for result in res['results']:
                     for album in result.get('albums') or []:
-                        yield album['releasedate'] + " " + album["name"]
+                        yield " ".join((album['releasedate'], album["name"],
+                                        _jamendo_album_to_url(album)))
         else:
             response.close()
             raise common.InputError(res['headers']['error_message'])
 
         response.close()
         _LOG.debug("JamendoAlbumsInput: load done")
+
+
+def _jamendo_album_to_url(album):
+    return 'https://www.jamendo.com/album/{}/'.format(album['id'])
