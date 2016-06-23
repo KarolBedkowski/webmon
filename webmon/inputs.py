@@ -340,6 +340,9 @@ class GithubInput(AbstractInput):
         except Exception as err:
             raise common.InputError(err)
 
+        # add header
+        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+            conf["owner"], conf["repository"])
         _LOG.debug("GithubInput: loading done")
 
 
