@@ -65,6 +65,12 @@ class AbstractTextOutput(AbstractOutput):
         yield "'" * len(title)
         if 'url' in inp:
             yield inp['url']
+        header = inp['_opt'].get('header')
+        if header:
+            if isinstance(header, str):
+                yield header
+            else:
+                yield from header
         if self.args.debug:
             yield repr(inp)
         if content:
