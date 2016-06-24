@@ -15,6 +15,7 @@ import argparse
 import imp
 import time
 import pprint
+import locale
 
 from . import cache
 from . import config
@@ -337,6 +338,9 @@ def _update(args, inps, conf, selection=None):
 
 def main():
     """Main function."""
+
+    locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())
+
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)
 
