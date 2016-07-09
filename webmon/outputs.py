@@ -25,6 +25,10 @@ from . import common
 
 _LOG = logging.getLogger("outputs")
 
+_DOCUTILS_HTML_OVERRIDES = {'stylesheet_path': os.path.join(
+    os.path.dirname(__file__), "main.css")
+}
+
 
 class AbstractOutput(object):
     """Abstract/Base class for all outputs"""
@@ -128,7 +132,7 @@ class AbstractTextOutput(AbstractOutput):
 
     def _gen_footer(self):
         yield ""
-        yield self.footer or str(datetime.now())
+        yield ".. footer:: " + (self.footer or str(datetime.now()))
 
     def report(self, new, changed, errors, unchanged):
         """ Generate report """
@@ -168,7 +172,10 @@ class HtmlFileOutput(AbstractTextOutput):
         content = self._mk_report(new, changed, errors, unchanged)
         try:
             with open(self.conf["file"], "w") as ofile:
-                html = publish_string("\n".join(content), writer_name='html')
+                html = publish_string(
+                    "\n".join(content), writer_name='html',
+                    settings=None,
+                    settings_overrides=_DOCUTILS_HTML_OVERRIDES)
                 ofile.write(html.decode('utf-8'))
         except IOError as err:
             raise common.ReportGenerateError(
@@ -249,7 +256,9 @@ class EMailOutput(AbstractTextOutput):
             msg = email.mime.multipart.MIMEMultipart('alternative')
             msg.attach(email.mime.text.MIMEText(body, 'plain', 'utf-8'))
 
-            html = publish_string(body, writer_name='html').decode('utf-8')
+            html = publish_string(
+                body, writer_name='html', settings=None,
+                settings_overrides=_DOCUTILS_HTML_OVERRIDES).decode('utf-8')
             msg.attach(email.mime.text.MIMEText(html, 'html', 'utf-8'))
             return msg
         return email.mime.text.MIMEText(body, 'plain', 'utf-8')
