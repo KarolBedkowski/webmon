@@ -101,14 +101,38 @@ Rss sources::
   field: title, updated_parsed, published_parsed, link, author, content
      # optionally specify fields to show
 
-GitHub sources::
+GitHub commits::
 
   kind: github_commits
   name: "Github - webmon"
   owner: KarolBedkowski  # repository owner
   repository: webmon     # repository name
   interval: 6h           # update interval
-  full_message: true     # show whole commit message
+  full_message: true     # show whole commit message (if not short_list)
+  short_list: true       # show compact list
+  github_user: login     # github user login, may be placed in config.yaml
+  github_token: 1111...  # github user token, may be placed in config.yaml
+
+GitHub tags::
+
+  kind: github_tags
+  name: "Github - webmon"
+  owner: KarolBedkowski  # repository owner
+  repository: webmon     # repository name
+  interval: 6h           # update interval
+  short_list: true       # show compact list
+  github_user: login     # github user login, may be placed in config.yaml
+  github_token: 1111...  # github user token, may be placed in config.yaml
+
+GitHub releases::
+
+  kind: github_releases
+  name: "Github - webmon"
+  owner: KarolBedkowski  # repository owner
+  repository: webmon     # repository name
+  interval: 6h           # update interval
+  full_message: true     # show whole release message (if not short_list)
+  short_list: true       # show compact list
   github_user: login     # github user login, may be placed in config.yaml
   github_token: 1111...  # github user token, may be placed in config.yaml
 

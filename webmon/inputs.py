@@ -288,6 +288,7 @@ class GithubInput(AbstractInput):
         ("github_user", "user login", None, False),
         ("github_token", "user personal token", None, False),
         ("short_list", "show commits as short list", True, False),
+        ("full_message", "show commits whole commit body", False, False),
     ]
 
     def load(self):
@@ -356,6 +357,150 @@ def _format_gh_commit(message, full_message):
     else:
         msg = msg.split("\n", 1)[0].strip()
     return msg
+
+
+class GithubTagsInput(AbstractInput):
+    """Load last tags from github."""
+
+    name = "github_tags"
+    params = AbstractInput.params + [
+        ("owner", "repository owner", None, True),
+        ("repository", "repository name", None, False),
+        ("github_user", "user login", None, False),
+        ("github_token", "user personal token", None, False),
+        ("max_items", "Maximal number of tags to load", None, False),
+        ("short_list", "show commits as short list", True, False),
+    ]
+
+    def load(self):
+        """Return commits."""
+        try:
+            import github3
+        except ImportError:
+            raise common.InputError("github3 module not found")
+        conf = self.conf
+        github = None
+        if conf.get("github_user") and conf.get("github_token"):
+            try:
+                github = github3.login(username=conf.get("github_user"),
+                                       token=conf.get("github_token"))
+            except Exception as err:
+                raise common.InputError("Github auth error: " + err)
+        if not github:
+            github = github3.GitHub()
+        repository = github.repository(conf["owner"], conf["repository"])
+        modified = time.time() - _GITHUB_MAX_AGE
+        if self.last_updated:
+            if repository.updated_at.timestamp() < self.last_updated:
+                _LOG.debug("GithubInput: not updated - repository timestamp")
+                raise common.NotModifiedError()
+            if self.last_updated > modified:
+                modified = self.last_updated
+        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                 time.localtime(modified))
+
+        etag = self.conf['_metadata'].get('etag')
+        max_items = self.conf["max_items"] or 100
+        tags = list(repository.tags(max_items, etag=etag))
+        if len(tags) == 0:
+            _LOG.debug("GithubInput: not updated - no new tags")
+            raise common.NotModifiedError()
+        short_list = conf.get("short_list")
+        try:
+            if short_list:
+                yield '\n'.join(_format_gh_tag(tag) for tag in tags)
+            else:
+                for tag in tags:
+                    yield _format_gh_tag(tag)
+        except Exception as err:
+            raise common.InputError(err)
+
+        # add header
+        self.conf['_metadata']['etag'] = repository.etag
+        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+            conf["owner"], conf["repository"])
+        _LOG.debug("GithubTagsInput: loading done")
+
+
+def _format_gh_tag(tag):
+    if tag.last_modified:
+        return tag.name + " " + str(tag.last_modified)
+    return tag.name
+
+
+class GithubReleasesInput(AbstractInput):
+    """Load last releases from github."""
+
+    name = "github_releases"
+    params = AbstractInput.params + [
+        ("owner", "repository owner", None, True),
+        ("repository", "repository name", None, False),
+        ("github_user", "user login", None, False),
+        ("github_token", "user personal token", None, False),
+        ("max_items", "Maximal number of releases to load", None, False),
+        ("short_list", "show commits as short list", True, False),
+        ("full_message", "show commits whole commit body", False, False),
+    ]
+
+    def load(self):
+        """Return releases."""
+        try:
+            import github3
+        except ImportError:
+            raise common.InputError("github3 module not found")
+        conf = self.conf
+        github = None
+        if conf.get("github_user") and conf.get("github_token"):
+            try:
+                github = github3.login(username=conf.get("github_user"),
+                                       token=conf.get("github_token"))
+            except Exception as err:
+                raise common.InputError("Github auth error: " + err)
+        if not github:
+            github = github3.GitHub()
+        repository = github.repository(conf["owner"], conf["repository"])
+        modified = time.time() - _GITHUB_MAX_AGE
+        if self.last_updated:
+            if repository.updated_at.timestamp() < self.last_updated:
+                _LOG.debug("GithubInput: not updated - repository timestamp")
+                raise common.NotModifiedError()
+            if self.last_updated > modified:
+                modified = self.last_updated
+        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                                 time.localtime(modified))
+
+        etag = self.conf['_metadata'].get('etag')
+        max_items = self.conf["max_items"] or 100
+        releases = list(repository.releases(max_items, etag=etag))
+        if len(releases) == 0:
+            _LOG.debug("GithubInput: not updated - no new releases")
+            raise common.NotModifiedError()
+        short_list = conf.get("short_list")
+        full_message = conf.get("full_message") and not short_list
+        try:
+            if short_list:
+                yield '\n'.join(_format_gh_release(release, False)
+                                for release in releases)
+            else:
+                for release in releases:
+                    yield _format_gh_release(release, full_message)
+        except Exception as err:
+            raise common.InputError(err)
+
+        # add header
+        self.conf['_metadata']['etag'] = repository.etag
+        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+            conf["owner"], conf["repository"])
+        _LOG.debug("GithubTagsInput: loading done")
+
+
+def _format_gh_release(release, full_message):
+    res = [release.name, '  ',
+        release.created_at.strftime("%x %X")]
+    if release.body and full_message :
+        res.append("\n")
+        res.append(release.body.strip())
+    return "".join(res)
 
 
 class JamendoAlbumsInput(AbstractInput):
