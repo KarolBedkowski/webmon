@@ -220,6 +220,7 @@ def _parse_options():
                         help="show configured inputs")
     parser.add_argument("--sel", help="select (by idx, separated by comma) "
                         "inputs to update")
+    parser.add_argument("--stats-file", help="write stats to file")
     return parser.parse_args()
 
 
@@ -323,17 +324,28 @@ def _update(args, inps, conf, selection=None):
         if _update_one(args, params, output, gcache):
             processed += 1
 
-    footer = "Generate time: %.2f" % (time.time() - start_time)
+    duration = time.time() - start_time
+    footer = "Generate time: %.2f" % duration
 
     output.write(footer)
+    status = output.status()
     _LOG.info("Result: %s, inputs: %d, processed: %d",
               ", ".join(key + ": " + str(val)
-                        for key, val in output.status().items()),
+                        for key, val in status.items()),
               len(inps), processed)
 
     if output.errors_cnt < processed:
         # do not commit changes when all inputs failed
         gcache.commmit_temps(not selection)
+
+    if args.stats_file:
+        with open(args.stats_file, 'w') as fout:
+            fout.write(
+                "ts: {} inputs: {} processed: {} new: {} changed: {}"
+                " unchanged: {} errors: {} duration: {}".format(
+                    int(start_time), len(inps), processed, status['new'],
+                    status['changed'], status['unchanged'], status['error'],
+                    duration))
 
 
 def main():
