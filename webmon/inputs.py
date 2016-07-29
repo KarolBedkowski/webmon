@@ -318,7 +318,10 @@ class GithubInput(AbstractInput):
         modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
                                  time.localtime(modified))
 
-        commits = list(repository.commits(since=modified))
+        if hasattr(repository, "commits"):
+            commits = list(repository.commits(since=modified))
+        else:
+            commits = list(repository.iter_commits(since=modified))
         if len(commits) == 0:
             _LOG.debug("GithubInput: not updated - co commits")
             raise common.NotModifiedError()
@@ -401,7 +404,10 @@ class GithubTagsInput(AbstractInput):
 
         etag = self.conf['_metadata'].get('etag')
         max_items = self.conf["max_items"] or 100
-        tags = list(repository.tags(max_items, etag=etag))
+        if hasattr(repository, "tags"):
+            tags = list(repository.tags(max_items, etag=etag))
+        else:
+            tags = list(repository.iter_tags(max_items, etag=etag))
         if len(tags) == 0:
             _LOG.debug("GithubInput: not updated - no new tags")
             raise common.NotModifiedError()
@@ -471,7 +477,10 @@ class GithubReleasesInput(AbstractInput):
 
         etag = self.conf['_metadata'].get('etag')
         max_items = self.conf["max_items"] or 100
-        releases = list(repository.releases(max_items, etag=etag))
+        if hasattr(repository, "releases"):
+            releases = list(repository.releases(max_items, etag=etag))
+        else:
+            releases = list(repository.iter_releases(max_items, etag=etag))
         if len(releases) == 0:
             _LOG.debug("GithubInput: not updated - no new releases")
             raise common.NotModifiedError()
