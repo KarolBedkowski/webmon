@@ -278,6 +278,38 @@ def get_input(conf):
     _LOG.warning("unknown input kind: %s; skipping input", kind)
 
 
+def _github_check_repo_updated(repository, last_updated):
+    modified = time.time() - _GITHUB_MAX_AGE
+    if last_updated:
+        if repository.updated_at.timestamp() < last_updated:
+            _LOG.debug("GithubInput: not updated - repository timestamp")
+            raise common.NotModifiedError()
+        if last_updated > modified:
+            modified = last_updated
+
+    modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
+                             time.localtime(modified))
+    return modified
+
+
+def _github_get_repository(conf):
+    try:
+        import github3
+    except ImportError:
+        raise common.InputError("github3 module not found")
+    github = None
+    if conf.get("github_user") and conf.get("github_token"):
+        try:
+            github = github3.login(username=conf.get("github_user"),
+                                   token=conf.get("github_token"))
+        except Exception as err:
+            raise common.InputError("Github auth error: " + err)
+    if not github:
+        github = github3.GitHub()
+    repository = github.repository(conf["owner"], conf["repository"])
+    return repository
+
+
 class GithubInput(AbstractInput):
     """Load last commits from github."""
 
@@ -293,35 +325,15 @@ class GithubInput(AbstractInput):
 
     def load(self):
         """Return commits."""
-        try:
-            import github3
-        except ImportError:
-            raise common.InputError("github3 module not found")
         conf = self.conf
-        github = None
-        if conf.get("github_user") and conf.get("github_token"):
-            try:
-                github = github3.login(username=conf.get("github_user"),
-                                       token=conf.get("github_token"))
-            except Exception as err:
-                raise common.InputError("Github auth error: " + err)
-        if not github:
-            github = github3.GitHub()
-        repository = github.repository(conf["owner"], conf["repository"])
-        modified = time.time() - _GITHUB_MAX_AGE
-        if self.last_updated:
-            if repository.updated_at.timestamp() < self.last_updated:
-                _LOG.debug("GithubInput: not updated - repository timestamp")
-                raise common.NotModifiedError()
-            if self.last_updated > modified:
-                modified = self.last_updated
-        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                 time.localtime(modified))
-
+        repository = _github_get_repository(conf)
+        modified = _github_check_repo_updated(repository, self.last_updated)
         if hasattr(repository, "commits"):
             commits = list(repository.commits(since=modified))
         else:
-            commits = list(repository.iter_commits(since=modified))
+            etag = self.conf['_metadata'].get('etag')
+            commits = list(repository.iter_commits(since=modified,
+                                                   etag=etag))
         if len(commits) == 0:
             _LOG.debug("GithubInput: not updated - co commits")
             raise common.NotModifiedError()
@@ -345,6 +357,7 @@ class GithubInput(AbstractInput):
             raise common.InputError(err)
 
         # add header
+        self.conf['_metadata']['etag'] = repository.etag
         self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
         _LOG.debug("GithubInput: loading done")
@@ -377,30 +390,9 @@ class GithubTagsInput(AbstractInput):
 
     def load(self):
         """Return commits."""
-        try:
-            import github3
-        except ImportError:
-            raise common.InputError("github3 module not found")
         conf = self.conf
-        github = None
-        if conf.get("github_user") and conf.get("github_token"):
-            try:
-                github = github3.login(username=conf.get("github_user"),
-                                       token=conf.get("github_token"))
-            except Exception as err:
-                raise common.InputError("Github auth error: " + err)
-        if not github:
-            github = github3.GitHub()
-        repository = github.repository(conf["owner"], conf["repository"])
-        modified = time.time() - _GITHUB_MAX_AGE
-        if self.last_updated:
-            if repository.updated_at.timestamp() < self.last_updated:
-                _LOG.debug("GithubInput: not updated - repository timestamp")
-                raise common.NotModifiedError()
-            if self.last_updated > modified:
-                modified = self.last_updated
-        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                 time.localtime(modified))
+        repository = _github_get_repository(conf)
+        _github_check_repo_updated(repository, self.last_updated)
 
         etag = self.conf['_metadata'].get('etag')
         max_items = self.conf["max_items"] or 100
@@ -450,31 +442,9 @@ class GithubReleasesInput(AbstractInput):
 
     def load(self):
         """Return releases."""
-        try:
-            import github3
-        except ImportError:
-            raise common.InputError("github3 module not found")
         conf = self.conf
-        github = None
-        if conf.get("github_user") and conf.get("github_token"):
-            try:
-                github = github3.login(username=conf.get("github_user"),
-                                       token=conf.get("github_token"))
-            except Exception as err:
-                raise common.InputError("Github auth error: " + err)
-        if not github:
-            github = github3.GitHub()
-        repository = github.repository(conf["owner"], conf["repository"])
-        modified = time.time() - _GITHUB_MAX_AGE
-        if self.last_updated:
-            if repository.updated_at.timestamp() < self.last_updated:
-                _LOG.debug("GithubInput: not updated - repository timestamp")
-                raise common.NotModifiedError()
-            if self.last_updated > modified:
-                modified = self.last_updated
-        modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                                 time.localtime(modified))
-
+        repository = _github_get_repository(conf)
+        _github_check_repo_updated(repository, self.last_updated)
         etag = self.conf['_metadata'].get('etag')
         max_items = self.conf["max_items"] or 100
         if hasattr(repository, "releases"):
@@ -505,8 +475,8 @@ class GithubReleasesInput(AbstractInput):
 
 def _format_gh_release(release, full_message):
     res = [release.name, '  ',
-        release.created_at.strftime("%x %X")]
-    if release.body and full_message :
+           release.created_at.strftime("%x %X")]
+    if release.body and full_message:
         res.append("\n")
         res.append(release.body.strip())
     return "".join(res)
@@ -565,9 +535,10 @@ class JamendoAlbumsInput(AbstractInput):
         if res['headers']['status'] == 'success':
             if conf.get('short_list'):
                 for result in res['results']:
-                    yield "\n".join(" ".join((
-                        album['releasedate'], album["name"],
-                        _jamendo_album_to_url(album)))
+                    yield "\n".join(
+                        " ".join((
+                            album['releasedate'], album["name"],
+                            _jamendo_album_to_url(album)))
                         for album in result.get('albums') or [])
             else:
                 for result in res['results']:
