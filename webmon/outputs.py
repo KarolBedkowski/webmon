@@ -25,8 +25,8 @@ from . import common
 
 _LOG = logging.getLogger("outputs")
 
-_DOCUTILS_HTML_OVERRIDES = {'stylesheet_path': os.path.join(
-    os.path.dirname(__file__), "main.css")
+_DOCUTILS_HTML_OVERRIDES = {
+    'stylesheet_path': os.path.join(os.path.dirname(__file__), "main.css")
 }
 
 

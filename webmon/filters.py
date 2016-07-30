@@ -263,6 +263,10 @@ class GetElementsByCss(AbstractFilter):
     ]
     _accepted_modes = ("parts", )
 
+    def __init__(self, conf, inp_conf):
+        super(GetElementsByCss, self).__init__(conf, inp_conf)
+        self._expression = None
+
     def validate(self):
         super(GetElementsByCss, self).validate()
         sel = self.conf["sel"]
