@@ -500,19 +500,13 @@ class JamendoAlbumsInput(AbstractInput):
                                  "Gecko/20100101 Firefox/45.0"}
         if not (conf.get("artist_id") or conf.get("artist")):
             raise common.ParamError("missing parameter 'artist' or 'artist_id'")
+
         last_updated = time.time() - _JAMENDO_MAX_AGE
         if self.last_updated and self.last_updated > last_updated:
             last_updated = self.last_updated
-        last_updated = time.strftime("%Y-%m-%d",
-                                     time.localtime(last_updated))
-        today = time.strftime("%Y-%m-%d")
-        artist = (("name=" + conf["artist"]) if conf.get('artist')
-                  else ("id=" + str(conf["artist_id"])))
-        url = 'https://api.jamendo.com/v3.0/artists/albums?'
-        url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
-                         "format=json&order=album_releasedate_desc",
-                         artist,
-                         "album_datebetween=" + last_updated + "_" + today))
+
+        url = _jamendo_build_service_url(conf, last_updated)
+
         _LOG.debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             response = requests.request(url=url, method='GET',
@@ -522,6 +516,7 @@ class JamendoAlbumsInput(AbstractInput):
             raise common.InputError("timeout")
         except Exception as err:
             raise common.InputError(err)
+
         if response.status_code == 304:
             response.close()
             raise common.NotModifiedError()
@@ -531,27 +526,48 @@ class JamendoAlbumsInput(AbstractInput):
                 err += "\n" + response.text
             response.close()
             raise common.InputError(err)
+
         res = json.loads(response.text)
-        if res['headers']['status'] == 'success':
-            if conf.get('short_list'):
-                for result in res['results']:
-                    yield "\n".join(
-                        " ".join((
-                            album['releasedate'], album["name"],
-                            _jamendo_album_to_url(album)))
-                        for album in result.get('albums') or [])
-            else:
-                for result in res['results']:
-                    for album in result.get('albums') or []:
-                        yield " ".join((album['releasedate'], album["name"],
-                                        _jamendo_album_to_url(album)))
-        else:
+
+        if res['headers']['status'] != 'success':
             response.close()
             raise common.InputError(res['headers']['error_message'])
+
+        if conf.get('short_list'):
+            yield from _jamendo_format_short_list(res['results'])
+        else:
+            yield from _jamendo_format_long_list(res['results'])
 
         response.close()
         _LOG.debug("JamendoAlbumsInput: load done")
 
 
+def _jamendo_build_service_url(conf, last_updated):
+    last_updated = time.strftime("%Y-%m-%d",
+                                 time.localtime(last_updated))
+    today = time.strftime("%Y-%m-%d")
+    artist = (("name=" + conf["artist"]) if conf.get('artist')
+              else ("id=" + str(conf["artist_id"])))
+    url = 'https://api.jamendo.com/v3.0/artists/albums?'
+    url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
+                     "format=json&order=album_releasedate_desc",
+                     artist,
+                     "album_datebetween=" + last_updated + "_" + today))
+    return url
+
 def _jamendo_album_to_url(album):
     return 'https://www.jamendo.com/album/{}/'.format(album['id'])
+
+def _jamendo_format_short_list(results):
+    for result in results:
+        yield "\n".join(
+            " ".join((
+                album['releasedate'], album["name"],
+                _jamendo_album_to_url(album)))
+            for album in result.get('albums') or [])
+
+def _jamendo_format_long_list(results):
+    for result in results:
+        for album in result.get('albums') or []:
+            yield " ".join((album['releasedate'], album["name"],
+                            _jamendo_album_to_url(album)))
