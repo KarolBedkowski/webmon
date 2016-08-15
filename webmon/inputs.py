@@ -12,7 +12,6 @@ Licence: GPLv2+
 
 import subprocess
 import email.utils
-import logging
 import time
 import json
 
@@ -23,7 +22,6 @@ from . import common
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-_LOG = logging.getLogger("inputs")
 _GITHUB_MAX_AGE = 86400 * 90  # 90 days
 _JAMENDO_MAX_AGE = 86400 * 90  # 90 days
 
@@ -40,15 +38,12 @@ class AbstractInput(object):
         ("report_unchanged", "report data even is not changed", False, False),
     ]
 
-    def __init__(self, conf):
+    def __init__(self, ctx: common.Context):
         super(AbstractInput, self).__init__()
+        assert isinstance(ctx, common.Context)
+        self._ctx = ctx
         self.conf = {key: val for key, _, val, _ in self.params}
-        self.conf.update(conf)
-
-    @property
-    def last_updated(self):
-        """ Helper - get last_updated from context """
-        return self.conf.get('_last_updated')
+        self.conf.update(ctx.conf)
 
     def validate(self):
         """ Validate input configuration """
@@ -63,7 +58,7 @@ class AbstractInput(object):
 
     def need_update(self):
         """ Check last update time and return True if input need update."""
-        last = self.last_updated
+        last = self._ctx.last_updated
         if not last:
             return True
         # default - check interval
@@ -86,13 +81,14 @@ class WebInput(AbstractInput):
     def load(self):
         """ Return one part - page content. """
         conf = self.conf
+        ctx = self._ctx
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
-        if self.last_updated:
+        if ctx.last_updated:
             headers['If-Modified-Since'] = email.utils.formatdate(
-                self.last_updated)
+                ctx.last_updated)
         url = conf['url']
-        _LOG.debug("WebInput: loading url: %s; headers: %r", url, headers)
+        ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
@@ -113,7 +109,7 @@ class WebInput(AbstractInput):
             raise common.InputError(err)
         yield response.text
         response.close()
-        _LOG.debug("WebInput: load done")
+        ctx.log_debug("WebInput: load done")
 
 
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
@@ -136,16 +132,17 @@ class RssInput(AbstractInput):
             import feedparser
         except ImportError:
             raise common.InputError("feedparser module not found")
+        ctx = self._ctx
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
                                  "Gecko/20100101 Firefox/45.0"
         conf = self.conf
-        modified = time.localtime(self.last_updated) \
-            if self.last_updated else None
+        modified = time.localtime(ctx.last_updated) \
+            if ctx.last_updated else None
         url = conf['url']
-        etag = self.conf['_metadata'].get('etag')
-        _LOG.debug("RssInput: loading from %s, etag=%r, modified=%r",
-                   url, etag, modified)
+        etag = ctx.metadata.get('etag')
+        ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
+                      url, etag, modified)
         doc = feedparser.parse(url, etag=etag, modified=modified)
         status = doc.get('status') if doc else 400
         if status == 304:
@@ -157,7 +154,7 @@ class RssInput(AbstractInput):
             yield 'Temporary redirects: ' + doc.href
             return
         if status != 200:
-            _LOG.error("load document error %s: %s", status, doc)
+            ctx.log_error("load document error %s: %s", status, doc)
             summary = "Loading page error: %s" % status
             feed = doc.get('feed')
             if feed:
@@ -184,8 +181,8 @@ class RssInput(AbstractInput):
         # update metadata
         etag = doc.get('etag')
         if etag:
-            self.conf['_metadata']['etag'] = etag
-        _LOG.debug("RssInput: loading done")
+            ctx.metadata['etag'] = etag
+        ctx.log_debug("RssInput: loading done")
 
     def _load_entry(self, entry, fields, add_content):
         res = "\n\n".join(_get_val_from_rss_entry(entry, fields))
@@ -198,8 +195,9 @@ class RssInput(AbstractInput):
                         content = h2t.HTML2Text(bodywidth=9999999)\
                             .handle(content)
                     except ImportError:
-                        _LOG.warning("RssInput: loading HTML2Text error "
-                                     "(module not found)")
+                        self._ctx.log_error(
+                            "RssInput: loading HTML2Text error "
+                            "(module not found)")
                 res += "\n\n" + content.strip()
         return res
 
@@ -246,7 +244,8 @@ class CmdInput(AbstractInput):
     def load(self):
         """ Return command output as one part """
         conf = self.conf
-        _LOG.debug("CmdInput: execute: %r", conf['cmd'])
+        ctx = self._ctx
+        ctx.log_debug("CmdInput: execute: %r", conf['cmd'])
         process = subprocess.Popen(conf['cmd'],
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
@@ -263,26 +262,25 @@ class CmdInput(AbstractInput):
             yield from stdout.decode('utf-8').split("\n")
         else:
             yield stdout.decode('utf-8')
-        _LOG.debug("CmdInput: loading done")
+        ctx.log_debug("CmdInput: loading done")
 
 
-def get_input(conf):
+def get_input(ctx):
     """ Get input class according to configuration """
-    kind = conf.get("kind") or "url"
+    kind = ctx.conf.get("kind") or "url"
     scls = common.find_subclass(AbstractInput, kind)
     if scls:
-        inp = scls(conf)
+        inp = scls(ctx)
         inp.validate()
         return inp
 
-    _LOG.warning("unknown input kind: %s; skipping input", kind)
+    ctx.log_error("unknown input kind: %s; skipping input", kind)
 
 
 def _github_check_repo_updated(repository, last_updated):
     modified = time.time() - _GITHUB_MAX_AGE
     if last_updated:
         if repository.updated_at.timestamp() < last_updated:
-            _LOG.debug("GithubInput: not updated - repository timestamp")
             raise common.NotModifiedError()
         if last_updated > modified:
             modified = last_updated
@@ -326,16 +324,17 @@ class GithubInput(AbstractInput):
     def load(self):
         """Return commits."""
         conf = self.conf
+        ctx = self._ctx
         repository = _github_get_repository(conf)
-        modified = _github_check_repo_updated(repository, self.last_updated)
+        modified = _github_check_repo_updated(repository, ctx.last_updated)
         if hasattr(repository, "commits"):
             commits = list(repository.commits(since=modified))
         else:
-            etag = self.conf['_metadata'].get('etag')
+            etag = ctx.metadata.get('etag')
             commits = list(repository.iter_commits(since=modified,
                                                    etag=etag))
         if len(commits) == 0:
-            _LOG.debug("GithubInput: not updated - co commits")
+            ctx.log_debug("GithubInput: not updated - co commits")
             raise common.NotModifiedError()
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
@@ -357,10 +356,10 @@ class GithubInput(AbstractInput):
             raise common.InputError(err)
 
         # add header
-        self.conf['_metadata']['etag'] = repository.etag
-        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+        ctx.metadata['etag'] = repository.etag
+        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
-        _LOG.debug("GithubInput: loading done")
+        ctx.log_debug("GithubInput: loading done")
 
 
 def _format_gh_commit(message, full_message):
@@ -391,17 +390,18 @@ class GithubTagsInput(AbstractInput):
     def load(self):
         """Return commits."""
         conf = self.conf
+        ctx = self._ctx
         repository = _github_get_repository(conf)
-        _github_check_repo_updated(repository, self.last_updated)
+        _github_check_repo_updated(repository, ctx.last_updated)
 
-        etag = self.conf['_metadata'].get('etag')
+        etag = ctx.metadata.get('etag')
         max_items = self.conf["max_items"] or 100
         if hasattr(repository, "tags"):
             tags = list(repository.tags(max_items, etag=etag))
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
         if len(tags) == 0:
-            _LOG.debug("GithubInput: not updated - no new tags")
+            ctx.log_debug("GithubInput: not updated - no new tags")
             raise common.NotModifiedError()
         short_list = conf.get("short_list")
         try:
@@ -414,10 +414,10 @@ class GithubTagsInput(AbstractInput):
             raise common.InputError(err)
 
         # add header
-        self.conf['_metadata']['etag'] = repository.etag
-        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+        ctx.metadata['etag'] = repository.etag
+        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
-        _LOG.debug("GithubTagsInput: loading done")
+        ctx.log_debug("GithubTagsInput: loading done")
 
 
 def _format_gh_tag(tag):
@@ -443,16 +443,17 @@ class GithubReleasesInput(AbstractInput):
     def load(self):
         """Return releases."""
         conf = self.conf
+        ctx = self._ctx
         repository = _github_get_repository(conf)
-        _github_check_repo_updated(repository, self.last_updated)
-        etag = self.conf['_metadata'].get('etag')
+        _github_check_repo_updated(repository, ctx.last_updated)
+        etag = ctx.metadata.get('etag')
         max_items = self.conf["max_items"] or 100
         if hasattr(repository, "releases"):
             releases = list(repository.releases(max_items, etag=etag))
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
         if len(releases) == 0:
-            _LOG.debug("GithubInput: not updated - no new releases")
+            ctx.log_debug("GithubInput: not updated - no new releases")
             raise common.NotModifiedError()
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
@@ -467,10 +468,10 @@ class GithubReleasesInput(AbstractInput):
             raise common.InputError(err)
 
         # add header
-        self.conf['_metadata']['etag'] = repository.etag
-        self.conf['_opt']['header'] = "https://www.github.com/{}/{}/".format(
+        ctx.metadata['etag'] = repository.etag
+        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
-        _LOG.debug("GithubTagsInput: loading done")
+        ctx.log_debug("GithubTagsInput: loading done")
 
 
 def _format_gh_release(release, full_message):
@@ -495,19 +496,21 @@ class JamendoAlbumsInput(AbstractInput):
 
     def load(self):
         """ Return one part - page content. """
+        ctx = self._ctx
         conf = self.conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
         if not (conf.get("artist_id") or conf.get("artist")):
-            raise common.ParamError("missing parameter 'artist' or 'artist_id'")
+            raise common.ParamError(
+                "missing parameter 'artist' or 'artist_id'")
 
         last_updated = time.time() - _JAMENDO_MAX_AGE
-        if self.last_updated and self.last_updated > last_updated:
-            last_updated = self.last_updated
+        if ctx.last_updated and ctx.last_updated > last_updated:
+            last_updated = ctx.last_updated
 
         url = _jamendo_build_service_url(conf, last_updated)
 
-        _LOG.debug("JamendoAlbumsInput: loading url: %s", url)
+        ctx.log_debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers)
@@ -539,7 +542,7 @@ class JamendoAlbumsInput(AbstractInput):
             yield from _jamendo_format_long_list(res['results'])
 
         response.close()
-        _LOG.debug("JamendoAlbumsInput: load done")
+        ctx.log_debug("JamendoAlbumsInput: load done")
 
 
 def _jamendo_build_service_url(conf, last_updated):
@@ -555,16 +558,18 @@ def _jamendo_build_service_url(conf, last_updated):
                      "album_datebetween=" + last_updated + "_" + today))
     return url
 
+
 def _jamendo_album_to_url(album):
     return 'https://www.jamendo.com/album/{}/'.format(album['id'])
+
 
 def _jamendo_format_short_list(results):
     for result in results:
         yield "\n".join(
-            " ".join((
-                album['releasedate'], album["name"],
-                _jamendo_album_to_url(album)))
+            " ".join((album['releasedate'], album["name"],
+                      _jamendo_album_to_url(album)))
             for album in result.get('albums') or [])
+
 
 def _jamendo_format_long_list(results):
     for result in results:

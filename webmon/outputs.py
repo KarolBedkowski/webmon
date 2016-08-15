@@ -19,9 +19,12 @@ import logging
 from datetime import datetime
 import subprocess
 
+
 from docutils.core import publish_string
 
 from . import common
+from . import cache
+
 
 _LOG = logging.getLogger("outputs")
 
@@ -62,24 +65,24 @@ def _rst_escape(text):
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item(self, inp, content):
+    def _format_item(self, ctx: common.Context, content: str):
         """ Generate section for one input """
-        title = inp["_name"]
+        title = ctx.name
         yield title
         yield "'" * len(title)
-        if 'url' in inp:
-            yield inp['url']
-        header = inp['_opt'].get('header')
+        if 'url' in ctx.conf:
+            yield ctx.conf['url']
+        header = ctx.opt.get('header')
         if header:
             if isinstance(header, str):
                 yield header
             else:
                 yield from header
         if self.args.debug:
-            yield repr(inp)
+            yield str(ctx)
         if content:
             content = content.rstrip() or "<no data>"
-            if inp['_opt'].get(common.OPTS_PREFORMATTED):
+            if ctx.opt.get(common.OPTS_PREFORMATTED):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
@@ -103,8 +106,8 @@ class AbstractTextOutput(AbstractOutput):
         title = "%s [%d]" % (title, len(items))
         yield title
         yield '-' * len(title)
-        for inp, content in items:
-            yield from self._format_item(inp, content)
+        for ctx, content in items:
+            yield from self._format_item(ctx, content)
         yield ''
 
     def _mk_report(self, new, changed, errors, unchanged):
@@ -300,6 +303,7 @@ class OutputManager(object):
         self._changed = []
         self._unchanged = []
         self._errors = []
+        self._cache = cache.PartsCache(os.path.join(args.cache_dir, "parts"))
         for repname, repconf in (conf or {}).items():
             try:
                 rep = _get_output(repname, repconf or {})
@@ -325,17 +329,17 @@ class OutputManager(object):
     def valid(self):
         return bool(self._outputs)
 
-    def add_new(self, inp, content):
-        self._new.append((inp, content))
+    def add_new(self, ctx, content):
+        self._new.append((ctx, content))
 
-    def add_changed(self, inp, diff):
-        self._changed.append((inp, diff))
+    def add_changed(self, ctx, diff):
+        self._changed.append((ctx, diff))
 
-    def add_error(self, inp, error):
-        self._errors.append((inp, error))
+    def add_error(self, ctx, error):
+        self._errors.append((ctx, error))
 
-    def add_unchanged(self, inp, content):
-        self._unchanged.append((inp, content))
+    def add_unchanged(self, ctx, content):
+        self._unchanged.append((ctx, content))
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """

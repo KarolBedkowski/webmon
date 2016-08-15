@@ -28,11 +28,10 @@ class AbstractComparator(object):
         common.OPTS_PREFORMATTED: False,
     }
 
-    def __init__(self, inp_conf):
+    def __init__(self, ctx):
         super(AbstractComparator, self).__init__()
-        self.inp_conf = inp_conf
-        if self.opts:
-            self.inp_conf['_opt'].update(self.opts)
+        assert isinstance(ctx, common.Context)
+        self.ctx = ctx
 
     def compare(self, old, old_date, new, new_date):
         """ Compare `old` and `new` lists and return formatted result.
@@ -137,9 +136,9 @@ class Last(AbstractComparator):
         return new
 
 
-def get_comparator(name, inp_conf):
+def get_comparator(name, ctx):
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:
-        return cmpcls(inp_conf)
+        return cmpcls(ctx)
     raise common.ParamError("Unknown comparator: %s" % name)

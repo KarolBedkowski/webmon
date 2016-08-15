@@ -8,8 +8,13 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
+import logging
+
+from . import config
+
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
+
 
 # options
 OPTS_PREFORMATTED = "preformatted"
@@ -86,3 +91,59 @@ def parse_interval(instr):
         return val
     except ValueError:
         raise ValueError("invalid interval '%s'" % instr)
+
+
+class Context(object):
+    """Processing context
+
+    TODO: czy zapisywanie powinno być do kontekstu?
+    """
+    _log = logging.getLogger("context")
+
+    def __init__(self, conf, gcache, idx, output, args):
+        super(Context, self).__init__()
+        self.conf = conf
+        self.opt = {}
+        self.debug_data = {}
+        self.idx = idx
+        if conf:
+            self.name = config.get_input_name(conf)
+            self.oid = config.gen_input_oid(conf)
+        else:
+            self.name = "src_" + str(idx)
+            self.oid = str(idx)
+        self.cache = gcache
+        self.output = output
+        self.args = args
+        self.metadata = {}
+        self.last_updated = None
+
+        self._log_prefix = "".join((
+            "[",
+            str(self.idx + 1), ": ", self.name,
+            ("/" + self.oid) if self.debug else "",
+            "] "
+        ))
+
+    @property
+    def debug(self):
+        return self.args.debug if self.args else None
+
+    def __str__(self):
+        return "<Context idx={} oid={} name={} conf={} opt={} debug={} "\
+            "meta={}>".\
+            format(self.idx, self.oid, self.name, self.conf, self.opt,
+                   self.debug_data, self.metadata)
+
+    def log_info(self, fmt, *args, **kwds):
+        self._log.info(self._log_prefix + fmt, *args, **kwds)
+
+    def log_debug(self, fmt, *args, **kwds):
+        if self.debug:
+            self._log.debug(self._log_prefix + fmt, *args, **kwds)
+
+    def log_error(self, fmt, *args, **kwds):
+        if self.debug:
+            self._log.exception(self._log_prefix + fmt, *args, **kwds)
+        else:
+            self._log.error(self._log_prefix + fmt, *args, **kwds)

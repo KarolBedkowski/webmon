@@ -7,10 +7,13 @@ Copyright (c) Karol Będkowski, 2016
 This file is part of webmon.
 Licence: GPLv2+
 """
+# TODO: logowanie przez context?
 
 import os.path
 import logging
 import pathlib
+import time
+import hashlib
 
 import yaml
 
@@ -21,20 +24,17 @@ _LOG = logging.getLogger("cache")
 _TEMP_EXT = ".tmp"
 
 
-def _get_content(fname):
+def _get_content(fname: str) -> str:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
                 return fin.read()
         except IOError as err:
             _LOG.error("load file %s from cache error: %s", fname, err)
-        except yaml.error.YAMLError as err:
-            _LOG.error("load meta file %s from cache error - broken YAML: %s",
-                       fname, err)
     return None
 
 
-def _get_meta(fname):
+def _get_meta(fname: str) -> str:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
@@ -47,10 +47,27 @@ def _get_meta(fname):
     return None
 
 
+def _create_missing_dir(path: str):
+    """ Check path and if not exists create directory.
+        If path exists and is not directory - raise error.
+    """
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            return
+        _LOG.error("path %s for exists but is not directory", path)
+        raise RuntimeError("wrong cache directory: {}".format(path))
+
+    try:
+        pathlib.Path(path).mkdir(parents=True)
+    except IOError as err:
+        _LOG.error("creating directory %s error: %s", path, err)
+        raise
+
+
 class Cache(object):
     """Cache for previous data."""
 
-    def __init__(self, directory):
+    def __init__(self, directory: str):
         """
         Constructor.
 
@@ -63,13 +80,7 @@ class Cache(object):
         self._touched = set()
 
         # init
-        if not os.path.isdir(self._directory):
-            try:
-                pathlib.Path(self._directory).mkdir(parents=True)
-            except IOError as err:
-                _LOG.error("creating directory %s for cache error: %s",
-                           self._directory, err)
-                raise
+        _create_missing_dir(self._directory)
 
     def get(self, oid):
         """Get file from cache by `oid`."""
@@ -85,7 +96,7 @@ class Cache(object):
         _LOG.debug("get_meta %r: meta=%r", oid, meta)
         return meta
 
-    def get_recovered(self, oid):
+    def get_recovered(self, oid: str):
         """Find temp files for `oid` and return content, mtime and meta.
 
         Temp files contains new loaded content are renamed when application end
@@ -96,7 +107,6 @@ class Cache(object):
             _LOG.debug("get_recovered %r - not found", oid)
             return None, None, None
 
-        content, mtime, meta = None, None, None
         mtime = os.path.getmtime(name)
         content = _get_content(name)
         meta_name = self._get_filename_meta(oid) + _TEMP_EXT
@@ -106,7 +116,7 @@ class Cache(object):
                    oid, mtime, len(content or ''), meta)
         return content, mtime, meta
 
-    def put(self, oid, content):
+    def put(self, oid: str, content: str):
         """Put `content` into cache as temp file identified by `oid`."""
         content = content or ''
         _LOG.debug("put %r, content_len=%d", oid, len(content))

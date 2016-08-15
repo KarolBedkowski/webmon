@@ -27,7 +27,7 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 _LOG = logging.getLogger("conf")
 
 
-def load_configuration(filename):
+def load_configuration(filename: str) -> dict:
     """Load app configuration from `filename`."""
     if not filename:
         filename = _find_config_file("config.yaml")
@@ -39,7 +39,10 @@ def load_configuration(filename):
         return None
     try:
         with open(filename) as fin:
-            return yaml.load(fin)
+            conf = yaml.load(fin)
+            if not conf:
+                _LOG.error("missing configuration")
+            return conf
     except IOError as err:
         _LOG.error("loading configuration from file %s error: %s", filename,
                    err)
@@ -49,7 +52,7 @@ def load_configuration(filename):
     return None
 
 
-def load_inputs(filename):
+def load_inputs(filename: str) -> list:
     """Load inputs configuration from `filename`."""
     if not filename:
         filename = _find_config_file("inputs.yaml")
@@ -77,7 +80,7 @@ def load_inputs(filename):
     return None
 
 
-def apply_defaults(defaults, conf):
+def apply_defaults(defaults: dict, conf: dict) -> dict:
     """Deep copy & update `defaults` dict with `conf`."""
     result = copy.deepcopy(defaults)
 
@@ -96,7 +99,7 @@ def apply_defaults(defaults, conf):
     return result
 
 
-def _find_config_file(name, must_exists=True):
+def _find_config_file(name: str, must_exists: bool=True) -> str:
     if os.path.isfile(name):
         return name
     # try ~/.config/webmon/
@@ -105,7 +108,7 @@ def _find_config_file(name, must_exists=True):
     return fpath if not must_exists or os.path.isfile(fpath) else None
 
 
-def gen_input_oid(conf):
+def gen_input_oid(conf: dict) -> str:
     """Generate object id according to configuration."""
     oid = conf.get('oid') or conf.get('id')
     if oid:
@@ -129,7 +132,7 @@ DEFAULTS = {
 }
 
 
-def _conf2string(conf):
+def _conf2string(conf: dict) -> list:
     """Convert `conf` dictionary to list of strings."""
     kvs = []
 
@@ -154,7 +157,7 @@ def _conf2string(conf):
 _NAME_KEY_TO_TRY = ["name", "url", "cmd"]
 
 
-def get_input_name(conf):
+def get_input_name(conf: dict) -> str:
     """Return input name according to configuration."""
     for key in _NAME_KEY_TO_TRY:
         name = conf.get(key)
@@ -163,11 +166,11 @@ def get_input_name(conf):
     return "Source %d" % conf['_idx']
 
 
-def _check_dir_for_file(fpath):
+def _check_dir_for_file(fpath: str):
     """Check is directory for file exists; create if missing."""
-    lock_file_dir = os.path.dirname(fpath)
-    if not os.path.isdir(lock_file_dir):
-        os.makedirs(lock_file_dir)
+    dpath = os.path.dirname(fpath)
+    if not os.path.isdir(dpath):
+        os.makedirs(dpath)
 
 
 # locking

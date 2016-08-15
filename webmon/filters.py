@@ -9,7 +9,6 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 import subprocess
-import logging
 import re
 import textwrap
 import csv
@@ -30,8 +29,6 @@ from . import common
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-_LOG = logging.getLogger("filters")
-
 
 class AbstractFilter(object):
     """Base class for all filters.
@@ -48,9 +45,9 @@ class AbstractFilter(object):
     ]
     _accepted_modes = ("lines", "parts")
 
-    def __init__(self, conf, inp_conf):
+    def __init__(self, conf: dict, ctx: common.Context):
         super(AbstractFilter, self).__init__()
-        self.inp_conf = inp_conf
+        self.ctx = ctx
         self.conf = {key: val for key, _, val, _ in self.params}
         self.conf.update(conf)
 
@@ -170,8 +167,8 @@ class Grep(AbstractFilter):
     ]
     _accepted_modes = ("lines", "parts")
 
-    def __init__(self, conf, inp_conf):
-        super(Grep, self).__init__(conf, inp_conf)
+    def __init__(self, conf, ctx):
+        super(Grep, self).__init__(conf, ctx)
         self._re = re.compile(conf["pattern"])
 
     def _filter(self, text):
@@ -194,8 +191,8 @@ class Wrap(AbstractFilter):
     ]
     _accepted_modes = ("parts", )
 
-    def __init__(self, conf, inp_conf):
-        super(Wrap, self).__init__(conf, inp_conf)
+    def __init__(self, conf, ctx):
+        super(Wrap, self).__init__(conf, ctx)
         self._tw = textwrap.TextWrapper(
             break_long_words=False,
             break_on_hyphens=False)
@@ -263,8 +260,8 @@ class GetElementsByCss(AbstractFilter):
     ]
     _accepted_modes = ("parts", )
 
-    def __init__(self, conf, inp_conf):
-        super(GetElementsByCss, self).__init__(conf, inp_conf)
+    def __init__(self, conf, ctx):
+        super(GetElementsByCss, self).__init__(conf, ctx)
         self._expression = None
 
     def validate(self):
@@ -354,18 +351,18 @@ class CommandFilter(AbstractFilter):
                 yield res.decode("utf-8")
 
 
-def get_filter(conf, inp_conf):
+def get_filter(conf, ctx: common.Context):
     """ Get filter object by configuration """
     name = conf.get("name")
     if not name:
-        _LOG.warning("missing filter name in: %r", conf)
+        ctx.log_error("missing filter name: %r", conf)
         return None
 
     rcls = common.find_subclass(AbstractFilter, name)
     if rcls:
-        fltr = rcls(conf, inp_conf)
+        fltr = rcls(conf, ctx)
         fltr.validate()
         return fltr
 
-    _LOG.warning("unknown filter: %s", name)
+    ctx.log_error("unknown filter: %s", name)
     return None
