@@ -9,6 +9,7 @@ Licence: GPLv2+
 """
 
 import logging
+import copy
 
 from . import config
 
@@ -107,7 +108,7 @@ class Context(object):
         self.debug_data = {}
         self.idx = idx
         if conf:
-            self.name = config.get_input_name(conf)
+            self.name = config.get_input_name(conf, idx)
             self.oid = config.gen_input_oid(conf)
         else:
             self.name = "src_" + str(idx)
@@ -147,3 +148,22 @@ class Context(object):
             self._log.exception(self._log_prefix + fmt, *args, **kwds)
         else:
             self._log.error(self._log_prefix + fmt, *args, **kwds)
+
+
+def apply_defaults(defaults: dict, conf: dict) -> dict:
+    """Deep copy & update `defaults` dict with `conf`."""
+    result = copy.deepcopy(defaults)
+
+    def update(dst, src):
+        for key, val in src.items():
+            if isinstance(val, dict):
+                if key not in dst:
+                    dst[key] = {}
+                update(dst[key], val)
+            else:
+                dst[key] = copy.deepcopy(val)
+
+    if conf:
+        update(result, conf)
+
+    return result

@@ -42,14 +42,14 @@ class AbstractOutput(object):
 
     def __init__(self, conf):
         super(AbstractOutput, self).__init__()
-        self.conf = {key: val for key, _, val, _ in self.params}
-        self.conf.update(conf)
+        self._conf = common.apply_defaults(
+            {key: val for key, _, val, _ in self.params},
+            conf)
         self.footer = None
-        self.args = None
 
     def validate(self):
         for name, _, _, required in self.params or []:
-            val = self.conf.get(name)
+            val = self._conf.get(name)
             if required and not val:
                 raise common.ParamError("missing parameter " + name)
 
@@ -67,19 +67,21 @@ class AbstractTextOutput(AbstractOutput):
 
     def _format_item(self, ctx: common.Context, content: str):
         """ Generate section for one input """
-        title = ctx.name
-        yield title
-        yield "'" * len(title)
+        yield ctx.name
+        yield "'" * len(ctx.name)
         if 'url' in ctx.conf:
             yield ctx.conf['url']
+
         header = ctx.opt.get('header')
         if header:
             if isinstance(header, str):
                 yield header
             else:
                 yield from header
-        if self.args.debug:
+
+        if ctx.args.debug:
             yield str(ctx)
+
         if content:
             content = content.rstrip() or "<no data>"
             if ctx.opt.get(common.OPTS_PREFORMATTED):
@@ -151,15 +153,15 @@ class TextFileOutput(AbstractTextOutput):
     ]
 
     def report(self, new, changed, errors, unchanged):
-        _make_backup(self.conf["file"])
+        _make_backup(self._conf["file"])
         try:
-            with open(self.conf["file"], "w") as ofile:
+            with open(self._conf["file"], "w") as ofile:
                 ofile.write("\n".join(self._mk_report(new, changed, errors,
                                                       unchanged)))
         except IOError as err:
             raise common.ReportGenerateError(
                 "Writing report file %s error : %s" %
-                (self.conf['file'], err))
+                (self._conf['file'], err))
 
 
 class HtmlFileOutput(AbstractTextOutput):
@@ -171,10 +173,10 @@ class HtmlFileOutput(AbstractTextOutput):
     ]
 
     def report(self, new, changed, errors, unchanged):
-        _make_backup(self.conf["file"])
+        _make_backup(self._conf["file"])
         content = self._mk_report(new, changed, errors, unchanged)
         try:
-            with open(self.conf["file"], "w") as ofile:
+            with open(self._conf["file"], "w") as ofile:
                 html = publish_string(
                     "\n".join(content), writer_name='html',
                     settings=None,
@@ -183,7 +185,7 @@ class HtmlFileOutput(AbstractTextOutput):
         except IOError as err:
             raise common.ReportGenerateError(
                 "Writing report file %s error : %s" %
-                (self.conf['file'], err))
+                (self._conf['file'], err))
 
 
 class ConsoleOutput(AbstractTextOutput):
@@ -215,19 +217,19 @@ class EMailOutput(AbstractTextOutput):
 
     def validate(self):
         super(EMailOutput, self).validate()
-        conf = self.conf
+        conf = self._conf
         if conf.get("smtp_login"):
             if not conf.get("smtp_password"):
                 raise common.ParamError("missing password for login")
         if conf.get("smtp_tls") and conf.get("smtp_ssl"):
             _LOG.warning("EMailOutput: configured tls and ssl; using ssl")
 
-        encrypt = self.conf.get("encrypt", "")
+        encrypt = self._conf.get("encrypt", "")
         if encrypt and encrypt not in ('gpg', ):
             raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
 
     def report(self, new, changed, errors, unchanged):
-        conf = self.conf
+        conf = self._conf
         body = "\n".join(self._mk_report(new, changed, errors, unchanged))
         msg = self._get_msg(conf.get("html"), body)
         header = self._get_stats_str(new, changed, errors, unchanged)
@@ -253,7 +255,7 @@ class EMailOutput(AbstractTextOutput):
             smtp.quit()
 
     def _get_msg(self, gen_html, body):
-        if self.conf.get("encrypt") == 'gpg':
+        if self._conf.get("encrypt") == 'gpg':
             body = self._encrypt(body)
         if gen_html:
             msg = email.mime.multipart.MIMEMultipart('alternative')
@@ -267,7 +269,7 @@ class EMailOutput(AbstractTextOutput):
         return email.mime.text.MIMEText(body, 'plain', 'utf-8')
 
     def _encrypt(self, message):
-        subp = subprocess.Popen(["gpg", "-e", "-a", "-r", self.conf["to"]],
+        subp = subprocess.Popen(["gpg", "-e", "-a", "-r", self._conf["to"]],
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -296,7 +298,7 @@ class OutputManager(object):
     """ Object group all outputs. """
     def __init__(self, conf, args):
         super(OutputManager, self).__init__()
-        self.conf = conf
+        self._conf = conf
         self.args = args
         self._outputs = []
         self._new = []
@@ -308,7 +310,6 @@ class OutputManager(object):
             try:
                 rep = _get_output(repname, repconf or {})
                 if rep:
-                    rep.args = args
                     self._outputs.append(rep)
             finally:
                 pass
@@ -344,7 +345,7 @@ class OutputManager(object):
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """
         _LOG.debug("OutputManager: writing...")
-        if not (self.conf.get("report_unchanged") or self._new or
+        if not (self._conf.get("report_unchanged") or self._new or
                 self._changed or self._errors):
             return
         for rep in self._outputs:

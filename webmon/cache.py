@@ -51,6 +51,7 @@ def _create_missing_dir(path: str):
     """ Check path and if not exists create directory.
         If path exists and is not directory - raise error.
     """
+    path = os.path.expanduser(path)
     if os.path.exists(path):
         if os.path.isdir(path):
             return
@@ -193,3 +194,71 @@ class Cache(object):
 
     def _get_filename_meta(self, oid):
         return os.path.join(self._directory, oid + ".meta")
+
+
+class PartsCache(object):
+    """Cache for parts of report"""
+    def __init__(self, directory):
+        super(PartsCache, self).__init__()
+        self._directory = directory
+
+        _create_missing_dir(self._directory)
+
+    def _get_filename(self, oid):
+        return os.path.join(self._directory, oid)
+
+    def put(self, oid, content, status, timestamp=None):
+        """Put `content` into report parts cache for `oid`."""
+        _LOG.debug("put %r, content_len=%d, ts=%d",
+                   oid, len(content), timestamp)
+        timestamp = int(timestamp or time.time())
+        csum = _calc_content_csum(content)
+        name = self._get_filename(oid)
+        try:
+            with open(name, "w") as fout:
+                fout.write("ts: {}\n".format(timestamp))
+                fout.write("csum: {}\n".format(csum))
+                fout.write("status: {}\n".format(status or ""))
+                fout.write("\n")
+                fout.write(content)
+        except IOError as err:
+            _LOG.error("error writing file %s into cache: %s", name, err)
+
+    def get(self, oid):
+        name = self._get_filename(oid)
+        try:
+            with open(name, "r") as fin:
+                data = fin.readlines()
+        except IOError as err:
+            _LOG.error("error reading file %s from cache: %s", name, err)
+            raise
+        header, content = _separate_header(data)
+        if not header or not content:
+            _LOG.error("error loading %s - missing header", name)
+            return None, None
+        header = {key: val for key, val
+                  in (line.strip().split(": ", 1)
+                      for line in header.split("\n")
+                      if ': ' in line)}
+        if 'ts' not in header or 'csum' not in header:
+            _LOG.error("error loading %s - wrong header: %r", name, header)
+            return None, None
+        csum = _calc_content_csum(content)
+        if csum != header['csum']:
+            _LOG.error("error loading %s - wrong csum: %r - %r",
+                       name, csum, header)
+            return None, None
+        return header, content
+
+
+def _separate_header(data):
+    for i, line in enumerate(data):
+        if line == '\n':
+            return data[:i], data[i:]
+    return data, None
+
+
+def _calc_content_csum(content):
+    csum = hashlib.sha1()
+    csum.update(content.encode("utf-8"))
+    return csum.hexdigest()

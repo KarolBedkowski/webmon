@@ -81,7 +81,7 @@ def _is_recovery_accepted(ctx: common.Context, mtime: int,
     return time.time() - mtime < interval
 
 
-def _load_content(loader, ctx: common.Context) -> str:
+def _load_content(loader, ctx: common.Context) -> (str, common.Context):
     start = time.time()
     # load list of parts
     parts = loader.load()
@@ -106,7 +106,7 @@ def _load_content(loader, ctx: common.Context) -> str:
     ctx.debug_data['load_time'] = time.time() - start
     if ctx.debug:
         ctx.log_debug("result: %s", pprint.saferepr(content))
-    return content
+    return content, ctx
 
 
 def _clean_meta_on_success(metadata: dict):
@@ -117,7 +117,8 @@ def _clean_meta_on_success(metadata: dict):
     return metadata
 
 
-def _add_to_output(ctx: common.Context, prev_content: str, content: str):
+def _add_to_output(ctx: common.Context, prev_content: str, content: str) \
+        -> common.Context:
     if prev_content is None:
         # new content
         ctx.log_debug("loading - new content")
@@ -132,9 +133,10 @@ def _add_to_output(ctx: common.Context, prev_content: str, content: str):
         if ctx.conf.get("report_unchanged", False):
             # unchanged content, but report
             ctx.output.add_unchanged(ctx, prev_content)
+    return ctx
 
 
-def _try_recover(ctx: common.Context) -> (bool, str):
+def _try_recover(ctx: common.Context) -> (bool, str, common.Context):
     """Try recover content & metadata; if not success - load last metadata."""
     oid = ctx.oid
     last_updated = ctx.cache.get_mtime(oid)
@@ -144,18 +146,18 @@ def _try_recover(ctx: common.Context) -> (bool, str):
         ctx.last_updated = mtime
         ctx.metadata.update(meta or {})
         ctx.log_info("recovered content")
-        return True, content
+        return True, content, ctx
 
     ctx.last_updated = last_updated
     ctx.metadata.update(ctx.cache.get_meta(oid) or {})
-    return False, None
+    return False, None, ctx
 
 
 def _load(ctx: common.Context) -> bool:
     ctx.log_debug("start loading")
 
     # try to recover, load meta
-    recovered, content = _try_recover(ctx)
+    recovered, content, ctx = _try_recover(ctx)
 
     if not ctx.args.force and _check_last_error_time(ctx):
         ctx.log_info("skipping - still waiting after error")
@@ -170,7 +172,7 @@ def _load(ctx: common.Context) -> bool:
     if not recovered:
         ctx.log_info("loading...")
         try:
-            content = _load_content(loader, ctx)
+            content, ctx = _load_content(loader, ctx)
         except common.NotModifiedError:
             content = prev_content
         except common.InputError as err:
@@ -184,7 +186,7 @@ def _load(ctx: common.Context) -> bool:
         ctx.log_debug("diff prev: %s", pprint.saferepr(prev_content))
         ctx.log_debug("diff content: %s", pprint.saferepr(content))
 
-    _add_to_output(ctx, prev_content, content)
+    ctx = _add_to_output(ctx, prev_content, content)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, ctx.metadata)
     ctx.log_info("loading done")
@@ -228,21 +230,19 @@ def _show_abilities_cls(title, base_cls):
         print("  -", name)
         if hasattr(cls, "description"):
             print("    " + cls.description)
-        if not hasattr(cls, "params") or not cls.params:
-            continue
-        print("    Parameters:")
-        for param in cls.params:
-            print("     - {:<15s}\t{:<20s}\tdef={!r:<10}\treq={!r}".format(
-                *param))
+
+        if hasattr(cls, "params") and cls.params:
+            print("    Parameters:")
+            for param in cls.params:
+                print("     - {:<15s}\t{:<20s}\tdef={!r:<10}\treq={!r}".format(
+                    *param))
+    print()
 
 
 def _show_abilities():
     _show_abilities_cls("Inputs:", inputs.AbstractInput)
-    print()
     _show_abilities_cls("Outputs:", outputs.AbstractOutput)
-    print()
     _show_abilities_cls("Filters:", filters.AbstractFilter)
-    print()
     _show_abilities_cls("Comparators:", comparators.AbstractComparator)
 
 
@@ -250,6 +250,7 @@ def _load_user_classes():
     users_scripts_dir = os.path.expanduser("~/.local/share/webmon")
     if not os.path.isdir(users_scripts_dir):
         return
+
     for fname in os.listdir(users_scripts_dir):
         fpath = os.path.join(users_scripts_dir, fname)
         if os.path.isfile(fpath) and fname.endswith(".py") \
@@ -264,8 +265,7 @@ def _load_user_classes():
 def _list_inputs(inps, debug):
     print("Inputs:")
     for idx, inp_conf in enumerate(inps, 1):
-        inp_conf['_idx'] = idx
-        name = config.get_input_name(inp_conf)
+        name = config.get_input_name(inp_conf, idx)
         act = "" if inp_conf.get("enable", True) else "DISABLE"
         oid = config.gen_input_oid(inp_conf) if debug else ""
         print(" {:2d} {:<40s}".format(idx, name), act, oid)
@@ -306,11 +306,11 @@ def _update(args, inps, conf, selection=None):
     defaults = _build_defaults(args, conf)
 
     def build_context(idx, iconf):
-        params = config.apply_defaults(defaults, iconf)
+        params = common.apply_defaults(defaults, iconf)
         return common.Context(params, gcache, idx, output, args)
 
     processed = sum(
-        _update_one(build_context(idx, iconf)) and 1 or 0
+        1 if _update_one(build_context(idx, iconf)) else 0
         for idx, iconf in enumerate(inps, 1)
         if not selection or idx in selection)
 

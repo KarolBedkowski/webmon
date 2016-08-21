@@ -47,20 +47,21 @@ class AbstractFilter(object):
 
     def __init__(self, conf: dict, ctx: common.Context):
         super(AbstractFilter, self).__init__()
-        self.ctx = ctx
-        self.conf = {key: val for key, _, val, _ in self.params}
-        self.conf.update(conf)
+        self._ctx = ctx
+        self._conf = common.apply_defaults(
+            {key: val for key, _, val, _ in self.params},
+            conf)
 
         # if only one mode is available - use it
         if len(self._accepted_modes) == 1:
             self._mode = self._accepted_modes[0]
         else:
-            self._mode = self.conf.get("mode")
+            self._mode = self._conf.get("mode")
 
     def validate(self):
         """ Validate filter parameters """
         for name, _, _, required in self.params or []:
-            if required and not self.conf.get(name):
+            if required and not self._conf.get(name):
                 raise common.ParamError("missing parameter " + name)
         if self._mode not in self._accepted_modes:
             raise common.ParamError("invalid mode: %s" % self._mode)
@@ -93,14 +94,14 @@ class Html2Text(AbstractFilter):
 
     def validate(self):
         super(Html2Text, self).validate()
-        width = self.conf.get("width")
+        width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
 
     def _filter(self, text):
         assert isinstance(text, str)
         import html2text as h2t
-        conv = h2t.HTML2Text(bodywidth=self.conf.get("width"))
+        conv = h2t.HTML2Text(bodywidth=self._conf.get("width"))
         yield conv.handle(text)
 
 
@@ -115,7 +116,7 @@ class Strip(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        yield text.strip(self.conf['chars'])
+        yield text.strip(self._conf['chars'])
 
 
 class Split(AbstractFilter):
@@ -132,13 +133,13 @@ class Split(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        sep = self.conf['separator']
-        if self.conf['generate_parts']:
+        sep = self._conf['separator']
+        if self._conf['generate_parts']:
             yield from text.split("\n" if sep is None else sep,
-                                  self.conf['max_split'])
+                                  self._conf['max_split'])
         else:
             lines = text.split("\n" if sep is None else sep,
-                               self.conf['max_split'])
+                               self._conf['max_split'])
             yield "\n".join(lines)
 
 
@@ -198,18 +199,16 @@ class Wrap(AbstractFilter):
             break_on_hyphens=False)
 
     def filter(self, parts):
-        self._tw.text = self.conf.get("width") or 76
-        self._tw.max_lines = self.conf.get("max_lines") or None
+        self._tw.text = self._conf.get("width") or 76
+        self._tw.max_lines = self._conf.get("max_lines") or None
         return super(Wrap, self).filter(parts)
 
     def _filter(self, text):
         yield "\n".join(self._tw.fill(line) for line in text.split('\n'))
 
 
-
 def _strip_str(inp):
     return str(inp).strip()
-
 
 
 class DeCSVlise(AbstractFilter):
@@ -226,11 +225,11 @@ class DeCSVlise(AbstractFilter):
     ]
 
     def _filter(self, text):
-        reader = csv.reader([text], delimiter=self.conf['delimiter'],
-                            quotechar=self.conf['quote_char'])
-        convfunc = _strip_str if self.conf['strip'] else str
+        reader = csv.reader([text], delimiter=self._conf['delimiter'],
+                            quotechar=self._conf['quote_char'])
+        convfunc = _strip_str if self._conf['strip'] else str
 
-        if self.conf['generate_parts']:
+        if self._conf['generate_parts']:
             yield from map(convfunc, reader)
         else:
             yield '\n'.join(map(convfunc, list(reader)[0]))
@@ -266,7 +265,7 @@ class GetElementsByCss(AbstractFilter):
 
     def validate(self):
         super(GetElementsByCss, self).validate()
-        sel = self.conf["sel"]
+        sel = self._conf["sel"]
         from cssselect import GenericTranslator, SelectorError
         try:
             self._expression = GenericTranslator().css_to_xpath(sel)
@@ -289,7 +288,7 @@ class GetElementsByXpath(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        xpath = self.conf["xpath"]
+        xpath = self._conf["xpath"]
         yield from _get_elements_by_xpath(text, xpath)
 
 
@@ -319,7 +318,7 @@ class GetElementsById(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        sel = self.conf["sel"]
+        sel = self._conf["sel"]
         yield from _get_elements_by_id(text, sel)
 
 
@@ -336,7 +335,7 @@ class CommandFilter(AbstractFilter):
 
     def _filter(self, text):
         assert isinstance(text, str)
-        subp = subprocess.Popen(self.conf["command"],
+        subp = subprocess.Popen(self._conf["command"],
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
@@ -345,7 +344,7 @@ class CommandFilter(AbstractFilter):
         stdout, stderr = subp.communicate(text.encode('utf-8'))
         res = stdout or stderr or b""
         if res:
-            if self.conf['split_lines']:
+            if self._conf['split_lines']:
                 yield from res.decode("utf-8").split("\n")
             else:
                 yield res.decode("utf-8")

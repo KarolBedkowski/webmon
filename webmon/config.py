@@ -11,7 +11,6 @@ Licence: GPLv2+
 import logging
 import os
 import os.path
-import copy
 import hashlib
 from contextlib import contextmanager
 try:
@@ -80,25 +79,6 @@ def load_inputs(filename: str) -> list:
     return None
 
 
-def apply_defaults(defaults: dict, conf: dict) -> dict:
-    """Deep copy & update `defaults` dict with `conf`."""
-    result = copy.deepcopy(defaults)
-
-    def update(dst, src):
-        for key, val in src.items():
-            if isinstance(val, dict):
-                if key not in dst:
-                    dst[key] = {}
-                update(dst[key], val)
-            else:
-                dst[key] = copy.deepcopy(val)
-
-    if conf:
-        update(result, conf)
-
-    return result
-
-
 def _find_config_file(name: str, must_exists: bool=True) -> str:
     if os.path.isfile(name):
         return name
@@ -157,13 +137,13 @@ def _conf2string(conf: dict) -> list:
 _NAME_KEY_TO_TRY = ["name", "url", "cmd"]
 
 
-def get_input_name(conf: dict) -> str:
+def get_input_name(conf: dict, idx=None) -> str:
     """Return input name according to configuration."""
     for key in _NAME_KEY_TO_TRY:
         name = conf.get(key)
         if name:
             return name
-    return "Source %d" % conf['_idx']
+    return "Source " + str(idx)
 
 
 def _check_dir_for_file(fpath: str):

@@ -42,14 +42,15 @@ class AbstractInput(object):
         super(AbstractInput, self).__init__()
         assert isinstance(ctx, common.Context)
         self._ctx = ctx
-        self.conf = {key: val for key, _, val, _ in self.params}
-        self.conf.update(ctx.conf)
+        self._conf = common.apply_defaults(
+            {key: val for key, _, val, _ in self.params},
+            ctx.conf)
 
     def validate(self):
         """ Validate input configuration """
         for name, _, _, required in self.params or []:
-            val = self.conf.get(name)
-            if required and not val:
+            val = self._conf.get(name)
+            if required and val is None:
                 raise common.ParamError("missing parameter " + name)
 
     def load(self):
@@ -58,15 +59,16 @@ class AbstractInput(object):
 
     def need_update(self):
         """ Check last update time and return True if input need update."""
-        last = self._ctx.last_updated
-        if not last:
+        if not self._ctx.last_updated:
             return True
+
         # default - check interval
-        interval = self.conf["interval"]
+        interval = self._conf["interval"]
         if not interval:
             return True
+
         interval = common.parse_interval(interval)
-        return last + interval < time.time()
+        return self._ctx.last_updated + interval < time.time()
 
 
 class WebInput(AbstractInput):
@@ -80,19 +82,18 @@ class WebInput(AbstractInput):
 
     def load(self):
         """ Return one part - page content. """
-        conf = self.conf
         ctx = self._ctx
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
         if ctx.last_updated:
             headers['If-Modified-Since'] = email.utils.formatdate(
                 ctx.last_updated)
-        url = conf['url']
+        url = self._conf['url']
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
-                                        timeout=conf['timeout'])
+                                        timeout=self._conf['timeout'])
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
             raise common.InputError("timeout")
@@ -136,10 +137,9 @@ class RssInput(AbstractInput):
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
                                  "Gecko/20100101 Firefox/45.0"
-        conf = self.conf
         modified = time.localtime(ctx.last_updated) \
             if ctx.last_updated else None
-        url = conf['url']
+        url = self._conf['url']
         etag = ctx.metadata.get('etag')
         ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
                       url, etag, modified)
@@ -164,7 +164,7 @@ class RssInput(AbstractInput):
         entries = doc.get('entries')
 
         # limit number of entries
-        max_items = self.conf["max_items"]
+        max_items = self._conf["max_items"]
         limited = False
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
@@ -189,7 +189,7 @@ class RssInput(AbstractInput):
         if add_content:
             content = _get_content_from_rss_entry(entry)
             if content:
-                if self.conf["html2text"]:
+                if self._conf["html2text"]:
                     try:
                         import html2text as h2t
                         content = h2t.HTML2Text(bodywidth=9999999)\
@@ -203,7 +203,7 @@ class RssInput(AbstractInput):
 
     def _get_fields_to_load(self):
         add_content = False
-        fields = (field.strip() for field in self.conf["fields"].split(","))
+        fields = (field.strip() for field in self._conf["fields"].split(","))
         fields = [field for field in fields if field]
         if 'content' in fields:
             fields.remove('content')
@@ -243,7 +243,7 @@ class CmdInput(AbstractInput):
 
     def load(self):
         """ Return command output as one part """
-        conf = self.conf
+        conf = self._conf
         ctx = self._ctx
         ctx.log_debug("CmdInput: execute: %r", conf['cmd'])
         process = subprocess.Popen(conf['cmd'],
@@ -323,7 +323,7 @@ class GithubInput(AbstractInput):
 
     def load(self):
         """Return commits."""
-        conf = self.conf
+        conf = self._conf
         ctx = self._ctx
         repository = _github_get_repository(conf)
         modified = _github_check_repo_updated(repository, ctx.last_updated)
@@ -389,13 +389,13 @@ class GithubTagsInput(AbstractInput):
 
     def load(self):
         """Return commits."""
-        conf = self.conf
+        conf = self._conf
         ctx = self._ctx
         repository = _github_get_repository(conf)
         _github_check_repo_updated(repository, ctx.last_updated)
 
         etag = ctx.metadata.get('etag')
-        max_items = self.conf["max_items"] or 100
+        max_items = self._conf["max_items"] or 100
         if hasattr(repository, "tags"):
             tags = list(repository.tags(max_items, etag=etag))
         else:
@@ -442,12 +442,12 @@ class GithubReleasesInput(AbstractInput):
 
     def load(self):
         """Return releases."""
-        conf = self.conf
+        conf = self._conf
         ctx = self._ctx
         repository = _github_get_repository(conf)
         _github_check_repo_updated(repository, ctx.last_updated)
         etag = ctx.metadata.get('etag')
-        max_items = self.conf["max_items"] or 100
+        max_items = self._conf["max_items"] or 100
         if hasattr(repository, "releases"):
             releases = list(repository.releases(max_items, etag=etag))
         else:
@@ -497,7 +497,7 @@ class JamendoAlbumsInput(AbstractInput):
     def load(self):
         """ Return one part - page content. """
         ctx = self._ctx
-        conf = self.conf
+        conf = self._conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
                                  "Gecko/20100101 Firefox/45.0"}
         if not (conf.get("artist_id") or conf.get("artist")):
