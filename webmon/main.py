@@ -33,24 +33,23 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 VERSION = "0.1"
 DEFAULT_DIFF_MODE = "ndiff"
 
-# TODO: wprowadzic podzial zgodny z ascii
-PARTS_SEP = "\n\n-----\n\n"
-
 _LOG = logging.getLogger("main")
 
 
-def _compare(prev_content: str, content: str, ctx: common.Context) -> str:
+def compare_contents(prev_content: str, content: str, ctx: common.Context,
+                     result: common.Result) -> (str, dict):
     comparator = comparators.get_comparator(
-        ctx.conf["diff_mode"] or DEFAULT_DIFF_MODE, ctx)
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, ctx)
 
-    ctx.opt.update(comparator.opts)
+    ctx.log_debug("ctx: %r", ctx.metadata)
+    update_date = result.meta.get('update_date') or time.time()
 
     diff = "\n".join(comparator.compare(
         prev_content.split("\n"),
-        str(datetime.datetime.fromtimestamp(ctx.last_updated)),
+        str(datetime.datetime.fromtimestamp(update_date)),
         content.split("\n"),
         str(datetime.datetime.now())))
-    return diff
+    return diff, {'comparator_opts': comparator.opts}
 
 
 def _check_last_error_time(ctx: common.Context) -> bool:
@@ -59,138 +58,146 @@ def _check_last_error_time(ctx: common.Context) -> bool:
     not pass.
     """
     last_error = ctx.metadata.get('last_error')
-    on_error_wait = ctx.conf.get('on_error_wait')
+    on_error_wait = ctx.input_conf.get('on_error_wait')
     if last_error and on_error_wait:
         on_error_wait = common.parse_interval(on_error_wait)
         return time.time() < last_error + on_error_wait
     return False
 
 
-def _is_recovery_accepted(ctx: common.Context, mtime: int,
-                          last_updated: int) -> bool:
-    """Check is recovered file is valid by modified time.
-
-    :param ctx: common.Context type: common.Context
-    :param mtime: timestamp of recovered file
-    :param last_updated: last updated valid file
-    """
-    interval = common.parse_interval(ctx.conf['interval'])
-    if last_updated:
-        return last_updated + interval < mtime
-    # no previous valid file found
-    return time.time() - mtime < interval
-
-
-def _load_content(loader, ctx: common.Context) -> (str, common.Context):
+def _load_content(loader, ctx: common.Context) -> common.Result:
     start = time.time()
     # load list of parts
-    parts = loader.load()
+    result = loader.load()
+    if not result.meta.get('update_date'):
+        result.meta['update_date'] = time.time()
+
     if ctx.debug:
-        parts = list(parts)
-        ctx.log_debug("loaded: %s", pprint.saferepr(parts))
+        ctx.log_debug("loaded: %s", result)
+        result.debug['loaded_in'] = time.time() - start
+        result.debug['items'] = len(result.items)
 
     # apply filters
-    for fltcfg in ctx.conf.get('filters') or []:
+    for fltcfg in ctx.input_conf.get('filters') or []:
         flt = filters.get_filter(fltcfg, ctx)
         if not flt:
             continue
-        parts = flt.filter(parts)
+        result = flt.filter(result)
         if ctx.debug:
-            parts = list(parts)
-            ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(parts))
+            ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(result))
 
-    content = PARTS_SEP.join(ppart for ppart in
-                             (part.rstrip() for part in parts)
-                             if ppart)
-    content = content or "<no data>"
-    ctx.debug_data['load_time'] = time.time() - start
+    if not result.items:
+        result.append(common.Item("<no data>"))
+
+    result.meta['update_duration'] = time.time() - start
+    result.meta['update_date'] = time.time()
     if ctx.debug:
-        ctx.log_debug("result: %s", pprint.saferepr(content))
-    return content, ctx
+        ctx.log_debug("result: %s", result)
+    return result
 
 
-def _clean_meta_on_success(metadata: dict):
-    if 'last_error' in metadata:
-        del metadata['last_error']
-    if 'last_error_msg' in metadata:
-        del metadata['last_error_msg']
-    return metadata
+def process_content(ctx: common.Context, result: common.Result) -> (str, str):
+    """Detect content status (changes). Returns content formatted to
+    write into cache.
+    """
+    content = format_content(result)
+    status = result.meta['status']
 
+    if status == common.STATUS_UNCHANGED:
+        ctx.log_debug("loading - unchanged content")
+        if ctx.input_conf.get("report_unchanged", False):
+            # unchanged content, but report
+            ctx.output.put(result, content)
+        return content, common.STATUS_UNCHANGED
 
-def _add_to_output(ctx: common.Context, prev_content: str, content: str) \
-        -> common.Context:
+    prev_content = ctx.cache.get(ctx.oid)
     if prev_content is None:
         # new content
         ctx.log_debug("loading - new content")
-        ctx.output.add_new(ctx, content)
-    elif prev_content != content:
+        result.meta['status'] = common.STATUS_NEW
+        ctx.output.put(result, content)
+        return content, common.STATUS_NEW
+
+    if prev_content != content:
         # changed content
         ctx.log_debug("loading - changed content, making diff")
-        diff = _compare(prev_content, content, ctx)
-        ctx.output.add_changed(ctx, diff)
-    else:
-        ctx.log_debug("loading - unchanged content")
-        if ctx.conf.get("report_unchanged", False):
-            # unchanged content, but report
-            ctx.output.add_unchanged(ctx, prev_content)
-    return ctx
+        diff, new_meta = compare_contents(prev_content, content, ctx, result)
+        if new_meta:
+            result.meta.update(new_meta)
+        result.meta['status'] = common.STATUS_CHANGED
+        ctx.output.put(result, diff)
+        return content, common.STATUS_CHANGED
+
+    ctx.log_debug("loading - unchanged content")
+    if ctx.input_conf.get("report_unchanged", False):
+        # unchanged content, but report
+        result.meta['status'] = common.STATUS_UNCHANGED
+        ctx.output.put(result, content)
+    return content, common.STATUS_UNCHANGED
 
 
-def _try_recover(ctx: common.Context) -> (bool, str, common.Context):
-    """Try recover content & metadata; if not success - load last metadata."""
-    oid = ctx.oid
-    last_updated = ctx.cache.get_mtime(oid)
-    content, mtime, meta = ctx.cache.get_recovered(oid)
-    if content is not None \
-            and _is_recovery_accepted(ctx, mtime, last_updated):
-        ctx.last_updated = mtime
-        ctx.metadata.update(meta or {})
-        ctx.log_info("recovered content")
-        return True, content, ctx
-
-    ctx.last_updated = last_updated
-    ctx.metadata.update(ctx.cache.get_meta(oid) or {})
-    return False, None, ctx
+def write_metadata_on_error(ctx, metadata, error_msg):
+    metadata = metadata or {}
+    metadata['update_date'] = time.time()
+    metadata['last_error'] = time.time()
+    metadata['last_error_msg'] = str(error_msg)
+    metadata['status'] = common.STATUS_ERROR
+    ctx.cache.put_meta(ctx.oid, metadata)
 
 
 def _load(ctx: common.Context) -> bool:
     ctx.log_debug("start loading")
+    ctx.metadata = ctx.cache.get_meta(ctx.oid) or {}
 
-    # try to recover, load meta
-    recovered, content, ctx = _try_recover(ctx)
-
-    if not ctx.args.force and _check_last_error_time(ctx):
-        ctx.log_info("skipping - still waiting after error")
-        return False
-
+    # find loader
     loader = inputs.get_input(ctx)
-    if not ctx.args.force and not loader.need_update() and not recovered:
+
+    # check, is update required
+    # TODO: check last error
+    if not ctx.args.force and not loader.need_update():
         ctx.log_info("no update required")
         return False
 
-    prev_content = ctx.cache.get(ctx.oid)
-    if not recovered:
-        ctx.log_info("loading...")
-        try:
-            content, ctx = _load_content(loader, ctx)
-        except common.NotModifiedError:
-            content = prev_content
-        except common.InputError as err:
-            ctx.metadata['last_error'] = time.time()
-            ctx.metadata['last_error_msg'] = str(err)
-            ctx.cache.put_meta(ctx.oid, ctx.metadata)
-            raise
+    # load
+    ctx.log_info("loading...")
+    try:
+        result = _load_content(loader, ctx)
+    except common.InputError as err:
+        write_metadata_on_error(ctx, None, err)
+        return common.STATUS_ERROR
 
-    ctx.metadata = _clean_meta_on_success(ctx.metadata)
-    if ctx.debug:
-        ctx.log_debug("diff prev: %s", pprint.saferepr(prev_content))
-        ctx.log_debug("diff content: %s", pprint.saferepr(content))
+    if result.meta['status'] == common.STATUS_ERROR:
+        write_metadata_on_error(ctx, result.meta, err)
+        return common.STATUS_ERROR
 
-    ctx = _add_to_output(ctx, prev_content, content)
+    content, status = process_content(ctx, result)
+    result.meta['status'] = status
     ctx.cache.put(ctx.oid, content)
-    ctx.cache.put_meta(ctx.oid, ctx.metadata)
+    ctx.cache.put_meta(ctx.oid, result.meta)
+    # TODO: write result
     ctx.log_info("loading done")
     return True
+
+
+def format_content(result: common.Result) -> str:
+    res = []
+    for itm in result.items:
+        if itm.title:
+            res.append(itm.title)
+            res.append("-" * len(itm.title))
+        info = []
+        if itm.date:
+            info.append(itm.date)
+        if itm.author:
+            info.append(itm.author)
+        if itm.link:
+            info.append(itm.link)
+        if info:
+            res.append(" | ".join(info))
+
+        res.append(itm.content)
+        res.append("")
+    return "\n".join(res)
 
 
 def _parse_options():
@@ -209,6 +216,9 @@ def _parse_options():
     parser.add_argument('--cache-dir',
                         default="~/.cache/webmon/cache",
                         help='path to cache directory')
+    parser.add_argument('--partials-dir',
+                        default="~/.cache/webmon/partials",
+                        help='path to dir with partial reports')
     parser.add_argument("--force", action="store_true",
                         help="force update all sources")
     parser.add_argument("--diff-mode", choices=['ndiff', 'unified', 'context'],
@@ -274,9 +284,9 @@ def _list_inputs(inps, debug):
 def _update_one(ctx):
     try:
         return _load(ctx)
-    except Exception as err:
+    except IOError as err:
         ctx.log_error("loading error: %s", str(err).replace("\n", "; "))
-        ctx.output.add_error(ctx, str(err))
+        ctx.output.put_error(ctx, str(err))
     return True
 
 
@@ -289,51 +299,26 @@ def _build_defaults(args, conf):
 
 
 def _update(args, inps, conf, selection=None):
-    start_time = time.time()
-
     try:
         gcache = cache.Cache(os.path.expanduser(args.cache_dir))
     except IOError:
         _LOG.error("Init cache error")
         return
 
-    output = outputs.OutputManager(conf.get("output"), args)
-    if not output.valid:
-        _LOG.error("no valid outputs found")
+    try:
+        output = outputs.Output(args.partials_dir)
+    except RuntimeError as err:
+        _LOG.error("Init parts dir error: %s", err)
         return
 
     # defaults for inputs
     defaults = _build_defaults(args, conf)
 
-    def build_context(idx, iconf):
-        params = common.apply_defaults(defaults, iconf)
-        return common.Context(params, gcache, idx, output, args)
-
-    processed = sum(
-        1 if _update_one(build_context(idx, iconf)) else 0
-        for idx, iconf in enumerate(inps, 1)
-        if not selection or idx in selection)
-
-    duration = time.time() - start_time
-    output.write("Generate time: %.2f" % duration)
-    status = output.status()
-    _LOG.info("Result: %s, inputs: %d, processed: %d",
-              ", ".join(key + ": " + str(val)
-                        for key, val in status.items()),
-              len(inps), processed)
-
-    if output.errors_cnt < processed:
-        # do not commit changes when all inputs failed
-        gcache.commmit_temps(not selection)
-
-    if args.stats_file:
-        with open(args.stats_file, 'w') as fout:
-            fout.write(
-                "ts: {} inputs: {} processed: {} new: {} changed: {}"
-                " unchanged: {} errors: {} duration: {}".format(
-                    int(start_time), len(inps), processed, status['new'],
-                    status['changed'], status['unchanged'], status['error'],
-                    duration))
+    for idx, iconf in enumerate(inps, 1):
+        if not selection or idx in selection:
+            params = common.apply_defaults(defaults, iconf)
+            ctx = common.Context(params, gcache, idx, output, args)
+            _update_one(ctx)
 
 
 def main():

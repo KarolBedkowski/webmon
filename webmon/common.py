@@ -10,6 +10,9 @@ Licence: GPLv2+
 
 import logging
 import copy
+import os.path
+import pathlib
+import pprint
 
 from . import config
 
@@ -96,32 +99,38 @@ def parse_interval(instr):
 
 class Context(object):
     """Processing context
-
-    TODO: czy zapisywanie powinno być do kontekstu?
     """
     _log = logging.getLogger("context")
 
     def __init__(self, conf, gcache, idx, output, args):
         super(Context, self).__init__()
-        self.conf = conf
-        self.opt = {}
-        self.debug_data = {}
-        self.idx = idx
+        # input configuration
+        self.input_conf = conf
+        # input configuration idx
+        self.input_idx = idx
         if conf:
             self.name = config.get_input_name(conf, idx)
             self.oid = config.gen_input_oid(conf)
         else:
             self.name = "src_" + str(idx)
             self.oid = str(idx)
+        # cache manager
         self.cache = gcache
+        # output manager
         self.output = output
+        # app arguments
         self.args = args
-        self.metadata = {}
-        self.last_updated = None
+        # last loader metadata
+        self.metadata = {
+            'update_date': None,
+            'last_error': None,
+            'last_error_msg': None,
+            'status': None,
+        }
 
         self._log_prefix = "".join((
             "[",
-            str(self.idx + 1), ": ", self.name,
+            str(idx + 1), ": ", self.name,
             ("/" + self.oid) if self.debug else "",
             "] "
         ))
@@ -130,11 +139,18 @@ class Context(object):
     def debug(self):
         return self.args.debug if self.args else None
 
+    def _set_last_update(self, update_date: int):
+        self.metadata['update_date'] = update_date
+
+    def _get_last_update(self):
+        return self.metadata.get('update_date')
+
+    last_updated = property(_get_last_update, _set_last_update)
+
     def __str__(self):
-        return "<Context idx={} oid={} name={} conf={} opt={} debug={} "\
-            "meta={}>".\
-            format(self.idx, self.oid, self.name, self.conf, self.opt,
-                   self.debug_data, self.metadata)
+        return "<Context idx={} oid={} name={} input_conf={} meta={}>".\
+            format(self.input_idx, self.oid, self.name, self.input_conf,
+                   self.metadata)
 
     def log_info(self, fmt, *args, **kwds):
         self._log.info(self._log_prefix + fmt, *args, **kwds)
@@ -148,6 +164,86 @@ class Context(object):
             self._log.exception(self._log_prefix + fmt, *args, **kwds)
         else:
             self._log.error(self._log_prefix + fmt, *args, **kwds)
+
+
+STATUS_NEW = 'new'
+STATUS_CHANGED = 'chg'
+STATUS_UNCHANGED = 'ucg'
+STATUS_ERROR = 'err'
+
+
+class Item(object):
+    """docstring for Item"""
+    FIELDS = ['title', 'date', 'link', 'author', 'content']
+
+    def __init__(self, content=None):
+        super(Item, self).__init__()
+        self.title = None
+        self.date = None
+        self.link = None
+        self.author = None
+        self.content = content
+
+    def __lt__(self, other):
+        return [getattr(self, key) for key in self.FIELDS] < \
+            [getattr(other, key) for key in self.FIELDS]
+
+    def __eq__(self, other):
+        return [getattr(self, key) for key in self.FIELDS] == \
+            [getattr(other, key) for key in self.FIELDS]
+
+    def copy(self, **kwargs):
+        cpy = Item()
+        for field in self.FIELDS:
+            setattr(cpy, field, getattr(self, field))
+        for key, val in kwargs.items():
+            setattr(cpy, key, val)
+        return cpy
+
+
+class Result(object):
+    FIELDS = ['title', 'link']
+
+    def __init__(self, oid: str):
+        self.oid = oid  # type: str
+        self.title = None  # type: str
+        self.link = None  # type: str
+        self.items = []  # type: [Item]
+        # debug informations related to this result
+        self.debug = {}  # type: dict
+        # metadata related to this result
+        self.meta = {
+            "status": None,
+            "update_duration": 0,
+            "error": None,
+            "update_date": None,
+        }  # type: dict
+
+    def __str__(self):
+        return "<Result: " + pprint.saferepr(self.__dict__) + ">"
+
+    def append(self, item):
+        self.items.append(item)
+        return self
+
+    def append_simple_text(self, content):
+        self.items.append(Item(content))
+        return self
+
+    def set_error(self, message):
+        self.meta['status'] = STATUS_ERROR
+        self.meta['error'] = str(message)
+        return self
+
+    def set_no_modified(self):
+        self.meta['status'] = STATUS_UNCHANGED
+        return self
+
+    def validate(self):
+        assert bool(self.oid)
+        assert bool(self.title)
+        assert self.meta['status'] and self.meta['status'] in (
+            STATUS_NEW, STATUS_ERROR, STATUS_UNCHANGED, STATUS_CHANGED)
 
 
 def apply_defaults(defaults: dict, conf: dict) -> dict:
@@ -167,3 +263,20 @@ def apply_defaults(defaults: dict, conf: dict) -> dict:
         update(result, conf)
 
     return result
+
+
+def create_missing_dir(path: str):
+    """ Check path and if not exists create directory.
+        If path exists and is not directory - raise error.
+    """
+    path = os.path.expanduser(path)
+    if os.path.exists(path):
+        if os.path.isdir(path):
+            return
+        raise RuntimeError("path {} exists and is not dir".format(path))
+
+    try:
+        pathlib.Path(path).mkdir(parents=True)
+    except IOError as err:
+        raise RuntimeError("creating {} error: {}".format(
+            path, str(err)))

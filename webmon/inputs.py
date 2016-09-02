@@ -44,7 +44,7 @@ class AbstractInput(object):
         self._ctx = ctx
         self._conf = common.apply_defaults(
             {key: val for key, _, val, _ in self.params},
-            ctx.conf)
+            ctx.input_conf)
 
     def validate(self):
         """ Validate input configuration """
@@ -53,8 +53,8 @@ class AbstractInput(object):
             if required and val is None:
                 raise common.ParamError("missing parameter " + name)
 
-    def load(self):
-        """ Load data; return list/generator of items (parts).  """
+    def load(self) -> [common.Result]:
+        """ Load data; return list of items (Result).  """
         raise NotImplementedError()
 
     def need_update(self):
@@ -80,7 +80,7 @@ class WebInput(AbstractInput):
         ("timeout", "loading timeout", 30, True),
     ]
 
-    def load(self):
+    def load(self) -> common.Result:
         """ Return one part - page content. """
         ctx = self._ctx
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
@@ -90,27 +90,40 @@ class WebInput(AbstractInput):
                 ctx.last_updated)
         url = self._conf['url']
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
+        result = common.Result(ctx.oid)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
                                         timeout=self._conf['timeout'])
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
-            raise common.InputError("timeout")
+            result.set_error("timeout")
+            if response:
+                response.close()
+            return result
         except Exception as err:
-            raise common.InputError(err)
+            result.set_error(err)
+            if response:
+                response.close()
+            return result
+
         if response.status_code == 304:
+            result.set_no_modified()
             response.close()
-            raise common.NotModifiedError()
+            return result
+
         if response.status_code != 200:
             err = "Response code: %d" % response.status_code
             if response.text:
                 err += "\n" + response.text
             response.close()
-            raise common.InputError(err)
-        yield response.text
+            result.set_error(err)
+            return result
+
+        result.append(common.Item(response.text))
         response.close()
         ctx.log_debug("WebInput: load done")
+        return result
 
 
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
@@ -145,21 +158,24 @@ class RssInput(AbstractInput):
                       url, etag, modified)
         doc = feedparser.parse(url, etag=etag, modified=modified)
         status = doc.get('status') if doc else 400
+        result = common.Result(ctx.oid)
         if status == 304:
-            raise common.NotModifiedError()
+            result.set_no_modified()
+            return result
         if status == 301:  # permanent redirects
-            yield 'Permanently redirects: ' + doc.href
-            return
+            result.append_simple_text('Permanently redirects: ' + doc.href)
+            return result
         if status == 302:
-            yield 'Temporary redirects: ' + doc.href
-            return
+            result.append_simple_text('Temporary redirects: ' + doc.href)
+            return result
         if status != 200:
             ctx.log_error("load document error %s: %s", status, doc)
             summary = "Loading page error: %s" % status
             feed = doc.get('feed')
             if feed:
                 summary = feed.get('summary') or summary
-            raise common.InputError(summary)
+            result.set_error(summary)
+            return result
 
         entries = doc.get('entries')
 
@@ -172,17 +188,17 @@ class RssInput(AbstractInput):
 
         fields, add_content = self._get_fields_to_load()
         # parse entries
-        yield from (self._load_entry(entry, fields, add_content)
-                    for entry in entries)
+        result.items.extend(self._load_entry(entry, fields, add_content)
+                            for entry in entries)
 
-        yield "Loaded only last %d items" % max_items if limited \
-            else "All items loaded"
+        result.append_simple_text("Loaded only last %d items" % max_items
+                                  if limited else "All items loaded")
 
         # update metadata
         etag = doc.get('etag')
-        if etag:
-            ctx.metadata['etag'] = etag
+        result.meta['etag'] = etag
         ctx.log_debug("RssInput: loading done")
+        return result
 
     def _load_entry(self, entry, fields, add_content):
         res = "\n\n".join(_get_val_from_rss_entry(entry, fields))
@@ -199,7 +215,7 @@ class RssInput(AbstractInput):
                             "RssInput: loading HTML2Text error "
                             "(module not found)")
                 res += "\n\n" + content.strip()
-        return res
+        return common.Item(res)
 
     def _get_fields_to_load(self):
         add_content = False
@@ -241,8 +257,11 @@ class CmdInput(AbstractInput):
         ("split", "Split content", False, False),
     ]
 
-    def load(self):
-        """ Return command output as one part """
+    def load(self) -> (common.Result, dict):
+        """ Return command output as one part
+        Returns:
+            result: command.Result
+        """
         conf = self._conf
         ctx = self._ctx
         ctx.log_debug("CmdInput: execute: %r", conf['cmd'])
@@ -256,18 +275,24 @@ class CmdInput(AbstractInput):
             err = ("Err: " + str(result), (stdout or b"").decode("utf-8"),
                    (stderr or b"").decode('utf-8'))
             errstr = "\n".join(line.strip() for line in err if line)
-            raise common.InputError(errstr.strip())
+            errstr = errstr.strip()
+            return common.Result(ctx.oid).set_error(errstr)
 
+        inp_result = common.Result(ctx.oid)
         if conf['split']:
-            yield from stdout.decode('utf-8').split("\n")
+            inp_result.items = [
+                common.Item(line)
+                for line in stdout.decode('utf-8').split("\n")
+            ]
         else:
-            yield stdout.decode('utf-8')
+            inp_result.append(common.Item(stdout.decode('utf-8')))
         ctx.log_debug("CmdInput: loading done")
+        return inp_result
 
 
 def get_input(ctx):
     """ Get input class according to configuration """
-    kind = ctx.conf.get("kind") or "url"
+    kind = ctx.input_conf.get("kind") or "url"
     scls = common.find_subclass(AbstractInput, kind)
     if scls:
         inp = scls(ctx)
@@ -321,7 +346,7 @@ class GithubInput(AbstractInput):
         ("full_message", "show commits whole commit body", False, False),
     ]
 
-    def load(self):
+    def load(self) -> common.Result:
         """Return commits."""
         conf = self._conf
         ctx = self._ctx
@@ -331,35 +356,40 @@ class GithubInput(AbstractInput):
             commits = list(repository.commits(since=modified))
         else:
             etag = ctx.metadata.get('etag')
-            commits = list(repository.iter_commits(since=modified,
-                                                   etag=etag))
+            commits = list(repository.iter_commits(since=modified, etag=etag))
+
+        result = common.Result(ctx.oid)
         if len(commits) == 0:
             ctx.log_debug("GithubInput: not updated - co commits")
-            raise common.NotModifiedError()
+            result.set_no_modified()
+            return result
+
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
         try:
             if short_list:
-                result = [commit.commit.committer['date'] + " " +
+                items = [commit.commit.committer['date'] + " " +
                           _format_gh_commit(commit.commit.message, False)
                           for commit in commits]
-                yield "\n".join(result)
+                result.append_simple_text("\n".join(items))
             else:
                 for commit in commits:
                     cmt = commit.commit
                     msg = _format_gh_commit(cmt.message, full_message)
-                    yield "".join((cmt.committer['date'], '\n',
-                                   msg, '\nAuthor: ',
-                                   cmt.author['name'],
-                                   cmt.author['date']))
+                    result.append_simple_text(
+                        "".join((cmt.committer['date'], '\n', msg,
+                                 '\nAuthor: ', cmt.author['name'],
+                                 cmt.author['date'])))
         except Exception as err:
-            raise common.InputError(err)
+            result.set_error(err)
+            return result
 
         # add header
-        ctx.metadata['etag'] = repository.etag
-        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
+        result.meta['etag'] = repository.etag
+        result.link = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
         ctx.log_debug("GithubInput: loading done")
+        return result
 
 
 def _format_gh_commit(message, full_message):
@@ -400,24 +430,30 @@ class GithubTagsInput(AbstractInput):
             tags = list(repository.tags(max_items, etag=etag))
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
+
+        result = common.Result(ctx.oid)
         if len(tags) == 0:
             ctx.log_debug("GithubInput: not updated - no new tags")
-            raise common.NotModifiedError()
+            result.set_no_modified()
+            return result
+
         short_list = conf.get("short_list")
         try:
             if short_list:
-                yield '\n'.join(_format_gh_tag(tag) for tag in tags)
+                result.append_simple_text(
+                    '\n'.join(_format_gh_tag(tag) for tag in tags))
             else:
                 for tag in tags:
-                    yield _format_gh_tag(tag)
+                    result.append_simple_text(_format_gh_tag(tag))
         except Exception as err:
             raise common.InputError(err)
 
         # add header
-        ctx.metadata['etag'] = repository.etag
-        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
+        result.meta['etag'] = repository.etag
+        result.link = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
         ctx.log_debug("GithubTagsInput: loading done")
+        return result
 
 
 def _format_gh_tag(tag):
@@ -452,26 +488,34 @@ class GithubReleasesInput(AbstractInput):
             releases = list(repository.releases(max_items, etag=etag))
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
+
+        result = common.Result(ctx.oid)
         if len(releases) == 0:
             ctx.log_debug("GithubInput: not updated - no new releases")
-            raise common.NotModifiedError()
+            result.set_no_modified()
+            return result
+
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
         try:
             if short_list:
-                yield '\n'.join(_format_gh_release(release, False)
-                                for release in releases)
+                result.append_simple_text(
+                    '\n'.join(_format_gh_release(release, False)
+                              for release in releases))
             else:
                 for release in releases:
-                    yield _format_gh_release(release, full_message)
+                    result.append_simple_text(
+                        _format_gh_release(release, full_message))
         except Exception as err:
-            raise common.InputError(err)
+            result.set_error(err)
+            return result
 
         # add header
-        ctx.metadata['etag'] = repository.etag
-        ctx.opt['header'] = "https://www.github.com/{}/{}/".format(
+        result.meta['etag'] = repository.etag
+        result.link = "https://www.github.com/{}/{}/".format(
             conf["owner"], conf["repository"])
         ctx.log_debug("GithubTagsInput: loading done")
+        return result
 
 
 def _format_gh_release(release, full_message):
@@ -510,25 +554,31 @@ class JamendoAlbumsInput(AbstractInput):
 
         url = _jamendo_build_service_url(conf, last_updated)
 
+        result = common.Result(ctx.oid)
         ctx.log_debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers)
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
-            raise common.InputError("timeout")
+            response.set_error("timeout")
+            return
         except Exception as err:
-            raise common.InputError(err)
+            response.set_error(err)
+            return
 
         if response.status_code == 304:
             response.close()
-            raise common.NotModifiedError()
+            result.set_no_modified()
+            return result
+
         if response.status_code != 200:
             err = "Response code: %d" % response.status_code
             if response.text:
                 err += "\n" + response.text
             response.close()
-            raise common.InputError(err)
+            response.set_error(err)
+            return err
 
         res = json.loads(response.text)
 
@@ -537,12 +587,13 @@ class JamendoAlbumsInput(AbstractInput):
             raise common.InputError(res['headers']['error_message'])
 
         if conf.get('short_list'):
-            yield from _jamendo_format_short_list(res['results'])
+            result.items.extend(_jamendo_format_short_list(res['results']))
         else:
-            yield from _jamendo_format_long_list(res['results'])
+            result.items.extend(_jamendo_format_long_list(res['results']))
 
         response.close()
         ctx.log_debug("JamendoAlbumsInput: load done")
+        return result
 
 
 def _jamendo_build_service_url(conf, last_updated):
@@ -565,14 +616,15 @@ def _jamendo_album_to_url(album):
 
 def _jamendo_format_short_list(results):
     for result in results:
-        yield "\n".join(
+        yield common.Item("\n".join(
             " ".join((album['releasedate'], album["name"],
                       _jamendo_album_to_url(album)))
-            for album in result.get('albums') or [])
+            for album in result.get('albums') or []))
 
 
 def _jamendo_format_long_list(results):
     for result in results:
         for album in result.get('albums') or []:
-            yield " ".join((album['releasedate'], album["name"],
-                            _jamendo_album_to_url(album)))
+            yield common.Item(
+                " ".join((album['releasedate'], album["name"],
+                          _jamendo_album_to_url(album))))

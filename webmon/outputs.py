@@ -22,6 +22,8 @@ import subprocess
 
 from docutils.core import publish_string
 
+import yaml
+
 from . import common
 from . import cache
 
@@ -69,8 +71,8 @@ class AbstractTextOutput(AbstractOutput):
         """ Generate section for one input """
         yield ctx.name
         yield "'" * len(ctx.name)
-        if 'url' in ctx.conf:
-            yield ctx.conf['url']
+        if 'url' in ctx.input_conf:
+            yield ctx.input_conf['url']
 
         header = ctx.opt.get('header')
         if header:
@@ -362,3 +364,46 @@ def _make_backup(filename):
     if not os.path.isfile(filename):
         return
     os.rename(filename, filename + ".bak")
+
+
+
+class Output(object):
+    """Output store/load results.
+
+    TODO: thread-safe
+    """
+    def __init__(self, working_dir: str):
+        super(Output, self).__init__()
+        self.working_dir = os.path.expanduser(working_dir)
+        common.create_missing_dir(working_dir)
+
+        self.stats = {
+            common.STATUS_NEW: 0,
+            common.STATUS_ERROR: 0,
+            common.STATUS_UNCHANGED: 0,
+            common.STATUS_CHANGED: 0
+        }
+
+    def put(self, part: common.Result, content: str):
+        assert isinstance(part, common.Result)
+        assert part.meta['status'] in self.stats, "Invalid status " + \
+            str(part)
+        self.stats[part.meta['status']] += 1
+        dst_file = os.path.join(self.working_dir, part.oid + "." +
+                                str(int(part.meta['update_date'])))
+
+        outp = {
+            'meta': part.meta,
+            'debug': part.debug,
+            'content': content,
+            'info': {key: getattr(part, key) for key in part.FIELDS},
+        }
+
+        with open(dst_file, "w") as ofile:
+            yaml.dump(outp, ofile)
+
+    def put_error(self, ctx: common.Context, err):
+        # TODO: czy raportowanie globalnych błędów powinno być tutaj?
+        result = common.Result(ctx.oid)
+        result.set_error(err)
+        self.put(result, None)

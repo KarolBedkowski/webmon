@@ -43,7 +43,6 @@ class AbstractFilter(object):
     params = [
         ("mode", "Filtering mode", "parts", False),
     ]
-    _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf: dict, ctx: common.Context):
         super(AbstractFilter, self).__init__()
@@ -52,34 +51,22 @@ class AbstractFilter(object):
             {key: val for key, _, val, _ in self.params},
             conf)
 
-        # if only one mode is available - use it
-        if len(self._accepted_modes) == 1:
-            self._mode = self._accepted_modes[0]
-        else:
-            self._mode = self._conf.get("mode")
-
     def validate(self):
         """ Validate filter parameters """
         for name, _, _, required in self.params or []:
             if required and not self._conf.get(name):
                 raise common.ParamError("missing parameter " + name)
-        if self._mode not in self._accepted_modes:
-            raise common.ParamError("invalid mode: %s" % self._mode)
 
-    def filter(self, parts):
-        if self._mode == "parts":
-            for part in parts:
-                yield from self._filter(part)
+    def filter(self, result: common.Result):
+        # TODO: copy result
+        items = []
+        for item in result.items:
+            items.extend(self._filter(item, result))
+        result.items = items
+        return result
 
-        elif self._mode == "lines":
-            for part in parts:
-                lines = "\n".join(
-                    "\n".join(self._filter(line))
-                    for line in part.split("\n"))
-                yield lines
-
-    def _filter(self, text):
-        """Filter text and return iter<str> new one or more items"""
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
         raise NotImplementedError()
 
 
@@ -98,11 +85,14 @@ class Html2Text(AbstractFilter):
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
 
-    def _filter(self, text):
-        assert isinstance(text, str)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
+        assert isinstance(item, common.Item)
+        # TODO: handle import error
         import html2text as h2t
         conv = h2t.HTML2Text(bodywidth=self._conf.get("width"))
-        yield conv.handle(text)
+        # TODO: copy item
+        yield item.copy(content=conv.handle(item.content))
 
 
 class Strip(AbstractFilter):
@@ -110,13 +100,12 @@ class Strip(AbstractFilter):
 
     name = "strip"
     params = [
-        ("mode", "Filtering mode", "lines", False),
         ("chars", "Characters to strip", None, False),
     ]
 
-    def _filter(self, text):
-        assert isinstance(text, str)
-        yield text.strip(self._conf['chars'])
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
+        yield item.copy(content=item.content.strip(self._conf['chars']))
 
 
 class Split(AbstractFilter):
@@ -124,38 +113,42 @@ class Split(AbstractFilter):
 
     name = "split"
     params = [
-        ("mode", "Filtering mode", "lines", False),
         ("separator", "Delimiter string (default \\n)", None, False),
         ("max_split", "Maximum number of lines", -1, False),
         ("generate_parts", "Generate parts instead of split into lines",
          False, False),
     ]
 
-    def _filter(self, text):
-        assert isinstance(text, str)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
         sep = self._conf['separator']
         if self._conf['generate_parts']:
-            yield from text.split("\n" if sep is None else sep,
-                                  self._conf['max_split'])
+            for text in item.content.split(
+                    "\n" if sep is None else sep, self._conf['max_split']):
+                yield item.copy(content=text)
         else:
-            lines = text.split("\n" if sep is None else sep,
-                               self._conf['max_split'])
-            yield "\n".join(lines)
+            lines = item.content.split("\n" if sep is None else sep,
+                                       self._conf['max_split'])
+            yield item.copy(content="\n".join(lines))
 
 
 class Sort(AbstractFilter):
     """ Sort items. """
 
     name = "sort"
+    params = [
+        ("mode", "Filtering mode (parts/lines)", "parts", False),
+    ]
 
-    def filter(self, parts):
-        if self._mode == "parts":
-            yield from sorted(parts)
-
-        elif self._mode == "lines":
-            # sort lines in each part
-            for part in parts:
-                yield "\n".join(sorted(part.split("\n")))
+    def filter(self, result: common.Result):
+        # TODO: copy result
+        if self._conf['mode'] == "parts":
+            result.items.sort()
+        else:
+            items = [item.copy(content="\n".join(sorted(part.split("\n"))))
+                     for item in result.items]
+            result.items = items
+        return result
 
 
 class Grep(AbstractFilter):
@@ -163,19 +156,30 @@ class Grep(AbstractFilter):
 
     name = "grep"
     params = [
-        ("mode", "Filtering mode", "parts", False),
+        ("mode", "Filtering mode (parts/lines)", "parts", False),
         ("pattern", "Regular expression", None, True),
     ]
-    _accepted_modes = ("lines", "parts")
 
     def __init__(self, conf, ctx):
         super(Grep, self).__init__(conf, ctx)
         self._re = re.compile(conf["pattern"])
 
-    def _filter(self, text):
-        assert isinstance(text, str)
-        if self._re.match(text):
-            yield text
+    def filter(self, result: common.Result):
+        # TODO: copy result
+        if self._conf['mode'] == "parts":
+            items = [item for item in result.items
+                     if self._re.match(item.content)]
+        else:
+            items = []
+            for item in result.items:
+                content = "\n".join(
+                    line for line in item.content.split("\n")
+                    if self._re.match(line)
+                )
+                if content:
+                    items.append(item.copy(content=content))
+        result.items = items
+        return result
 
 
 class Wrap(AbstractFilter):
@@ -190,7 +194,6 @@ class Wrap(AbstractFilter):
         ("width", "Maximal line width", 76, False),
         ("max_lines", "Max number of lines", None, False),
     ]
-    _accepted_modes = ("parts", )
 
     def __init__(self, conf, ctx):
         super(Wrap, self).__init__(conf, ctx)
@@ -198,13 +201,17 @@ class Wrap(AbstractFilter):
             break_long_words=False,
             break_on_hyphens=False)
 
-    def filter(self, parts):
+    def filter(self, result: common.Result):
         self._tw.text = self._conf.get("width") or 76
         self._tw.max_lines = self._conf.get("max_lines") or None
-        return super(Wrap, self).filter(parts)
+        return super(Wrap, self).filter(result)
 
-    def _filter(self, text):
-        yield "\n".join(self._tw.fill(line) for line in text.split('\n'))
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
+        nitem = item.copy()
+        nitem.content = "\n".join(
+            self._tw.fill(line) for line in item.content.split('\n'))
+        yield nitem
 
 
 def _strip_str(inp):
@@ -216,7 +223,6 @@ class DeCSVlise(AbstractFilter):
 
     name = "de-csv"
     params = [
-        ("mode", "Filtering mode", "parts", False),
         ("delimiter", "Field delimiter", ",", False),
         ("quote_char", "character to quote fields", None, False),
         ("generate_parts", "Generate parts instead of split into lines",
@@ -224,15 +230,18 @@ class DeCSVlise(AbstractFilter):
         ("strip", "strip whitespaces", False, False),
     ]
 
-    def _filter(self, text):
-        reader = csv.reader([text], delimiter=self._conf['delimiter'],
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
+        reader = csv.reader([item.content],
+                            delimiter=self._conf['delimiter'],
                             quotechar=self._conf['quote_char'])
         convfunc = _strip_str if self._conf['strip'] else str
 
         if self._conf['generate_parts']:
-            yield from map(convfunc, reader)
+            for part in map(convfunc, reader):
+                yield item.copy(content=part)
         else:
-            yield '\n'.join(map(convfunc, list(reader)[0]))
+            yield item.copy(content='\n'.join(map(convfunc, list(reader)[0])))
 
 
 def _get_elements_by_xpath(data, expression):
@@ -257,7 +266,6 @@ class GetElementsByCss(AbstractFilter):
     params = [
         ("sel", "selector", None, True),
     ]
-    _accepted_modes = ("parts", )
 
     def __init__(self, conf, ctx):
         super(GetElementsByCss, self).__init__(conf, ctx)
@@ -272,9 +280,10 @@ class GetElementsByCss(AbstractFilter):
         except SelectorError:
             raise ValueError('Invalid CSS selector for filtering')
 
-    def _filter(self, text):
-        assert isinstance(text, str), repr(text)
-        yield from _get_elements_by_xpath(text, self._expression)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
+        for part in _get_elements_by_xpath(item.content, self._expression):
+            yield item.copy(content=part)
 
 
 class GetElementsByXpath(AbstractFilter):
@@ -284,12 +293,12 @@ class GetElementsByXpath(AbstractFilter):
     params = [
         ("xpath", "selector", None, True),
     ]
-    _accepted_modes = ("parts", )
 
-    def _filter(self, text):
-        assert isinstance(text, str)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
         xpath = self._conf["xpath"]
-        yield from _get_elements_by_xpath(text, xpath)
+        for part in _get_elements_by_xpath(item.content, xpath):
+            yield item.copy(content=part)
 
 
 def _get_elements_by_id(data, sel):
@@ -314,12 +323,12 @@ class GetElementsById(AbstractFilter):
     params = [
         ("sel", "selector", None, True),
     ]
-    _accepted_modes = ("parts", )
 
-    def _filter(self, text):
-        assert isinstance(text, str)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
         sel = self._conf["sel"]
-        yield from _get_elements_by_id(text, sel)
+        for part in _get_elements_by_id(item.content, sel):
+            yield item.copy(content=part)
 
 
 class CommandFilter(AbstractFilter):
@@ -327,27 +336,28 @@ class CommandFilter(AbstractFilter):
 
     name = "command"
     params = [
-        ("mode", "Filtering mode", "parts", False),
+        ("mode", "Filtering mode (parts/lines)", "parts", False),
         ("command", "command to run", None, True),
         ("split_lines", "split filter results on newline character",
          False, True),
     ]
 
-    def _filter(self, text):
-        assert isinstance(text, str)
+    def _filter(self, item: common.Item, result: common.Result) \
+            -> common.Result:
         subp = subprocess.Popen(self._conf["command"],
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=True)
 
-        stdout, stderr = subp.communicate(text.encode('utf-8'))
+        stdout, stderr = subp.communicate(item.content.encode('utf-8'))
         res = stdout or stderr or b""
         if res:
             if self._conf['split_lines']:
-                yield from res.decode("utf-8").split("\n")
+                for line in res.decode("utf-8").split("\n"):
+                    yield item.copy(content=line)
             else:
-                yield res.decode("utf-8")
+                yield item.copy(content=res.decode("utf-8"))
 
 
 def get_filter(conf, ctx: common.Context):
