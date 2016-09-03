@@ -166,6 +166,9 @@ def _load(ctx: common.Context) -> bool:
         write_metadata_on_error(ctx, None, err)
         return common.STATUS_ERROR
 
+    if not result.title:
+        result.title = ctx.name
+
     if result.meta['status'] == common.STATUS_ERROR:
         write_metadata_on_error(ctx, result.meta, err)
         return common.STATUS_ERROR
@@ -174,7 +177,6 @@ def _load(ctx: common.Context) -> bool:
     result.meta['status'] = status
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
-    # TODO: write result
     ctx.log_info("loading done")
     return True
 
