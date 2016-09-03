@@ -10,24 +10,23 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import time
-import os.path
-import smtplib
-import email.mime.text
+import collections
 import email.mime.multipart
+import email.mime.text
 import email.utils
 import logging
-from datetime import datetime
+import os.path
+import smtplib
 import subprocess
-import collections
+import time
+from datetime import datetime
 from typing import Optional
 
 import typecheck as tc
-from docutils.core import publish_string
 import yaml
+from docutils.core import publish_string
 
-from . import common
-from . import cache
+from . import cache, common
 
 _LOG = logging.getLogger("outputs")
 

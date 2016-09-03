@@ -8,8 +8,8 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import logging
 import copy
+import logging
 import os.path
 import pathlib
 import pprint
@@ -211,6 +211,21 @@ class Item(object):
             setattr(cpy, key, val)
         return cpy
 
+    def format(self) -> str:
+        """ Return formatted item. """
+        res = []
+        if self.title:
+            res.append(self.title)
+            res.append("-" * len(self.title))
+        info = " | ".join(val.strip()
+                          for val in (self.date, self.author, self.link)
+                          if val)
+        if info:
+            res.append(info)
+
+        res.append(self.content.strip())
+        return "\n".join(res)
+
 
 class Result(object):
     FIELDS = ['title', 'link']
@@ -255,6 +270,11 @@ class Result(object):
         assert bool(self.title)
         assert self.meta['status'] and self.meta['status'] in (
             STATUS_NEW, STATUS_ERROR, STATUS_UNCHANGED, STATUS_CHANGED)
+
+    def format(self) -> str:
+        """ Return formatted result. """
+        res = [itm.format() for itm in self.items]
+        return "\n\n".join(res)
 
 
 def apply_defaults(defaults: dict, conf: dict) -> dict:

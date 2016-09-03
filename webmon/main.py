@@ -8,26 +8,20 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import os.path
-import datetime
-import logging
 import argparse
+import datetime
 import imp
-import time
-import pprint
 import locale
+import logging
+import os.path
+import pprint
+import time
 from typing import Optional
 
 import typecheck as tc
 
-from . import cache
-from . import config
-from . import inputs
-from . import logging_setup
-from . import filters
-from . import outputs
-from . import common
-from . import comparators
+from . import (cache, common, comparators, config, filters, inputs,
+               logging_setup, outputs)
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
@@ -171,7 +165,7 @@ def load(ctx: common.Context) -> bool:
         write_metadata_on_error(ctx, result.meta, err)
         return True
 
-    content = format_content(result)
+    content = result.format()
     status, diff_res, new_meta = process_content(ctx, result, content)
     result.meta['status'] = status
     if new_meta:
@@ -182,24 +176,6 @@ def load(ctx: common.Context) -> bool:
     ctx.cache.put_meta(ctx.oid, result.meta)
     ctx.log_info("loading done")
     return True
-
-
-@tc.typecheck
-def format_content(result: common.Result) -> str:
-    res = []
-    for itm in result.items:
-        if itm.title:
-            res.append(itm.title)
-            res.append("-" * len(itm.title))
-        info = " | ".join(val.strip()
-                          for val in (itm.date, itm.author, itm.link)
-                          if val)
-        if info:
-            res.append(info)
-
-        res.append(itm.content.strip())
-        res.append("")
-    return "\n".join(res)
 
 
 def _parse_options():
@@ -284,15 +260,6 @@ def _list_inputs(inps, debug: bool):
         print(" {:2d} {:<40s}".format(idx, name), act, oid)
 
 
-def _update_one(ctx):
-    try:
-        return load(ctx)
-    except IOError as err:
-        ctx.log_error("loading error: %s", str(err).replace("\n", "; "))
-        ctx.output.put_error(ctx, str(err))
-    return True
-
-
 def _build_defaults(args, conf):
     defaults = {}
     defaults.update(config.DEFAULTS)
@@ -321,7 +288,12 @@ def update(args, inps, conf, selection=None):
         if not selection or idx in selection:
             params = common.apply_defaults(defaults, iconf)
             ctx = common.Context(params, gcache, idx, output, args)
-            _update_one(ctx)
+            try:
+                load(ctx)
+            except IOError as err:
+                ctx.log_error("loading error: %s",
+                              str(err).replace("\n", "; "))
+                ctx.output.put_error(ctx, str(err))
 
     _LOG.info("Update stats: %s", output.stats)
 
