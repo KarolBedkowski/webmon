@@ -8,17 +8,19 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
+import hashlib
 import logging
 import os
 import os.path
-import hashlib
 from contextlib import contextmanager
+
+import yaml
+
 try:
     import fcntl
 except ImportError:
     fcntl = None
 
-import yaml
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"

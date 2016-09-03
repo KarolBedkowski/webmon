@@ -9,11 +9,11 @@ Licence: GPLv2+
 """
 # TODO: logowanie przez context?
 
-import os.path
+import hashlib
 import logging
+import os.path
 import pathlib
 import time
-import hashlib
 
 import yaml
 

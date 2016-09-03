@@ -7,6 +7,5 @@ Licence: GPLv2+
 
 import unittest
 
-
 if __name__ == '__main__':
     unittest.main()

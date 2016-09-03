@@ -7,9 +7,9 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import sys
-import os.path
 import logging
+import os.path
+import sys
 import tempfile
 import time
 

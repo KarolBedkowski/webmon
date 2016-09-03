@@ -10,14 +10,14 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import subprocess
 import email.utils
-import time
 import json
+import subprocess
+import time
 import typing as ty
 
-import typecheck as tc
 import requests
+import typecheck as tc
 
 from . import common
 

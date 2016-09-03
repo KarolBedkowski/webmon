@@ -8,12 +8,15 @@ Copyright (c) Karol Będkowski, 2016
 This file is part of webmon.
 Licence: GPLv2+
 """
-import subprocess
-import re
-import textwrap
 import csv
+import re
+import subprocess
+import textwrap
 import typing as ty
+
 import typecheck as tc
+
+from . import common
 
 try:
     from lxml import etree
@@ -26,7 +29,6 @@ except ImportError:
         except ImportError:
             etree = None
 
-from . import common
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"

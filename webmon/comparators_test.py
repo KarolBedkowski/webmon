@@ -7,9 +7,7 @@ Licence: GPLv2+
 
 import unittest
 
-from . import comparators
-from . import common
-
+from . import common, comparators
 
 _CONTEXT = common.Context({}, None, 0, None, {})
 

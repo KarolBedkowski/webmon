@@ -19,8 +19,8 @@ import os.path
 import smtplib
 import subprocess
 import time
-from datetime import datetime
 import typing as ty
+from datetime import datetime
 
 import typecheck as tc
 import yaml
