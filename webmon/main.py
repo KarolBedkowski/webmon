@@ -16,6 +16,9 @@ import imp
 import time
 import pprint
 import locale
+from typing import Optional
+
+import typecheck as tc
 
 from . import cache
 from . import config
@@ -26,7 +29,6 @@ from . import outputs
 from . import common
 from . import comparators
 
-
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
@@ -36,12 +38,12 @@ DEFAULT_DIFF_MODE = "ndiff"
 _LOG = logging.getLogger("main")
 
 
+@tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) -> (str, dict):
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, ctx)
 
-    ctx.log_debug("ctx: %r", ctx.metadata)
     update_date = result.meta.get('update_date') or time.time()
 
     diff = "\n".join(comparator.compare(
@@ -52,7 +54,8 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
     return diff, {'comparator_opts': comparator.opts}
 
 
-def _check_last_error_time(ctx: common.Context) -> bool:
+@tc.typecheck
+def check_last_error_time(ctx: common.Context) -> bool:
     """
     Return true when load error occurred and still `on_error_wait` interval
     not pass.
@@ -65,12 +68,11 @@ def _check_last_error_time(ctx: common.Context) -> bool:
     return False
 
 
-def _load_content(loader, ctx: common.Context) -> common.Result:
+@tc.typecheck
+def load_content(loader, ctx: common.Context) -> common.Result:
     start = time.time()
     # load list of parts
     result = loader.load()
-    if not result.meta.get('update_date'):
-        result.meta['update_date'] = time.time()
 
     if ctx.debug:
         ctx.log_debug("loaded: %s", result)
@@ -87,56 +89,51 @@ def _load_content(loader, ctx: common.Context) -> common.Result:
             ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(result))
 
     if not result.items:
-        result.append(common.Item("<no data>"))
+        result.append_simple_text("<no data>")
 
     result.meta['update_duration'] = time.time() - start
     result.meta['update_date'] = time.time()
+    if not result.title:
+        result.title = ctx.name
     if ctx.debug:
         ctx.log_debug("result: %s", result)
     return result
 
 
-def process_content(ctx: common.Context, result: common.Result) -> (str, str):
+@tc.typecheck
+def process_content(ctx: common.Context, result: common.Result,
+                    content: str) -> (str, str, Optional[dict]):
     """Detect content status (changes). Returns content formatted to
     write into cache.
+    Returns (status, diff_result, new metadata)
     """
-    content = format_content(result)
     status = result.meta['status']
 
     if status == common.STATUS_UNCHANGED:
         ctx.log_debug("loading - unchanged content")
-        if ctx.input_conf.get("report_unchanged", False):
-            # unchanged content, but report
-            ctx.output.put(result, content)
-        return content, common.STATUS_UNCHANGED
+        return (common.STATUS_UNCHANGED,
+                content if ctx.input_conf.get("report_unchanged", False)
+                else None, None)
 
     prev_content = ctx.cache.get(ctx.oid)
     if prev_content is None:
-        # new content
         ctx.log_debug("loading - new content")
-        result.meta['status'] = common.STATUS_NEW
-        ctx.output.put(result, content)
-        return content, common.STATUS_NEW
+        return common.STATUS_NEW, content, None
 
     if prev_content != content:
-        # changed content
         ctx.log_debug("loading - changed content, making diff")
         diff, new_meta = compare_contents(prev_content, content, ctx, result)
-        if new_meta:
-            result.meta.update(new_meta)
-        result.meta['status'] = common.STATUS_CHANGED
-        ctx.output.put(result, diff)
-        return content, common.STATUS_CHANGED
+        return common.STATUS_CHANGED, diff, new_meta
 
     ctx.log_debug("loading - unchanged content")
-    if ctx.input_conf.get("report_unchanged", False):
-        # unchanged content, but report
-        result.meta['status'] = common.STATUS_UNCHANGED
-        ctx.output.put(result, content)
-    return content, common.STATUS_UNCHANGED
+    return (common.STATUS_UNCHANGED,
+            content if ctx.input_conf.get("report_unchanged", False) else None,
+            None)
 
 
-def write_metadata_on_error(ctx, metadata, error_msg):
+@tc.typecheck
+def write_metadata_on_error(ctx: common.Context, metadata: dict,
+                            error_msg: str):
     metadata = metadata or {}
     metadata['update_date'] = time.time()
     metadata['last_error'] = time.time()
@@ -145,7 +142,8 @@ def write_metadata_on_error(ctx, metadata, error_msg):
     ctx.cache.put_meta(ctx.oid, metadata)
 
 
-def _load(ctx: common.Context) -> bool:
+@tc.typecheck
+def load(ctx: common.Context) -> bool:
     ctx.log_debug("start loading")
     ctx.metadata = ctx.cache.get_meta(ctx.oid) or {}
 
@@ -153,51 +151,53 @@ def _load(ctx: common.Context) -> bool:
     loader = inputs.get_input(ctx)
 
     # check, is update required
-    # TODO: check last error
     if not ctx.args.force and not loader.need_update():
         ctx.log_info("no update required")
+        return False
+
+    if check_last_error_time(ctx):
+        ctx.log_info("waiting after error")
         return False
 
     # load
     ctx.log_info("loading...")
     try:
-        result = _load_content(loader, ctx)
+        result = load_content(loader, ctx)
     except common.InputError as err:
         write_metadata_on_error(ctx, None, err)
-        return common.STATUS_ERROR
-
-    if not result.title:
-        result.title = ctx.name
+        return True
 
     if result.meta['status'] == common.STATUS_ERROR:
         write_metadata_on_error(ctx, result.meta, err)
-        return common.STATUS_ERROR
+        return True
 
-    content, status = process_content(ctx, result)
+    content = format_content(result)
+    status, diff_res, new_meta = process_content(ctx, result, content)
     result.meta['status'] = status
+    if new_meta:
+        result.meta.update(new_meta)
+    if diff_res:
+        ctx.output.put(result, diff_res)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
     ctx.log_info("loading done")
     return True
 
 
+@tc.typecheck
 def format_content(result: common.Result) -> str:
     res = []
     for itm in result.items:
         if itm.title:
             res.append(itm.title)
             res.append("-" * len(itm.title))
-        info = []
-        if itm.date:
-            info.append(itm.date)
-        if itm.author:
-            info.append(itm.author)
-        if itm.link:
-            info.append(itm.link)
+        info = " | ".join(val.strip()
+                          for val in (itm.date, itm.author, itm.link)
+                          if val)
         if info:
-            res.append(" | ".join(info))
+            res.append(info)
 
-        res.append(itm.content)
+        res.append(itm.content.strip())
         res.append("")
     return "\n".join(res)
 
@@ -251,7 +251,7 @@ def _show_abilities_cls(title, base_cls):
     print()
 
 
-def _show_abilities():
+def show_abilities():
     _show_abilities_cls("Inputs:", inputs.AbstractInput)
     _show_abilities_cls("Outputs:", outputs.AbstractOutput)
     _show_abilities_cls("Filters:", filters.AbstractFilter)
@@ -274,7 +274,8 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def _list_inputs(inps, debug):
+@tc.typecheck
+def _list_inputs(inps, debug: bool):
     print("Inputs:")
     for idx, inp_conf in enumerate(inps, 1):
         name = config.get_input_name(inp_conf, idx)
@@ -285,7 +286,7 @@ def _list_inputs(inps, debug):
 
 def _update_one(ctx):
     try:
-        return _load(ctx)
+        return load(ctx)
     except IOError as err:
         ctx.log_error("loading error: %s", str(err).replace("\n", "; "))
         ctx.output.put_error(ctx, str(err))
@@ -300,7 +301,7 @@ def _build_defaults(args, conf):
     return defaults
 
 
-def _update(args, inps, conf, selection=None):
+def update(args, inps, conf, selection=None):
     try:
         gcache = cache.Cache(os.path.expanduser(args.cache_dir))
     except IOError:
@@ -322,6 +323,8 @@ def _update(args, inps, conf, selection=None):
             ctx = common.Context(params, gcache, idx, output, args)
             _update_one(ctx)
 
+    _LOG.info("Update stats: %s", output.stats)
+
     omngr = outputs.OutputManager(conf, args)
     omngr.write()
 
@@ -337,7 +340,7 @@ def main():
     _load_user_classes()
 
     if args.abilities:
-        _show_abilities()
+        show_abilities()
         return
 
     inps = config.load_inputs(args.inputs)
@@ -364,7 +367,7 @@ def main():
 
     try:
         with config.lock():
-            _update(args, inps, conf, selection)
+            update(args, inps, conf, selection)
     except RuntimeError:
         pass
 

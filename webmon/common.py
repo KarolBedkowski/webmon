@@ -171,6 +171,17 @@ STATUS_CHANGED = 'chg'
 STATUS_UNCHANGED = 'ucg'
 STATUS_ERROR = 'err'
 
+STATUSES = {
+    STATUS_NEW: 'new',
+    STATUS_CHANGED: 'changed',
+    STATUS_UNCHANGED: 'unchanged',
+    STATUS_ERROR: 'error',
+}
+
+
+def status_human_str(status: str) -> str:
+    return STATUSES.get(status, status)
+
 
 class Item(object):
     """docstring for Item"""

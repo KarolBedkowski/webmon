@@ -20,14 +20,14 @@ import logging
 from datetime import datetime
 import subprocess
 import collections
+from typing import Optional
 
+import typecheck as tc
 from docutils.core import publish_string
-
 import yaml
 
 from . import common
 from . import cache
-from .beartype import beartype
 
 _LOG = logging.getLogger("outputs")
 
@@ -43,12 +43,12 @@ class AbstractOutput(object):
     # parameters - list of tuples (name, description, default, required)
     params = []
 
-    def __init__(self, conf):
+    def __init__(self, conf: dict) -> None:
         super(AbstractOutput, self).__init__()
+        self._log = logging.getLogger(self.__class__.__name__)
         self._conf = common.apply_defaults(
             {key: val for key, _, val, _ in self.params},
             conf)
-        self.footer = None
 
     def validate(self):
         for name, _, _, required in self.params or []:
@@ -56,50 +56,66 @@ class AbstractOutput(object):
             if required and not val:
                 raise common.ParamError("missing parameter " + name)
 
-    def report(self, groups: dict):
+    def report(self, groups: dict, footer: Optional[str]=None):
         """ Generate report """
         raise NotImplementedError()
 
 
-def _rst_escape(text):
+@tc.typecheck
+def rst_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*")
+
+
+_RST_HEADERS_CHARS = ('=', '-', '^', "'")
+
+
+@tc.typecheck
+def yield_rst_header(text: str, level: int):
+    if text:
+        yield text
+        yield _RST_HEADERS_CHARS[level] * len(text)
 
 
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    @beartype
-    def _format_item(self, content: dict):
-        """ Generate section for one result """
-        update_date = content['meta'].get('update_date')
+    def _format_item_header(self, item: dict) -> str:
+        update_date = item['meta'].get('update_date')
+        header = []
         if update_date:
-            date = time.strftime("%x %X", time.localtime(update_date))
-            yield date
-            yield "'" * len(date)
+            header.append(time.strftime("%x %X", time.localtime(update_date)))
+        header.append("*" +
+                      common.status_human_str(item['meta']['status']) +
+                      "*")
+        return ' '.join(header)
+
+    @tc.typecheck
+    def _format_item(self, item: dict):
+        """ Generate section for one result """
+        yield from yield_rst_header(self._format_item_header(item), 3)
+
+        comparator_opts = item['meta'].get('comparator_opts') or {}
+        content = item['content'].rstrip() or "<no data>"
+
+        if comparator_opts.get(common.OPTS_PREFORMATTED):
+            yield "::"
+            yield ""
+            for line in content.split("\n"):
+                yield "  " + line
+        else:
+            for line in content.split("\n"):
+                yield ""
+                yield rst_escape(line)
+        yield ""
 
         if __debug__:
             yield '.. code::'
             yield ""
-            yield "  META: " + str(content['meta'])
-            yield "  DEBUG: " + str(content['debug'])
+            yield "  META: " + str(item['meta'])
+            yield "  DEBUG: " + str(item['debug'])
             yield ""
 
-        if content:
-            comparator_opts = content['meta'].get('comparator_opts') or {}
-            content = content['content'].rstrip() or "<no data>"
-
-            if comparator_opts.get(common.OPTS_PREFORMATTED):
-                yield "::"
-                yield ""
-                for line in content.split("\n"):
-                    yield "  " + line
-            else:
-                for line in content.split("\n"):
-                    yield ""
-                    yield _rst_escape(line)
-        yield ""
-
-    @beartype
+    @tc.typecheck
     def _get_stats_str(self, groups: dict) ->str:
         """ Generate header """
         return ";  ".join(
@@ -110,53 +126,44 @@ class AbstractTextOutput(AbstractOutput):
                 ("Error", groups[common.STATUS_ERROR])
             ] if items)
 
-    @beartype
+    @tc.typecheck
     def _gen_section(self, title: str, items: list):
         """ Generate section (changed/new/errors/etc)"""
         if not items:
             return
 
-        title = "%s [%d]" % (title, len(items))
-        yield title
-        yield '-' * len(title)
+        yield from yield_rst_header("%s [%d]" % (title, len(items)), 1)
         yield
         for item in items:
             assert isinstance(item, list)
             assert len(item) > 0
             fitem = item[0]
-            if fitem['title']:
-                yield fitem['title']
-                yield '^' * len(fitem['title'])
+            yield from yield_rst_header(fitem['title'], 2)
             for content in item:
                 yield from self._format_item(content)
         yield ''
 
-    @beartype
-    def _mk_report(self, groups: dict):
+    @tc.typecheck
+    def _mk_report(self, groups: dict, footer=None):
         """ Generate whole report"""
-        yield from [
-            "========",
-            " WebMon",
-            "========",
-            "",
-            "Updated " + datetime.now().strftime("%x %X"),
-            ""
-        ]
+        yield "========"
+        yield " WebMon"
+        yield "========"
+        yield ""
+        yield "Updated " + datetime.now().strftime("%x %X")
+        yield ""
         yield self._get_stats_str(groups)
         yield ""
         yield from self._gen_section("Changed",
-                                        groups[common.STATUS_CHANGED])
+                                     groups[common.STATUS_CHANGED])
         yield from self._gen_section("New", groups[common.STATUS_NEW])
         yield from self._gen_section("Errors", groups[common.STATUS_ERROR])
         yield from self._gen_section("Unchanged",
-                                        groups[common.STATUS_UNCHANGED])
-        yield from self._gen_footer()
-
-    def _gen_footer(self):
+                                     groups[common.STATUS_UNCHANGED])
         yield ""
-        yield ".. footer:: " + (self.footer or str(datetime.now()))
+        yield ".. footer:: " + (footer or str(datetime.now()))
 
-    def report(self, items: dict):
+    def report(self, items: dict, footer: Optional[str]=None):
         """ Generate report """
         raise NotImplementedError()
 
@@ -169,12 +176,13 @@ class TextFileOutput(AbstractTextOutput):
         ("file", "Destination file name", None, True),
     ]
 
-    def report(self, items):
+    def report(self, items, footer: Optional[str]=None):
         _make_backup(self._conf["file"])
         try:
             with open(self._conf["file"], "w") as ofile:
-                ofile.write("\n".join(part for part in self._mk_report(items)
-                                      if part is not None))
+                ofile.write("\n".join(
+                    part for part in self._mk_report(items, footer)
+                    if part is not None))
         except IOError as err:
             raise common.ReportGenerateError(
                 "Writing report file %s error : %s" %
@@ -189,9 +197,9 @@ class HtmlFileOutput(AbstractTextOutput):
         ("file", "Destination file name", None, True),
     ]
 
-    def report(self, items):
+    def report(self, items, footer: Optional[str]=None):
         _make_backup(self._conf["file"])
-        content = self._mk_report(items)
+        content = self._mk_report(items, footer)
         try:
             with open(self._conf["file"], "w") as ofile:
                 html = publish_string(
@@ -211,9 +219,9 @@ class ConsoleOutput(AbstractTextOutput):
 
     name = "console"
 
-    @beartype
-    def report(self, items: dict):
-        print("\n".join(item for item in self._mk_report(items)
+    @tc.typecheck
+    def report(self, items: dict, footer: Optional[str]=None):
+        print("\n".join(item for item in self._mk_report(items, footer)
                         if item is not None))
 
 
@@ -242,16 +250,16 @@ class EMailOutput(AbstractTextOutput):
             if not conf.get("smtp_password"):
                 raise common.ParamError("missing password for login")
         if conf.get("smtp_tls") and conf.get("smtp_ssl"):
-            _LOG.warning("EMailOutput: configured tls and ssl; using ssl")
+            self._log.warning("EMailOutput: configured tls and ssl; using ssl")
 
         encrypt = self._conf.get("encrypt", "")
         if encrypt and encrypt not in ('gpg', ):
             raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
 
-    @beartype
-    def report(self, items: dict):
+    @tc.typecheck
+    def report(self, items: dict, footer: Optional[str]=None):
         conf = self._conf
-        body = "\n".join(item for item in self._mk_report(items)
+        body = "\n".join(item for item in self._mk_report(items, footer)
                          if item is not None)
         msg = self._get_msg(conf.get("html"), body)
         header = self._get_stats_str(items)
@@ -276,7 +284,7 @@ class EMailOutput(AbstractTextOutput):
         finally:
             smtp.quit()
 
-    def _get_msg(self, gen_html, body):
+    def _get_msg(self, gen_html: bool, body: str) -> str:
         if self._conf.get("encrypt") == 'gpg':
             body = self._encrypt(body)
         if gen_html:
@@ -290,20 +298,20 @@ class EMailOutput(AbstractTextOutput):
             return msg
         return email.mime.text.MIMEText(body, 'plain', 'utf-8')
 
-    def _encrypt(self, message):
+    def _encrypt(self, message: str) -> str:
         subp = subprocess.Popen(["gpg", "-e", "-a", "-r", self._conf["to"]],
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         stdout, stderr = subp.communicate(message.encode('utf-8'))
         if subp.wait(60) != 0:
-            _LOG.error("EMailOutput: encrypt error: %s", stderr)
+            self._log.error("EMailOutput: encrypt error: %s", stderr)
             return stderr
         return stdout
 
 
-@beartype
-def _get_output(name: str, params: dict):
+@tc.typecheck
+def _get_output(name: str, params: dict) -> Optional[AbstractOutput]:
     _LOG.debug("_get_output %r", name)
     if not params.get("enabled", True):
         return None
@@ -317,15 +325,32 @@ def _get_output(name: str, params: dict):
     _LOG.warning("unknown output: %s", name)
 
 
+@tc.typecheck
+def qualify_item_to_status(group: list) -> str:
+    """ Qualify items to one of the groups by status.
+    Items in list can have various statuses
+    """
+    for status in (common.STATUS_CHANGED, common.STATUS_NEW,
+                   common.STATUS_ERROR):
+        if any(fdata['meta']['status'] == status for fdata in group):
+            return status
+    return common.STATUS_UNCHANGED
+
+
 class OutputManager(object):
     """ Object group all outputs. """
     def __init__(self, conf, args):
         super(OutputManager, self).__init__()
+        self._log = logging.getLogger(self.__class__.__name__)
         self._conf = conf
         self.args = args
         self._partials_dir = os.path.expanduser(args.partials_dir)
 
-    def find_parts(self):
+    def find_parts(self) -> dict:
+        """ Find all files generated by inputs.
+        Returns:
+            [ (load timestamp, file path) ]
+        """
         files = collections.defaultdict(list)
         for fname in os.listdir(self._partials_dir):
             fpath = os.path.join(self._partials_dir, fname)
@@ -333,11 +358,11 @@ class OutputManager(object):
                 continue
             oid, tstamp = fname.split('.', 1)
             files[oid].append((tstamp, fpath))
-        return files
+        return files.values()
 
-    @beartype
+    @tc.typecheck
     def _load_file(self, fpath: str) -> dict:
-        _LOG.debug("_load_file %r", fpath)
+        self._log.debug("_load_file %r", fpath)
         with open(fpath, "r") as ifile:
             try:
                 content = yaml.safe_load(ifile)
@@ -348,12 +373,12 @@ class OutputManager(object):
                     'content' in content and 'oid' in content and \
                     'title' in content and 'link' in content:
                 return content
-            _LOG.error("invalid file %s: %r", fpath, content)
+            self._log.error("invalid file %s: %r", fpath, content)
         return None
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """
-        _LOG.debug("OutputManager: writing...")
+        self._log.debug("OutputManager: writing...")
 
         data_by_status = {
             common.STATUS_NEW: [],
@@ -363,43 +388,45 @@ class OutputManager(object):
         }
 
         input_files = self.find_parts()
-        for files in input_files.values():
-            group_data = [self._load_file(fpath)
-                          for _fst, fpath in sorted(files)]
+        for files in input_files:
+            group_data = (self._load_file(fpath)
+                          for _fst, fpath in sorted(files))
             group_data = [item for item in group_data if item]
-            status = common.STATUS_UNCHANGED
-            if any(fdata['meta']['status'] == common.STATUS_CHANGED
-                   for fdata in group_data):
-                status = common.STATUS_CHANGED
-            elif any(fdata['meta']['status'] == common.STATUS_NEW
-                     for fdata in group_data):
-                status = common.STATUS_NEW
-            elif any(fdata['meta']['status'] == common.STATUS_ERROR
-                     for fdata in group_data):
-                status = common.STATUS_ERROR
+            status = qualify_item_to_status(group_data)
             data_by_status[status].append(group_data)
 
-        # TODO: sort data_by_status[] by name
+        all_items = 0
+        for items in data_by_status.values():
+            items.sort(key=lambda x: x[0].get('title'))
+            all_items += len(items)
 
-        _LOG.debug("result: %r", data_by_status)
+        if not all_items:
+            self._log.info("no new reports")
+            return
+
+        all_ok = True
 
         for rep, conf in self._conf['output'].items():
             try:
                 output = _get_output(rep, conf)
                 if output:
-                    output.report(data_by_status),
+                    output.report(data_by_status, footer)
             except Exception as err:
-                _LOG.exception("OutputManager: write %s error: %s", rep, err)
+                self._log.exception("OutputManager: write %s error: %s",
+                                    rep, err)
+                all_ok = False
 
         # delete reported files
-        for group in input_files.values():
-            for _ts, fpath in group:
-                try:
-                    os.remove(fpath)
-                except IOError as err:
-                    _LOG.error("Remove %s file error: %s", fpath, err)
+        if all_ok:
+            for group in input_files:
+                for _ts, fpath in group:
+                    try:
+                        os.remove(fpath)
+                    except IOError as err:
+                        self._log.error("Remove %s file error: %s",
+                                        fpath, err)
 
-        _LOG.debug("OutputManager: write done")
+        self._log.debug("OutputManager: write done")
 
 
 def _make_backup(filename):
@@ -412,7 +439,7 @@ class Output(object):
 
     TODO: thread-safe
     """
-    def __init__(self, working_dir: str):
+    def __init__(self, working_dir: str) -> None:
         super(Output, self).__init__()
         self.working_dir = os.path.expanduser(working_dir)
         common.create_missing_dir(working_dir)
@@ -424,7 +451,7 @@ class Output(object):
             common.STATUS_CHANGED: 0
         }
 
-    @beartype
+    @tc.typecheck
     def put(self, part: common.Result, content: str):
         assert isinstance(part, common.Result)
         assert part.meta['status'] in self.stats, "Invalid status " + \
@@ -445,7 +472,7 @@ class Output(object):
         with open(dst_file, "w") as ofile:
             yaml.safe_dump(outp, ofile)
 
-    @beartype
+    @tc.typecheck
     def put_error(self, ctx: common.Context, err):
         # TODO: czy raportowanie globalnych błędów powinno być tutaj?
         result = common.Result(ctx.oid)
