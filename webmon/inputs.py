@@ -120,7 +120,7 @@ class WebInput(AbstractInput):
             result.set_error(err)
             return result
 
-        result.append(common.Item(response.text))
+        result.append(response.text)
         response.close()
         ctx.log_debug("WebInput: load done")
         return result
@@ -215,7 +215,7 @@ class RssInput(AbstractInput):
                             "RssInput: loading HTML2Text error "
                             "(module not found)")
                 res += "\n\n" + content.strip()
-        return common.Item(res)
+        return res
 
     def _get_fields_to_load(self):
         add_content = False
@@ -280,12 +280,9 @@ class CmdInput(AbstractInput):
 
         inp_result = common.Result(ctx.oid)
         if conf['split']:
-            inp_result.items = [
-                common.Item(line)
-                for line in stdout.decode('utf-8').split("\n")
-            ]
+            inp_result.items = stdout.decode('utf-8').split("\n")
         else:
-            inp_result.append(common.Item(stdout.decode('utf-8')))
+            inp_result.append(stdout.decode('utf-8'))
         ctx.log_debug("CmdInput: loading done")
         return inp_result
 
@@ -616,15 +613,14 @@ def _jamendo_album_to_url(album):
 
 def _jamendo_format_short_list(results):
     for result in results:
-        yield common.Item("\n".join(
+        yield "\n".join(
             " ".join((album['releasedate'], album["name"],
                       _jamendo_album_to_url(album)))
-            for album in result.get('albums') or []))
+            for album in result.get('albums') or [])
 
 
 def _jamendo_format_long_list(results):
     for result in results:
         for album in result.get('albums') or []:
-            yield common.Item(
-                " ".join((album['releasedate'], album["name"],
-                          _jamendo_album_to_url(album))))
+            yield " ".join((album['releasedate'], album["name"],
+                            _jamendo_album_to_url(album)))

@@ -183,50 +183,6 @@ def status_human_str(status: str) -> str:
     return STATUSES.get(status, status)
 
 
-class Item(object):
-    """docstring for Item"""
-    FIELDS = ['title', 'date', 'link', 'author', 'content']
-
-    def __init__(self, content=None):
-        super(Item, self).__init__()
-        self.title = None
-        self.date = None
-        self.link = None
-        self.author = None
-        self.content = content
-
-    def __lt__(self, other):
-        return [getattr(self, key) for key in self.FIELDS] < \
-            [getattr(other, key) for key in self.FIELDS]
-
-    def __eq__(self, other):
-        return [getattr(self, key) for key in self.FIELDS] == \
-            [getattr(other, key) for key in self.FIELDS]
-
-    def copy(self, **kwargs):
-        cpy = Item()
-        for field in self.FIELDS:
-            setattr(cpy, field, getattr(self, field))
-        for key, val in kwargs.items():
-            setattr(cpy, key, val)
-        return cpy
-
-    def format(self) -> str:
-        """ Return formatted item. """
-        res = []
-        if self.title:
-            res.append(self.title)
-            res.append("-" * len(self.title))
-        info = " | ".join(val.strip()
-                          for val in (self.date, self.author, self.link)
-                          if val)
-        if info:
-            res.append(info)
-
-        res.append(self.content.strip())
-        return "\n".join(res)
-
-
 class Result(object):
     FIELDS = ['title', 'link']
 
@@ -234,7 +190,7 @@ class Result(object):
         self.oid = oid  # type: str
         self.title = None  # type: str
         self.link = None  # type: str
-        self.items = []  # type: [Item]
+        self.items = []  # type: [str]
         # debug informations related to this result
         self.debug = {}  # type: dict
         # metadata related to this result
@@ -252,8 +208,9 @@ class Result(object):
         self.items.append(item)
         return self
 
-    def append_simple_text(self, content):
-        self.items.append(Item(content))
+    def append_simple_text(self, content: str):
+        # TODO: drop
+        self.items.append(content)
         return self
 
     def set_error(self, message):
@@ -273,8 +230,7 @@ class Result(object):
 
     def format(self) -> str:
         """ Return formatted result. """
-        res = [itm.format() for itm in self.items]
-        return "\n\n".join(res)
+        return "\n\n".join(self.items)
 
 
 def apply_defaults(defaults: dict, conf: dict) -> dict:
