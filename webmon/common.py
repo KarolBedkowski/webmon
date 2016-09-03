@@ -13,6 +13,9 @@ import logging
 import os.path
 import pathlib
 import pprint
+import typing as ty
+
+import typecheck as tc
 
 from . import config
 
@@ -44,7 +47,7 @@ class ReportGenerateError(RuntimeError):
     """Exception raised on generate report error"""
 
 
-def find_subclass(base_class, name):
+def find_subclass(base_class, name: str):
     """ Find subclass to given `base_class` with given value of
     attribute `name` """
 
@@ -68,7 +71,8 @@ def get_subclasses_with_name(base_class):
     yield from find(base_class)
 
 
-def parse_interval(instr):
+@tc.typecheck
+def parse_interval(instr: str) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
         if instr < 1:
@@ -102,7 +106,7 @@ class Context(object):
     """
     _log = logging.getLogger("context")
 
-    def __init__(self, conf, gcache, idx, output, args):
+    def __init__(self, conf: dict, gcache, idx: int, output, args) -> None:
         super(Context, self).__init__()
         # input configuration
         self.input_conf = conf
@@ -126,7 +130,7 @@ class Context(object):
             'last_error': None,
             'last_error_msg': None,
             'status': None,
-        }
+        }  # type: Dict[str, ty.Any]
 
         self._log_prefix = "".join((
             "[",
@@ -186,34 +190,32 @@ def status_human_str(status: str) -> str:
 class Result(object):
     FIELDS = ['title', 'link']
 
-    def __init__(self, oid: str):
+    def __init__(self, oid: str) -> None:
         self.oid = oid  # type: str
         self.title = None  # type: str
         self.link = None  # type: str
-        self.items = []  # type: [str]
+        self.items = []  # type: List[str]
         # debug informations related to this result
-        self.debug = {}  # type: dict
+        self.debug = {}  # type: Dict[str, ty.Any]
         # metadata related to this result
         self.meta = {
             "status": None,
             "update_duration": 0,
             "error": None,
             "update_date": None,
-        }  # type: dict
+        }  # type: Dict[str, ty.Any]
 
     def __str__(self):
         return "<Result: " + pprint.saferepr(self.__dict__) + ">"
 
-    def append(self, item):
+    def clone(self):
+        return copy.deepcopy(self)
+
+    def append(self, item: str):
         self.items.append(item)
         return self
 
-    def append_simple_text(self, content: str):
-        # TODO: drop
-        self.items.append(content)
-        return self
-
-    def set_error(self, message):
+    def set_error(self, message: ty.Any):
         self.meta['status'] = STATUS_ERROR
         self.meta['error'] = str(message)
         return self
@@ -222,7 +224,7 @@ class Result(object):
         self.meta['status'] = STATUS_UNCHANGED
         return self
 
-    def validate(self):
+    def validate(self) -> None:
         assert bool(self.oid)
         assert bool(self.title)
         assert self.meta['status'] and self.meta['status'] in (
@@ -233,7 +235,8 @@ class Result(object):
         return "\n\n".join(self.items)
 
 
-def apply_defaults(defaults: dict, conf: dict) -> dict:
+@tc.typecheck
+def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
     """Deep copy & update `defaults` dict with `conf`."""
     result = copy.deepcopy(defaults)
 
@@ -252,6 +255,7 @@ def apply_defaults(defaults: dict, conf: dict) -> dict:
     return result
 
 
+@tc.typecheck
 def create_missing_dir(path: str):
     """ Check path and if not exists create directory.
         If path exists and is not directory - raise error.

@@ -67,7 +67,7 @@ def _create_missing_dir(path: str):
 class Cache(object):
     """Cache for previous data."""
 
-    def __init__(self, directory: str):
+    def __init__(self, directory: str) -> None:
         """
         Constructor.
 
@@ -77,19 +77,19 @@ class Cache(object):
         super(Cache, self).__init__()
         self._directory = directory
         # log cache files used in this session
-        self._touched = set()
+        self._touched = set()  # type: Set[str]
 
         # init
         _create_missing_dir(self._directory)
 
-    def get(self, oid):
+    def get(self, oid: str):
         """Get file from cache by `oid`."""
         name = self._get_filename(oid)
         content = _get_content(name)
         _LOG.debug("get %r, content_len=%d", oid, len(content or ''))
         return content
 
-    def get_meta(self, oid):
+    def get_meta(self, oid: str):
         """Get metadata from cache for file by `oid`."""
         name = self._get_filename_meta(oid)
         meta = _get_meta(name)
@@ -107,7 +107,7 @@ class Cache(object):
         except IOError as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
-    def put_meta(self, oid, metadata):
+    def put_meta(self, oid: str, metadata: dict):
         """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
         name = self._get_filename_meta(oid)
@@ -121,7 +121,7 @@ class Cache(object):
         except (IOError, yaml.error.YAMLError) as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
-    def get_mtime(self, oid):
+    def get_mtime(self, oid: str):
         """Get modification time of cached file identified by `oid`.
 
         Return None when previous file not exist.
@@ -134,9 +134,9 @@ class Cache(object):
         _LOG.debug("get_mtime %r - ts: %s", oid, mtime)
         return mtime
 
-    def _get_filename(self, oid):
+    def _get_filename(self, oid: str):
         self._touched.add(oid)
         return os.path.join(self._directory, oid)
 
-    def _get_filename_meta(self, oid):
+    def _get_filename_meta(self, oid: str):
         return os.path.join(self._directory, oid + ".meta")

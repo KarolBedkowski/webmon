@@ -16,7 +16,7 @@ import logging
 import os.path
 import pprint
 import time
-from typing import Optional
+import typing as ty
 
 import typecheck as tc
 
@@ -34,7 +34,7 @@ _LOG = logging.getLogger("main")
 
 @tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
-                     result: common.Result) -> (str, dict):
+                     result: common.Result) -> ty.Tuple[str, dict]:
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, ctx)
 
@@ -83,7 +83,7 @@ def load_content(loader, ctx: common.Context) -> common.Result:
             ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(result))
 
     if not result.items:
-        result.append_simple_text("<no data>")
+        result.append("<no data>")
 
     result.meta['update_duration'] = time.time() - start
     result.meta['update_date'] = time.time()
@@ -96,7 +96,7 @@ def load_content(loader, ctx: common.Context) -> common.Result:
 
 @tc.typecheck
 def process_content(ctx: common.Context, result: common.Result,
-                    content: str) -> (str, str, Optional[dict]):
+                    content: str) -> ty.Tuple[str, str, ty.Optional[dict]]:
     """Detect content status (changes). Returns content formatted to
     write into cache.
     Returns (status, diff_result, new metadata)

@@ -10,6 +10,9 @@ Licence: GPLv2+
 """
 
 import difflib
+import typing as ty
+
+import typecheck as tc
 
 from . import common
 
@@ -21,19 +24,20 @@ class AbstractComparator(object):
     """Abstract / base class for all comparators.
     Comparator get two lists and return formatted result - diff, etc."""
 
-    name = None
+    name = None  # type: ty.Optional[str]
 
     # some information about comparator & result
     opts = {
         common.OPTS_PREFORMATTED: False,
-    }
+    }  # type: Dict[str, ty.Any]
 
-    def __init__(self, ctx):
+    def __init__(self, ctx) -> None:
         super(AbstractComparator, self).__init__()
         assert isinstance(ctx, common.Context)
         self.ctx = ctx
 
-    def compare(self, old, old_date, new, new_date):
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
@@ -53,9 +57,11 @@ class ContextDiff(AbstractComparator):
     name = "context_diff"
     opts = {
         common.OPTS_PREFORMATTED: True,
-    }
+    }  # type: Dict[str, ty.Any]
 
-    def compare(self, old, old_date, new, new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         yield "\n".join(difflib.context_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
@@ -69,7 +75,8 @@ class UnifiedDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old, old_date, new, new_date):
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         yield "\n".join(difflib.unified_diff(
             old, new,
             fromfiledate=old_date, tofiledate=new_date,
@@ -83,7 +90,9 @@ class NDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         yield "\n".join(difflib.ndiff(old, new))
 
 
@@ -97,7 +106,9 @@ class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         """ Get only added items """
         return _substract_lists(new, old)
 
@@ -106,7 +117,9 @@ class Deleted(AbstractComparator):
     """ Generate list of deleted (misssing) items """
     name = "deleted"
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         """ Get only deleted items """
         return _substract_lists(old, new)
 
@@ -115,7 +128,9 @@ class Modified(AbstractComparator):
     """ Generate list of modified items """
     name = "modified"
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         """ Make diff and return only modified lines. """
         def _mkdiff():
             diff = difflib.SequenceMatcher(a=old, b=new)
@@ -131,12 +146,16 @@ class Last(AbstractComparator):
     """ Return current version """
     name = "last"
 
-    def compare(self, _prev, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: list, old_date: str, new: list,
+                new_date: str) -> ty.Iterable[str]:
         """ Return last (new) version """
         return new
 
 
-def get_comparator(name, ctx):
+@tc.typecheck
+def get_comparator(name: str, ctx: common.Context
+                   ) -> ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:

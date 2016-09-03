@@ -14,7 +14,9 @@ import subprocess
 import email.utils
 import time
 import json
+import typing as ty
 
+import typecheck as tc
 import requests
 
 from . import common
@@ -30,15 +32,15 @@ class AbstractInput(object):
     """ Abstract/Base class for all inputs """
 
     # name used in configuration
-    name = None
+    name = None  # type: ty.Optional[str]
     # parameters - list of tuples (name, description, default, required)
     params = [
         ("name", "input name", None, False),
         ("interval", "update interval", None, False),
         ("report_unchanged", "report data even is not changed", False, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    def __init__(self, ctx: common.Context):
+    def __init__(self, ctx: common.Context) -> None:
         super(AbstractInput, self).__init__()
         assert isinstance(ctx, common.Context)
         self._ctx = ctx
@@ -53,11 +55,11 @@ class AbstractInput(object):
             if required and val is None:
                 raise common.ParamError("missing parameter " + name)
 
-    def load(self) -> [common.Result]:
+    def load(self) -> ty.Iterable[common.Result]:
         """ Load data; return list of items (Result).  """
         raise NotImplementedError()
 
-    def need_update(self):
+    def need_update(self) -> bool:
         """ Check last update time and return True if input need update."""
         if not self._ctx.last_updated:
             return True
@@ -78,7 +80,7 @@ class WebInput(AbstractInput):
     params = AbstractInput.params + [
         ("url", "Web page url", None, True),
         ("timeout", "loading timeout", 30, True),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self) -> common.Result:
         """ Return one part - page content. """
@@ -87,7 +89,7 @@ class WebInput(AbstractInput):
                                  "Gecko/20100101 Firefox/45.0"}
         if ctx.last_updated:
             headers['If-Modified-Since'] = email.utils.formatdate(
-                ctx.last_updated)
+                float(ctx.last_updated))
         url = self._conf['url']
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
         result = common.Result(ctx.oid)
@@ -113,11 +115,11 @@ class WebInput(AbstractInput):
             return result
 
         if response.status_code != 200:
-            err = "Response code: %d" % response.status_code
+            msg = "Response code: %d" % response.status_code
             if response.text:
-                err += "\n" + response.text
+                msg += "\n" + response.text
             response.close()
-            result.set_error(err)
+            result.set_error(msg)
             return result
 
         result.append(response.text)
@@ -138,7 +140,7 @@ class RssInput(AbstractInput):
         ("max_items", "Maximal number of articles to load", None, False),
         ("html2text", "Convert html content to plain text", False, False),
         ("fields", "Fields to load from rss", _RSS_DEFAULT_FIELDS, True),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """ Return rss items as one or many parts; each part is on article. """
@@ -163,10 +165,10 @@ class RssInput(AbstractInput):
             result.set_no_modified()
             return result
         if status == 301:  # permanent redirects
-            result.append_simple_text('Permanently redirects: ' + doc.href)
+            result.append('Permanently redirects: ' + doc.href)
             return result
         if status == 302:
-            result.append_simple_text('Temporary redirects: ' + doc.href)
+            result.append('Temporary redirects: ' + doc.href)
             return result
         if status != 200:
             ctx.log_error("load document error %s: %s", status, doc)
@@ -191,8 +193,8 @@ class RssInput(AbstractInput):
         result.items.extend(self._load_entry(entry, fields, add_content)
                             for entry in entries)
 
-        result.append_simple_text("Loaded only last %d items" % max_items
-                                  if limited else "All items loaded")
+        result.append("Loaded only last %d items" % max_items
+                      if limited else "All items loaded")
 
         # update metadata
         etag = doc.get('etag')
@@ -255,9 +257,9 @@ class CmdInput(AbstractInput):
     params = AbstractInput.params + [
         ("cmd", "Command to run", None, True),
         ("split", "Split content", False, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    def load(self) -> (common.Result, dict):
+    def load(self) -> common.Result:
         """ Return command output as one part
         Returns:
             result: command.Result
@@ -341,7 +343,7 @@ class GithubInput(AbstractInput):
         ("github_token", "user personal token", None, False),
         ("short_list", "show commits as short list", True, False),
         ("full_message", "show commits whole commit body", False, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self) -> common.Result:
         """Return commits."""
@@ -368,12 +370,12 @@ class GithubInput(AbstractInput):
                 items = [commit.commit.committer['date'] + " " +
                           _format_gh_commit(commit.commit.message, False)
                           for commit in commits]
-                result.append_simple_text("\n".join(items))
+                result.append("\n".join(items))
             else:
                 for commit in commits:
                     cmt = commit.commit
                     msg = _format_gh_commit(cmt.message, full_message)
-                    result.append_simple_text(
+                    result.append(
                         "".join((cmt.committer['date'], '\n', msg,
                                  '\nAuthor: ', cmt.author['name'],
                                  cmt.author['date'])))
@@ -412,7 +414,7 @@ class GithubTagsInput(AbstractInput):
         ("github_token", "user personal token", None, False),
         ("max_items", "Maximal number of tags to load", None, False),
         ("short_list", "show commits as short list", True, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """Return commits."""
@@ -437,11 +439,10 @@ class GithubTagsInput(AbstractInput):
         short_list = conf.get("short_list")
         try:
             if short_list:
-                result.append_simple_text(
-                    '\n'.join(_format_gh_tag(tag) for tag in tags))
+                result.append('\n'.join(_format_gh_tag(tag) for tag in tags))
             else:
                 for tag in tags:
-                    result.append_simple_text(_format_gh_tag(tag))
+                    result.append(_format_gh_tag(tag))
         except Exception as err:
             raise common.InputError(err)
 
@@ -471,7 +472,7 @@ class GithubReleasesInput(AbstractInput):
         ("max_items", "Maximal number of releases to load", None, False),
         ("short_list", "show commits as short list", True, False),
         ("full_message", "show commits whole commit body", False, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """Return releases."""
@@ -496,13 +497,12 @@ class GithubReleasesInput(AbstractInput):
         full_message = conf.get("full_message") and not short_list
         try:
             if short_list:
-                result.append_simple_text(
+                result.append(
                     '\n'.join(_format_gh_release(release, False)
                               for release in releases))
             else:
                 for release in releases:
-                    result.append_simple_text(
-                        _format_gh_release(release, full_message))
+                    result.append(_format_gh_release(release, full_message))
         except Exception as err:
             result.set_error(err)
             return result
@@ -533,7 +533,7 @@ class JamendoAlbumsInput(AbstractInput):
         ("artist", "artist name", None, False),
         ("jamendo_client_id", "jamendo client id", None, True),
         ("short_list", "show compact list", True, False),
-    ]
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """ Return one part - page content. """
@@ -570,11 +570,11 @@ class JamendoAlbumsInput(AbstractInput):
             return result
 
         if response.status_code != 200:
-            err = "Response code: %d" % response.status_code
+            msg = "Response code: %d" % response.status_code
             if response.text:
-                err += "\n" + response.text
+                msg += "\n" + response.text
             response.close()
-            response.set_error(err)
+            response.set_error(msg)
             return err
 
         res = json.loads(response.text)
