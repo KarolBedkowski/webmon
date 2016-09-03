@@ -10,6 +10,7 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
+import time
 import os.path
 import smtplib
 import email.mime.text
@@ -18,7 +19,7 @@ import email.utils
 import logging
 from datetime import datetime
 import subprocess
-
+import collections
 
 from docutils.core import publish_string
 
@@ -26,7 +27,7 @@ import yaml
 
 from . import common
 from . import cache
-
+from .beartype import beartype
 
 _LOG = logging.getLogger("outputs")
 
@@ -55,7 +56,7 @@ class AbstractOutput(object):
             if required and not val:
                 raise common.ParamError("missing parameter " + name)
 
-    def report(self, new, changed, errors, unchanged):
+    def report(self, groups: dict):
         """ Generate report """
         raise NotImplementedError()
 
@@ -67,26 +68,27 @@ def _rst_escape(text):
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item(self, ctx: common.Context, content: str):
-        """ Generate section for one input """
-        yield ctx.name
-        yield "'" * len(ctx.name)
-        if 'url' in ctx.input_conf:
-            yield ctx.input_conf['url']
+    @beartype
+    def _format_item(self, content: dict):
+        """ Generate section for one result """
+        update_date = content['meta'].get('update_date')
+        if update_date:
+            date = time.strftime("%x %X", time.localtime(update_date))
+            yield date
+            yield "'" * len(date)
 
-        header = ctx.opt.get('header')
-        if header:
-            if isinstance(header, str):
-                yield header
-            else:
-                yield from header
-
-        if ctx.args.debug:
-            yield str(ctx)
+        if __debug__:
+            yield '.. code::'
+            yield ""
+            yield "  META: " + str(content['meta'])
+            yield "  DEBUG: " + str(content['debug'])
+            yield ""
 
         if content:
-            content = content.rstrip() or "<no data>"
-            if ctx.opt.get(common.OPTS_PREFORMATTED):
+            comparator_opts = content['meta'].get('comparator_opts') or {}
+            content = content['content'].rstrip() or "<no data>"
+
+            if comparator_opts.get(common.OPTS_PREFORMATTED):
                 yield "::"
                 yield ""
                 for line in content.split("\n"):
@@ -97,24 +99,40 @@ class AbstractTextOutput(AbstractOutput):
                     yield _rst_escape(line)
         yield ""
 
-    def _get_stats_str(self, new, changed, errors, unchanged):
+    @beartype
+    def _get_stats_str(self, groups: dict) ->str:
         """ Generate header """
         return ";  ".join(
             "*%s*: %d" % (title, len(items)) for title, items in [
-                ("Changed", changed), ("New", new),
-                ("Unchanged", unchanged), ("Error", errors)
+                ("Changed", groups[common.STATUS_CHANGED]),
+                ("New", groups[common.STATUS_NEW]),
+                ("Unchanged", groups[common.STATUS_UNCHANGED]),
+                ("Error", groups[common.STATUS_ERROR])
             ] if items)
 
-    def _gen_section(self, title, items):
-        """ Generate section for group of inputs """
+    @beartype
+    def _gen_section(self, title: str, items: list):
+        """ Generate section (changed/new/errors/etc)"""
+        if not items:
+            return
+
         title = "%s [%d]" % (title, len(items))
         yield title
         yield '-' * len(title)
-        for ctx, content in items:
-            yield from self._format_item(ctx, content)
+        yield
+        for item in items:
+            assert isinstance(item, list)
+            assert len(item) > 0
+            fitem = item[0]
+            if fitem['title']:
+                yield fitem['title']
+                yield '^' * len(fitem['title'])
+            for content in item:
+                yield from self._format_item(content)
         yield ''
 
-    def _mk_report(self, new, changed, errors, unchanged):
+    @beartype
+    def _mk_report(self, groups: dict):
         """ Generate whole report"""
         yield from [
             "========",
@@ -124,24 +142,21 @@ class AbstractTextOutput(AbstractOutput):
             "Updated " + datetime.now().strftime("%x %X"),
             ""
         ]
-        if new or changed or errors or unchanged:
-            yield self._get_stats_str(new, changed, errors, unchanged)
-            yield ""
-            if new:
-                yield from self._gen_section("New", new)
-            if changed:
-                yield from self._gen_section("Changed", changed)
-            if errors:
-                yield from self._gen_section("Errors", errors)
-            if unchanged:
-                yield from self._gen_section("Unchanged", unchanged)
+        yield self._get_stats_str(groups)
+        yield ""
+        yield from self._gen_section("Changed",
+                                        groups[common.STATUS_CHANGED])
+        yield from self._gen_section("New", groups[common.STATUS_NEW])
+        yield from self._gen_section("Errors", groups[common.STATUS_ERROR])
+        yield from self._gen_section("Unchanged",
+                                        groups[common.STATUS_UNCHANGED])
         yield from self._gen_footer()
 
     def _gen_footer(self):
         yield ""
         yield ".. footer:: " + (self.footer or str(datetime.now()))
 
-    def report(self, new, changed, errors, unchanged):
+    def report(self, items: dict):
         """ Generate report """
         raise NotImplementedError()
 
@@ -154,12 +169,12 @@ class TextFileOutput(AbstractTextOutput):
         ("file", "Destination file name", None, True),
     ]
 
-    def report(self, new, changed, errors, unchanged):
+    def report(self, items):
         _make_backup(self._conf["file"])
         try:
             with open(self._conf["file"], "w") as ofile:
-                ofile.write("\n".join(self._mk_report(new, changed, errors,
-                                                      unchanged)))
+                ofile.write("\n".join(part for part in self._mk_report(items)
+                                      if part is not None))
         except IOError as err:
             raise common.ReportGenerateError(
                 "Writing report file %s error : %s" %
@@ -174,13 +189,14 @@ class HtmlFileOutput(AbstractTextOutput):
         ("file", "Destination file name", None, True),
     ]
 
-    def report(self, new, changed, errors, unchanged):
+    def report(self, items):
         _make_backup(self._conf["file"])
-        content = self._mk_report(new, changed, errors, unchanged)
+        content = self._mk_report(items)
         try:
             with open(self._conf["file"], "w") as ofile:
                 html = publish_string(
-                    "\n".join(content), writer_name='html',
+                    "\n".join(line for line in content if line is not None),
+                    writer_name='html',
                     settings=None,
                     settings_overrides=_DOCUTILS_HTML_OVERRIDES)
                 ofile.write(html.decode('utf-8'))
@@ -195,8 +211,10 @@ class ConsoleOutput(AbstractTextOutput):
 
     name = "console"
 
-    def report(self, new, changed, errors, unchanged):
-        print("\n".join(self._mk_report(new, changed, errors, unchanged)))
+    @beartype
+    def report(self, items: dict):
+        print("\n".join(item for item in self._mk_report(items)
+                        if item is not None))
 
 
 class EMailOutput(AbstractTextOutput):
@@ -230,11 +248,13 @@ class EMailOutput(AbstractTextOutput):
         if encrypt and encrypt not in ('gpg', ):
             raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
 
-    def report(self, new, changed, errors, unchanged):
+    @beartype
+    def report(self, items: dict):
         conf = self._conf
-        body = "\n".join(self._mk_report(new, changed, errors, unchanged))
+        body = "\n".join(item for item in self._mk_report(items)
+                         if item is not None)
         msg = self._get_msg(conf.get("html"), body)
-        header = self._get_stats_str(new, changed, errors, unchanged)
+        header = self._get_stats_str(items)
         msg['Subject'] = conf["subject"] + (" [" + header + "]"
                                             if header else "")
         msg['From'] = conf["from"]
@@ -282,7 +302,8 @@ class EMailOutput(AbstractTextOutput):
         return stdout
 
 
-def _get_output(name, params):
+@beartype
+def _get_output(name: str, params: dict):
     _LOG.debug("_get_output %r", name)
     if not params.get("enabled", True):
         return None
@@ -302,69 +323,88 @@ class OutputManager(object):
         super(OutputManager, self).__init__()
         self._conf = conf
         self.args = args
-        self._outputs = []
-        self._new = []
-        self._changed = []
-        self._unchanged = []
-        self._errors = []
-        self._cache = cache.PartsCache(os.path.join(args.cache_dir, "parts"))
-        for repname, repconf in (conf or {}).items():
+        self._partials_dir = os.path.expanduser(args.partials_dir)
+
+    def find_parts(self):
+        files = collections.defaultdict(list)
+        for fname in os.listdir(self._partials_dir):
+            fpath = os.path.join(self._partials_dir, fname)
+            if not os.path.isfile(fpath):
+                continue
+            oid, tstamp = fname.split('.', 1)
+            files[oid].append((tstamp, fpath))
+        return files
+
+    @beartype
+    def _load_file(self, fpath: str) -> dict:
+        _LOG.debug("_load_file %r", fpath)
+        with open(fpath, "r") as ifile:
             try:
-                rep = _get_output(repname, repconf or {})
-                if rep:
-                    self._outputs.append(rep)
-            finally:
-                pass
-
-    def status(self):
-        return {
-            'new': len(self._new),
-            'changed': len(self._changed),
-            'unchanged': len(self._unchanged),
-            'error': len(self._errors)
-        }
-
-    @property
-    def errors_cnt(self):
-        return len(self._errors)
-
-    @property
-    def valid(self):
-        return bool(self._outputs)
-
-    def add_new(self, ctx, content):
-        self._new.append((ctx, content))
-
-    def add_changed(self, ctx, diff):
-        self._changed.append((ctx, diff))
-
-    def add_error(self, ctx, error):
-        self._errors.append((ctx, error))
-
-    def add_unchanged(self, ctx, content):
-        self._unchanged.append((ctx, content))
+                content = yaml.safe_load(ifile)
+            except yaml.io.UnsupportedOperation:
+                content = None
+            if isinstance(content, dict) and \
+                    'meta' in content and 'debug' in content and \
+                    'content' in content and 'oid' in content and \
+                    'title' in content and 'link' in content:
+                return content
+            _LOG.error("invalid file %s: %r", fpath, content)
+        return None
 
     def write(self, footer=None):
         """ Write all reports; footer is optionally included. """
         _LOG.debug("OutputManager: writing...")
-        if not (self._conf.get("report_unchanged") or self._new or
-                self._changed or self._errors):
-            return
-        for rep in self._outputs:
+
+        data_by_status = {
+            common.STATUS_NEW: [],
+            common.STATUS_ERROR: [],
+            common.STATUS_UNCHANGED: [],
+            common.STATUS_CHANGED: [],
+        }
+
+        input_files = self.find_parts()
+        for files in input_files.values():
+            group_data = [self._load_file(fpath)
+                          for _fst, fpath in sorted(files)]
+            group_data = [item for item in group_data if item]
+            status = common.STATUS_UNCHANGED
+            if any(fdata['meta']['status'] == common.STATUS_CHANGED
+                   for fdata in group_data):
+                status = common.STATUS_CHANGED
+            elif any(fdata['meta']['status'] == common.STATUS_NEW
+                     for fdata in group_data):
+                status = common.STATUS_NEW
+            elif any(fdata['meta']['status'] == common.STATUS_ERROR
+                     for fdata in group_data):
+                status = common.STATUS_ERROR
+            data_by_status[status].append(group_data)
+
+        # TODO: sort data_by_status[] by name
+
+        _LOG.debug("result: %r", data_by_status)
+
+        for rep, conf in self._conf['output'].items():
             try:
-                rep.footer = footer
-                rep.report(self._new, self._changed, self._errors,
-                           self._unchanged)
+                output = _get_output(rep, conf)
+                if output:
+                    output.report(data_by_status),
             except Exception as err:
-                _LOG.error("OutputManager: write %s error: %s", rep, err)
+                _LOG.exception("OutputManager: write %s error: %s", rep, err)
+
+        # delete reported files
+        for group in input_files.values():
+            for _ts, fpath in group:
+                try:
+                    os.remove(fpath)
+                except IOError as err:
+                    _LOG.error("Remove %s file error: %s", fpath, err)
+
         _LOG.debug("OutputManager: write done")
 
 
 def _make_backup(filename):
-    if not os.path.isfile(filename):
-        return
-    os.rename(filename, filename + ".bak")
-
+    if os.path.isfile(filename):
+        os.rename(filename, filename + ".bak")
 
 
 class Output(object):
@@ -384,6 +424,7 @@ class Output(object):
             common.STATUS_CHANGED: 0
         }
 
+    @beartype
     def put(self, part: common.Result, content: str):
         assert isinstance(part, common.Result)
         assert part.meta['status'] in self.stats, "Invalid status " + \
@@ -396,12 +437,15 @@ class Output(object):
             'meta': part.meta,
             'debug': part.debug,
             'content': content,
-            'info': {key: getattr(part, key) for key in part.FIELDS},
+            'oid': part.oid,
+            'title': part.title,
+            'link': part.link,
         }
 
         with open(dst_file, "w") as ofile:
-            yaml.dump(outp, ofile)
+            yaml.safe_dump(outp, ofile)
 
+    @beartype
     def put_error(self, ctx: common.Context, err):
         # TODO: czy raportowanie globalnych błędów powinno być tutaj?
         result = common.Result(ctx.oid)

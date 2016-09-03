@@ -322,6 +322,9 @@ def _update(args, inps, conf, selection=None):
             ctx = common.Context(params, gcache, idx, output, args)
             _update_one(ctx)
 
+    omngr = outputs.OutputManager(conf, args)
+    omngr.write()
+
 
 def main():
     """Main function."""
