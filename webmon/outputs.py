@@ -49,6 +49,10 @@ class AbstractOutput(object):
             {key: val for key, _, val, _ in self.params},
             conf)
 
+    def dump_debug(self):
+        return " ".join(("<", self.__class__.__name__, self.name,
+                         repr(self._conf), ">"))
+
     def validate(self):
         for name, _, _, required in self.params or []:
             val = self._conf.get(name)
@@ -103,9 +107,7 @@ class AbstractTextOutput(AbstractOutput):
             for line in content.split("\n"):
                 yield "  " + line
         else:
-            for line in content.split("\n"):
-                yield ""
-                yield rst_escape(line)
+            yield from map(rst_escape, content.split("\n"))
         yield ""
 
         if __debug__:
@@ -186,7 +188,7 @@ class TextFileOutput(AbstractTextOutput):
                     part for part in self._mk_report(items, footer)
                     if part is not None))
         except IOError as err:
-            raise common.ReportGenerateError(
+            raise common.ReportGenerateError(self,
                 "Writing report file %s error : %s" %
                 (self._conf['file'], err))
 
@@ -211,7 +213,7 @@ class HtmlFileOutput(AbstractTextOutput):
                     settings_overrides=_DOCUTILS_HTML_OVERRIDES)
                 ofile.write(html.decode('utf-8'))
         except IOError as err:
-            raise common.ReportGenerateError(
+            raise common.ReportGenerateError(self,
                 "Writing report file %s error : %s" %
                 (self._conf['file'], err))
 
@@ -282,7 +284,8 @@ class EMailOutput(AbstractTextOutput):
                 smtp.login(conf["smtp_login"], conf["smtp_password"])
             smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
         except Exception as err:
-            raise common.ReportGenerateError("Sending mail error: %s" % err)
+            raise common.ReportGenerateError(self,
+                                             "Sending mail error: %s" % err)
         finally:
             smtp.quit()
 
@@ -374,6 +377,7 @@ class OutputManager(object):
                     'meta' in content and 'debug' in content and \
                     'content' in content and 'oid' in content and \
                     'title' in content and 'link' in content:
+                self._log.debug("_load_file: %r", content)
                 return content
             self._log.error("invalid file %s: %r", fpath, content)
         return None
@@ -419,7 +423,7 @@ class OutputManager(object):
                 all_ok = False
 
         # delete reported files
-        if all_ok:
+        if all_ok and False:
             for group in input_files:
                 for _ts, fpath in group:
                     try:

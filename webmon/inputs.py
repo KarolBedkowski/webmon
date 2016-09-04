@@ -48,6 +48,10 @@ class AbstractInput(object):
             {key: val for key, _, val, _ in self.params},
             ctx.input_conf)
 
+    def dump_debug(self):
+        return " ".join(("<", self.__class__.__name__, self.name,
+                         repr(self._conf), ">"))
+
     def validate(self):
         """ Validate input configuration """
         for name, _, _, required in self.params or []:
@@ -147,7 +151,7 @@ class RssInput(AbstractInput):
         try:
             import feedparser
         except ImportError:
-            raise common.InputError("feedparser module not found")
+            raise common.InputError(self, "feedparser module not found")
         ctx = self._ctx
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
@@ -210,12 +214,12 @@ class RssInput(AbstractInput):
                 if self._conf["html2text"]:
                     try:
                         import html2text as h2t
-                        content = h2t.HTML2Text(bodywidth=9999999)\
-                            .handle(content)
+                        content = h2t.HTML2Text(bodywidth=74).handle(content)
                     except ImportError:
                         self._ctx.log_error(
                             "RssInput: loading HTML2Text error "
                             "(module not found)")
+                res.append("")
                 res.extend("    " + line.strip()
                            for line in content.strip().split("\n"))
         self._ctx.log_debug(repr(res))
@@ -253,6 +257,7 @@ def _get_val_from_rss_entry(entry, keys):
                 yield name + ": " + time.strftime("%x %X", val)
             else:
                 yield name + ": " + str(val).strip()
+            yield ""
             first_val = False
 
 
@@ -308,30 +313,25 @@ def get_input(ctx):
 
 
 def _github_check_repo_updated(repository, last_updated):
-    modified = time.time() - _GITHUB_MAX_AGE
-    if last_updated:
-        if repository.updated_at.timestamp() < last_updated:
-            raise common.NotModifiedError()
-        if last_updated > modified:
-            modified = last_updated
-
-    modified = time.strftime("%Y-%m-%dT%H:%M:%SZ",
-                             time.localtime(modified))
-    return modified
+    min_date = max(time.time() - _GITHUB_MAX_AGE, last_updated or 0)
+    repo_updated = repository.updated_at.timestamp()
+    updated = repo_updated > min_date
+    return (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime(min_date)),
+            updated)
 
 
-def _github_get_repository(conf):
+def _github_get_repository(inp, conf):
     try:
         import github3
     except ImportError:
-        raise common.InputError("github3 module not found")
+        raise common.InputError(inp, "github3 module not found")
     github = None
     if conf.get("github_user") and conf.get("github_token"):
         try:
             github = github3.login(username=conf.get("github_user"),
                                    token=conf.get("github_token"))
         except Exception as err:
-            raise common.InputError("Github auth error: " + err)
+            raise common.InputError(inp, "Github auth error: " + err)
     if not github:
         github = github3.GitHub()
     repository = github.repository(conf["owner"], conf["repository"])
@@ -355,15 +355,22 @@ class GithubInput(AbstractInput):
         """Return commits."""
         conf = self._conf
         ctx = self._ctx
-        repository = _github_get_repository(conf)
-        modified = _github_check_repo_updated(repository, ctx.last_updated)
+        result = common.Result(ctx.oid)
+        repository = _github_get_repository(self, conf)
+        data_since, updated = _github_check_repo_updated(repository,
+                                                         ctx.last_updated)
+        if not updated:
+            ctx.log_debug("GithubInput: not updated - co commits")
+            result.set_no_modified()
+            return result
+
         if hasattr(repository, "commits"):
-            commits = list(repository.commits(since=modified))
+            commits = list(repository.commits(since=data_since))
         else:
             etag = ctx.metadata.get('etag')
-            commits = list(repository.iter_commits(since=modified, etag=etag))
+            commits = list(repository.iter_commits(since=data_since,
+                                                   etag=etag))
 
-        result = common.Result(ctx.oid)
         if len(commits) == 0:
             ctx.log_debug("GithubInput: not updated - co commits")
             result.set_no_modified()
@@ -371,20 +378,11 @@ class GithubInput(AbstractInput):
 
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
+        form_fun = _format_gh_commit_short if short_list else \
+            _format_gh_commit_long
         try:
-            if short_list:
-                items = [commit.commit.committer['date'] + " " +
-                          _format_gh_commit(commit.commit.message, False)
-                          for commit in commits]
-                result.append("\n".join(items))
-            else:
-                for commit in commits:
-                    cmt = commit.commit
-                    msg = _format_gh_commit(cmt.message, full_message)
-                    result.append(
-                        "".join((cmt.committer['date'], '\n', msg,
-                                 '\nAuthor: ', cmt.author['name'],
-                                 cmt.author['date'])))
+            result.items = [form_fun(commit, full_message)
+                            for commit in commits]
         except Exception as err:
             result.set_error(err)
             return result
@@ -397,16 +395,20 @@ class GithubInput(AbstractInput):
         return result
 
 
-def _format_gh_commit(message, full_message):
-    msg = message.strip()
-    if full_message:
-        msg_parts = msg.split("\n", 1)
-        msg = msg_parts[0].strip()
-        if len(msg_parts) > 1:
-            msg += '\n' + msg_parts[1].strip().replace("\n", "")
-    else:
+def _format_gh_commit_short(commit, _full_message: bool) -> str:
+    return (commit.commit.committer['date'] + " " +
+            commit.commit.message.strip().split("\n", 1)[0].rstrip())
+
+
+def _format_gh_commit_long(commit, full_message: bool) -> str:
+    cmt = commit.commit
+    result = [cmt.committer['date'],
+              "\n\n    Author: ", cmt.author['name'], "\n'n"]
+    msg = cmt.message.strip()
+    if not full_message:
         msg = msg.split("\n", 1)[0].strip()
-    return msg
+    result.extend("   " + line + "\n" for line in msg.split("\n"))
+    return "".join(result)
 
 
 class GithubTagsInput(AbstractInput):
@@ -419,15 +421,20 @@ class GithubTagsInput(AbstractInput):
         ("github_user", "user login", None, False),
         ("github_token", "user personal token", None, False),
         ("max_items", "Maximal number of tags to load", None, False),
-        ("short_list", "show commits as short list", True, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """Return commits."""
         conf = self._conf
         ctx = self._ctx
-        repository = _github_get_repository(conf)
-        _github_check_repo_updated(repository, ctx.last_updated)
+        result = common.Result(ctx.oid)
+        repository = _github_get_repository(self, conf)
+        _, updated = _github_check_repo_updated(repository,
+                                                ctx.last_updated)
+        if not updated:
+            ctx.log_debug("GithubInput: not updated - co commits")
+            result.set_no_modified()
+            return result
 
         etag = ctx.metadata.get('etag')
         max_items = self._conf["max_items"] or 100
@@ -436,21 +443,15 @@ class GithubTagsInput(AbstractInput):
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
-        result = common.Result(ctx.oid)
         if len(tags) == 0:
             ctx.log_debug("GithubInput: not updated - no new tags")
             result.set_no_modified()
             return result
 
-        short_list = conf.get("short_list")
         try:
-            if short_list:
-                result.append('\n'.join(_format_gh_tag(tag) for tag in tags))
-            else:
-                for tag in tags:
-                    result.append(_format_gh_tag(tag))
+            result.items.extend(_format_gh_tag(tag) for tag in tags)
         except Exception as err:
-            raise common.InputError(err)
+            raise common.InputError(self, err)
 
         # add header
         result.meta['etag'] = repository.etag
@@ -476,7 +477,6 @@ class GithubReleasesInput(AbstractInput):
         ("github_user", "user login", None, False),
         ("github_token", "user personal token", None, False),
         ("max_items", "Maximal number of releases to load", None, False),
-        ("short_list", "show commits as short list", True, False),
         ("full_message", "show commits whole commit body", False, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
@@ -484,8 +484,15 @@ class GithubReleasesInput(AbstractInput):
         """Return releases."""
         conf = self._conf
         ctx = self._ctx
-        repository = _github_get_repository(conf)
-        _github_check_repo_updated(repository, ctx.last_updated)
+        result = common.Result(ctx.oid)
+        repository = _github_get_repository(self, conf)
+        _, updated = _github_check_repo_updated(repository,
+                                                ctx.last_updated)
+        if not updated:
+            ctx.log_debug("GithubInput: not updated - co commits")
+            result.set_no_modified()
+            return result
+
         etag = ctx.metadata.get('etag')
         max_items = self._conf["max_items"] or 100
         if hasattr(repository, "releases"):
@@ -493,7 +500,6 @@ class GithubReleasesInput(AbstractInput):
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
 
-        result = common.Result(ctx.oid)
         if len(releases) == 0:
             ctx.log_debug("GithubInput: not updated - no new releases")
             result.set_no_modified()
@@ -502,13 +508,10 @@ class GithubReleasesInput(AbstractInput):
         short_list = conf.get("short_list")
         full_message = conf.get("full_message") and not short_list
         try:
-            if short_list:
-                result.append(
-                    '\n'.join(_format_gh_release(release, False)
-                              for release in releases))
-            else:
-                for release in releases:
-                    result.append(_format_gh_release(release, full_message))
+            form_fun = _format_gh_release_short if short_list else \
+                _format_gh_release_long
+            result.items.extend(form_fun(release, full_message)
+                                for release in releases)
         except Exception as err:
             result.set_error(err)
             return result
@@ -521,12 +524,20 @@ class GithubReleasesInput(AbstractInput):
         return result
 
 
-def _format_gh_release(release, full_message):
-    res = [release.name, '  ',
-           release.created_at.strftime("%x %X")]
+def _format_gh_release_short(release, _full_message):
+    res = [release.name, release.created_at.strftime("%x %X")]
+    if release.body:
+        res.append(release.body().strip().split('\n', 1)[0].rstrip())
+    return " ".join(res)
+
+
+def _format_gh_release_long(release, full_message):
+    res = [release.name,
+           '\n\n    Date: ', release.created_at.strftime("%x %X")]
     if release.body and full_message:
-        res.append("\n")
-        res.append(release.body.strip())
+        res.append('\n\n')
+        res.extend('   ' + line.strip()
+                   for line in release.body.strip().split('\n'))
     return "".join(res)
 
 
@@ -587,7 +598,7 @@ class JamendoAlbumsInput(AbstractInput):
 
         if res['headers']['status'] != 'success':
             response.close()
-            raise common.InputError(res['headers']['error_message'])
+            raise common.InputError(self, res['headers']['error_message'])
 
         if conf.get('short_list'):
             result.items.extend(_jamendo_format_short_list(res['results']))

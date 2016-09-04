@@ -41,11 +41,16 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
 
     update_date = result.meta.get('update_date') or time.time()
 
+    # ctx.log_debug("compare: val1: %s", prev_content)
+    # ctx.log_debug("compare: val2: %s", content)
+
     diff = "\n".join(comparator.compare(
         prev_content.split("\n"),
         str(datetime.datetime.fromtimestamp(update_date)),
         content.split("\n"),
         str(datetime.datetime.now())))
+
+    # ctx.log_debug("compare: diff: %s", diff)
     return diff, {'comparator_opts': comparator.opts}
 
 
@@ -159,6 +164,13 @@ def load(ctx: common.Context) -> bool:
     try:
         result = load_content(loader, ctx)
     except common.InputError as err:
+        ctx.log_error("input error on %s: %r", err.input, err)
+        ctx.log_debug("input error params: %s", err.input.dump_debug())
+        write_metadata_on_error(ctx, None, err)
+        return True
+    except common.FilterError as err:
+        ctx.log_error("filter error on %s: %r", err.filter, err)
+        ctx.log_debug("filter error params: %s", err.filter.dump_debug())
         write_metadata_on_error(ctx, None, err)
         return True
 

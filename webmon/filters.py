@@ -55,6 +55,10 @@ class AbstractFilter(object):
             {key: val for key, _, val, _ in self.params},
             conf)  # type: dict
 
+    def dump_debug(self):
+        return " ".join(("<", self.__class__.__name__, self.name,
+                         repr(self._conf), ">"))
+
     def validate(self):
         """ Validate filter parameters """
         for name, _, _, required in self.params or []:
@@ -252,9 +256,9 @@ class DeCSVlise(AbstractFilter):
             yield '\n'.join(map(convfunc, list(reader)[0]))
 
 
-def _get_elements_by_xpath(data, expression):
+def _get_elements_by_xpath(filter_, data, expression):
     if not etree:
-        raise common.InputError("module etree not found")
+        raise common.FilterError(filter_, "module etree not found")
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
@@ -290,7 +294,7 @@ class GetElementsByCss(AbstractFilter):
 
     @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        yield from _get_elements_by_xpath(item, self._expression)
+        yield from _get_elements_by_xpath(self, item, self._expression)
 
 
 class GetElementsByXpath(AbstractFilter):
@@ -303,22 +307,7 @@ class GetElementsByXpath(AbstractFilter):
 
     @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        yield from _get_elements_by_xpath(item, self._conf["xpath"])
-
-
-def _get_elements_by_id(data, sel):
-    if not etree:
-        raise common.InputError("module etree not found")
-    html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
-                                   strip_cdata=True)
-    document = etree.fromstringlist([data], html_parser)
-    for elem in document.findall(".//*[@id='" + sel + "']"):
-        if isinstance(elem, etree._Element):
-            text = etree.tostring(elem)
-        else:
-            text = str(elem)
-        if text:
-            yield text.decode('utf-8')
+        yield from _get_elements_by_xpath(self, item, self._conf["xpath"])
 
 
 class GetElementsById(AbstractFilter):
@@ -330,7 +319,16 @@ class GetElementsById(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        yield from _get_elements_by_id(item, self._conf["sel"])
+        if not etree:
+            raise common.FilterError(self, "module etree not found")
+        html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
+                                       strip_cdata=True)
+        document = etree.fromstringlist([item], html_parser)
+        for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
+            text = etree.tostring(elem) if isinstance(elem, etree._Element) \
+                else str(elem)
+            if text:
+                yield text.decode('utf-8')
 
 
 class CommandFilter(AbstractFilter):

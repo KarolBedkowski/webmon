@@ -27,14 +27,6 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 OPTS_PREFORMATTED = "preformatted"
 
 
-class NotModifiedError(RuntimeError):
-    """Exception raised on HTTP 304 responses"""
-
-
-class NotFoundError(RuntimeError):
-    """Exception raised on HTTP 400 responses"""
-
-
 class ParamError(RuntimeError):
     """Exception raised on missing param"""
 
@@ -42,9 +34,34 @@ class ParamError(RuntimeError):
 class InputError(RuntimeError):
     """Exception raised on command error"""
 
+    def __init__(self, input=None, *args, **kwds):
+        super(InputError, self).__init__(*args, **kwds)
+        self.input = input
+
+
+class FilterError(RuntimeError):
+    """Exception raised on command error"""
+
+    def __init__(self, filter_=None, *args, **kwds):
+        super(FilterError, self).__init__(*args, **kwds)
+        self.filter = filter_
+
 
 class ReportGenerateError(RuntimeError):
     """Exception raised on generate report error"""
+
+    def __init__(self, generator=None, *args, **kwds):
+        super(ReportGenerateError, self).__init__(*args, **kwds)
+        self.generator = generator
+
+
+class CacheError(RuntimeError):
+    """Exception raised on command error"""
+
+    def __init__(self, operation, fname, *args, **kwds):
+        super(FilterError, self).__init__(*args, **kwds)
+        self.operation = operation
+        self.fname = fname
 
 
 def find_subclass(base_class, name: str):
