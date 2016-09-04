@@ -111,6 +111,7 @@ class AbstractTextOutput(AbstractOutput):
         if __debug__:
             yield '.. code::'
             yield ""
+            yield "  OID: " + str(item['oid'])
             yield "  META: " + str(item['meta'])
             yield "  DEBUG: " + str(item['debug'])
             yield ""
