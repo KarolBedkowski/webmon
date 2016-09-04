@@ -138,7 +138,7 @@ class AbstractTextOutput(AbstractOutput):
         for item in items:
             assert isinstance(item, list)
             assert len(item) > 0
-            fitem = item[0]
+            fitem = item[-1]
             yield from yield_rst_header(fitem['title'], 2)
             show_items_headers = len(item) > 1
             for content in item:
