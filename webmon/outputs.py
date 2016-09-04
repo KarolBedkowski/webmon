@@ -423,7 +423,7 @@ class OutputManager(object):
                 all_ok = False
 
         # delete reported files
-        if all_ok and False:
+        if all_ok:
             for group in input_files:
                 for _ts, fpath in group:
                     try:
