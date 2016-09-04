@@ -65,7 +65,7 @@ def rst_escape(text: str) -> str:
     return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*")
 
 
-_RST_HEADERS_CHARS = ('=', '-', '^', "'")
+_RST_HEADERS_CHARS = ('=', '-', '`', "'")
 
 
 @tc.typecheck
