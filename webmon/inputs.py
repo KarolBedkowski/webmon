@@ -197,8 +197,8 @@ class RssInput(AbstractInput):
         result.items.extend(self._load_entry(entry, fields, add_content)
                             for entry in entries)
 
-        result.append("Loaded only last %d items" % max_items
-                      if limited else "All items loaded")
+        result.footer = ("Loaded only last %d items" % max_items
+                         if limited else "All items loaded")
 
         # update metadata
         etag = doc.get('etag')

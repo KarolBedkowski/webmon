@@ -224,6 +224,8 @@ class Result(object):
             "error": None,
             "update_date": None,
         }  # type: Dict[str, ty.Any]
+        # result footer to print
+        self.footer = None  # type: str
 
     def __str__(self):
         return "<Result: " + pprint.saferepr(self.__dict__) + ">"

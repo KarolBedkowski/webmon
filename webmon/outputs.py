@@ -116,6 +116,11 @@ class AbstractTextOutput(AbstractOutput):
                 yield ''
         yield ""
 
+        footer = item.get('footer')
+        if footer:
+            yield '*' + rst_escape(str(footer)) + '*'
+            yield ''
+
         if __debug__:
             yield '.. code::'
             yield ""
@@ -479,6 +484,7 @@ class Output(object):
             'oid': part.oid,
             'title': part.title,
             'link': part.link,
+            'footer': part.footer,
         }
 
         with open(dst_file, "w") as ofile:
