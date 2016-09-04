@@ -76,8 +76,10 @@ _RST_HEADERS_CHARS = ('=', '-', '`', "'")
 @tc.typecheck
 def yield_rst_header(text: str, level: int) -> ty.Iterable[str]:
     if text:
+        yield ''
         yield text
         yield _RST_HEADERS_CHARS[level] * len(text)
+        yield ''
 
 
 class AbstractTextOutput(AbstractOutput):
@@ -104,11 +106,14 @@ class AbstractTextOutput(AbstractOutput):
 
         if comparator_opts.get(common.OPTS_PREFORMATTED):
             yield "::"
-            yield ""
-            for line in content.split("\n"):
-                yield "  " + line
+            for sec in content.split(common.RECORD_SEPARATOR):
+                yield ""
+                for line in sec.split("\n"):
+                    yield "  " + line
         else:
-            yield from map(rst_escape, content.split("\n"))
+            for sec in content.split(common.RECORD_SEPARATOR):
+                yield from map(rst_escape, sec.split("\n"))
+                yield ''
         yield ""
 
         if __debug__:

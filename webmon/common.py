@@ -27,6 +27,9 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 OPTS_PREFORMATTED = "preformatted"
 
 
+RECORD_SEPARATOR = '\x1e'
+
+
 class ParamError(RuntimeError):
     """Exception raised on missing param"""
 
@@ -249,7 +252,7 @@ class Result(object):
 
     def format(self) -> str:
         """ Return formatted result. """
-        return "\n\n".join(self.items)
+        return RECORD_SEPARATOR.join(self.items)
 
 
 @tc.typecheck

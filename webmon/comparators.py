@@ -36,7 +36,7 @@ class AbstractComparator(object):
         assert isinstance(ctx, common.Context)
         self.ctx = ctx
 
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Compare `old` and `new` lists and return formatted result.
 
@@ -60,10 +60,10 @@ class ContextDiff(AbstractComparator):
     }  # type: Dict[str, ty.Any]
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         yield "\n".join(difflib.context_diff(
-            old, new,
+            old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
             lineterm='\n'))
 
@@ -75,10 +75,12 @@ class UnifiedDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
-        yield "\n".join(difflib.unified_diff(
-            old, new,
+        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
+        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
+        return "\n".join(difflib.unified_diff(
+            old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
             lineterm='\n'))
 
@@ -91,9 +93,11 @@ class NDiff(AbstractComparator):
     }
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
-        yield "\n".join(difflib.ndiff(old, new))
+        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
+        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
+        return "\n".join(difflib.ndiff(old.split('\n'), new.split('\n')))
 
 
 def _substract_lists(list1, list2):
@@ -107,10 +111,14 @@ class Added(AbstractComparator):
     name = "added"
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Get only added items """
-        return _substract_lists(new, old)
+        if common.RECORD_SEPARATOR in new or common.RECORD_SEPARATOR in old:
+            return common.RECORD_SEPARATOR.join(
+                _substract_lists(new.split(common.RECORD_SEPARATOR),
+                                 old.split(common.RECORD_SEPARATOR)))
+        return '\n'.join(_substract_lists(new.split('\n'), old.split('\n')))
 
 
 class Deleted(AbstractComparator):
@@ -118,10 +126,15 @@ class Deleted(AbstractComparator):
     name = "deleted"
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Get only deleted items """
         return _substract_lists(old, new)
+        if common.RECORD_SEPARATOR in new or common.RECORD_SEPARATOR in old:
+            return common.RECORD_SEPARATOR.join(
+                _substract_lists(old.split(common.RECORD_SEPARATOR),
+                                 new.split(common.RECORD_SEPARATOR)))
+        return '\n'.join(_substract_lists(old.split('\n'), new.split('\n')))
 
 
 class Modified(AbstractComparator):
@@ -129,17 +142,19 @@ class Modified(AbstractComparator):
     name = "modified"
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Make diff and return only modified lines. """
-        def _mkdiff():
-            diff = difflib.SequenceMatcher(a=old, b=new)
-            for change, _, _, begin2, end2 in diff.get_opcodes():
-                if change == 'replace':
-                    for itm in new[begin2:end2]:
-                        yield itm
 
-        return _mkdiff()
+        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
+        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
+        diff = difflib.SequenceMatcher(a=old.split('\n'), b=new.split('\n'))
+
+        return '\n'.join(
+            itm
+            for itm in new[begin2:end2]
+            for change, _, _, begin2, end2 in diff.get_opcodes()
+            if change == 'replace')
 
 
 class Last(AbstractComparator):
@@ -147,7 +162,7 @@ class Last(AbstractComparator):
     name = "last"
 
     @tc.typecheck
-    def compare(self, old: list, old_date: str, new: list,
+    def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Return last (new) version """
         return new
