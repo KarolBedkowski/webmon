@@ -89,9 +89,10 @@ class AbstractTextOutput(AbstractOutput):
         return ' '.join(header)
 
     @tc.typecheck
-    def _format_item(self, item: dict):
+    def _format_item(self, item: dict, show_header: bool):
         """ Generate section for one result """
-        yield from yield_rst_header(self._format_item_header(item), 3)
+        if show_header:
+            yield from yield_rst_header(self._format_item_header(item), 3)
 
         comparator_opts = item['meta'].get('comparator_opts') or {}
         content = item['content'].rstrip() or "<no data>"
@@ -138,8 +139,9 @@ class AbstractTextOutput(AbstractOutput):
             assert len(item) > 0
             fitem = item[0]
             yield from yield_rst_header(fitem['title'], 2)
+            show_items_headers = len(item) > 1
             for content in item:
-                yield from self._format_item(content)
+                yield from self._format_item(content, show_items_headers)
         yield ''
 
     @tc.typecheck
