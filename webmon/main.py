@@ -27,6 +27,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 VERSION = "0.1"
+APP_NAME = "webmon-dev"
 DEFAULT_DIFF_MODE = "ndiff"
 
 _LOG = logging.getLogger("main")
@@ -179,7 +180,7 @@ def load(ctx: common.Context) -> bool:
 
 
 def _parse_options():
-    parser = argparse.ArgumentParser(description='WebMon ' + VERSION)
+    parser = argparse.ArgumentParser(description=APP_NAME + " " + VERSION)
     parser.add_argument('-i', '--inputs',
                         help='yaml file containing inputs definition'
                         ' (default inputs.yaml)')
@@ -192,11 +193,8 @@ def _parse_options():
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument('--cache-dir',
-                        default="~/.cache/webmon/cache",
+                        default="~/.cache/" + APP_NAME,
                         help='path to cache directory')
-    parser.add_argument('--partials-dir',
-                        default="~/.cache/webmon/partials",
-                        help='path to dir with partial reports')
     parser.add_argument("--force", action="store_true",
                         help="force update all sources")
     parser.add_argument("--diff-mode", choices=['ndiff', 'unified', 'context'],
@@ -270,13 +268,17 @@ def _build_defaults(args, conf):
 
 def update(args, inps, conf, selection=None):
     try:
-        gcache = cache.Cache(os.path.expanduser(args.cache_dir))
+        gcache = cache.Cache(os.path.join(
+            os.path.expanduser(args.cache_dir), "cache"))
     except IOError:
         _LOG.error("Init cache error")
         return
 
+    partial_reports_dir = os.path.join(
+            os.path.expanduser(args.cache_dir), "patials")
+
     try:
-        output = outputs.Output(args.partials_dir)
+        output = outputs.Output(partial_reports_dir)
     except RuntimeError as err:
         _LOG.error("Init parts dir error: %s", err)
         return
@@ -297,7 +299,7 @@ def update(args, inps, conf, selection=None):
 
     _LOG.info("Update stats: %s", output.stats)
 
-    omngr = outputs.OutputManager(conf, args)
+    omngr = outputs.OutputManager(conf, partial_reports_dir)
     omngr.write()
 
 
