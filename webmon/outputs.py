@@ -22,11 +22,12 @@ import time
 import typing as ty
 from datetime import datetime
 
-import typecheck as tc
-import yaml
 from docutils.core import publish_string
 
-from . import cache, common
+import yaml
+import typecheck as tc
+
+from . import common
 
 _LOG = logging.getLogger("outputs")
 
@@ -188,8 +189,8 @@ class TextFileOutput(AbstractTextOutput):
                     part for part in self._mk_report(items, footer)
                     if part is not None))
         except IOError as err:
-            raise common.ReportGenerateError(self,
-                "Writing report file %s error : %s" %
+            raise common.ReportGenerateError(
+                self, "Writing report file %s error : %s" %
                 (self._conf['file'], err))
 
 
@@ -213,8 +214,8 @@ class HtmlFileOutput(AbstractTextOutput):
                     settings_overrides=_DOCUTILS_HTML_OVERRIDES)
                 ofile.write(html.decode('utf-8'))
         except IOError as err:
-            raise common.ReportGenerateError(self,
-                "Writing report file %s error : %s" %
+            raise common.ReportGenerateError(
+                self, "Writing report file %s error : %s" %
                 (self._conf['file'], err))
 
 

@@ -289,7 +289,7 @@ def update(args, inps, conf, selection=None):
         return
 
     partial_reports_dir = os.path.join(
-            os.path.expanduser(args.cache_dir), "patials")
+        os.path.expanduser(args.cache_dir), "patials")
 
     try:
         output = outputs.Output(partial_reports_dir)

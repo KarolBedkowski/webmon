@@ -154,8 +154,8 @@ class Last(AbstractComparator):
 
 
 @tc.typecheck
-def get_comparator(name: str, ctx: common.Context
-                   ) -> ty.Optional[AbstractComparator]:
+def get_comparator(name: str,
+                   ctx: common.Context) -> ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:

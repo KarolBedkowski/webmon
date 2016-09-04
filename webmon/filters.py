@@ -14,10 +14,6 @@ import subprocess
 import textwrap
 import typing as ty
 
-import typecheck as tc
-
-from . import common
-
 try:
     from lxml import etree
 except ImportError:
@@ -28,6 +24,10 @@ except ImportError:
             import xml.etree.ElementTree as etree
         except ImportError:
             etree = None
+
+import typecheck as tc
+
+from . import common
 
 
 __author__ = "Karol Będkowski"

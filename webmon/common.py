@@ -34,9 +34,9 @@ class ParamError(RuntimeError):
 class InputError(RuntimeError):
     """Exception raised on command error"""
 
-    def __init__(self, input=None, *args, **kwds):
+    def __init__(self, input_=None, *args, **kwds):
         super(InputError, self).__init__(*args, **kwds)
-        self.input = input
+        self.input = input_
 
 
 class FilterError(RuntimeError):
@@ -59,7 +59,7 @@ class CacheError(RuntimeError):
     """Exception raised on command error"""
 
     def __init__(self, operation, fname, *args, **kwds):
-        super(FilterError, self).__init__(*args, **kwds)
+        super(CacheError, self).__init__(*args, **kwds)
         self.operation = operation
         self.fname = fname
 
