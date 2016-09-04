@@ -17,6 +17,8 @@ import time
 
 import yaml
 
+from . import common
+
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
