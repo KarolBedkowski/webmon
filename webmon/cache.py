@@ -46,24 +46,6 @@ def _get_meta(fname: str) -> str:
     return None
 
 
-def _create_missing_dir(path: str):
-    """ Check path and if not exists create directory.
-        If path exists and is not directory - raise error.
-    """
-    path = os.path.expanduser(path)
-    if os.path.exists(path):
-        if os.path.isdir(path):
-            return
-        _LOG.error("path %s for exists but is not directory", path)
-        raise RuntimeError("wrong cache directory: {}".format(path))
-
-    try:
-        pathlib.Path(path).mkdir(parents=True)
-    except IOError as err:
-        _LOG.error("creating directory %s error: %s", path, err)
-        raise
-
-
 class Cache(object):
     """Cache for previous data."""
 
@@ -80,7 +62,7 @@ class Cache(object):
         self._touched = set()  # type: Set[str]
 
         # init
-        _create_missing_dir(self._directory)
+        common.create_missing_dir(self._directory)
 
     def get(self, oid: str):
         """Get file from cache by `oid`."""

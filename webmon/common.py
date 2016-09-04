@@ -266,8 +266,4 @@ def create_missing_dir(path: str):
             return
         raise RuntimeError("path {} exists and is not dir".format(path))
 
-    try:
-        pathlib.Path(path).mkdir(parents=True)
-    except IOError as err:
-        raise RuntimeError("creating {} error: {}".format(
-            path, str(err)))
+    pathlib.Path(path).mkdir(parents=True)
