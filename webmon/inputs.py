@@ -203,7 +203,7 @@ class RssInput(AbstractInput):
         return result
 
     def _load_entry(self, entry, fields, add_content):
-        res = "\n\n".join(_get_val_from_rss_entry(entry, fields))
+        res = list(_get_val_from_rss_entry(entry, fields))
         if add_content:
             content = _get_content_from_rss_entry(entry)
             if content:
@@ -216,10 +216,12 @@ class RssInput(AbstractInput):
                         self._ctx.log_error(
                             "RssInput: loading HTML2Text error "
                             "(module not found)")
-                res += "\n\n" + content.strip()
-        return res
+                res.extend("    " + line.strip()
+                           for line in content.strip().split("\n"))
+        self._ctx.log_debug(repr(res))
+        return "\n".join(res).strip()
 
-    def _get_fields_to_load(self):
+    def _get_fields_to_load(self) -> ty.Tuple[ty.List[str], bool]:
         add_content = False
         fields = (field.strip() for field in self._conf["fields"].split(","))
         fields = [field for field in fields if field]
@@ -238,16 +240,20 @@ def _get_content_from_rss_entry(entry):
 
 
 def _get_val_from_rss_entry(entry, keys):
+    first_val = True
     for key in keys:
         if not key:
             continue
         val = entry.get(key)
         if val:
             name = key.split("_", 1)[0].capitalize()
+            if not first_val:
+                name = "    " + name
             if isinstance(val, time.struct_time):
                 yield name + ": " + time.strftime("%x %X", val)
             else:
-                yield name + ": " + str(val)
+                yield name + ": " + str(val).strip()
+            first_val = False
 
 
 class CmdInput(AbstractInput):
