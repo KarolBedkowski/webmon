@@ -249,12 +249,14 @@ def _load_user_classes():
 
 
 @tc.typecheck
-def _list_inputs(inps, debug: bool):
+def _list_inputs(inps, conf, args):
     print("Inputs:")
+    defaults = _build_defaults(args, conf)
     for idx, inp_conf in enumerate(inps, 1):
-        name = config.get_input_name(inp_conf, idx)
-        act = "" if inp_conf.get("enable", True) else "DISABLE"
-        oid = config.gen_input_oid(inp_conf) if debug else ""
+        params = common.apply_defaults(defaults, inp_conf)
+        name = config.get_input_name(params, idx)
+        act = "" if params.get("enable", True) else "DISABLE"
+        oid = config.gen_input_oid(params) if args.debug else ""
         print(" {:2d} {:<40s}".format(idx, name), act, oid)
 
 
@@ -321,13 +323,13 @@ def main():
     if not inps:
         return
 
-    if args.list_inputs:
-        with config.lock():
-            _list_inputs(inps, args.debug)
-        return
-
     conf = config.load_configuration(args.config)
     if not conf:
+        return
+
+    if args.list_inputs:
+        with config.lock():
+            _list_inputs(inps, conf, args)
         return
 
     selection = None
