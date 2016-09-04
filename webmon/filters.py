@@ -220,7 +220,7 @@ class Wrap(AbstractFilter):
 
     @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        return "\n".join(self._tw.fill(line) for line in item.split('\n'))
+        yield "\n".join(self._tw.fill(line) for line in item.split('\n'))
 
 
 def _strip_str(inp: str) -> str:
