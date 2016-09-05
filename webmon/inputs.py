@@ -250,7 +250,7 @@ def _get_val_from_rss_entry(entry, keys):
             continue
         val = entry.get(key)
         if val:
-            name = key.split("_", 1)[0].capitalize()
+            name = key.split("_", 1)[0].capitalize().strip()
             if not first_val:
                 name = "    " + name
             if isinstance(val, time.struct_time):

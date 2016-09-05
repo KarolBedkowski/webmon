@@ -100,7 +100,8 @@ def load_content(loader, ctx: common.Context) -> common.Result:
 
 @tc.typecheck
 def process_content(ctx: common.Context, result: common.Result,
-                    content: str) -> ty.Tuple[str, str, ty.Optional[dict]]:
+                    content: str) -> ty.Tuple[str, ty.Optional[str],
+                                              ty.Optional[dict]]:
     """Detect content status (changes). Returns content formatted to
     write into cache.
     Returns (status, diff_result, new metadata)
@@ -173,7 +174,8 @@ def load(ctx: common.Context) -> bool:
         return True
 
     if result.meta['status'] == common.STATUS_ERROR:
-        write_metadata_on_error(ctx, result.meta, err)
+        write_metadata_on_error(ctx, result.meta,
+                                result.meta.get('error') or 'err')
         return True
 
     content = result.format()
