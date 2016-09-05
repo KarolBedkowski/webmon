@@ -92,7 +92,7 @@ def get_subclasses_with_name(base_class):
 
 
 @tc.typecheck
-def parse_interval(instr: str) -> int:
+def parse_interval(instr: ty.Union[str, float, int, None]) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
         if instr < 1:

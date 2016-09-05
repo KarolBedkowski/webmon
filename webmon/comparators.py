@@ -129,7 +129,6 @@ class Deleted(AbstractComparator):
     def compare(self, old: str, old_date: str, new: str,
                 new_date: str) -> ty.Iterable[str]:
         """ Get only deleted items """
-        return _substract_lists(old, new)
         if common.RECORD_SEPARATOR in new or common.RECORD_SEPARATOR in old:
             return common.RECORD_SEPARATOR.join(
                 _substract_lists(old.split(common.RECORD_SEPARATOR),
