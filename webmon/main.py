@@ -75,7 +75,7 @@ def load_content(loader, ctx: common.Context) -> common.Result:
     if ctx.debug:
         ctx.log_debug("loaded: %s", result)
         result.debug['loaded_in'] = time.time() - start
-        result.debug['items'] = len(result.items)
+        result.debug['items_loaded'] = len(result.items)
 
     # apply filters
     for fltcfg in ctx.input_conf.get('filters') or []:
@@ -88,6 +88,9 @@ def load_content(loader, ctx: common.Context) -> common.Result:
 
     if not result.items:
         result.append("<no data>")
+
+    if ctx.args.debug:
+        result.debug['items_filterd'] = len(result.items)
 
     result.meta['update_duration'] = time.time() - start
     result.meta['update_date'] = time.time()
@@ -177,6 +180,10 @@ def load(ctx: common.Context) -> bool:
         write_metadata_on_error(ctx, result.meta,
                                 result.meta.get('error') or 'err')
         return True
+
+    if ctx.args.debug:
+        result.debug['items_final'] = len(result.items)
+        result.debug['last_updated'] = ctx.last_updated
 
     content = result.format()
     status, diff_res, new_meta = process_content(ctx, result, content)
