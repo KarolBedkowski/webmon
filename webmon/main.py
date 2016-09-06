@@ -74,8 +74,10 @@ def load_content(loader, ctx: common.Context) -> common.Result:
 
     if ctx.debug:
         ctx.log_debug("loaded: %s", result)
-        result.debug['loaded_in'] = time.time() - start
+        result.debug['loaded_duration'] = time.time() - start
+        fltr_start = time.time()
         result.debug['items_loaded'] = len(result.items)
+        result.debug['filters_status'] = {}
 
     # apply filters
     for fltcfg in ctx.input_conf.get('filters') or []:
@@ -85,12 +87,14 @@ def load_content(loader, ctx: common.Context) -> common.Result:
         result = flt.filter(result)
         if ctx.debug:
             ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(result))
+            result.debug['filters_status'][flt.name] = len(result.items)
+
+    if ctx.args.debug:
+        result.meta['filter_duration'] = time.time() - fltr_start
+        result.debug['items_filterd'] = len(result.items)
 
     if not result.items:
         result.append("<no data>")
-
-    if ctx.args.debug:
-        result.debug['items_filterd'] = len(result.items)
 
     result.meta['update_duration'] = time.time() - start
     result.meta['update_date'] = time.time()
@@ -321,7 +325,8 @@ def update(args, inps, conf, selection=None):
     _LOG.info("Update stats: %s", output.stats)
 
     omngr = outputs.OutputManager(conf, partial_reports_dir)
-    omngr.write()
+    footer = " ".join((APP_NAME, VERSION, time.asctime()))
+    omngr.write(footer=footer, debug=args.debug)
 
 
 def main():

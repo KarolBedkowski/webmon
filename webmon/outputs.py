@@ -121,7 +121,7 @@ class AbstractTextOutput(AbstractOutput):
             yield '*' + rst_escape(str(footer)) + '*'
             yield ''
 
-        if __debug__:
+        if self._conf.get('debug'):
             yield '.. code::'
             yield ""
             yield "  OID: " + str(item['oid'])
@@ -393,7 +393,7 @@ class OutputManager(object):
             self._log.error("invalid file %s: %r", fpath, content)
         return None
 
-    def write(self, footer=None):
+    def write(self, footer=None, debug: bool=False):
         """ Write all reports; footer is optionally included. """
         self._log.debug("OutputManager: writing...")
 
@@ -424,6 +424,7 @@ class OutputManager(object):
         all_ok = True
 
         for rep, conf in self._conf['output'].items():
+            conf['_debug'] = debug
             try:
                 output = _get_output(rep, conf)
                 if output:
