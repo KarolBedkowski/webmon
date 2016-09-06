@@ -52,8 +52,8 @@ class AbstractFilter(object):
         super(AbstractFilter, self).__init__()
         self._ctx = ctx
         self._conf = common.apply_defaults(
-            {key: val for key, _, val, _ in self.params},
-            conf)  # type: dict
+            {key: val for key, _desc, val, _req in self.params},
+            conf)  # type: ty.Dict[str, ty.Any]
 
     def dump_debug(self):
         return " ".join(("<", self.__class__.__name__, self.name,
@@ -326,7 +326,7 @@ class GetElementsById(AbstractFilter):
         document = etree.fromstringlist([item], html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
             text = etree.tostring(elem) if isinstance(elem, etree._Element) \
-                else str(elem)
+                else bytes(elem)
             if text:
                 yield text.decode('utf-8')
 

@@ -48,7 +48,7 @@ class AbstractOutput(object):
         super(AbstractOutput, self).__init__()
         self._log = logging.getLogger(self.__class__.__name__)
         self._conf = common.apply_defaults(
-            {key: val for key, _, val, _ in self.params},
+            {key: val for key, _d, val, _r in self.params},
             conf)
 
     def dump_debug(self):

@@ -225,7 +225,7 @@ class RssInput(AbstractInput):
         self._ctx.log_debug(repr(res))
         return "\n".join(res).strip()
 
-    def _get_fields_to_load(self) -> ty.Tuple[ty.List[str], bool]:
+    def _get_fields_to_load(self) -> ty.Tuple[ty.Iterable[str], bool]:
         add_content = False
         fields = (field.strip() for field in self._conf["fields"].split(","))
         fields = [field for field in fields if field]

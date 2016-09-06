@@ -24,10 +24,10 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 
 # options
-OPTS_PREFORMATTED = "preformatted"
+OPTS_PREFORMATTED = "preformatted"  # type: str
 
 
-RECORD_SEPARATOR = '\x1e'
+RECORD_SEPARATOR = '\x1e'  # type: str
 
 
 class ParamError(RuntimeError):
@@ -97,7 +97,7 @@ def parse_interval(instr: ty.Union[str, float, int, None]) -> int:
     if isinstance(instr, (int, float)):
         if instr < 1:
             raise ValueError("invalid interval '%s'" % instr)
-        return instr
+        return int(instr)
 
     mplt = 1
     if instr.endswith("m"):
