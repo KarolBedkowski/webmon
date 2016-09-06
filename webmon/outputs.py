@@ -21,6 +21,7 @@ import subprocess
 import time
 import typing as ty
 from datetime import datetime
+import textwrap
 
 from docutils.core import publish_string
 
@@ -67,7 +68,8 @@ class AbstractOutput(object):
 
 @tc.typecheck
 def rst_escape(text: str) -> str:
-    return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*")
+    return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*").\
+        replace('_', '\\_')
 
 
 _RST_HEADERS_CHARS = ('=', '-', '`', "'")
@@ -80,6 +82,13 @@ def yield_rst_header(text: str, level: int) -> ty.Iterable[str]:
         yield text
         yield _RST_HEADERS_CHARS[level] * len(text)
         yield ''
+
+
+def wrap_debug_info(text: str) -> str:
+    return textwrap.fill(text, width=150, break_long_words=False,
+                         break_on_hyphens=False, initial_indent='  ',
+                         subsequent_indent='          ')
+
 
 
 class AbstractTextOutput(AbstractOutput):
@@ -108,8 +117,7 @@ class AbstractTextOutput(AbstractOutput):
             yield "::"
             for sec in content.split(common.RECORD_SEPARATOR):
                 yield ""
-                for line in sec.split("\n"):
-                    yield "  " + line
+                yield from ("  " + line for line in sec.split("\n"))
         else:
             for sec in content.split(common.RECORD_SEPARATOR):
                 yield from map(rst_escape, sec.split("\n"))
@@ -121,12 +129,12 @@ class AbstractTextOutput(AbstractOutput):
             yield '*' + rst_escape(str(footer)) + '*'
             yield ''
 
-        if self._conf.get('debug'):
+        if self._conf.get('_debug'):
             yield '.. code::'
             yield ""
-            yield "  OID: " + str(item['oid'])
-            yield "  META: " + str(item['meta'])
-            yield "  DEBUG: " + str(item['debug'])
+            yield wrap_debug_info("OID: " + str(item['oid']))
+            yield wrap_debug_info("META: " + str(item['meta']))
+            yield wrap_debug_info("DEBUG: " + str(item['debug']))
             yield ""
 
     @tc.typecheck
