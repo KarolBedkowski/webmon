@@ -37,7 +37,7 @@ class AbstractComparator(object):
         self.ctx = ctx
 
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
@@ -76,7 +76,7 @@ class UnifiedDiff(AbstractComparator):
     }
 
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         return "\n".join(difflib.unified_diff(
@@ -94,16 +94,23 @@ class NDiff(AbstractComparator):
 
     @tc.typecheck
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         return "\n".join(difflib.ndiff(old.split('\n'), new.split('\n')))
 
 
-def _substract_lists(list1, list2):
-    """ Get only items from list1 that not exists in list2"""
-    l2set = set(list2)
-    return (item for item in list1 if item not in l2set)
+def _substract_lists(instr1: str, instr2: str) -> str:
+    """ Get only items from instr1 that not exists in instr2"""
+    separator = (
+        common.RECORD_SEPARATOR
+        if common.RECORD_SEPARATOR in instr1 or
+        common.RECORD_SEPARATOR in instr2
+        else '\n')
+
+    l2set = set(instr2.split(separator))
+    return separator.join(item for item in instr1.split(separator)
+                          if item not in l2set)
 
 
 class Added(AbstractComparator):
@@ -112,13 +119,9 @@ class Added(AbstractComparator):
 
     @tc.typecheck
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         """ Get only added items """
-        if common.RECORD_SEPARATOR in new or common.RECORD_SEPARATOR in old:
-            return common.RECORD_SEPARATOR.join(
-                _substract_lists(new.split(common.RECORD_SEPARATOR),
-                                 old.split(common.RECORD_SEPARATOR)))
-        return '\n'.join(_substract_lists(new.split('\n'), old.split('\n')))
+        return _substract_lists(new, old)
 
 
 class Deleted(AbstractComparator):
@@ -127,33 +130,9 @@ class Deleted(AbstractComparator):
 
     @tc.typecheck
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         """ Get only deleted items """
-        if common.RECORD_SEPARATOR in new or common.RECORD_SEPARATOR in old:
-            return common.RECORD_SEPARATOR.join(
-                _substract_lists(old.split(common.RECORD_SEPARATOR),
-                                 new.split(common.RECORD_SEPARATOR)))
-        return '\n'.join(_substract_lists(old.split('\n'), new.split('\n')))
-
-
-class Modified(AbstractComparator):
-    """ Generate list of modified items """
-    name = "modified"
-
-    @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
-        """ Make diff and return only modified lines. """
-
-        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
-        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
-        diff = difflib.SequenceMatcher(a=old.split('\n'), b=new.split('\n'))
-
-        return '\n'.join(
-            itm
-            for itm in new[begin2:end2]
-            for change, _, _, begin2, end2 in diff.get_opcodes()
-            if change == 'replace')
+        return _substract_lists(old, new)
 
 
 class Last(AbstractComparator):
@@ -162,7 +141,7 @@ class Last(AbstractComparator):
 
     @tc.typecheck
     def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
+                new_date: str) -> str:
         """ Return last (new) version """
         return new
 
