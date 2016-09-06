@@ -313,9 +313,12 @@ def get_input(ctx):
 
 
 def _github_check_repo_updated(repository, last_updated):
-    min_date = max(time.time() - _GITHUB_MAX_AGE, last_updated or 0)
-    repo_updated = repository.updated_at.timestamp()
-    updated = repo_updated > min_date
+    min_date = time.time() - _GITHUB_MAX_AGE
+    updated = True
+    if last_updated:
+        updated = repository.updated_at.timestamp() > last_updated
+        min_date = last_updated
+
     return (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime(min_date)),
             updated)
 
@@ -359,6 +362,11 @@ class GithubInput(AbstractInput):
         repository = _github_get_repository(self, conf)
         data_since, updated = _github_check_repo_updated(repository,
                                                          ctx.last_updated)
+        if ctx.debug:
+            result.debug['data_since'] = data_since
+            result.debug['last_updated'] = ctx.last_updated
+            result.debug['repo_updated_at'] = str(repository.updated_at)
+
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
             result.set_no_modified()
