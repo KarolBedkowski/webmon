@@ -437,8 +437,13 @@ class GithubTagsInput(AbstractInput):
         ctx = self._ctx
         result = common.Result(ctx.oid)
         repository = _github_get_repository(self, conf)
-        _, updated = _github_check_repo_updated(repository,
-                                                ctx.last_updated)
+        data_since, updated = _github_check_repo_updated(repository,
+                                                         ctx.last_updated)
+        if ctx.debug:
+            result.debug['data_since'] = data_since
+            result.debug['last_updated'] = ctx.last_updated
+            result.debug['repo_updated_at'] = str(repository.updated_at)
+
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
             result.set_no_modified()
@@ -494,8 +499,13 @@ class GithubReleasesInput(AbstractInput):
         ctx = self._ctx
         result = common.Result(ctx.oid)
         repository = _github_get_repository(self, conf)
-        _, updated = _github_check_repo_updated(repository,
-                                                ctx.last_updated)
+        data_since, updated = _github_check_repo_updated(repository,
+                                                         ctx.last_updated)
+        if ctx.debug:
+            result.debug['data_since'] = data_since
+            result.debug['last_updated'] = ctx.last_updated
+            result.debug['repo_updated_at'] = str(repository.updated_at)
+
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
             result.set_no_modified()

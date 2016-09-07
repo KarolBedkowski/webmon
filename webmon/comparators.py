@@ -108,9 +108,9 @@ def _substract_lists(instr1: str, instr2: str) -> str:
         common.RECORD_SEPARATOR in instr2
         else '\n')
 
-    l2set = set(instr2.split(separator))
+    l2set = set(map(hash, instr2.split(separator)))
     return separator.join(item for item in instr1.split(separator)
-                          if item not in l2set)
+                          if hash(item) not in l2set)
 
 
 class Added(AbstractComparator):
