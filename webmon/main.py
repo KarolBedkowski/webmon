@@ -146,7 +146,7 @@ def write_metadata_on_error(ctx: common.Context, metadata: dict,
     metadata['last_error_msg'] = str(error_msg)
     metadata['status'] = common.STATUS_ERROR
     ctx.cache.put_meta(ctx.oid, metadata)
-    metrics.METRICS.push(ctx.name, common.STATUS_ERROR)
+    metrics.put_meta(ctx, status=common.STATUS_ERROR)
 
 
 @tc.typecheck
@@ -199,7 +199,7 @@ def load(ctx: common.Context) -> bool:
         ctx.output.put(result, diff_res)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
-    metrics.METRICS.push(ctx.name, status, result.meta['update_duration'])
+    metrics.put_metric(ctx, result)
     ctx.log_info("loading done")
     return True
 
@@ -331,7 +331,7 @@ def update(args, inps, conf, selection=None):
     omngr = outputs.OutputManager(conf, partial_reports_dir)
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
     omngr.write(footer=footer, debug=args.debug)
-    metrics.METRICS.write(total_duration=time.time() - start)
+    metrics.write_metrics(total_duration=time.time() - start)
 
 
 def main():

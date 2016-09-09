@@ -29,7 +29,7 @@ from docutils.core import publish_string
 import yaml
 import typecheck as tc
 
-from . import common
+from . import (common, metrics)
 
 _LOG = logging.getLogger("outputs")
 
@@ -447,6 +447,8 @@ class OutputManager(object):
             items.sort(key=lambda x: x[0].get('title'))
             all_items += len(items)
 
+        metrics.put_metrics_output_sources(all_items, len(input_files))
+
         if not all_items:
             self._log.info("no new reports")
             return
@@ -455,11 +457,14 @@ class OutputManager(object):
 
         for rep, conf in self._conf['output'].items():
             conf['_debug'] = debug
+            start = time.time()
             try:
                 output = _get_output(rep, conf)
                 if output:
                     output.report(data_by_status, footer)
+                    metrics.put_metrics_output(rep, time.time() - start, True)
             except Exception as err:
+                metrics.put_metrics_output(rep, time.time() - start, False)
                 self._log.exception("OutputManager: write %s error: %s",
                                     rep, err)
                 all_ok = False
