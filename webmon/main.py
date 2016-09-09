@@ -328,8 +328,6 @@ def update(args, inps, conf, selection=None):
 
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
-    _LOG.info("Update stats: %s", output.stats)
-
     omngr = outputs.OutputManager(conf, partial_reports_dir)
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
     omngr.write(footer=footer, debug=args.debug)

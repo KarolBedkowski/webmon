@@ -501,19 +501,9 @@ class Output(object):
         self.working_dir = os.path.expanduser(working_dir)
         common.create_missing_dir(working_dir)
 
-        self.stats = {
-            common.STATUS_NEW: 0,
-            common.STATUS_ERROR: 0,
-            common.STATUS_UNCHANGED: 0,
-            common.STATUS_CHANGED: 0
-        }
-
     @tc.typecheck
     def put(self, part: common.Result, content: str):
         assert isinstance(part, common.Result)
-        assert part.meta['status'] in self.stats, "Invalid status " + \
-            str(part)
-        self.stats[part.meta['status']] += 1
         dst_file = os.path.join(self.working_dir, part.oid + "." +
                                 str(int(part.meta['update_date'])))
 
