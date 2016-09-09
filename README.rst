@@ -17,6 +17,8 @@ Dependences
 * ElementTree (for get-elements-* filters)
 * feedparser (for rss input)
 * github3py (for github api; pip install --pre github3.py)
+* typecheck-decorator
+
 
 Usage
 -----
