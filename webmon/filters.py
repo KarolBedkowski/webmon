@@ -13,6 +13,7 @@ import re
 import subprocess
 import textwrap
 import typing as ty
+import itertools
 
 try:
     from lxml import etree
@@ -212,19 +213,20 @@ class Wrap(AbstractFilter):
 
     def __init__(self, conf, ctx):
         super(Wrap, self).__init__(conf, ctx)
-        self._tw = textwrap.TextWrapper(
-            break_long_words=False,
-            break_on_hyphens=False)
-
-    @tc.typecheck
-    def filter(self, result: common.Result) -> common.Result:
-        self._tw.text = self._conf.get("width") or 76
-        self._tw.max_lines = self._conf.get("max_lines") or None
-        return super(Wrap, self).filter(result)
+        self._max_lines = self._conf.get("max_lines") or None
+        self._width = self._conf.get("width") or 76
 
     @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        yield "\n".join(self._tw.fill(line) for line in item.split('\n'))
+        yield "\n".join(map(self._wrap_line_keep_indent, item.split('\n')))
+
+    def _wrap_line_keep_indent(self, text: str) -> str:
+        # count whiltespass on begin
+        indent = ''.join(itertools.takewhile(lambda x: x in (' ', '\t'), text))
+        return textwrap.fill(
+            text, break_long_words=False, break_on_hyphens=False,
+            initial_indent=indent, subsequent_indent=indent,
+            max_lines=self._max_lines, width=self._width)
 
 
 def _strip_str(inp: str) -> str:
