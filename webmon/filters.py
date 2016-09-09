@@ -13,7 +13,6 @@ import re
 import subprocess
 import textwrap
 import typing as ty
-import itertools
 
 try:
     from lxml import etree
@@ -222,7 +221,7 @@ class Wrap(AbstractFilter):
 
     def _wrap_line_keep_indent(self, text: str) -> str:
         # count whiltespass on begin
-        indent = ''.join(itertools.takewhile(lambda x: x in (' ', '\t'), text))
+        indent = common.get_whitespace_prefix(text)
         return textwrap.fill(
             text, break_long_words=False, break_on_hyphens=False,
             initial_indent=indent, subsequent_indent=indent,
