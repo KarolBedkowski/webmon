@@ -11,115 +11,143 @@ except ImportError:
 from . import common
 
 
-class MetricsSimple(object):
+class AbstractMetricCollector(object):
+    """Collector for metrics and stats"""
+    def __init__(self, conf):
+        super(AbstractMetricCollector, self).__init__()
+        self.conf = conf
+
+    def write(self):
+        pass
+
+    def put_input(self, ctx: common.Context, result: common.Result=None,
+                  status: str=None):
+        pass
+
+    def put_loading_summary(self, total_duration: float=None):
+        pass
+
+    def put_output(self, output: str, process_time: float, status: str):
+        pass
+
+    def put_output_summary(self, inputs: int, files: int,
+                           total_duration: float):
+        pass
+
+    def put_total(self, total_duration: float=None):
+        pass
+
+
+class MetricsSimple(AbstractMetricCollector):
     """Simple metric logger"""
-    def __init__(self):
-        super(MetricsSimple, self).__init__()
-        self.log = logging.getLogger(self.__class__.__name__)
+    def __init__(self, conf):
+        super(MetricsSimple, self).__init__(conf)
+        self._stats = []
 
-    def put(self, inp, status, process_time):
-        self.log.debug("metric %s status=%s, processing time=%s",
-                       inp, status, process_time)
+    def write(self):
+        log = logging.getLogger(self.__class__.__name__)
+        for stat in self._stats:
+            log.debug(stat)
 
-    def write(self, total_duration=None):
-        self.log.debug("total duration=%s", total_duration)
+    def put_input(self, ctx: common.Context, result: common.Result=None,
+                  status: str=None):
+        status = status or (result.meta['status'] if result else None)
+        process_time = result.meta['update_duration'] if result else None
+        self._stats.append("metric {} status={}, processing time={}".format(
+            ctx.name, status, process_time))
 
-    def put_output_source_files(self, inputs: int, all_items: int):
-        self.log.debug("output: inputs=%d; all_files=%d", inputs, all_items)
+    def put_loading_summary(self, total_duration: float=None):
+        self._stats.append(
+            'loading.total_duration: {}'.format(total_duration))
 
-    def put_output(self, output: str, process_time: float, ok: bool):
-        self.log.debug("output %s processing time=%s, status=%s",
-                       output, process_time, ok)
+    def put_output(self, output: str, process_time: float, status: str):
+        self._stats.append("output {} processing time={}, status={}".format(
+                       output, process_time, status))
+
+    def put_output_summary(self, inputs: int, files: int,
+                           total_duration: float):
+        self._stats.append("output.summary inputs={}; all_files={}".format(
+            inputs, files))
+
+    def put_total(self, total_duration: float=None):
+        self._stats.append("total duration={}".format(total_duration))
 
 
-class MetricsProm(MetricsSimple):
+class MetricsProm(AbstractMetricCollector):
     """Export metrics to prometheus"""
-    def __init__(self, out_file):
-        super(MetricsProm, self).__init__()
-        self._out_file = out_file
-        self._process_time = pc.Summary(
-            'webmon_processing_time_seconds',
-            'Processing time for input',
+    def __init__(self, conf):
+        super(MetricsProm, self).__init__(conf)
+        # inputs
+        self._inp_loading_time = pc.Summary(
+            'webmon_input_time_seconds',
+            'Loading time for input',
             ['input'])
-        self._errors = pc.Gauge(
-            'webmon_processing_errors',
-            "Number of inputs loaded with errors", [])
-        self._succes = pc.Gauge(
-            'webmon_processing_success',
-            "Number of inputs successfully loaded", [])
-        self._by_status = pc.Gauge(
-            "webmon_results", "stats by status", ['status'])
-        self._total_duration = pc.Gauge(
-            'webmon_processing_total_time_secounds',
+        self._inp_by_status = pc.Gauge(
+            "webmon_input_processing_results",
+            "stats by status", ['status', 'input'])
+
+        # global times
+        self._total_processing_time = pc.Summary(
+            'webmon_processing_total_time_seconds',
+            'Processing total time', [])
+        self._total_loading_duration = pc.Gauge(
+            'webmon_loading_total_time_secounds',
             "Total update time", [])
+        self._total_output_time = pc.Summary(
+            'webmon_output_total_time_seconds',
+            'Generate all reports time.', [])
+
+        # outputs global
         self._outp_src_inp = pc.Gauge(
             'webmon_output_source_inputs',
             "Number of inputs processed in report", [])
         self._outp_src_files = pc.Gauge(
             'webmon_output_source_files',
             "Number of files processed in report", [])
+
+        # output
         self._outp_process_time = pc.Summary(
-            'webmon_output_time_seconds',
+            'webmon_output_generate_time_seconds',
             'Generate report time for output',
             ['output'])
         self._outp_status = pc.Gauge(
-            'webmon_output_status',
-            "Status processed in report", ["output"])
+            'webmon_output_results',
+            "Status processed in report by status",
+            ['status', "output"])
         pc.REGISTRY.register(pc.PROCESS_COLLECTOR)
 
-    def put(self, inp, status, process_time=None):
+    def write(self):
+        pc.write_to_textfile(self.conf['prometheus_output'], pc.REGISTRY)
+
+    def put_input(self, ctx: common.Context, result: common.Result=None,
+                  status: str=None):
+        status = status or (result.meta['status'] if result else None)
+        process_time = result.meta['update_duration'] if result else None
         if process_time:
-            self._process_time.labels(inp).observe(process_time)
-        self._by_status.labels(status).inc()
-        if status == common.STATUS_ERROR:
-            self._errors.inc()
-        else:
-            self._succes.inc()
+            self._inp_loading_time.labels(ctx.name).observe(process_time)
+        self._inp_by_status.labels(status, ctx.name).inc()
 
-    def put_output_source_files(self, inputs: int, all_items: int):
-        self._outp_src_inp.set(inputs)
-        self._outp_src_files.set(all_items)
+    def put_loading_summary(self, total_duration: float=None):
+        self._total_loading_duration.set(total_duration)
 
-    def put_output(self, output: str, process_time: float, ok: bool):
+    def put_output(self, output: str, process_time: float, status: str):
         self._outp_process_time.labels(output).observe(process_time)
-        self._outp_status.labels(output).set(1 if ok else -1)
+        self._outp_status.labels(status, output).inc()
 
-    def write(self, total_duration=None):
-        if total_duration:
-            self._total_duration.set(total_duration)
-        pc.write_to_textfile(self._out_file, pc.REGISTRY)
+    def put_output_summary(self, inputs: int, files: int,
+                           total_duration: float):
+        self._outp_src_inp.set(inputs)
+        self._outp_src_files.set(files)
+        self._total_output_time.observe(total_duration)
+
+    def put_total(self, total_duration: float=None):
+        self._total_processing_time.observe(total_duration)
 
 
-_METRICS = None
-
-
-def init_metrics(conf):
-    global _METRICS
+def get_metrics_collector(conf: dict):
     stats = conf.get('stats') or {}
     if pc:
         prometheus_output = stats.get('prometheus_output')
         if prometheus_output:
-            _METRICS = MetricsProm(prometheus_output)
-            return
-
-    _METRICS = MetricsSimple()
-
-
-def put_metric(ctx: common.Context, result: common.Result=None,
-               status: str=None):
-    name = ctx.name
-    status = status or (result.meta['status'] if result else None)
-    process_time = result.meta['update_duration'] if result else None
-    _METRICS.put(name, status, process_time)
-
-
-def write_metrics(total_duration: float):
-    _METRICS.write(total_duration)
-
-
-def put_metrics_output_sources(inputs: int, all_items: int):
-    _METRICS.put_output_source_files(inputs, all_items)
-
-
-def put_metrics_output(output: str, process_time: float, ok: bool):
-    _METRICS.put_output(output, process_time, ok)
+            return MetricsProm(stats)
+    return MetricsSimple(stats)

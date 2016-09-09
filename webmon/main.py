@@ -146,7 +146,7 @@ def write_metadata_on_error(ctx: common.Context, metadata: dict,
     metadata['last_error_msg'] = str(error_msg)
     metadata['status'] = common.STATUS_ERROR
     ctx.cache.put_meta(ctx.oid, metadata)
-    metrics.put_meta(ctx, status=common.STATUS_ERROR)
+    ctx.metrics_collector.put_input(ctx, status=common.STATUS_ERROR)
 
 
 @tc.typecheck
@@ -199,7 +199,7 @@ def load(ctx: common.Context) -> bool:
         ctx.output.put(result, diff_res)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
-    metrics.put_metric(ctx, result)
+    ctx.metrics_collector.put_input(ctx, result)
     ctx.log_info("loading done")
     return True
 
@@ -295,7 +295,7 @@ def _build_defaults(args, conf):
 
 def update(args, inps, conf, selection=None):
     start = time.time()
-    metrics.init_metrics(conf)
+    metrics_collector = metrics.get_metrics_collector(conf)
     try:
         gcache = cache.Cache(os.path.join(
             os.path.expanduser(args.cache_dir), "cache"))
@@ -304,7 +304,7 @@ def update(args, inps, conf, selection=None):
         return
 
     partial_reports_dir = os.path.join(
-        os.path.expanduser(args.cache_dir), "patials")
+        os.path.expanduser(args.cache_dir), "partials")
 
     try:
         output = outputs.Output(partial_reports_dir)
@@ -319,6 +319,7 @@ def update(args, inps, conf, selection=None):
         if not selection or idx in selection:
             params = common.apply_defaults(defaults, iconf)
             ctx = common.Context(params, gcache, idx, output, args)
+            ctx.metrics_collector = metrics_collector
             try:
                 load(ctx)
             except IOError as err:
@@ -326,12 +327,17 @@ def update(args, inps, conf, selection=None):
                               str(err).replace("\n", "; "))
                 ctx.output.put_error(ctx, str(err))
 
+    metrics_collector.put_loading_summary(time.time() - start)
+
     _LOG.info("Update stats: %s", output.stats)
 
     omngr = outputs.OutputManager(conf, partial_reports_dir)
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
-    omngr.write(footer=footer, debug=args.debug)
-    metrics.write_metrics(total_duration=time.time() - start)
+    omngr.write(footer=footer, debug=args.debug,
+                metrics_collector=metrics_collector)
+
+    metrics_collector.put_total(time.time() - start)
+    metrics_collector.write()
 
 
 def main():

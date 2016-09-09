@@ -423,9 +423,10 @@ class OutputManager(object):
             self._log.error("invalid file %s: %r", fpath, content)
         return None
 
-    def write(self, footer=None, debug: bool=False):
+    def write(self, footer=None, debug: bool=False, metrics_collector=None):
         """ Write all reports; footer is optionally included. """
         self._log.debug("OutputManager: writing...")
+        gstart = time.time()
 
         data_by_status = {
             common.STATUS_NEW: [],
@@ -447,8 +448,6 @@ class OutputManager(object):
             items.sort(key=lambda x: x[0].get('title'))
             all_items += len(items)
 
-        metrics.put_metrics_output_sources(all_items, len(input_files))
-
         if not all_items:
             self._log.info("no new reports")
             return
@@ -462,9 +461,13 @@ class OutputManager(object):
                 output = _get_output(rep, conf)
                 if output:
                     output.report(data_by_status, footer)
-                    metrics.put_metrics_output(rep, time.time() - start, True)
+                    if metrics_collector:
+                        metrics_collector.put_output(
+                            rep, time.time() - start, "success")
             except Exception as err:
-                metrics.put_metrics_output(rep, time.time() - start, False)
+                if metrics_collector:
+                    metrics_collector.put_output(rep, time.time() - start,
+                                                 "error")
                 self._log.exception("OutputManager: write %s error: %s",
                                     rep, err)
                 all_ok = False
@@ -480,6 +483,10 @@ class OutputManager(object):
                                         fpath, err)
 
         self._log.debug("OutputManager: write done")
+
+        if metrics_collector:
+            metrics_collector.put_output_summary(all_items, len(input_files),
+                                                 time.time() - gstart)
 
 
 def _make_backup(filename):

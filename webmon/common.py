@@ -160,6 +160,8 @@ class Context(object):
             "] "
         ))
 
+        self.metrics_collector = None
+
     @property
     def debug(self):
         return self.args.debug if self.args else None
