@@ -10,6 +10,7 @@ Licence: GPLv2+
 
 import copy
 import logging
+import itertools
 import os.path
 import pathlib
 import pprint
@@ -289,3 +290,12 @@ def create_missing_dir(path: str):
         raise RuntimeError("path {} exists and is not dir".format(path))
 
     pathlib.Path(path).mkdir(parents=True)
+
+
+def is_whitespace(character: str) -> bool:
+    return character == ' ' or character == '\t'
+
+
+def get_whitespace_prefix(text: str) -> str:
+    """Get all whitespace characters from beginning of `text`"""
+    return ''.join(itertools.takewhile(is_whitespace, text))

@@ -22,6 +22,7 @@ import time
 import typing as ty
 from datetime import datetime
 import textwrap
+import itertools
 
 from docutils.core import publish_string
 
@@ -90,6 +91,27 @@ def wrap_debug_info(text: str) -> str:
                          subsequent_indent='          ')
 
 
+def text_to_rst(text: str) -> str:
+    """Do some magic to convert given `text` to valid rst output.
+    For now: remove common indent from all lines; add empty lines before indent
+    changes; remove doubled empty lines.
+    """
+    last_indent = ""
+    last_empty_line = False
+    text = textwrap.dedent(text)
+    for line in text.split('\n'):
+        if not line and not last_empty_line:
+            yield ""
+            last_empty_line = True
+            continue
+        indent = common.get_whitespace_prefix(line)
+        if indent != last_indent and not last_empty_line:
+            # add empty line when indent changed
+            yield ""
+        last_indent = indent
+        last_empty_line = False
+        yield rst_escape(line)
+
 
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
@@ -120,7 +142,7 @@ class AbstractTextOutput(AbstractOutput):
                 yield from ("  " + line for line in sec.split("\n"))
         else:
             for sec in content.split(common.RECORD_SEPARATOR):
-                yield from map(rst_escape, sec.split("\n"))
+                yield from text_to_rst(sec)
                 yield ''
         yield ""
 
