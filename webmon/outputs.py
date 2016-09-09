@@ -423,7 +423,7 @@ class OutputManager(object):
             self._log.error("invalid file %s: %r", fpath, content)
         return None
 
-    def write(self, footer=None, debug: bool=False, metrics_collector=None):
+    def write(self, footer=None, debug: bool=False):
         """ Write all reports; footer is optionally included. """
         self._log.debug("OutputManager: writing...")
         gstart = time.time()
@@ -461,13 +461,11 @@ class OutputManager(object):
                 output = _get_output(rep, conf)
                 if output:
                     output.report(data_by_status, footer)
-                    if metrics_collector:
-                        metrics_collector.put_output(
-                            rep, time.time() - start, "success")
+                    metrics.COLLECTOR.put_output(
+                        rep, time.time() - start, "success")
             except Exception as err:
-                if metrics_collector:
-                    metrics_collector.put_output(rep, time.time() - start,
-                                                 "error")
+                metrics.COLLECTOR.put_output(rep, time.time() - start,
+                                             "error")
                 self._log.exception("OutputManager: write %s error: %s",
                                     rep, err)
                 all_ok = False
@@ -484,9 +482,8 @@ class OutputManager(object):
 
         self._log.debug("OutputManager: write done")
 
-        if metrics_collector:
-            metrics_collector.put_output_summary(all_items, len(input_files),
-                                                 time.time() - gstart)
+        metrics.COLLECTOR.put_output_summary(all_items, len(input_files),
+                                             time.time() - gstart)
 
 
 def _make_backup(filename):

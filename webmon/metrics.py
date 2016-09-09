@@ -78,7 +78,7 @@ class MetricsProm(AbstractMetricCollector):
     def __init__(self, conf):
         super(MetricsProm, self).__init__(conf)
         # inputs
-        self._inp_loading_time = pc.Summary(
+        self._inp_loading_time = pc.Gauge(
             'webmon_input_time_seconds',
             'Loading time for input',
             ['input'])
@@ -87,13 +87,13 @@ class MetricsProm(AbstractMetricCollector):
             "stats by status", ['status', 'input'])
 
         # global times
-        self._total_processing_time = pc.Summary(
+        self._total_processing_time = pc.Gauge(
             'webmon_processing_total_time_seconds',
             'Processing total time', [])
         self._total_loading_duration = pc.Gauge(
             'webmon_loading_total_time_secounds',
             "Total update time", [])
-        self._total_output_time = pc.Summary(
+        self._total_output_time = pc.Gauge(
             'webmon_output_total_time_seconds',
             'Generate all reports time.', [])
 
@@ -106,7 +106,7 @@ class MetricsProm(AbstractMetricCollector):
             "Number of files processed in report", [])
 
         # output
-        self._outp_process_time = pc.Summary(
+        self._outp_process_time = pc.Gauge(
             'webmon_output_generate_time_seconds',
             'Generate report time for output',
             ['output'])
@@ -124,30 +124,34 @@ class MetricsProm(AbstractMetricCollector):
         status = status or (result.meta['status'] if result else None)
         process_time = result.meta['update_duration'] if result else None
         if process_time:
-            self._inp_loading_time.labels(ctx.name).observe(process_time)
+            self._inp_loading_time.labels(ctx.name).set(process_time)
         self._inp_by_status.labels(status, ctx.name).inc()
 
     def put_loading_summary(self, total_duration: float=None):
         self._total_loading_duration.set(total_duration)
 
     def put_output(self, output: str, process_time: float, status: str):
-        self._outp_process_time.labels(output).observe(process_time)
+        self._outp_process_time.labels(output).set(process_time)
         self._outp_status.labels(status, output).inc()
 
     def put_output_summary(self, inputs: int, files: int,
                            total_duration: float):
         self._outp_src_inp.set(inputs)
         self._outp_src_files.set(files)
-        self._total_output_time.observe(total_duration)
+        self._total_output_time.set(total_duration)
 
     def put_total(self, total_duration: float=None):
-        self._total_processing_time.observe(total_duration)
+        self._total_processing_time.set(total_duration)
 
 
-def get_metrics_collector(conf: dict):
+COLLECTOR = MetricsSimple(None)
+
+
+def configure(conf):
+    global COLLECTOR
+
     stats = conf.get('stats') or {}
     if pc:
         prometheus_output = stats.get('prometheus_output')
         if prometheus_output:
-            return MetricsProm(stats)
-    return MetricsSimple(stats)
+            COLLECTOR = MetricsProm(stats)
