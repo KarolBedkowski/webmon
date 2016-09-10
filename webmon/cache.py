@@ -85,6 +85,7 @@ class Cache(object):
         content = content or ''
         _LOG.debug("put %r, content_len=%d", oid, len(content))
         name = self._get_filename(oid)
+        _make_backup(name)
         try:
             with open(name, "w") as fout:
                 fout.write(content)
@@ -95,6 +96,7 @@ class Cache(object):
         """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
         name = self._get_filename_meta(oid)
+        _make_backup(name)
         try:
             if metadata:
                 with open(name, "w") as fout:
@@ -124,3 +126,12 @@ class Cache(object):
 
     def _get_filename_meta(self, oid: str):
         return os.path.join(self._directory, oid + ".meta")
+
+
+def _make_backup(filename):
+    if not os.path.isfile(filename):
+        return
+    try:
+        os.rename(filename, filename + ".bak")
+    except IOError as err:
+        _LOG.error("make backup %s error: %s", filename, err)
