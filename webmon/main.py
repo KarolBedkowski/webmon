@@ -103,35 +103,31 @@ def load_content(loader, ctx: common.Context) -> common.Result:
 
 
 @tc.typecheck
-def process_content(ctx: common.Context, result: common.Result,
-                    content: str) -> ty.Tuple[str, ty.Optional[str],
-                                              ty.Optional[dict]]:
+def process_content(ctx: common.Context, result: common.Result) \
+        -> ty.Tuple[str, str, ty.Optional[dict], str]:
     """Detect content status (changes). Returns content formatted to
     write into cache.
-    Returns (status, diff_result, new metadata)
+    Returns (status, diff_result, new metadata, content after processing)
     """
     status = result.meta['status']
+    prev_content = ctx.cache.get(ctx.oid)
+    content = result.format()
 
     if status == common.STATUS_UNCHANGED:
         ctx.log_debug("loading - unchanged content")
-        return (common.STATUS_UNCHANGED,
-                content if ctx.input_conf.get("report_unchanged", False)
-                else None, None)
+        return (common.STATUS_UNCHANGED, prev_content, None, prev_content)
 
-    prev_content = ctx.cache.get(ctx.oid)
     if prev_content is None:
         ctx.log_debug("loading - new content")
-        return common.STATUS_NEW, content, None
+        return common.STATUS_NEW, content, None, content
 
     if prev_content != content:
         ctx.log_debug("loading - changed content, making diff")
         diff, new_meta = compare_contents(prev_content, content, ctx, result)
-        return common.STATUS_CHANGED, diff, new_meta
+        return common.STATUS_CHANGED, diff, new_meta, content
 
     ctx.log_debug("loading - unchanged content")
-    return (common.STATUS_UNCHANGED,
-            content if ctx.input_conf.get("report_unchanged", False) else None,
-            None)
+    return (common.STATUS_UNCHANGED, prev_content, None, content)
 
 
 @tc.typecheck
@@ -187,13 +183,13 @@ def load(ctx: common.Context) -> bool:
         result.debug['items_final'] = len(result.items)
         result.debug['last_updated'] = ctx.last_updated
 
-    content = result.format()
-    status, diff_res, new_meta = process_content(ctx, result, content)
+    status, pres, new_meta, content = process_content(ctx, result)
     result.meta['status'] = status
     if new_meta:
         result.meta.update(new_meta)
-    if diff_res:
-        ctx.output.put(result, diff_res)
+    if status != common.STATUS_UNCHANGED or \
+            ctx.input_conf.get("report_unchanged", False):
+        ctx.output.put(result, pres)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
     metrics.COLLECTOR.put_input(ctx, result)
