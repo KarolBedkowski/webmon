@@ -222,9 +222,10 @@ class TextFileOutput(AbstractTextOutput):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def report(self, items, footer: ty.Optional[str]=None):
-        _make_backup(self._conf["file"])
+        filename = common.prepare_filename(self._conf["file"])
+        _make_backup(filename)
         try:
-            with open(self._conf["file"], "w") as ofile:
+            with open(filename, "w") as ofile:
                 ofile.write("\n".join(
                     part for part in self._mk_report(items, footer)
                     if part is not None))
@@ -243,10 +244,11 @@ class HtmlFileOutput(AbstractTextOutput):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def report(self, items, footer: ty.Optional[str]=None):
-        _make_backup(self._conf["file"])
+        filename = common.prepare_filename(self._conf["file"])
+        _make_backup(filename)
         content = self._mk_report(items, footer)
         try:
-            with open(self._conf["file"], "w") as ofile:
+            with open(filename, "w") as ofile:
                 html = publish_string(
                     "\n".join(line for line in content if line is not None),
                     writer_name='html',

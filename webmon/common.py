@@ -14,6 +14,7 @@ import itertools
 import os.path
 import pathlib
 import pprint
+import time
 import typing as ty
 
 import typecheck as tc
@@ -301,3 +302,14 @@ def is_whitespace(character: str) -> bool:
 def get_whitespace_prefix(text: str) -> str:
     """Get all whitespace characters from beginning of `text`"""
     return ''.join(itertools.takewhile(is_whitespace, text))
+
+
+def prepare_filename(base_name: str) -> str:
+    if not base_name:
+        _LOG.warn("prepare_filename - empty base name")
+        return name
+    # replace time tags
+    name = time.strftime(base_name)
+    # replace ~
+    name = os.path.expanduser(name)
+    return name

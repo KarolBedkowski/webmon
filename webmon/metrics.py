@@ -120,7 +120,8 @@ class MetricsProm(AbstractMetricCollector):
         pc.REGISTRY.register(self._process_collector)
 
     def write(self):
-        pc.write_to_textfile(self.conf['prometheus_output'], pc.REGISTRY)
+        filename = common.prepare_filename(self.conf['prometheus_output'])
+        pc.write_to_textfile(filename, pc.REGISTRY)
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
                   status: str=None):
