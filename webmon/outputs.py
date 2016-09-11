@@ -132,6 +132,16 @@ class AbstractTextOutput(AbstractOutput):
         if show_header:
             yield from yield_rst_header(self._format_item_header(item), 3)
 
+        header = item.get('header')
+        if header:
+            yield from text_to_rst(str(header))
+            yield ''
+
+        link = item.get('link')
+        if link:
+            yield link
+            yield ''
+
         comparator_opts = item['meta'].get('comparator_opts') or {}
         content = item['content'].rstrip() or "<no data>"
 
@@ -518,6 +528,7 @@ class Output(object):
             'title': part.title,
             'link': part.link,
             'footer': part.footer,
+            'header': part.header,
         }
 
         with open(dst_file, "w") as ofile:
