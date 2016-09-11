@@ -93,9 +93,6 @@ def load_content(loader, ctx: common.Context) -> common.Result:
         result.meta['filter_duration'] = time.time() - fltr_start
         result.debug['items_filterd'] = len(result.items)
 
-    if not result.items:
-        result.append("<no data>")
-
     result.meta['update_duration'] = time.time() - start
     result.meta['update_date'] = time.time()
     if not result.title:
