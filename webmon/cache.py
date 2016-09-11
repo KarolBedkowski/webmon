@@ -7,15 +7,12 @@ Copyright (c) Karol Będkowski, 2016
 This file is part of webmon.
 Licence: GPLv2+
 """
-# TODO: logowanie przez context?
-
-import hashlib
 import logging
 import os.path
-import pathlib
-import time
+import typing as ty
 
 import yaml
+import typecheck as tc
 
 from . import common
 
@@ -25,7 +22,8 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 _LOG = logging.getLogger("cache")
 
 
-def _get_content(fname: str) -> str:
+@tc.typecheck
+def _get_content(fname: str) -> ty.Optional[str]:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
@@ -35,7 +33,8 @@ def _get_content(fname: str) -> str:
     return None
 
 
-def _get_meta(fname: str) -> str:
+@tc.typecheck
+def _get_meta(fname: str) -> ty.Optional[dict]:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
@@ -60,26 +59,27 @@ class Cache(object):
         _LOG.debug("init; directory: %s", directory)
         super(Cache, self).__init__()
         self._directory = directory
-        # log cache files used in this session
-        self._touched = set()  # type: Set[str]
 
         # init
         common.create_missing_dir(self._directory)
 
-    def get(self, oid: str):
+    @tc.typecheck
+    def get(self, oid: str) -> ty.Optional[str]:
         """Get file from cache by `oid`."""
         name = self._get_filename(oid)
         content = _get_content(name)
         _LOG.debug("get %r, content_len=%d", oid, len(content or ''))
         return content
 
-    def get_meta(self, oid: str):
+    @tc.typecheck
+    def get_meta(self, oid: str) -> ty.Optional[dict]:
         """Get metadata from cache for file by `oid`."""
         name = self._get_filename_meta(oid)
         meta = _get_meta(name)
         _LOG.debug("get_meta %r: meta=%r", oid, meta)
         return meta
 
+    @tc.typecheck
     def put(self, oid: str, content: str):
         """Put `content` into cache as temp file identified by `oid`."""
         content = content or ''
@@ -92,6 +92,7 @@ class Cache(object):
         except IOError as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
+    @tc.typecheck
     def put_meta(self, oid: str, metadata: dict):
         """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
@@ -107,7 +108,8 @@ class Cache(object):
         except (IOError, yaml.error.YAMLError) as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
-    def get_mtime(self, oid: str):
+    @tc.typecheck
+    def get_mtime(self, oid: str) -> int:
         """Get modification time of cached file identified by `oid`.
 
         Return None when previous file not exist.
@@ -121,14 +123,13 @@ class Cache(object):
         return mtime
 
     def _get_filename(self, oid: str):
-        self._touched.add(oid)
         return os.path.join(self._directory, oid)
 
     def _get_filename_meta(self, oid: str):
         return os.path.join(self._directory, oid + ".meta")
 
 
-def _make_backup(filename):
+def _make_backup(filename: str):
     if not os.path.isfile(filename):
         return
     try:

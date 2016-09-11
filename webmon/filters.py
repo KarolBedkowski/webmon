@@ -326,10 +326,12 @@ class GetElementsById(AbstractFilter):
                                        strip_cdata=True)
         document = etree.fromstringlist([item], html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
-            text = etree.tostring(elem) if isinstance(elem, etree._Element) \
-                else bytes(elem)
-            if text:
-                yield text.decode('utf-8')
+            if isinstance(elem, etree._Element):
+                text = etree.tostring(elem)
+                if text:
+                    yield text.decode('utf-8')
+            else:
+                yield str(elem)
 
 
 class CommandFilter(AbstractFilter):

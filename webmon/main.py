@@ -341,6 +341,9 @@ def main():
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)
 
+    if not args.debug:
+        tc.disable()
+
     _load_user_classes()
 
     if args.abilities:

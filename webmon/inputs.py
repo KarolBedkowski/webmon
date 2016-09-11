@@ -45,7 +45,7 @@ class AbstractInput(object):
         assert isinstance(ctx, common.Context)
         self._ctx = ctx
         self._conf = common.apply_defaults(
-            {key: val for key, _, val, _ in self.params},
+            {key: val for key, _name, val, _req in self.params},
             ctx.input_conf)
 
     def dump_debug(self):
@@ -59,7 +59,7 @@ class AbstractInput(object):
             if required and val is None:
                 raise common.ParamError("missing parameter " + name)
 
-    def load(self) -> ty.Iterable[common.Result]:
+    def load(self) -> common.Result:
         """ Load data; return list of items (Result).  """
         raise NotImplementedError()
 
@@ -231,8 +231,8 @@ class RssInput(AbstractInput):
 
     def _get_fields_to_load(self) -> ty.Tuple[ty.Iterable[str], bool]:
         add_content = False
-        fields = (field.strip() for field in self._conf["fields"].split(","))
-        fields = [field for field in fields if field]
+        cfields = (field.strip() for field in self._conf["fields"].split(","))
+        fields = [field for field in cfields if field]
         if 'content' in fields:
             fields.remove('content')
             add_content = True
@@ -349,7 +349,7 @@ class GitHubMixin(object):
                 github = github3.login(username=conf.get("github_user"),
                                        token=conf.get("github_token"))
             except Exception as err:
-                raise common.InputError(self, "Github auth error: " + err)
+                raise common.InputError(self, "Github auth error: " + str(err))
         if not github:
             github = github3.GitHub()
         repository = github.repository(conf["owner"], conf["repository"])

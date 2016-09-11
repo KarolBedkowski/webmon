@@ -11,6 +11,7 @@ Licence: GPLv2+
 import copy
 import logging
 import itertools
+import logging
 import os.path
 import pathlib
 import pprint
@@ -24,6 +25,8 @@ from . import config
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
+
+_LOG = logging.getLogger("common")
 
 # options
 OPTS_PREFORMATTED = "preformatted"  # type: str
@@ -161,16 +164,14 @@ class Context(object):
             "] "
         ))
 
-        self.metrics_collector = None
-
     @property
-    def debug(self):
+    def debug(self) -> bool:
         return self.args.debug if self.args else None
 
     def _set_last_update(self, update_date: int):
         self.metadata['update_date'] = update_date
 
-    def _get_last_update(self):
+    def _get_last_update(self) -> ty.Union[float, int, None]:
         return self.metadata.get('update_date')
 
     last_updated = property(_get_last_update, _set_last_update)
@@ -193,6 +194,8 @@ class Context(object):
         else:
             self._log.error(self._log_prefix + fmt, *args, **kwds)
 
+
+# TODO: enum?
 
 STATUS_NEW = 'new'
 STATUS_CHANGED = 'chg'
@@ -237,6 +240,7 @@ class Result(object):
     def clone(self):
         return copy.deepcopy(self)
 
+    @tc.typecheck
     def append(self, item: str):
         self.items.append(item)
         return self
@@ -299,15 +303,17 @@ def is_whitespace(character: str) -> bool:
     return character == ' ' or character == '\t'
 
 
+@tc.typecheck
 def get_whitespace_prefix(text: str) -> str:
     """Get all whitespace characters from beginning of `text`"""
     return ''.join(itertools.takewhile(is_whitespace, text))
 
 
+@tc.typecheck
 def prepare_filename(base_name: str) -> str:
     if not base_name:
-        _LOG.warn("prepare_filename - empty base name")
-        return name
+        _LOG.warning("prepare_filename - empty base name")
+        return base_name
     # replace time tags
     name = time.strftime(base_name)
     # replace ~
