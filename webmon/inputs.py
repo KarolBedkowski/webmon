@@ -185,6 +185,10 @@ class RssInput(AbstractInput):
 
         entries = doc.get('entries')
 
+        if len(entries) == 0 and ctx.last_updated:
+            result.set_no_modified()
+            return result
+
         # limit number of entries
         max_items = self._conf["max_items"]
         limited = False
