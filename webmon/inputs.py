@@ -159,12 +159,12 @@ class RssInput(AbstractInput):
         modified = time.localtime(ctx.last_updated) \
             if ctx.last_updated else None
         url = self._conf['url']
-        etag = ctx.metadata.get('etag')
+        result = common.Result(ctx.oid)
+        etag = result.meta['etag'] = ctx.metadata.get('etag')
         ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
                       url, etag, modified)
         doc = feedparser.parse(url, etag=etag, modified=modified)
         status = doc.get('status') if doc else 400
-        result = common.Result(ctx.oid)
         if status == 304:
             result.set_no_modified()
             return result
@@ -205,8 +205,7 @@ class RssInput(AbstractInput):
                          if limited else "All items loaded")
 
         # update metadata
-        etag = doc.get('etag')
-        result.meta['etag'] = etag
+        result.meta['etag'] = doc.get('etag')
         ctx.log_debug("RssInput: loading done")
         return result
 
@@ -374,7 +373,9 @@ class GithubInput(AbstractInput, GitHubMixin):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
+        etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
+        result.link = repository.html_url
         data_since, updated = self._github_check_repo_updated(
             repository, ctx.last_updated)
         if ctx.debug:
@@ -390,7 +391,6 @@ class GithubInput(AbstractInput, GitHubMixin):
         if hasattr(repository, "commits"):
             commits = list(repository.commits(since=data_since))
         else:
-            etag = ctx.metadata.get('etag')
             commits = list(repository.iter_commits(since=data_since,
                                                    etag=etag))
 
@@ -412,8 +412,6 @@ class GithubInput(AbstractInput, GitHubMixin):
 
         # add header
         result.meta['etag'] = repository.etag
-        result.link = "https://www.github.com/{}/{}/".format(
-            conf["owner"], conf["repository"])
         ctx.log_debug("GithubInput: loading done")
         return result
 
@@ -451,7 +449,9 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
+        etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
+        result.link = repository.html_url
         data_since, updated = self._github_check_repo_updated(
             repository, ctx.last_updated)
         if ctx.debug:
@@ -464,7 +464,6 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
             result.set_no_modified()
             return result
 
-        etag = ctx.metadata.get('etag')
         max_items = self._conf["max_items"] or 100
         if hasattr(repository, "tags"):
             tags = list(repository.tags(max_items, etag=etag))
@@ -483,8 +482,6 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
 
         # add header
         result.meta['etag'] = repository.etag
-        result.link = "https://www.github.com/{}/{}/".format(
-            conf["owner"], conf["repository"])
         ctx.log_debug("GithubTagsInput: loading done")
         return result
 
@@ -513,7 +510,9 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
+        etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
+        result.link = repository.html_url
         data_since, updated = self._github_check_repo_updated(
             repository, ctx.last_updated)
         if ctx.debug:
@@ -526,7 +525,6 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
             result.set_no_modified()
             return result
 
-        etag = ctx.metadata.get('etag')
         max_items = self._conf["max_items"] or 100
         if hasattr(repository, "releases"):
             releases = list(repository.releases(max_items, etag=etag))
@@ -551,14 +549,14 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
         # add header
         result.meta['etag'] = repository.etag
-        result.link = "https://www.github.com/{}/{}/".format(
-            conf["owner"], conf["repository"])
         ctx.log_debug("GithubTagsInput: loading done")
         return result
 
 
 def _format_gh_release_short(release, _full_message):
     res = [release.name, release.created_at.strftime("%x %X")]
+    if release.html_url:
+        res.append(release.html_url)
     if release.body:
         res.append(release.body().strip().split('\n', 1)[0].rstrip())
     return " ".join(res)
@@ -567,6 +565,9 @@ def _format_gh_release_short(release, _full_message):
 def _format_gh_release_long(release, full_message):
     res = [release.name,
            '\n\n    Date: ', release.created_at.strftime("%x %X")]
+    if release.html_url:
+        res.append('\n\n')
+        res.append(release.html_url)
     if release.body and full_message:
         res.append('\n\n')
         res.extend('   ' + line.strip()
