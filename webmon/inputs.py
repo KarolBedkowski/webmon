@@ -316,36 +316,47 @@ def get_input(ctx):
     ctx.log_error("unknown input kind: %s; skipping input", kind)
 
 
-def _github_check_repo_updated(repository, last_updated):
-    min_date = time.time() - _GITHUB_MAX_AGE
-    updated = True
-    if last_updated:
-        updated = repository.updated_at.timestamp() > last_updated
-        min_date = last_updated
+class GitHubMixin(object):
+    """Support functions for GitHub"""
 
-    return (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime(min_date)),
-            updated)
+    @staticmethod
+    def _github_check_repo_updated(repository, last_updated: int) -> \
+            ty.Tuple[str, bool]:
+        """Verify last repository update date.
+        Returns: (
+            formatted minimal date to load,
+            true when repo is updated
+        )
+        """
+        min_date = time.time() - _GITHUB_MAX_AGE
+        updated = True
+        if last_updated:
+            updated = repository.updated_at.timestamp() > last_updated
+            min_date = last_updated
 
+        return (time.strftime("%Y-%m-%dT%H:%M:%SZ", time.localtime(min_date)),
+                updated)
 
-def _github_get_repository(inp, conf):
-    try:
-        import github3
-    except ImportError:
-        raise common.InputError(inp, "github3 module not found")
-    github = None
-    if conf.get("github_user") and conf.get("github_token"):
+    def _github_get_repository(self, conf: dict):
+        """Create repository object according to configuration. """
         try:
-            github = github3.login(username=conf.get("github_user"),
-                                   token=conf.get("github_token"))
-        except Exception as err:
-            raise common.InputError(inp, "Github auth error: " + err)
-    if not github:
-        github = github3.GitHub()
-    repository = github.repository(conf["owner"], conf["repository"])
-    return repository
+            import github3
+        except ImportError:
+            raise common.InputError(self, "github3 module not found")
+        github = None
+        if conf.get("github_user") and conf.get("github_token"):
+            try:
+                github = github3.login(username=conf.get("github_user"),
+                                       token=conf.get("github_token"))
+            except Exception as err:
+                raise common.InputError(self, "Github auth error: " + err)
+        if not github:
+            github = github3.GitHub()
+        repository = github.repository(conf["owner"], conf["repository"])
+        return repository
 
 
-class GithubInput(AbstractInput):
+class GithubInput(AbstractInput, GitHubMixin):
     """Load last commits from github."""
 
     name = "github_commits"
@@ -363,9 +374,9 @@ class GithubInput(AbstractInput):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
-        repository = _github_get_repository(self, conf)
-        data_since, updated = _github_check_repo_updated(repository,
-                                                         ctx.last_updated)
+        repository = self._github_get_repository(conf)
+        data_since, updated = self._github_check_repo_updated(
+            repository, ctx.last_updated)
         if ctx.debug:
             result.debug['data_since'] = data_since
             result.debug['last_updated'] = ctx.last_updated
@@ -423,7 +434,7 @@ def _format_gh_commit_long(commit, full_message: bool) -> str:
     return "".join(result)
 
 
-class GithubTagsInput(AbstractInput):
+class GithubTagsInput(AbstractInput, GitHubMixin):
     """Load last tags from github."""
 
     name = "github_tags"
@@ -440,9 +451,9 @@ class GithubTagsInput(AbstractInput):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
-        repository = _github_get_repository(self, conf)
-        data_since, updated = _github_check_repo_updated(repository,
-                                                         ctx.last_updated)
+        repository = self._github_get_repository(conf)
+        data_since, updated = self._github_check_repo_updated(
+            repository, ctx.last_updated)
         if ctx.debug:
             result.debug['data_since'] = data_since
             result.debug['last_updated'] = ctx.last_updated
@@ -484,7 +495,7 @@ def _format_gh_tag(tag):
     return tag.name
 
 
-class GithubReleasesInput(AbstractInput):
+class GithubReleasesInput(AbstractInput, GitHubMixin):
     """Load last releases from github."""
 
     name = "github_releases"
@@ -502,9 +513,9 @@ class GithubReleasesInput(AbstractInput):
         conf = self._conf
         ctx = self._ctx
         result = common.Result(ctx.oid)
-        repository = _github_get_repository(self, conf)
-        data_since, updated = _github_check_repo_updated(repository,
-                                                         ctx.last_updated)
+        repository = self._github_get_repository(conf)
+        data_since, updated = self._github_check_repo_updated(
+            repository, ctx.last_updated)
         if ctx.debug:
             result.debug['data_since'] = data_since
             result.debug['last_updated'] = ctx.last_updated
