@@ -308,7 +308,7 @@ def update(args, inps, conf, selection=None):
     # defaults for inputs
     defaults = _build_defaults(args, conf)
 
-    for idx, iconf in enumerate(inps, 1):
+    for idx, iconf in enumerate(inps):
         if not selection or idx in selection:
             params = common.apply_defaults(defaults, iconf)
             ctx = common.Context(params, gcache, idx, output, args)
