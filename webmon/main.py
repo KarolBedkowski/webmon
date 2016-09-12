@@ -9,6 +9,7 @@ Licence: GPLv2+
 """
 
 import argparse
+from concurrent import futures
 import datetime
 import imp
 import locale
@@ -308,16 +309,26 @@ def update(args, inps, conf, selection=None):
     # defaults for inputs
     defaults = _build_defaults(args, conf)
 
-    for idx, iconf in enumerate(inps):
-        if not selection or idx in selection:
-            params = common.apply_defaults(defaults, iconf)
-            ctx = common.Context(params, gcache, idx, output, args)
-            try:
-                load(ctx)
-            except IOError as err:
-                ctx.log_error("loading error: %s",
-                              str(err).replace("\n", "; "))
-                ctx.output.put_error(ctx, str(err))
+    def task(idx, iconf):
+        params = common.apply_defaults(defaults, iconf)
+        ctx = common.Context(params, gcache, idx, output, args)
+        try:
+            load(ctx)
+        except IOError as err:
+            ctx.log_error("loading error: %s",
+                          str(err).replace("\n", "; "))
+            ctx.output.put_error(ctx, str(err))
+        return ctx.name
+
+    ex = futures.ThreadPoolExecutor(max_workers=2)
+    wait_for = [
+        ex.submit(task, idx, iconf)
+        for idx, iconf in enumerate(inps)
+        if not selection or idx in selection
+    ]
+
+    for ftr in futures.as_completed(wait_for):
+        _LOG.debug("task %s done", ftr.result())
 
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
