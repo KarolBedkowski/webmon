@@ -224,8 +224,10 @@ def _parse_options():
     parser.add_argument("--list-inputs", action="store_true",
                         help="show configured inputs")
     parser.add_argument("--sel", help="select (by idx, separated by comma) "
-                        "inputs to update")
+                        "inputs to update", type=int)
     parser.add_argument("--stats-file", help="write stats to file")
+    parser.add_argument("--tasks", help="background task to launch",
+                        type=int, default=2)
     return parser.parse_args()
 
 
@@ -320,7 +322,7 @@ def update(args, inps, conf, selection=None):
             ctx.output.put_error(ctx, str(err))
         return ctx.name
 
-    ex = futures.ThreadPoolExecutor(max_workers=2)
+    ex = futures.ThreadPoolExecutor(max_workers=args.tasks or 2)
     wait_for = [
         ex.submit(task, idx, iconf)
         for idx, iconf in enumerate(inps)
