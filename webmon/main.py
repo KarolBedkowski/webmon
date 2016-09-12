@@ -322,15 +322,16 @@ def update(args, inps, conf, selection=None):
             ctx.output.put_error(ctx, str(err))
         return ctx.name
 
-    ex = futures.ThreadPoolExecutor(max_workers=args.tasks or 2)
-    wait_for = [
-        ex.submit(task, idx, iconf)
-        for idx, iconf in enumerate(inps)
-        if not selection or idx in selection
-    ]
+    with futures.ThreadPoolExecutor(max_workers=args.tasks or 2) as ex:
+        wait_for = [
+            ex.submit(task, idx, iconf)
+            for idx, iconf in enumerate(inps)
+            if not selection or idx in selection
+        ]
 
-    for ftr in futures.as_completed(wait_for):
-        _LOG.debug("task %s done", ftr.result())
+        futures.wait(wait_for)
+
+    _LOG.info("Loading: all done")
 
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
