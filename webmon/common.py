@@ -11,7 +11,6 @@ Licence: GPLv2+
 import copy
 import logging
 import itertools
-import logging
 import os.path
 import pathlib
 import pprint
@@ -194,8 +193,6 @@ class Context(object):
         else:
             self._log.error(self._log_prefix + fmt, *args, **kwds)
 
-
-# TODO: enum?
 
 STATUS_NEW = 'new'
 STATUS_CHANGED = 'chg'

@@ -534,7 +534,6 @@ class Output(object):
 
     @tc.typecheck
     def put_error(self, ctx: common.Context, err):
-        # TODO: czy raportowanie globalnych błędów powinno być tutaj?
         result = common.Result(ctx.oid)
         result.set_error(err)
         self.put(result, None)

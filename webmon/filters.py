@@ -96,10 +96,12 @@ class Html2Text(AbstractFilter):
     @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         assert isinstance(item, str)
-        # TODO: handle import error
-        import html2text as h2t
+        try:
+            import html2text as h2t
+        except ImportError:
+            raise common.FilterError(self, "module html2text not found")
+
         conv = h2t.HTML2Text(bodywidth=self._conf.get("width"))
-        # TODO: copy item
         yield conv.handle(item)
 
 

@@ -38,7 +38,7 @@ def _get_meta(fname: str) -> ty.Optional[dict]:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
-                return yaml.load(fin)
+                return yaml.safe_load(fin)
         except IOError as err:
             _LOG.error("load meta file %s from cache error: %s", fname, err)
         except yaml.error.YAMLError as err:
@@ -101,7 +101,7 @@ class Cache(object):
         try:
             if metadata:
                 with open(name, "w") as fout:
-                    yaml.dump(metadata, fout)
+                    yaml.safe_dump(metadata, fout)
             else:
                 if os.path.isfile(name):
                     os.unlink(name)
