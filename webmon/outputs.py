@@ -506,8 +506,6 @@ def _make_backup(filename):
 
 class Output(object):
     """Output store/load results.
-
-    TODO: thread-safe
     """
     def __init__(self, working_dir: str) -> None:
         super(Output, self).__init__()
