@@ -566,7 +566,7 @@ def _format_gh_release_long(release, full_message):
     res = [release.name,
            '\n\n    Date: ', release.created_at.strftime("%x %X")]
     if release.html_url:
-        res.append('\n\n')
+        res.append('\n\n    ')
         res.append(release.html_url)
     if release.body and full_message:
         res.append('\n\n')
