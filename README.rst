@@ -42,6 +42,7 @@ Options
 --diff-mode MODE        diff mode (unified, ndiff, context)
 --abilities             show available inputs, outputs, filters, comparators
 -d, --debug             print debug informations
+--tasks                 number of background tasks
 
 
 Configuration

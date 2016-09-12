@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import threading
 
 try:
     import prometheus_client as pc
@@ -43,34 +44,43 @@ class MetricsSimple(AbstractMetricCollector):
     def __init__(self, conf):
         super(MetricsSimple, self).__init__(conf)
         self._stats = []
+        self._lock = threading.Lock()
 
     def write(self):
         log = logging.getLogger(self.__class__.__name__)
-        for stat in self._stats:
-            log.debug(stat)
+        with self._lock:
+            for stat in self._stats:
+                log.debug(stat)
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
                   status: str=None):
         status = status or (result.meta['status'] if result else None)
         process_time = result.meta['update_duration'] if result else None
-        self._stats.append("metric {} status={}, processing time={}".format(
-            ctx.name, status, process_time))
+        with self._lock:
+            self._stats.append(
+                "metric {} status={}, processing time={}".format(
+                    ctx.name, status, process_time))
 
     def put_loading_summary(self, total_duration: float=None):
-        self._stats.append(
-            'loading.total_duration: {}'.format(total_duration))
+        with self._lock:
+            self._stats.append(
+                'loading.total_duration: {}'.format(total_duration))
 
     def put_output(self, output: str, process_time: float, status: str):
-        self._stats.append("output {} processing time={}, status={}".format(
-                       output, process_time, status))
+        with self._lock:
+            self._stats.append(
+                "output {} processing time={}, status={}".format(
+                    output, process_time, status))
 
     def put_output_summary(self, inputs: int, files: int,
                            total_duration: float):
-        self._stats.append("output.summary inputs={}; all_files={}".format(
-            inputs, files))
+        with self._lock:
+            self._stats.append("output.summary inputs={}; all_files={}".format(
+                inputs, files))
 
     def put_total(self, total_duration: float=None):
-        self._stats.append("total duration={}".format(total_duration))
+        with self._lock:
+            self._stats.append("total duration={}".format(total_duration))
 
 
 class MetricsProm(AbstractMetricCollector):
