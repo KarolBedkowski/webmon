@@ -59,6 +59,7 @@ class Cache(object):
         _LOG.debug("init; directory: %s", directory)
         super(Cache, self).__init__()
         self._directory = directory
+        self._touched_oids = set()  # type: ty.Set[str]
 
         # init
         common.create_missing_dir(self._directory)
@@ -66,6 +67,7 @@ class Cache(object):
     @tc.typecheck
     def get(self, oid: str) -> ty.Optional[str]:
         """Get file from cache by `oid`."""
+        self._touched_oids.add(oid)
         name = self._get_filename(oid)
         content = _get_content(name)
         _LOG.debug("get %r, content_len=%d", oid, len(content or ''))
@@ -74,6 +76,7 @@ class Cache(object):
     @tc.typecheck
     def get_meta(self, oid: str) -> ty.Optional[dict]:
         """Get metadata from cache for file by `oid`."""
+        self._touched_oids.add(oid)
         name = self._get_filename_meta(oid)
         meta = _get_meta(name)
         _LOG.debug("get_meta %r: meta=%r", oid, meta)
@@ -82,6 +85,7 @@ class Cache(object):
     @tc.typecheck
     def put(self, oid: str, content: str):
         """Put `content` into cache as temp file identified by `oid`."""
+        self._touched_oids.add(oid)
         content = content or ''
         _LOG.debug("put %r, content_len=%d", oid, len(content))
         name = self._get_filename(oid)
@@ -96,6 +100,7 @@ class Cache(object):
     def put_meta(self, oid: str, metadata: dict):
         """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
+        self._touched_oids.add(oid)
         name = self._get_filename_meta(oid)
         _make_backup(name)
         try:
@@ -114,6 +119,7 @@ class Cache(object):
 
         Return None when previous file not exist.
         """
+        self._touched_oids.add(oid)
         name = self._get_filename(oid)
         if not os.path.isfile(name):
             _LOG.debug("get_mtime %r - file not found", oid)
@@ -127,6 +133,19 @@ class Cache(object):
 
     def _get_filename_meta(self, oid: str):
         return os.path.join(self._directory, oid + ".meta")
+
+    def clean_cache(self):
+        """Remove untouched cache files."""
+        for fname in os.listdir(self._directory):
+            oid = fname.split('.', 1)[0]
+            if oid in self._touched_oids:
+                continue
+            _LOG.debug("clean_cache removing %s", fname)
+            try:
+                os.remove(os.path.join(self._directory, fname))
+            except IOError as err:
+                _LOG.warning("clean cache - removing %s error: %s",
+                             fname, err)
 
 
 def _make_backup(filename: str):

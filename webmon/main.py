@@ -343,6 +343,10 @@ def update(args, inps, conf, selection=None):
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
     omngr.write(footer=footer, debug=args.debug)
 
+    # if processing all files - clean unused / old cache files
+    if not selection:
+        gcache.clean_cache()
+
     metrics.COLLECTOR.put_total(time.time() - start)
     metrics.COLLECTOR.write()
 
