@@ -195,6 +195,9 @@ def load(ctx: common.Context) -> bool:
     ctx.cache.put_meta(ctx.oid, result.meta)
     metrics.COLLECTOR.put_input(ctx, result)
     ctx.log_info("loading done")
+
+    del loader
+    loader = None
     return True
 
 
@@ -320,7 +323,8 @@ def update(args, inps, conf, selection=None):
             ctx.log_error("loading error: %s",
                           str(err).replace("\n", "; "))
             ctx.output.put_error(ctx, str(err))
-        return ctx.name
+        del ctx
+        ctx = None
 
     with futures.ThreadPoolExecutor(max_workers=args.tasks or 2) as ex:
         wait_for = [
