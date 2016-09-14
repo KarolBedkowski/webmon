@@ -214,7 +214,8 @@ def status_human_str(status: str) -> str:
 class Result(object):
     FIELDS = ['title', 'link']
 
-    def __init__(self, oid: str) -> None:
+    def __init__(self, oid: str, idx: int=0) -> None:
+        self.index = idx  # type: int
         self.oid = oid  # type: str
         self.title = None  # type: str
         self.link = None  # type: str

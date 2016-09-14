@@ -457,8 +457,9 @@ class OutputManager(object):
             data_by_status[status].append(group_data)
 
         all_items = 0
+        # sort by (input index, input title)
         for items in data_by_status.values():
-            items.sort(key=lambda x: x[0].get('title'))
+            items.sort(key=lambda x: (x[0].get('index'), x[0].get('title')))
             all_items += len(items)
 
         if not all_items:
@@ -527,6 +528,7 @@ class Output(object):
             'link': part.link,
             'footer': part.footer,
             'header': part.header,
+            'index': part.index,
         }
 
         with open(dst_file, "w") as ofile:
@@ -534,6 +536,6 @@ class Output(object):
 
     @tc.typecheck
     def put_error(self, ctx: common.Context, err):
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         result.set_error(err)
         self.put(result, None)

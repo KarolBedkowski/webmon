@@ -96,7 +96,7 @@ class WebInput(AbstractInput):
                 float(ctx.last_updated))
         url = self._conf['url']
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
@@ -159,7 +159,7 @@ class RssInput(AbstractInput):
         modified = time.localtime(ctx.last_updated) \
             if ctx.last_updated else None
         url = self._conf['url']
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
                       url, etag, modified)
@@ -292,9 +292,9 @@ class CmdInput(AbstractInput):
                    (stderr or b"").decode('utf-8'))
             errstr = "\n".join(line.strip() for line in err if line)
             errstr = errstr.strip()
-            return common.Result(ctx.oid).set_error(errstr)
+            return common.Result(ctx.oid, ctx.input_idx).set_error(errstr)
 
-        inp_result = common.Result(ctx.oid)
+        inp_result = common.Result(ctx.oid, ctx.input_idx)
         if conf['split']:
             inp_result.items = stdout.decode('utf-8').split("\n")
         else:
@@ -372,7 +372,7 @@ class GithubInput(AbstractInput, GitHubMixin):
         """Return commits."""
         conf = self._conf
         ctx = self._ctx
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
         result.link = repository.html_url
@@ -448,7 +448,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         """Return commits."""
         conf = self._conf
         ctx = self._ctx
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
         result.link = repository.html_url
@@ -509,7 +509,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         """Return releases."""
         conf = self._conf
         ctx = self._ctx
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         repository = self._github_get_repository(conf)
         result.link = repository.html_url
@@ -602,7 +602,7 @@ class JamendoAlbumsInput(AbstractInput):
 
         url = _jamendo_build_service_url(conf, last_updated)
 
-        result = common.Result(ctx.oid)
+        result = common.Result(ctx.oid, ctx.input_idx)
         ctx.log_debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             response = requests.request(url=url, method='GET',
