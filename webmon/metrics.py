@@ -15,7 +15,7 @@ from . import common
 class AbstractMetricCollector(object):
     """Collector for metrics and stats"""
     def __init__(self, conf):
-        super(AbstractMetricCollector, self).__init__()
+        super().__init__()
         self.conf = conf
 
     def write(self):
@@ -42,7 +42,7 @@ class AbstractMetricCollector(object):
 class MetricsSimple(AbstractMetricCollector):
     """Simple metric logger"""
     def __init__(self, conf):
-        super(MetricsSimple, self).__init__(conf)
+        super().__init__(conf)
         self._stats = []
         self._lock = threading.Lock()
 
@@ -86,7 +86,7 @@ class MetricsSimple(AbstractMetricCollector):
 class MetricsProm(AbstractMetricCollector):
     """Export metrics to prometheus"""
     def __init__(self, conf):
-        super(MetricsProm, self).__init__(conf)
+        super().__init__(conf)
         # inputs
         self._inp_loading_time = pc.Gauge(
             'webmon_input_time_seconds',

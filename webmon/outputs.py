@@ -45,7 +45,7 @@ class AbstractOutput(object):
     params = []  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf: dict) -> None:
-        super(AbstractOutput, self).__init__()
+        super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
         self._conf = common.apply_defaults(
             {key: val for key, _d, val, _r in self.params},
@@ -292,7 +292,7 @@ class EMailOutput(AbstractTextOutput):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def validate(self):
-        super(EMailOutput, self).validate()
+        super().validate()
         conf = self._conf
         if conf.get("smtp_login"):
             if not conf.get("smtp_password"):
@@ -388,7 +388,7 @@ def qualify_item_to_status(group: ty.Iterable) -> str:
 class OutputManager(object):
     """ Object group all outputs. """
     def __init__(self, conf, working_dir: str) -> None:
-        super(OutputManager, self).__init__()
+        super().__init__()
         self._log = logging.getLogger(self.__class__.__name__)
         self._conf = conf
         self._working_dir = os.path.expanduser(working_dir)

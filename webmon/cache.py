@@ -57,7 +57,7 @@ class Cache(object):
         :param directory: path to cache in local filesystem
         """
         _LOG.debug("init; directory: %s", directory)
-        super(Cache, self).__init__()
+        super().__init__()
         self._directory = directory
         self._touched_oids = set()  # type: ty.Set[str]
 

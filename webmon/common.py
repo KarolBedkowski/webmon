@@ -42,7 +42,7 @@ class InputError(RuntimeError):
     """Exception raised on command error"""
 
     def __init__(self, input_=None, *args, **kwds):
-        super(InputError, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.input = input_
 
 
@@ -50,7 +50,7 @@ class FilterError(RuntimeError):
     """Exception raised on command error"""
 
     def __init__(self, filter_=None, *args, **kwds):
-        super(FilterError, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.filter = filter_
 
 
@@ -58,7 +58,7 @@ class ReportGenerateError(RuntimeError):
     """Exception raised on generate report error"""
 
     def __init__(self, generator=None, *args, **kwds):
-        super(ReportGenerateError, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.generator = generator
 
 
@@ -66,7 +66,7 @@ class CacheError(RuntimeError):
     """Exception raised on command error"""
 
     def __init__(self, operation, fname, *args, **kwds):
-        super(CacheError, self).__init__(*args, **kwds)
+        super().__init__(*args, **kwds)
         self.operation = operation
         self.fname = fname
 
@@ -131,7 +131,7 @@ class Context(object):
     _log = logging.getLogger("context")
 
     def __init__(self, conf: dict, gcache, idx: int, output, args) -> None:
-        super(Context, self).__init__()
+        super().__init__()
         # input configuration
         self.input_conf = conf
         # input configuration idx

@@ -41,7 +41,7 @@ class AbstractInput(object):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, ctx: common.Context) -> None:
-        super(AbstractInput, self).__init__()
+        super().__init__()
         assert isinstance(ctx, common.Context)
         self._ctx = ctx
         self._conf = common.apply_defaults(

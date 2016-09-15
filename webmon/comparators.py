@@ -32,7 +32,7 @@ class AbstractComparator(object):
     }  # type: Dict[str, ty.Any]
 
     def __init__(self, ctx) -> None:
-        super(AbstractComparator, self).__init__()
+        super().__init__()
         assert isinstance(ctx, common.Context)
         self.ctx = ctx
 
