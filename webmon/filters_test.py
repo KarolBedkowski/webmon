@@ -38,5 +38,25 @@ class TestFilterWrap(unittest.TestCase):
         res = fltr._wrap_line_keep_indent(inp)
         self.assertEqual(res, exp)
 
+
+class TestFilterGrep(unittest.TestCase):
+    def test_grep_parts(self):
+        conf = {'pattern': r'.*123.*', 'mode': 'parts'}
+        fltr = filters.Grep(conf, _CONTEXT)
+        res = common.Result(None)
+        res.items = ['aa\n1234\nbb', 'ww\n234\nddd', '123\ndsdsd']
+        exp = ['aa\n1234\nbb', '123\ndsdsd']
+        out = fltr.filter(res).items
+        self.assertEqual(out, exp)
+
+    def test_grep_lines(self):
+        conf = {'pattern': r'.*123.*', 'mode': 'lines'}
+        fltr = filters.Grep(conf, _CONTEXT)
+        res = common.Result(None)
+        res.items = ['aa\n1234\nbb', 'ww\n234\nddd', '123\ndsdsd']
+        exp = ['1234', '123']
+        out = fltr.filter(res).items
+        self.assertEqual(out, exp)
+
 if __name__ == '__main__':
     unittest.main()

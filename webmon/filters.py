@@ -49,7 +49,7 @@ class AbstractFilter(object):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf: dict, ctx: common.Context) -> None:
-        super(AbstractFilter, self).__init__()
+        super().__init__()
         self._ctx = ctx
         self._conf = common.apply_defaults(
             {key: val for key, _desc, val, _req in self.params},
@@ -88,7 +88,7 @@ class Html2Text(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def validate(self):
-        super(Html2Text, self).validate()
+        super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
@@ -173,25 +173,20 @@ class Grep(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
-        super(Grep, self).__init__(conf, ctx)
-        self._re = re.compile(conf["pattern"])
+        super().__init__(conf, ctx)
+        self._re = re.compile(conf["pattern"], re.IGNORECASE | re.LOCALE |
+                              re.MULTILINE | re.DOTALL)
 
     @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         if self._conf['mode'] == "parts":
-            items = [item for item in result.items
-                     if self._re.match(item)]
+            items = filter(self._re.match, result.items)
         else:
-            items = []
-            for item in result.items:
-                content = "\n".join(
-                    line for line in item.split("\n")
-                    if self._re.match(line)
-                )
-                if content:
-                    items.append(content)
-        result.items = items
+            items = filter(
+                None, ("\n".join(filter(self._re.match, item.split("\n")))
+                       for item in result.items))
+        result.items = list(items)
         return result
 
     @tc.typecheck
@@ -213,7 +208,7 @@ class Wrap(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
-        super(Wrap, self).__init__(conf, ctx)
+        super().__init__(conf, ctx)
         self._max_lines = self._conf.get("max_lines") or None
         self._width = self._conf.get("width") or 76
 
@@ -283,11 +278,11 @@ class GetElementsByCss(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
-        super(GetElementsByCss, self).__init__(conf, ctx)
+        super().__init__(conf, ctx)
         self._expression = None
 
     def validate(self):
-        super(GetElementsByCss, self).validate()
+        super().validate()
         sel = self._conf["sel"]
         from cssselect import GenericTranslator, SelectorError
         try:
