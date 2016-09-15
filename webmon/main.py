@@ -305,7 +305,7 @@ def update(args, inps, conf, selection=None):
         os.path.expanduser(args.cache_dir), "partials")
 
     try:
-        output = outputs.Output(partial_reports_dir)
+        output = outputs.OutputManager(conf, partial_reports_dir)
     except RuntimeError as err:
         _LOG.error("Init parts dir error: %s", err)
         return
@@ -337,9 +337,8 @@ def update(args, inps, conf, selection=None):
 
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
-    omngr = outputs.OutputManager(conf, partial_reports_dir)
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
-    omngr.write(footer=footer, debug=args.debug)
+    output.write(footer=footer, debug=args.debug)
 
     # if processing all files - clean unused / old cache files
     if not selection:
