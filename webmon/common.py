@@ -174,6 +174,7 @@ class Context(object):
         return self.metadata.get('update_date')
 
     last_updated = property(_get_last_update, _set_last_update)
+    # type: ty.Optional[float]
 
     def __str__(self):
         return "<Context idx={} oid={} name={} input_conf={} meta={}>".\

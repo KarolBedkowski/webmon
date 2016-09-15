@@ -319,8 +319,9 @@ class GitHubMixin(object):
     """Support functions for GitHub"""
 
     @staticmethod
-    def _github_check_repo_updated(repository, last_updated: int) -> \
-            ty.Tuple[str, bool]:
+    def _github_check_repo_updated(repository,
+                                   last_updated: ty.Union[int, float, None]) \
+            -> ty.Tuple[str, bool]:
         """Verify last repository update date.
         Returns: (
             formatted minimal date to load,

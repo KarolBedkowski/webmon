@@ -22,7 +22,6 @@ import time
 import typing as ty
 from datetime import datetime
 import textwrap
-import itertools
 
 from docutils.core import publish_string
 
@@ -427,9 +426,8 @@ class OutputManager(object):
             except yaml.io.UnsupportedOperation:
                 content = None
             if isinstance(content, dict) and \
-                    'meta' in content and 'debug' in content and \
-                    'content' in content and 'oid' in content and \
-                    'title' in content and 'link' in content:
+                    'meta' in content and 'content' in content and \
+                    'oid' in content and 'title' in content:
                 self._log.debug("_load_file: %r", content)
                 return content
             self._log.error("invalid file %s: %r", fpath, content)
@@ -449,17 +447,17 @@ class OutputManager(object):
 
         input_files = self.find_parts()
         for files in input_files:
-            group_data = [item for item
-                          in (self._load_file(fpath)
-                              for _fst, fpath in sorted(files))
-                          if item]
+            group_data = [
+                item for item
+                in (self._load_file(fpath) for _fst, fpath in sorted(files))
+                if item]
             status = qualify_item_to_status(group_data)
             data_by_status[status].append(group_data)
 
         all_items = 0
-        # sort by (input index, input title)
+        # sort by input index
         for items in data_by_status.values():
-            items.sort(key=lambda x: (x[0].get('index'), x[0].get('title')))
+            items.sort(key=lambda x: x[0].get('index', 0))
             all_items += len(items)
 
         if not all_items:
