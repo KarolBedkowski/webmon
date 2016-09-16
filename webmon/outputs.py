@@ -475,11 +475,12 @@ class OutputManager(object):
 
         # delete reported files
         if all_ok:
-            try:
-                map(os.remove, (fpath for group in input_files
-                                for fpath in group))
-            except IOError as err:
-                self._log.error("Remove file error: %s", err)
+            for group in input_files:
+                for fpath in group:
+                    try:
+                        os.remove(fpath)
+                    except IOError as err:
+                        self._log.error("Remove file %s error: %s", fpath, err)
 
         self._log.debug("OutputManager: write done")
 
