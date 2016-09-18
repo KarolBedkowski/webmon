@@ -10,6 +10,7 @@ Licence: GPLv2+
 """
 
 import difflib
+import time
 import typing as ty
 
 import typecheck as tc
@@ -103,17 +104,30 @@ class NDiff(AbstractComparator):
                 self.opts)
 
 
+def _instr_separator(instr1: str, instr2: str) -> str:
+    """ Get only items from instr1 that not exists in instr2"""
+    if common.RECORD_SEPARATOR in instr1 or common.RECORD_SEPARATOR in instr2:
+        return common.RECORD_SEPARATOR
+    return '\n'
+
+
 def _substract_lists(instr1: str, instr2: str) -> str:
     """ Get only items from instr1 that not exists in instr2"""
-    separator = (
-        common.RECORD_SEPARATOR
-        if common.RECORD_SEPARATOR in instr1 or
-        common.RECORD_SEPARATOR in instr2
-        else '\n')
+    separator = _instr_separator(instr1, instr2)
 
     l2set = set(map(hash, instr2.split(separator)))
     return separator.join(item for item in instr1.split(separator)
                           if hash(item) not in l2set)
+
+
+def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
+        ty.Dict[str, int]:
+    if not previous_hash:
+        return {}
+    limit = time.time() - days * 24 * 60 * 60
+    return {hash_: timestamp
+            for hash_, timestamp in previous_hash.items()
+            if timestamp >= limit}
 
 
 class Added(AbstractComparator):
@@ -124,7 +138,28 @@ class Added(AbstractComparator):
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only added items """
-        return _substract_lists(new, old), self.opts
+        check_last_days = self.conf.get('check_last_days')
+        meta = self.opts.copy()
+        if check_last_days:
+            sep = _instr_separator(new, old)
+            now = int(time.time())
+            # calculate hashs for new items
+            new_hashes = {hash(item): now for item in new.split(sep)}
+            # hashes in form {hash, ts}
+            previous_hash = ctx.metadata.get('hashes')
+            # put new hashes in meta
+            meta['hashes'] = new_hashes
+            if previous_hash:
+                # found old hashes; can use it for filtering
+                previous_hash = _drop_old_hashes(previous_hash,
+                                                 check_last_days)
+                result = sep.join(item for item in new.split(sep)
+                                  if hash(item) not in previous_hash)
+                # put old hashes
+                meta['hashes'].update(previous_hash)
+                return result, meta
+
+        return _substract_lists(new, old), meta
 
 
 class Deleted(AbstractComparator):
