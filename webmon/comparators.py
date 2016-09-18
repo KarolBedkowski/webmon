@@ -31,10 +31,9 @@ class AbstractComparator(object):
         common.OPTS_PREFORMATTED: False,
     }  # type: Dict[str, ty.Any]
 
-    def __init__(self, ctx) -> None:
+    def __init__(self, conf: ty.Optional[dict]) -> None:
         super().__init__()
-        assert isinstance(ctx, common.Context)
-        self.ctx = ctx
+        self.conf = conf
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:

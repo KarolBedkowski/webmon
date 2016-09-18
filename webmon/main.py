@@ -38,7 +38,8 @@ _LOG = logging.getLogger("main")
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) -> ty.Tuple[str, dict]:
     comparator = comparators.get_comparator(
-        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, ctx)
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
+        ctx.input_conf.get("diff_options"))
 
     update_date = result.meta.get('update_date') or time.time()
 
