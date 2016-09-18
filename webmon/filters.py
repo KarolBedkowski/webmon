@@ -284,7 +284,10 @@ class GetElementsByCss(AbstractFilter):
     def validate(self):
         super().validate()
         sel = self._conf["sel"]
-        from cssselect import GenericTranslator, SelectorError
+        try:
+            from cssselect import GenericTranslator, SelectorError
+        except ImportError:
+            raise FilterError("Missing cssselect module")
         try:
             self._expression = GenericTranslator().css_to_xpath(sel)
         except SelectorError:
