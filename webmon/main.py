@@ -37,14 +37,12 @@ _LOG = logging.getLogger("main")
 @tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) -> ty.Tuple[str, dict]:
+    opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
-        ctx.input_conf.get("diff_options"))
+        opts[0] if opts else {})
 
     update_date = result.meta.get('update_date') or time.time()
-
-    # ctx.log_debug("compare: val1: %s", prev_content)
-    # ctx.log_debug("compare: val2: %s", content)
 
     diff, new_meta = comparator.compare(
         prev_content, str(datetime.datetime.fromtimestamp(update_date)),
@@ -85,6 +83,7 @@ def load_content(loader, ctx: common.Context) -> common.Result:
     for fltcfg in ctx.input_conf.get('filters') or []:
         flt = filters.get_filter(fltcfg, ctx)
         if not flt:
+            ctx.log_error("missing filter: %s", fltcfg)
             continue
         result = flt.filter(result)
         if ctx.debug:
@@ -320,6 +319,10 @@ def update(args, inps, conf, selection=None):
         try:
             load(ctx)
         except IOError as err:
+            ctx.log_error("loading error: %s",
+                          str(err).replace("\n", "; "))
+            ctx.output.put_error(ctx, str(err))
+        except Exception as err:
             ctx.log_error("loading error: %s",
                           str(err).replace("\n", "; "))
             ctx.output.put_error(ctx, str(err))

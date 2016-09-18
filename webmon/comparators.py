@@ -150,10 +150,10 @@ class Last(AbstractComparator):
 
 
 @tc.typecheck
-def get_comparator(name: str, ctx: common.Context) -> \
+def get_comparator(name: str, conf: ty.Optional[dict]) -> \
         ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:
-        return cmpcls(ctx)
+        return cmpcls(conf)
     raise common.ParamError("Unknown comparator: %s" % name)
