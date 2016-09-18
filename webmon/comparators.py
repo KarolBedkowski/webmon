@@ -36,15 +36,17 @@ class AbstractComparator(object):
         assert isinstance(ctx, common.Context)
         self.ctx = ctx
 
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
-        :param old: previous value [list of string]
-        :param old_date: previous value date [string]
-        :param new: new value [list of string]
-        :param new_date: new value date [string]
+        old -- previous value [list of string]
+        old_date -- previous value date [string]
+        new -- new value [list of string]
+        new_date -- new value date [string]
+        ctx -- context [common.Context]
+        meta: new metadata [dict]
 
         Return:
             iter<strings>
@@ -60,12 +62,13 @@ class ContextDiff(AbstractComparator):
     }  # type: Dict[str, ty.Any]
 
     @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> ty.Iterable[str]:
-        yield "\n".join(difflib.context_diff(
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+
+        return "\n".join(difflib.context_diff(
             old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n'))
+            lineterm='\n')), self.opts
 
 
 class UnifiedDiff(AbstractComparator):
@@ -75,14 +78,14 @@ class UnifiedDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         return "\n".join(difflib.unified_diff(
             old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n'))
+            lineterm='\n')), self.opts
 
 
 class NDiff(AbstractComparator):
@@ -93,11 +96,12 @@ class NDiff(AbstractComparator):
     }
 
     @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
-        return "\n".join(difflib.ndiff(old.split('\n'), new.split('\n')))
+        return ("\n".join(difflib.ndiff(old.split('\n'), new.split('\n'))),
+                self.opts)
 
 
 def _substract_lists(instr1: str, instr2: str) -> str:
@@ -118,10 +122,10 @@ class Added(AbstractComparator):
     name = "added"
 
     @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only added items """
-        return _substract_lists(new, old)
+        return _substract_lists(new, old), self.opts
 
 
 class Deleted(AbstractComparator):
@@ -129,10 +133,10 @@ class Deleted(AbstractComparator):
     name = "deleted"
 
     @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only deleted items """
-        return _substract_lists(old, new)
+        return _substract_lists(old, new), self.opts
 
 
 class Last(AbstractComparator):
@@ -140,15 +144,15 @@ class Last(AbstractComparator):
     name = "last"
 
     @tc.typecheck
-    def compare(self, old: str, old_date: str, new: str,
-                new_date: str) -> str:
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Return last (new) version """
-        return new
+        return new, self.opts
 
 
 @tc.typecheck
-def get_comparator(name: str,
-                   ctx: common.Context) -> ty.Optional[AbstractComparator]:
+def get_comparator(name: str, ctx: common.Context) -> \
+        ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:

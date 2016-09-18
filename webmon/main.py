@@ -45,12 +45,12 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
     # ctx.log_debug("compare: val1: %s", prev_content)
     # ctx.log_debug("compare: val2: %s", content)
 
-    diff = comparator.compare(
+    diff, new_meta = comparator.compare(
         prev_content, str(datetime.datetime.fromtimestamp(update_date)),
-        content, str(datetime.datetime.now()))
+        content, str(datetime.datetime.now()), ctx, result.meta)
 
     # ctx.log_debug("compare: diff: %s", diff)
-    return diff, {'comparator_opts': comparator.opts}
+    return diff, {'comparator_opts': new_meta}
 
 
 @tc.typecheck
