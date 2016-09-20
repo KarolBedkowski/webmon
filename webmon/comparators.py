@@ -36,6 +36,11 @@ class AbstractComparator(object):
         super().__init__()
         self.conf = conf
 
+    def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
+            -> ty.Tuple[str, dict]:
+        """ Process new content """
+        return new, {}
+
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Compare `old` and `new` lists and return formatted result.
@@ -49,7 +54,7 @@ class AbstractComparator(object):
         meta: new metadata [dict]
 
         Return:
-            iter<strings>
+            (strings=content, dict=meta)
         """
         raise NotImplementedError()
 
@@ -104,9 +109,11 @@ class NDiff(AbstractComparator):
                 self.opts)
 
 
-def _instr_separator(instr1: str, instr2: str) -> str:
+def _instr_separator(instr1: str, instr2: ty.Optional[str]) -> str:
     """ Get only items from instr1 that not exists in instr2"""
-    if common.RECORD_SEPARATOR in instr1 or common.RECORD_SEPARATOR in instr2:
+    if common.RECORD_SEPARATOR in instr1:
+        return common.RECORD_SEPARATOR
+    if instr2 and common.RECORD_SEPARATOR in instr2:
         return common.RECORD_SEPARATOR
     return '\n'
 
@@ -130,9 +137,30 @@ def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
             if timestamp >= limit}
 
 
+def hash_strings(input: str) -> ty.Dict[str, int]:
+    now = int(time.time())
+    # calculate hashs for new items
+    return {hash(item): now for item in input}
+
+
 class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
+
+    @tc.typecheck
+    def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
+            -> ty.Tuple[str, dict]:
+        """ Process new content """
+        check_last_days = self.conf.get('check_last_days')
+        if check_last_days:
+            sep = _instr_separator(new, None)
+            # calculate hashs for new items
+            new_hashes = hash_strings(new.split(sep))
+            meta = self.opts.copy()
+            meta['hashes'] = new_hashes
+            return new, meta
+
+        return new, {}
 
     @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
@@ -142,9 +170,8 @@ class Added(AbstractComparator):
         meta = self.opts.copy()
         if check_last_days:
             sep = _instr_separator(new, old)
-            now = int(time.time())
             # calculate hashs for new items
-            new_hashes = {hash(item): now for item in new.split(sep)}
+            new_hashes = hash_strings(new.split(sep))
             # hashes in form {hash, ts}
             previous_hash = ctx.metadata.get('hashes')
             # put new hashes in meta
