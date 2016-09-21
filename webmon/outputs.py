@@ -30,8 +30,6 @@ import typecheck as tc
 
 from . import (common, metrics)
 
-_LOG = logging.getLogger("outputs")
-
 _DOCUTILS_HTML_OVERRIDES = {
     'stylesheet_path': os.path.join(os.path.dirname(__file__), "main.css")
 }
@@ -119,7 +117,7 @@ class AbstractTextOutput(AbstractOutput):
         update_date = item['meta'].get('update_date')
         if update_date:
             yield time.strftime("%x %X", time.localtime(update_date))
-        yield "*" + common.status_human_str(item['meta']['status']) + "*"
+        yield "*" + common.status_human_str(item['status']) + "*"
 
     @tc.typecheck
     def _format_item(self, item: dict, show_header: bool):
@@ -360,7 +358,6 @@ class EMailOutput(AbstractTextOutput):
 
 @tc.typecheck
 def _get_output(name: str, params: dict) -> ty.Optional[AbstractOutput]:
-    _LOG.debug("_get_output %r", name)
     if not params.get("enabled", True):
         return None
 
@@ -370,8 +367,6 @@ def _get_output(name: str, params: dict) -> ty.Optional[AbstractOutput]:
         out.validate()
         return out
 
-    _LOG.warning("unknown output: %s", name)
-
 
 @tc.typecheck
 def qualify_item_to_status(group: ty.Iterable) -> str:
@@ -380,7 +375,7 @@ def qualify_item_to_status(group: ty.Iterable) -> str:
     """
     for status in (common.STATUS_CHANGED, common.STATUS_NEW,
                    common.STATUS_ERROR):
-        if any(fdata['meta']['status'] == status for fdata in group):
+        if any(fdata['status'] == status for fdata in group):
             return status
     return common.STATUS_UNCHANGED
 
@@ -503,6 +498,7 @@ class OutputManager(object):
             'footer': part.footer,
             'header': part.header,
             'index': part.index,
+            'status': part.status,
         }
 
         with open(dst_file, "w") as ofile:

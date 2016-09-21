@@ -130,15 +130,16 @@ class Context(object):
     """
     _log = logging.getLogger("context")
 
-    def __init__(self, conf: dict, gcache, idx: int, output, args) -> None:
+    def __init__(self, input_conf: dict, gcache, idx: int, output, args) \
+            -> None:
         super().__init__()
         # input configuration
-        self.input_conf = conf
+        self.input_conf = input_conf
         # input configuration idx
         self.input_idx = idx
-        if conf:
-            self.name = config.get_input_name(conf, idx)
-            self.oid = config.gen_input_oid(conf)
+        if input_conf:
+            self.name = config.get_input_name(input_conf, idx)
+            self.oid = config.gen_input_oid(input_conf)
         else:
             self.name = "src_" + str(idx)
             self.oid = str(idx)
@@ -147,20 +148,14 @@ class Context(object):
         # output manager
         self.output = output
         # app arguments
+        # TODO: zmienić
         self.args = args
         # last loader metadata
-        self.metadata = {
-            'update_date': None,
-            'last_error': None,
-            'last_error_msg': None,
-            'status': None,
-        }  # type: Dict[str, ty.Any]
+        self.metadata = {}  # type: Dict[str, ty.Any]
 
         self._log_prefix = "".join((
-            "[",
-            str(idx + 1), ": ", self.name,
-            ("/" + self.oid) if self.debug else "",
-            "] "
+            "[", str(idx + 1), ": ", self.name,
+            ("/" + self.oid) if self.debug else "", "] "
         ))
 
     @property
@@ -218,17 +213,18 @@ class Result(object):
     def __init__(self, oid: str, idx: int=0) -> None:
         self.index = idx  # type: int
         self.oid = oid  # type: str
-        self.title = None  # type: str
-        self.link = None  # type: str
+        self.title = None  # type: ty.Optional[str]
+        self.link = None  # type: ty.Optional[str]
         self.items = []  # type: List[str]
         # debug informations related to this result
         self.debug = {}  # type: Dict[str, ty.Any]
+        self.status = None  # type: ty.Optional[str]
         # metadata related to this result
         self.meta = {
-            "status": None,
             "update_duration": 0,
             "error": None,
             "update_date": None,
+            "last_error": None,
         }  # type: Dict[str, ty.Any]
         # result footer to print
         self.footer = None  # type: ty.Optional[str]
@@ -246,19 +242,16 @@ class Result(object):
         return self
 
     def set_error(self, message: ty.Any):
-        self.meta['status'] = STATUS_ERROR
+        self.status = STATUS_ERROR
         self.meta['error'] = str(message)
+        self.meta['last_error'] = time.time()
+        self.meta['update_date'] = time.time()
         return self
 
     def set_no_modified(self):
-        self.meta['status'] = STATUS_UNCHANGED
+        self.status = STATUS_UNCHANGED
+        self.meta['update_date'] = time.time()
         return self
-
-    def validate(self) -> None:
-        assert bool(self.oid)
-        assert bool(self.title)
-        assert self.meta['status'] and self.meta['status'] in (
-            STATUS_NEW, STATUS_ERROR, STATUS_UNCHANGED, STATUS_CHANGED)
 
     def format(self) -> str:
         """ Return formatted result. """

@@ -110,7 +110,11 @@ def process_content(ctx: common.Context, result: common.Result) \
     write into cache.
     Returns (status, diff_result, new metadata, content after processing)
     """
-    status = result.meta['status']
+    status = result.status
+    if status == common.STATUS_ERROR:
+        err = result.meta['error']
+        return common.STATUS_ERROR, err, None, err
+
     prev_content = ctx.cache.get(ctx.oid)
     content = result.format()
 
@@ -132,15 +136,11 @@ def process_content(ctx: common.Context, result: common.Result) \
 
 
 @tc.typecheck
-def write_metadata_on_error(ctx: common.Context, metadata: dict,
-                            error_msg: str):
-    metadata = metadata or {}
-    metadata['update_date'] = time.time()
-    metadata['last_error'] = time.time()
-    metadata['last_error_msg'] = str(error_msg)
-    metadata['status'] = common.STATUS_ERROR
-    ctx.cache.put_meta(ctx.oid, metadata)
-    metrics.COLLECTOR.put_input(ctx, status=common.STATUS_ERROR)
+def create_error_result(ctx: common.Context, error_msg: str) \
+        -> common.Result:
+    result = common.Result(ctx.oid, ctx.oid)
+    result.set_error(error_msg)
+    return result
 
 
 @tc.typecheck
@@ -167,35 +167,26 @@ def load(ctx: common.Context) -> bool:
     except common.InputError as err:
         ctx.log_error("input error on %s: %r", err.input, err)
         ctx.log_debug("input error params: %s", err.input.dump_debug())
-        write_metadata_on_error(ctx, None, err)
-        return True
+        result = create_error_result(ctx, str(err))
     except common.FilterError as err:
         ctx.log_error("filter error on %s: %r", err.filter, err)
         ctx.log_debug("filter error params: %s", err.filter.dump_debug())
-        write_metadata_on_error(ctx, None, err)
-        return True
-
-    if result.meta['status'] == common.STATUS_ERROR:
-        write_metadata_on_error(ctx, result.meta,
-                                result.meta.get('error') or 'err')
-        return True
+        result = create_error_result(ctx, str(err))
 
     if ctx.args.debug:
         result.debug['items_final'] = len(result.items)
         result.debug['last_updated'] = ctx.last_updated
 
-    status, pres, new_meta, content = process_content(ctx, result)
-    result.meta['status'] = status
+    result.status, pres, new_meta, content = process_content(ctx, result)
     if new_meta:
         result.meta.update(new_meta)
-    if status != common.STATUS_UNCHANGED or \
-            ctx.input_conf.get("report_unchanged", False):
+    if result.status != common.STATUS_UNCHANGED or \
+            ctx.input_conf.get("report_unchanged"):
         ctx.output.put(result, pres)
     ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
     metrics.COLLECTOR.put_input(ctx, result)
     ctx.log_info("loading done")
-
     del loader
     return True
 

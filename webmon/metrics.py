@@ -54,7 +54,7 @@ class MetricsSimple(AbstractMetricCollector):
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
                   status: str=None):
-        status = status or (result.meta['status'] if result else None)
+        status = status or (result.status if result else None)
         process_time = result.meta['update_duration'] if result else None
         with self._lock:
             self._stats.append(
@@ -135,7 +135,7 @@ class MetricsProm(AbstractMetricCollector):
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
                   status: str=None):
-        status = status or (result.meta['status'] if result else None)
+        status = status or (result.status if result else None)
         process_time = result.meta['update_duration'] if result else None
         if process_time:
             self._inp_loading_time.labels(ctx.name).set(process_time)
