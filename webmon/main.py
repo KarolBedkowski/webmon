@@ -113,7 +113,7 @@ def process_content(ctx: common.Context, result: common.Result) \
     status = result.status
     if status == common.STATUS_ERROR:
         err = result.meta['error']
-        return common.STATUS_ERROR, err, None, err
+        return common.STATUS_ERROR, err, None, None
 
     prev_content = ctx.cache.get(ctx.oid)
     content = result.format()
@@ -183,7 +183,8 @@ def load(ctx: common.Context) -> bool:
     if result.status != common.STATUS_UNCHANGED or \
             ctx.input_conf.get("report_unchanged"):
         ctx.output.put(result, pres)
-    ctx.cache.put(ctx.oid, content)
+    if content is not None:
+        ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
     metrics.COLLECTOR.put_input(ctx, result)
     ctx.log_info("loading done")
@@ -309,10 +310,6 @@ def update(args, inps, conf, selection=None):
         ctx = common.Context(params, gcache, idx, output, args)
         try:
             load(ctx)
-        except IOError as err:
-            ctx.log_error("loading error: %s",
-                          str(err).replace("\n", "; "))
-            ctx.output.put_error(ctx, str(err))
         except Exception as err:
             ctx.log_error("loading error: %s",
                           str(err).replace("\n", "; "))
