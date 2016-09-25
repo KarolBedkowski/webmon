@@ -96,12 +96,14 @@ def get_subclasses_with_name(base_class):
 
 
 @tc.typecheck
-def parse_interval(instr: ty.Union[str, float, int, None]) -> int:
+def parse_interval(instr: ty.Union[str, float, int]) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
         if instr < 1:
             raise ValueError("invalid interval '%s'" % instr)
         return int(instr)
+
+    instr = instr.lower()
 
     mplt = 1
     if instr.endswith("m"):
@@ -162,14 +164,9 @@ class Context(object):
     def debug(self) -> bool:
         return self.args.debug if self.args else None
 
-    def _set_last_update(self, update_date: int):
-        self.metadata['update_date'] = update_date
-
-    def _get_last_update(self) -> ty.Union[float, int, None]:
+    @property
+    def last_updated(self) -> ty.Union[float, int, None]:
         return self.metadata.get('update_date')
-
-    last_updated = property(_get_last_update, _set_last_update)
-    # type: ty.Optional[float]
 
     def __str__(self):
         return "<Context idx={} oid={} name={} input_conf={} meta={}>".\
@@ -218,12 +215,11 @@ class Result(object):
         self.items = []  # type: List[str]
         # debug informations related to this result
         self.debug = {}  # type: Dict[str, ty.Any]
-        self.status = None  # type: ty.Optional[str]
         # metadata related to this result
         self.meta = {
             "update_duration": 0,
             "error": None,
-            "update_date": None,
+            "update_date": time.time(),
             "last_error": None,
         }  # type: Dict[str, ty.Any]
         # result footer to print
@@ -236,6 +232,14 @@ class Result(object):
     def clone(self):
         return copy.deepcopy(self)
 
+    def _set_status(self, status):
+        self.meta['status'] = status
+
+    def _get_status(self):
+        return self.meta.get('status')
+
+    status = property(_get_status, _set_status)
+
     @tc.typecheck
     def append(self, item: str):
         self.items.append(item)
@@ -245,12 +249,10 @@ class Result(object):
         self.status = STATUS_ERROR
         self.meta['error'] = str(message)
         self.meta['last_error'] = time.time()
-        self.meta['update_date'] = time.time()
         return self
 
     def set_no_modified(self):
         self.status = STATUS_UNCHANGED
-        self.meta['update_date'] = time.time()
         return self
 
     def format(self) -> str:
