@@ -14,17 +14,6 @@ import subprocess
 import textwrap
 import typing as ty
 
-try:
-    from lxml import etree
-except ImportError:
-    try:
-        import xml.etree.cElementTree as etree
-    except ImportError:
-        try:
-            import xml.etree.ElementTree as etree
-        except ImportError:
-            etree = None
-
 import typecheck as tc
 
 from . import common
@@ -255,8 +244,10 @@ class DeCSVlise(AbstractFilter):
 
 
 def _get_elements_by_xpath(filter_, data, expression):
-    if not etree:
-        raise common.FilterError(filter_, "module etree not found")
+    try:
+        from lxml import etree
+    except ImportError:
+        raise common.FilterError(filter_, "module lxml not found")
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
@@ -287,7 +278,7 @@ class GetElementsByCss(AbstractFilter):
         try:
             from cssselect import GenericTranslator, SelectorError
         except ImportError:
-            raise FilterError("Missing cssselect module")
+            raise common.FilterError("Missing cssselect module")
         try:
             self._expression = GenericTranslator().css_to_xpath(sel)
         except SelectorError:
@@ -320,8 +311,10 @@ class GetElementsById(AbstractFilter):
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
-        if not etree:
-            raise common.FilterError(self, "module etree not found")
+        try:
+            from lxml import etree
+        except ImportError:
+            raise common.FilterError(self, "module lxml not found")
         html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                        strip_cdata=True)
         document = etree.fromstringlist([item], html_parser)
