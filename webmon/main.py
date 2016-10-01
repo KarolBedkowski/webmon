@@ -27,8 +27,8 @@ from . import (cache, common, comparators, config, filters, inputs,
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-VERSION = "0.1"
-APP_NAME = "webmon-dev"
+VERSION = "0.2"
+APP_NAME = "webmon"
 DEFAULT_DIFF_MODE = "ndiff"
 
 _LOG = logging.getLogger("main")
