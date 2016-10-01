@@ -37,6 +37,7 @@ _LOG = logging.getLogger("main")
 @tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) -> ty.Tuple[str, dict]:
+    """ Compare contents according to configuration. """
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
@@ -68,6 +69,7 @@ def check_last_error_time(ctx: common.Context) -> bool:
 
 @tc.typecheck
 def load_content(loader, ctx: common.Context) -> common.Result:
+    """ Load & filter content """
     start = time.time()
     # load list of parts
     result = loader.load()
@@ -145,6 +147,7 @@ def create_error_result(ctx: common.Context, error_msg: str) \
 
 @tc.typecheck
 def load(ctx: common.Context) -> bool:
+    """ Load one input defined & configured by context"""
     ctx.log_debug("start loading")
     ctx.metadata = ctx.cache.get_meta(ctx.oid) or {}
 
@@ -283,7 +286,8 @@ def _build_defaults(args, conf):
     return defaults
 
 
-def update(args, inps, conf, selection=None):
+def load_all(args, inps, conf, selection=None):
+    """ Load all (or selected) inputs"""
     metrics.configure(conf)
     start = time.time()
     try:
@@ -381,7 +385,7 @@ def main():
 
     try:
         with config.lock():
-            update(args, inps, conf, selection)
+            load_all(args, inps, conf, selection)
     except RuntimeError:
         pass
 
