@@ -7,7 +7,7 @@ body {
 .section {
     background: #f0f0f0;
     margin: 0.5em 0.5em 1em;
-    padding: 0.5em;
+    padding: 0.1em 0.5em 0.5em 0.5em;
 }
 .section .section {
     background: white;
@@ -19,4 +19,26 @@ div.footer {
 hr.docutils {
     color: #e0e0e0;
     height: 1px;
+}
+
+blockquote::before, blockquote::after {
+    content: "";
+}
+
+.document blockquote {
+    border-left: 3px solid #eeeeee;
+    margin: 0 0 2em;
+    opacity: 0.90;
+    padding: 0.5em 1em;
+}
+
+pre {
+	overflow: auto;
+}
+
+pre.code.literal-block {
+	border: 1px dotted #ccccb4;
+	font-size: 90%;
+	padding: 5px;
+	margin: 5px;
 }

@@ -7,4 +7,8 @@
 *~
 .*
 *.yaml
-report.*
+report*
+*.prom
+tags
+pylint*
+

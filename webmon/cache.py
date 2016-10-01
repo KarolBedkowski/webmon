@@ -7,38 +7,38 @@ Copyright (c) Karol Będkowski, 2016
 This file is part of webmon.
 Licence: GPLv2+
 """
-
-import os.path
 import logging
-import pathlib
+import os.path
+import typing as ty
 
 import yaml
+import typecheck as tc
+
+from . import common
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
 _LOG = logging.getLogger("cache")
-_TEMP_EXT = ".tmp"
 
 
-def _get_content(fname):
+@tc.typecheck
+def _get_content(fname: str) -> ty.Optional[str]:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
                 return fin.read()
         except IOError as err:
             _LOG.error("load file %s from cache error: %s", fname, err)
-        except yaml.error.YAMLError as err:
-            _LOG.error("load meta file %s from cache error - broken YAML: %s",
-                       fname, err)
     return None
 
 
-def _get_meta(fname):
+@tc.typecheck
+def _get_meta(fname: str) -> ty.Optional[dict]:
     if os.path.isfile(fname):
         try:
             with open(fname) as fin:
-                return yaml.load(fin)
+                return yaml.safe_load(fin)
         except IOError as err:
             _LOG.error("load meta file %s from cache error: %s", fname, err)
         except yaml.error.YAMLError as err:
@@ -50,92 +50,76 @@ def _get_meta(fname):
 class Cache(object):
     """Cache for previous data."""
 
-    def __init__(self, directory):
+    def __init__(self, directory: str) -> None:
         """
         Constructor.
 
         :param directory: path to cache in local filesystem
         """
         _LOG.debug("init; directory: %s", directory)
-        super(Cache, self).__init__()
+        super().__init__()
         self._directory = directory
-        # log cache files used in this session
-        self._touched = set()
+        self._touched_oids = set()  # type: ty.Set[str]
 
         # init
-        if not os.path.isdir(self._directory):
-            try:
-                pathlib.Path(self._directory).mkdir(parents=True)
-            except IOError as err:
-                _LOG.error("creating directory %s for cache error: %s",
-                           self._directory, err)
-                raise
+        common.create_missing_dir(self._directory)
 
-    def get(self, oid):
+    @tc.typecheck
+    def get(self, oid: str) -> ty.Optional[str]:
         """Get file from cache by `oid`."""
+        self._touched_oids.add(oid)
         name = self._get_filename(oid)
         content = _get_content(name)
         _LOG.debug("get %r, content_len=%d", oid, len(content or ''))
         return content
 
-    def get_meta(self, oid):
+    @tc.typecheck
+    def get_meta(self, oid: str) -> ty.Optional[dict]:
         """Get metadata from cache for file by `oid`."""
+        self._touched_oids.add(oid)
         name = self._get_filename_meta(oid)
         meta = _get_meta(name)
         _LOG.debug("get_meta %r: meta=%r", oid, meta)
         return meta
 
-    def get_recovered(self, oid):
-        """Find temp files for `oid` and return content, mtime and meta.
-
-        Temp files contains new loaded content are renamed when application end
-        without errors.
-        """
-        name = self._get_filename(oid) + _TEMP_EXT
-        if not os.path.isfile(name):
-            _LOG.debug("get_recovered %r - not found", oid)
-            return None, None, None
-
-        content, mtime, meta = None, None, None
-        mtime = os.path.getmtime(name)
-        content = _get_content(name)
-        meta_name = self._get_filename_meta(oid) + _TEMP_EXT
-        meta = _get_meta(meta_name)
-
-        _LOG.debug("get_recovered %r: mtime=%s, content_len=%d, meta=%r",
-                   oid, mtime, len(content or ''), meta)
-        return content, mtime, meta
-
-    def put(self, oid, content):
+    @tc.typecheck
+    def put(self, oid: str, content: str):
         """Put `content` into cache as temp file identified by `oid`."""
+        self._touched_oids.add(oid)
         content = content or ''
         _LOG.debug("put %r, content_len=%d", oid, len(content))
-        name = self._get_filename(oid) + _TEMP_EXT
+        name = self._get_filename(oid)
+        _make_backup(name)
         try:
             with open(name, "w") as fout:
                 fout.write(content)
         except IOError as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
-    def put_meta(self, oid, metadata):
+    @tc.typecheck
+    def put_meta(self, oid: str, metadata: dict):
         """Put `metadata` into cache identified by `oid`."""
         _LOG.debug("put_meta %r", oid)
-        name = self._get_filename_meta(oid) + _TEMP_EXT
+        self._touched_oids.add(oid)
+        name = self._get_filename_meta(oid)
+        _make_backup(name)
         try:
             if metadata:
                 with open(name, "w") as fout:
-                    yaml.dump(metadata, fout)
+                    yaml.safe_dump(metadata, fout)
             else:
                 if os.path.isfile(name):
                     os.unlink(name)
         except (IOError, yaml.error.YAMLError) as err:
             _LOG.error("error writing file %s into cache: %s", name, err)
 
-    def get_mtime(self, oid):
+    @tc.typecheck
+    def get_mtime(self, oid: str) -> int:
         """Get modification time of cached file identified by `oid`.
 
         Return None when previous file not exist.
         """
+        self._touched_oids.add(oid)
         name = self._get_filename(oid)
         if not os.path.isfile(name):
             _LOG.debug("get_mtime %r - file not found", oid)
@@ -144,42 +128,30 @@ class Cache(object):
         _LOG.debug("get_mtime %r - ts: %s", oid, mtime)
         return mtime
 
-    def commmit_temps(self, delete_not_used=False):
-        """Commit new files into cache.
-
-        Delete non-tmp and not-touched files from cached.
-        Rename tmp-files.
-        """
-        # delete old file
-        if delete_not_used:
-            for fname in os.listdir(self._directory):
-                fpath = os.path.join(self._directory, fname)
-                if fname.endswith(_TEMP_EXT) or \
-                        os.path.splitext(fname)[0] in self._touched or \
-                        not os.path.isfile(fpath):
-                    continue
-                _LOG.debug("commmit_temps - delete: '%s'", fpath)
-                try:
-                    os.remove(fpath)
-                except IOError as err:
-                    _LOG.error("delete unused file %s error: %s", fpath, err)
-
-        # rename temp file
-        for fname in os.listdir(self._directory):
-            fpath = os.path.join(self._directory, fname)
-            if not fname.endswith(_TEMP_EXT) or not os.path.isfile(fpath):
-                continue
-            dst_fpath = fpath[:-4]
-            try:
-                _LOG.debug("commmit_temps - rename: '%s' -> '%s'", fpath,
-                           dst_fpath)
-                os.rename(fpath, dst_fpath)
-            except IOError as err:
-                _LOG.error("rename temp file %s error: %s", fpath, err)
-
-    def _get_filename(self, oid):
-        self._touched.add(oid)
+    def _get_filename(self, oid: str):
         return os.path.join(self._directory, oid)
 
-    def _get_filename_meta(self, oid):
+    def _get_filename_meta(self, oid: str):
         return os.path.join(self._directory, oid + ".meta")
+
+    def clean_cache(self):
+        """Remove untouched cache files."""
+        for fname in os.listdir(self._directory):
+            oid = fname.split('.', 1)[0]
+            if oid in self._touched_oids:
+                continue
+            _LOG.debug("clean_cache removing %s", fname)
+            try:
+                os.remove(os.path.join(self._directory, fname))
+            except IOError as err:
+                _LOG.warning("clean cache - removing %s error: %s",
+                             fname, err)
+
+
+def _make_backup(filename: str):
+    if not os.path.isfile(filename):
+        return
+    try:
+        os.rename(filename, filename + ".bak")
+    except IOError as err:
+        _LOG.error("make backup %s error: %s", filename, err)

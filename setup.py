@@ -9,18 +9,23 @@ CLASSIFIERS = [
     'License :: OSI Approved :: GNU General Public License (GPL)'
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Environment :: Win32 (MS Windows)",
-    "Environment :: X11 Applications",
 ]
 
 REQUIRES = [
     'setuptools',
     'requests',
+    'typecheck-decorator',
+    'docutils'
+    'lxml',
+    'PyYAML',
+    'html2text',
+    'feedparser'
+    'github3'
 ]
 
 
 setup(
-    name='webmon',
+    name=main.APP_NAME,
     version=main.VERSION,
     description='webmon - monitor web page changes.',
     long_description=open("README.rst").read(),

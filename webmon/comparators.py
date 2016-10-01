@@ -10,6 +10,9 @@ Licence: GPLv2+
 """
 
 import difflib
+import typing as ty
+
+import typecheck as tc
 
 from . import common
 
@@ -21,27 +24,28 @@ class AbstractComparator(object):
     """Abstract / base class for all comparators.
     Comparator get two lists and return formatted result - diff, etc."""
 
-    name = None
+    name = None  # type: ty.Optional[str]
 
     # some information about comparator & result
     opts = {
         common.OPTS_PREFORMATTED: False,
-    }
+    }  # type: Dict[str, ty.Any]
 
-    def __init__(self, inp_conf):
-        super(AbstractComparator, self).__init__()
-        self.inp_conf = inp_conf
-        if self.opts:
-            self.inp_conf['_opt'].update(self.opts)
+    def __init__(self, conf: ty.Optional[dict]) -> None:
+        super().__init__()
+        self.conf = conf
 
-    def compare(self, old, old_date, new, new_date):
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
-        :param old: previous value [list of string]
-        :param old_date: previous value date [string]
-        :param new: new value [list of string]
-        :param new_date: new value date [string]
+        old -- previous value [list of string]
+        old_date -- previous value date [string]
+        new -- new value [list of string]
+        new_date -- new value date [string]
+        ctx -- context [common.Context]
+        meta: new metadata [dict]
 
         Return:
             iter<strings>
@@ -54,13 +58,16 @@ class ContextDiff(AbstractComparator):
     name = "context_diff"
     opts = {
         common.OPTS_PREFORMATTED: True,
-    }
+    }  # type: Dict[str, ty.Any]
 
-    def compare(self, old, old_date, new, new_date):
-        yield "\n".join(difflib.context_diff(
-            old, new,
+    @tc.typecheck
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+
+        return "\n".join(difflib.context_diff(
+            old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n'))
+            lineterm='\n')), self.opts
 
 
 class UnifiedDiff(AbstractComparator):
@@ -70,11 +77,14 @@ class UnifiedDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old, old_date, new, new_date):
-        yield "\n".join(difflib.unified_diff(
-            old, new,
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
+        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
+        return "\n".join(difflib.unified_diff(
+            old.split('\n'), new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n'))
+            lineterm='\n')), self.opts
 
 
 class NDiff(AbstractComparator):
@@ -84,62 +94,66 @@ class NDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    def compare(self, old, _old_date, new, _new_date):
-        yield "\n".join(difflib.ndiff(old, new))
+    @tc.typecheck
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+        old = old.replace(common.RECORD_SEPARATOR, '\n\n')
+        new = new.replace(common.RECORD_SEPARATOR, '\n\n')
+        return ("\n".join(difflib.ndiff(old.split('\n'), new.split('\n'))),
+                self.opts)
 
 
-def _substract_lists(list1, list2):
-    """ Get only items from list1 that not exists in list2"""
-    l2set = set(list2)
-    return (item for item in list1 if item not in l2set)
+def _substract_lists(instr1: str, instr2: str) -> str:
+    """ Get only items from instr1 that not exists in instr2"""
+    separator = (
+        common.RECORD_SEPARATOR
+        if common.RECORD_SEPARATOR in instr1 or
+        common.RECORD_SEPARATOR in instr2
+        else '\n')
+
+    l2set = set(map(hash, instr2.split(separator)))
+    return separator.join(item for item in instr1.split(separator)
+                          if hash(item) not in l2set)
 
 
 class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only added items """
-        return _substract_lists(new, old)
+        return _substract_lists(new, old), self.opts
 
 
 class Deleted(AbstractComparator):
     """ Generate list of deleted (misssing) items """
     name = "deleted"
 
-    def compare(self, old, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only deleted items """
-        return _substract_lists(old, new)
-
-
-class Modified(AbstractComparator):
-    """ Generate list of modified items """
-    name = "modified"
-
-    def compare(self, old, _old_date, new, _new_date):
-        """ Make diff and return only modified lines. """
-        def _mkdiff():
-            diff = difflib.SequenceMatcher(a=old, b=new)
-            for change, _, _, begin2, end2 in diff.get_opcodes():
-                if change == 'replace':
-                    for itm in new[begin2:end2]:
-                        yield itm
-
-        return _mkdiff()
+        return _substract_lists(old, new), self.opts
 
 
 class Last(AbstractComparator):
     """ Return current version """
     name = "last"
 
-    def compare(self, _prev, _old_date, new, _new_date):
+    @tc.typecheck
+    def compare(self, old: str, old_date: str, new: str, new_date: str,
+                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Return last (new) version """
-        return new
+        return new, self.opts
 
 
-def get_comparator(name, inp_conf):
+@tc.typecheck
+def get_comparator(name: str, conf: ty.Optional[dict]) -> \
+        ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:
-        return cmpcls(inp_conf)
+        return cmpcls(conf)
     raise common.ParamError("Unknown comparator: %s" % name)

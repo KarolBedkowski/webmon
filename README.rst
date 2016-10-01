@@ -1,7 +1,8 @@
 WebMon ver 0.x
 ==============
 
-Monitor changes on web pages, command results.
+Monitor changes on web pages, command results, GitHub repositories, Jamendo
+albums, RSS channels. 
 Write result to local file or send mail.
 
 Inspired by https://github.com/thp/urlwatch
@@ -17,6 +18,8 @@ Dependences
 * ElementTree (for get-elements-* filters)
 * feedparser (for rss input)
 * github3py (for github api; pip install --pre github3.py)
+* typecheck-decorator
+
 
 Usage
 -----
@@ -40,6 +43,7 @@ Options
 --diff-mode MODE        diff mode (unified, ndiff, context)
 --abilities             show available inputs, outputs, filters, comparators
 -d, --debug             print debug informations
+--tasks                 number of background tasks
 
 
 Configuration
@@ -74,6 +78,10 @@ Define program configuration and global / common options.
   defaults:                   # optional default parameters for inputs
       interval: 10m
       report_unchanged: false
+  stats:
+      prometheus_output: webmon.prom  # optional - generate stats for
+                                      # prometheus (require prometheus_client
+                                      # package)
 
 inputs.yaml
 ^^^^^^^^^^^
@@ -178,7 +186,6 @@ Available modes:
 * `ndiff`   - ndiff (default)
 * `added`   - show only new items
 * `deleted` - show only deleted items
-* `modified`- make diff and return only modified items
 * `last`    - return last (current) items
 
 Filters
@@ -219,6 +226,10 @@ Filters
   Convert lines in csv-format to lines. Options: `delimiter`, `quote_char`,
   `strip` (remove whitespaces) and `generate_parts` (generate parts instead
   of lines)
+
+`command`
+  Filter items by external program. Options: `command` (command to lauch),
+  `split_lines` (split result into items by new line characters).
 
 
 **Common options**

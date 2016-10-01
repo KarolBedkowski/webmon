@@ -8,193 +8,195 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import os.path
-import datetime
-import logging
 import argparse
+from concurrent import futures
+import datetime
 import imp
-import time
-import pprint
 import locale
+import logging
+import os.path
+import pprint
+import time
+import typing as ty
 
-from . import cache
-from . import config
-from . import inputs
-from . import logging_setup
-from . import filters
-from . import outputs
-from . import common
-from . import comparators
+import typecheck as tc
+
+from . import (cache, common, comparators, config, filters, inputs,
+               logging_setup, outputs, metrics)
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016"
 
-VERSION = "0.1"
+VERSION = "0.2"
+APP_NAME = "webmon"
 DEFAULT_DIFF_MODE = "ndiff"
-PARTS_SEP = "\n\n-----\n\n"
 
 _LOG = logging.getLogger("main")
 
 
-def _compare(prev_content, content, inp_conf):
+@tc.typecheck
+def compare_contents(prev_content: str, content: str, ctx: common.Context,
+                     result: common.Result) -> ty.Tuple[str, dict]:
+    """ Compare contents according to configuration. """
+    opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
-        inp_conf["diff_mode"] or DEFAULT_DIFF_MODE, inp_conf)
-    diff = "\n".join(comparator.compare(
-        prev_content.split("\n"),
-        str(datetime.datetime.fromtimestamp(inp_conf["_last_updated"])),
-        content.split("\n"),
-        str(datetime.datetime.now())))
-    return diff
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
+        opts[0] if opts else {})
+
+    update_date = result.meta.get('update_date') or time.time()
+
+    diff, new_meta = comparator.compare(
+        prev_content, str(datetime.datetime.fromtimestamp(update_date)),
+        content, str(datetime.datetime.now()), ctx, result.meta)
+
+    # ctx.log_debug("compare: diff: %s", diff)
+    return diff, {'comparator_opts': new_meta}
 
 
-def _check_last_error_time(inp_conf):
+@tc.typecheck
+def check_last_error_time(ctx: common.Context) -> bool:
     """
-    Check if recovered file may be useful.
-
     Return true when load error occurred and still `on_error_wait` interval
     not pass.
     """
-    last_error = inp_conf['_metadata'].get('last_error')
-    if last_error:
-        on_error_wait = inp_conf['on_error_wait']
-        if on_error_wait:
-            on_error_wait = common.parse_interval(on_error_wait)
-            return time.time() < last_error + on_error_wait
+    last_error = ctx.metadata.get('last_error')
+    on_error_wait = ctx.input_conf.get('on_error_wait')
+    if last_error and on_error_wait:
+        on_error_wait = common.parse_interval(on_error_wait)
+        return time.time() < last_error + on_error_wait
     return False
 
 
-def _is_recovery_accepted(mtime, inp_conf, last_updated):
-    """Check is recovered file is valid by modified time.
-
-    :param mtime: timestamp of recovered file
-    :param inp_conf: source configuration
-    :param last_updated: last updated valid file
-    """
-    interval = common.parse_interval(inp_conf['interval'])
-    if last_updated:
-        return last_updated + interval < mtime
-    # no previous valid file found
-    return time.time() - mtime < interval
-
-
-def _load_content(loader, inp_conf, debug):
+@tc.typecheck
+def load_content(loader, ctx: common.Context) -> common.Result:
+    """ Load & filter content """
     start = time.time()
     # load list of parts
-    parts = loader.load()
-    if debug:
-        parts = list(parts)
-        _LOG.debug("Loaded: %s", pprint.saferepr(parts))
+    result = loader.load()
+
+    if ctx.debug:
+        ctx.log_debug("loaded: %s", result)
+        result.debug['loaded_duration'] = time.time() - start
+        fltr_start = time.time()
+        result.debug['items_loaded'] = len(result.items)
+        result.debug['filters_status'] = {}
 
     # apply filters
-    for fltcfg in inp_conf.get('filters') or []:
-        _LOG.debug("filtering by %r", fltcfg)
-        flt = filters.get_filter(fltcfg, inp_conf)
-        if flt:
-            parts = flt.filter(parts)
-            if debug:
-                parts = list(parts)
-                _LOG.debug("Filtered by %s: %s", flt, pprint.saferepr(parts))
+    for fltcfg in ctx.input_conf.get('filters') or []:
+        flt = filters.get_filter(fltcfg, ctx)
+        if not flt:
+            ctx.log_error("missing filter: %s", fltcfg)
+            continue
+        result = flt.filter(result)
+        if ctx.debug:
+            ctx.log_debug("filtered by %s: %s", flt, pprint.saferepr(result))
+            result.debug['filters_status'][flt.name] = len(result.items)
 
-    content = None
-    if parts:
-        content = PARTS_SEP.join(ppart for ppart in
-                                 (part.rstrip() for part in parts)
-                                 if ppart)
-    content = content or "<no data>"
-    if debug:
-        _LOG.debug("Result: %s", pprint.saferepr(content))
-    inp_conf['_debug']['load_time'] = time.time() - start
-    return content, inp_conf
+    if ctx.args.debug:
+        result.meta['filter_duration'] = time.time() - fltr_start
+        result.debug['items_filterd'] = len(result.items)
 
-
-def _clean_meta_on_success(inp_conf):
-    meta = inp_conf['_metadata']
-    if 'last_error' in meta:
-        del meta['last_error']
-    if 'last_error_msg' in meta:
-        del meta['last_error_msg']
-    return inp_conf
+    result.meta['update_duration'] = time.time() - start
+    result.meta['update_date'] = time.time()
+    if not result.title:
+        result.title = ctx.name
+    if ctx.debug:
+        ctx.log_debug("result: %s", result)
+    return result
 
 
-def _add_to_output(output, prev_content, content, inp_conf):
-    oid = inp_conf['_oid']
+@tc.typecheck
+def process_content(ctx: common.Context, result: common.Result) \
+        -> ty.Tuple[str, str, ty.Optional[dict], str]:
+    """Detect content status (changes). Returns content formatted to
+    write into cache.
+    Returns (status, diff_result, new metadata, content after processing)
+    """
+    status = result.status
+    if status == common.STATUS_ERROR:
+        err = result.meta['error']
+        return common.STATUS_ERROR, err, None, None
+
+    prev_content = ctx.cache.get(ctx.oid)
+    content = result.format()
+
+    if status == common.STATUS_UNCHANGED:
+        ctx.log_debug("loading - unchanged content")
+        return (common.STATUS_UNCHANGED, prev_content, None, prev_content)
+
     if prev_content is None:
-        # new content
-        _LOG.debug("load: loading oid=%r - new content", oid)
-        output.add_new(inp_conf, content)
-    elif prev_content != content:
-        # changed content
-        _LOG.debug("load: loading oid=%r - changed content", oid)
-        diff = _compare(prev_content, content, inp_conf)
-        output.add_changed(inp_conf, diff)
-    else:
-        _LOG.debug("load: loading oid=%r - unchanged content", oid)
-        if inp_conf.get("report_unchanged", False):
-            # unchanged content, but report
-            output.add_unchanged(inp_conf, prev_content)
+        ctx.log_debug("loading - new content")
+        return common.STATUS_NEW, content, None, content
+
+    if prev_content != content:
+        ctx.log_debug("loading - changed content, making diff")
+        diff, new_meta = compare_contents(prev_content, content, ctx, result)
+        return common.STATUS_CHANGED, diff, new_meta, content
+
+    ctx.log_debug("loading - unchanged content")
+    return (common.STATUS_UNCHANGED, prev_content, None, content)
 
 
-def _try_recover(inp_conf, gcache):
-    """Try recover content & metadata; if not success - load last metadata."""
-    oid = inp_conf['_oid']
-    recovered = False
-    last_updated = gcache.get_mtime(oid)
-    content, mtime, meta = gcache.get_recovered(oid)
-    if content is not None \
-            and _is_recovery_accepted(mtime, inp_conf, last_updated):
-        recovered = True
-        inp_conf['_last_updated'] = mtime
-        inp_conf['_metadata'] = meta or {}
-        _LOG.info("loading '%s' - recovered", inp_conf['_name'])
-    else:
-        inp_conf['_last_updated'] = last_updated
-        inp_conf['_metadata'] = gcache.get_meta(oid) or {}
-    return recovered, content, inp_conf
+@tc.typecheck
+def create_error_result(ctx: common.Context, error_msg: str) \
+        -> common.Result:
+    result = common.Result(ctx.oid, ctx.oid)
+    result.set_error(error_msg)
+    return result
 
 
-def _load(inp_conf, gcache, output, app_args):
-    oid = inp_conf['_oid']
-    _LOG.debug("load: loading oid=%r", oid)
+@tc.typecheck
+def load(ctx: common.Context) -> bool:
+    """ Load one input defined & configured by context"""
+    ctx.log_debug("start loading")
+    ctx.metadata = ctx.cache.get_meta(ctx.oid) or {}
 
-    # try to recover, load meta
-    recovered, content, inp_conf = _try_recover(inp_conf, gcache)
+    # find loader
+    loader = inputs.get_input(ctx)
 
-    if not app_args.force and _check_last_error_time(inp_conf):
-        _LOG.info("loading '%s' - skipping - still waiting after error",
-                  inp_conf['_name'])
+    # check, is update required
+    if not ctx.args.force and not loader.need_update():
+        ctx.log_info("no update required")
         return False
 
-    loader = inputs.get_input(inp_conf)
-    if not app_args.force and not loader.need_update() and not recovered:
-        _LOG.info("loading '%s' - no need update", inp_conf['_name'])
+    if check_last_error_time(ctx):
+        ctx.log_info("waiting after error")
         return False
 
-    prev_content = gcache.get(oid)
-    if not recovered:
-        _LOG.info("loading '%s'...", inp_conf['_name'])
-        try:
-            content, inp_conf = _load_content(loader, inp_conf, app_args.debug)
-        except common.NotModifiedError:
-            content = prev_content
-        except common.InputError as err:
-            inp_conf['_metadata']['last_error'] = time.time()
-            inp_conf['_metadata']['last_error_msg'] = str(err)
-            gcache.put_meta(oid, inp_conf['_metadata'])
-            raise
+    # load
+    ctx.log_info("loading...")
+    try:
+        result = load_content(loader, ctx)
+    except common.InputError as err:
+        ctx.log_error("input error on %s: %r", err.input, err)
+        ctx.log_debug("input error params: %s", err.input.dump_debug())
+        result = create_error_result(ctx, str(err))
+    except common.FilterError as err:
+        ctx.log_error("filter error on %s: %r", err.filter, err)
+        ctx.log_debug("filter error params: %s", err.filter.dump_debug())
+        result = create_error_result(ctx, str(err))
 
-    inp_conf = _clean_meta_on_success(inp_conf)
-    if app_args.debug:
-        _LOG.debug("diff prev: %s", pprint.saferepr(prev_content))
-        _LOG.debug("diff content: %s", pprint.saferepr(content))
-    _add_to_output(output, prev_content, content, inp_conf)
-    gcache.put(oid, content)
-    gcache.put_meta(oid, inp_conf['_metadata'])
-    _LOG.debug("load: loading %r done", oid)
+    if ctx.args.debug:
+        result.debug['items_final'] = len(result.items)
+        result.debug['last_updated'] = ctx.last_updated
+
+    result.status, pres, new_meta, content = process_content(ctx, result)
+    if new_meta:
+        result.meta.update(new_meta)
+    if result.status != common.STATUS_UNCHANGED or \
+            ctx.input_conf.get("report_unchanged"):
+        ctx.output.put(result, pres)
+    if content is not None:
+        ctx.cache.put(ctx.oid, content)
+    ctx.cache.put_meta(ctx.oid, result.meta)
+    metrics.COLLECTOR.put_input(ctx, result)
+    ctx.log_info("loading done")
+    del loader
     return True
 
 
 def _parse_options():
-    parser = argparse.ArgumentParser(description='WebMon ' + VERSION)
+    parser = argparse.ArgumentParser(description=APP_NAME + " " + VERSION)
     parser.add_argument('-i', '--inputs',
                         help='yaml file containing inputs definition'
                         ' (default inputs.yaml)')
@@ -207,7 +209,7 @@ def _parse_options():
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument('--cache-dir',
-                        default="~/.cache/webmon/cache",
+                        default="~/.cache/" + APP_NAME,
                         help='path to cache directory')
     parser.add_argument("--force", action="store_true",
                         help="force update all sources")
@@ -221,6 +223,8 @@ def _parse_options():
     parser.add_argument("--sel", help="select (by idx, separated by comma) "
                         "inputs to update")
     parser.add_argument("--stats-file", help="write stats to file")
+    parser.add_argument("--tasks", help="background task to launch",
+                        type=int, default=2)
     return parser.parse_args()
 
 
@@ -230,20 +234,19 @@ def _show_abilities_cls(title, base_cls):
         print("  -", name)
         if hasattr(cls, "description"):
             print("    " + cls.description)
-        if not hasattr(cls, "params") or not cls.params:
-            continue
-        print("    Parameters:")
-        for param in cls.params:
-            print("     - %-15s\t%-20s\tdef=%-10r\treq=%r" % param)
+
+        if hasattr(cls, "params") and cls.params:
+            print("    Parameters:")
+            for param in cls.params:
+                print("     - {:<15s}\t{:<20s}\tdef={!r:<10}\treq={!r}".format(
+                    *param))
+    print()
 
 
-def _show_abilities():
+def show_abilities():
     _show_abilities_cls("Inputs:", inputs.AbstractInput)
-    print()
     _show_abilities_cls("Outputs:", outputs.AbstractOutput)
-    print()
     _show_abilities_cls("Filters:", filters.AbstractFilter)
-    print()
     _show_abilities_cls("Comparators:", comparators.AbstractComparator)
 
 
@@ -251,6 +254,7 @@ def _load_user_classes():
     users_scripts_dir = os.path.expanduser("~/.local/share/webmon")
     if not os.path.isdir(users_scripts_dir):
         return
+
     for fname in os.listdir(users_scripts_dir):
         fpath = os.path.join(users_scripts_dir, fname)
         if os.path.isfile(fpath) and fname.endswith(".py") \
@@ -262,90 +266,82 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def _list_inputs(inps, debug):
+@tc.typecheck
+def _list_inputs(inps, conf, args):
     print("Inputs:")
+    defaults = _build_defaults(args, conf)
     for idx, inp_conf in enumerate(inps, 1):
-        inp_conf['_idx'] = idx
-        name = config.get_input_name(inp_conf)
-        act = "" if inp_conf.get("enable", True) else "DISABLE"
-        oid = config.gen_input_oid(inp_conf) if debug else ""
-        print(" %2d %-40s" % (idx, name), act, oid)
+        params = common.apply_defaults(defaults, inp_conf)
+        name = config.get_input_name(params, idx)
+        act = "" if params.get("enable", True) else "DISABLE"
+        oid = config.gen_input_oid(params) if args.debug else ""
+        print(" {:2d} {:<40s}".format(idx, name), act, oid)
 
 
-def _update_one(args, inp_conf, output, gcache):
-    try:
-        return _load(inp_conf, gcache, output, args)
-    except RuntimeError as err:
-        if args.debug:
-            _LOG.exception("load %d error: %s", inp_conf['_idx'],
-                           str(err).replace("\n", "; "))
-        else:
-            _LOG.error("load %d error: %s", inp_conf['_idx'],
-                       str(err).replace("\n", "; "))
-        output.add_error(inp_conf, str(err))
-    except Exception as err:
-        _LOG.exception("load %d error: %s", inp_conf['_idx'],
-                       str(err).replace("\n", "; "))
-        output.add_error(inp_conf, str(err))
-    return True
-
-
-def _update(args, inps, conf, selection=None):
-    start_time = time.time()
-
-    try:
-        gcache = cache.Cache(os.path.expanduser(args.cache_dir))
-    except IOError:
-        _LOG.error("Init cache error")
-        return
-
-    output = outputs.OutputManager(conf.get("output"), args)
-    if not output.valid:
-        _LOG.error("no valid outputs found")
-        return
-
-    # defaults for inputs
+def _build_defaults(args, conf):
     defaults = {}
     defaults.update(config.DEFAULTS)
     defaults.update(conf.get("defaults") or {})
     defaults["diff_mode"] = args.diff_mode
+    return defaults
 
-    processed = 0
 
-    for idx, inp_conf in enumerate(inps, 1):
-        if selection and idx not in selection:
-            continue
-        params = config.apply_defaults(defaults, inp_conf)
-        params['_opt'] = {}
-        params['_debug'] = {}
-        params['_idx'] = idx
-        params['_name'] = config.get_input_name(params)
-        params['_oid'] = config.gen_input_oid(inp_conf)
-        if _update_one(args, params, output, gcache):
-            processed += 1
+def load_all(args, inps, conf, selection=None):
+    """ Load all (or selected) inputs"""
+    metrics.configure(conf)
+    start = time.time()
+    try:
+        gcache = cache.Cache(os.path.join(
+            os.path.expanduser(args.cache_dir), "cache"))
+    except IOError:
+        _LOG.error("Init cache error")
+        return
 
-    duration = time.time() - start_time
-    footer = "Generate time: %.2f" % duration
+    partial_reports_dir = os.path.join(
+        os.path.expanduser(args.cache_dir), "partials")
 
-    output.write(footer)
-    status = output.status()
-    _LOG.info("Result: %s, inputs: %d, processed: %d",
-              ", ".join(key + ": " + str(val)
-                        for key, val in status.items()),
-              len(inps), processed)
+    try:
+        output = outputs.OutputManager(conf, partial_reports_dir)
+    except RuntimeError as err:
+        _LOG.error("Init parts dir error: %s", err)
+        return
 
-    if output.errors_cnt < processed:
-        # do not commit changes when all inputs failed
-        gcache.commmit_temps(not selection)
+    # defaults for inputs
+    defaults = _build_defaults(args, conf)
 
-    if args.stats_file:
-        with open(args.stats_file, 'w') as fout:
-            fout.write(
-                "ts: {} inputs: {} processed: {} new: {} changed: {}"
-                " unchanged: {} errors: {} duration: {}".format(
-                    int(start_time), len(inps), processed, status['new'],
-                    status['changed'], status['unchanged'], status['error'],
-                    duration))
+    def task(idx, iconf):
+        params = common.apply_defaults(defaults, iconf)
+        ctx = common.Context(params, gcache, idx, output, args)
+        try:
+            load(ctx)
+        except Exception as err:
+            ctx.log_error("loading error: %s",
+                          str(err).replace("\n", "; "))
+            ctx.output.put_error(ctx, str(err))
+        del ctx
+
+    with futures.ThreadPoolExecutor(max_workers=args.tasks or 2) as ex:
+        wait_for = [
+            ex.submit(task, idx, iconf)
+            for idx, iconf in enumerate(inps, 1)
+            if not selection or idx in selection
+        ]
+
+        futures.wait(wait_for)
+
+    _LOG.info("Loading: all done")
+
+    metrics.COLLECTOR.put_loading_summary(time.time() - start)
+
+    footer = " ".join((APP_NAME, VERSION, time.asctime()))
+    output.write(footer=footer, debug=args.debug)
+
+    # if processing all files - clean unused / old cache files
+    if not selection:
+        gcache.clean_cache()
+
+    metrics.COLLECTOR.put_total(time.time() - start)
+    metrics.COLLECTOR.write()
 
 
 def main():
@@ -356,25 +352,26 @@ def main():
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)
 
+    if not args.debug:
+        tc.disable()
+
     _load_user_classes()
 
     if args.abilities:
-        _show_abilities()
+        show_abilities()
         return
 
     inps = config.load_inputs(args.inputs)
     if not inps:
-        _LOG.error("No defined inputs")
-        return
-
-    if args.list_inputs:
-        with config.lock():
-            _list_inputs(inps, args.debug)
         return
 
     conf = config.load_configuration(args.config)
     if not conf:
-        _LOG.error("Missing configuration")
+        return
+
+    if args.list_inputs:
+        with config.lock():
+            _list_inputs(inps, conf, args)
         return
 
     selection = None
@@ -388,7 +385,7 @@ def main():
 
     try:
         with config.lock():
-            _update(args, inps, conf, selection)
+            load_all(args, inps, conf, selection)
     except RuntimeError:
         pass
 
