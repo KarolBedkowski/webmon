@@ -137,12 +137,16 @@ class Cache(object):
     def clean_cache(self):
         """Remove untouched cache files."""
         for fname in os.listdir(self._directory):
+            fpath = os.path.join(self._directory, fname)
+            if not os.path.isfile(fpath):
+                _LOG.warning("garbage in cache dir: %s", fname)
+                continue
             oid = fname.split('.', 1)[0]
             if oid in self._touched_oids:
                 continue
             _LOG.debug("clean_cache removing %s", fname)
             try:
-                os.remove(os.path.join(self._directory, fname))
+                os.remove(fpath)
             except IOError as err:
                 _LOG.warning("clean cache - removing %s error: %s",
                              fname, err)
