@@ -97,6 +97,7 @@ class WebInput(AbstractInput):
         url = self._conf['url']
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
         result = common.Result(ctx.oid, ctx.input_idx)
+        result.link = url
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
@@ -160,6 +161,7 @@ class RssInput(AbstractInput):
             if ctx.last_updated else None
         url = self._conf['url']
         result = common.Result(ctx.oid, ctx.input_idx)
+        result.link = url
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
                       url, etag, modified)
