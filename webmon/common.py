@@ -156,7 +156,7 @@ class Context(object):
         self.metadata = {}  # type: Dict[str, ty.Any]
 
         self._log_prefix = "".join((
-            "[", str(idx + 1), ": ", self.name,
+            "[", str(idx), ": ", self.name,
             ("/" + self.oid) if self.debug else "", "] "
         ))
 
