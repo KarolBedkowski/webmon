@@ -483,7 +483,7 @@ class OutputManager(object):
                                              time.time() - gstart)
 
     @tc.typecheck
-    def put(self, part: common.Result, content: str):
+    def put(self, part: common.Result, content: str, input_conf: dict):
         assert isinstance(part, common.Result)
         dst_file = os.path.join(self._working_dir, part.oid + "." +
                                 str(int(part.meta['update_date'])))
@@ -499,6 +499,7 @@ class OutputManager(object):
             'header': part.header,
             'index': part.index,
             'status': part.status,
+            'input_conf': input_conf,
         }
 
         with open(dst_file, "w") as ofile:
@@ -508,7 +509,7 @@ class OutputManager(object):
     def put_error(self, ctx: common.Context, err):
         result = common.Result(ctx.oid, ctx.input_idx)
         result.set_error(err)
-        self.put(result, None)
+        self.put(result, None, ctc.input_conf)
 
 
 def _make_backup(filename):

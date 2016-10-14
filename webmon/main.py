@@ -185,7 +185,7 @@ def load(ctx: common.Context) -> bool:
         result.meta.update(new_meta)
     if result.status != common.STATUS_UNCHANGED or \
             ctx.input_conf.get("report_unchanged"):
-        ctx.output.put(result, pres)
+        ctx.output.put(result, pres, ctx.input_conf)
     if content is not None:
         ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)
@@ -334,7 +334,7 @@ def load_all(args, inps, conf, selection=None):
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
-    output.write(footer=footer, debug=args.debug)
+    #output.write(footer=footer, debug=args.debug)
 
     # if processing all files - clean unused / old cache files
     if not selection:
