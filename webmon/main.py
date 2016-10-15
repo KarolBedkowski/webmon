@@ -334,7 +334,7 @@ def load_all(args, inps, conf, selection=None):
     metrics.COLLECTOR.put_loading_summary(time.time() - start)
 
     footer = " ".join((APP_NAME, VERSION, time.asctime()))
-    #output.write(footer=footer, debug=args.debug)
+    output.write(footer=footer, debug=args.debug)
 
     # if processing all files - clean unused / old cache files
     if not selection:

@@ -103,6 +103,7 @@ def gen_input_oid(conf: dict) -> str:
 # ignored keys when calculating oid
 _OID_IGNORED_KEYS = {
     "interval", "diff_mode", "on_error_wait", "report_unchanged",
+    "output"
 }
 
 # configuration defaults for inputs

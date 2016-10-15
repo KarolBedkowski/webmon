@@ -380,6 +380,23 @@ def qualify_item_to_status(group: ty.Iterable) -> str:
     return common.STATUS_UNCHANGED
 
 
+def qualify_item_for_processing(group: ty.Iterable) -> bool:
+    """Check items & its configuration for processing (i.e. allow skip)"""
+    last_item = group[-1]
+    conf = last_item.get('input_conf')
+    if not conf:
+        return True
+    output_conf = conf.get('output')
+    if not output_conf:
+        return True
+    dnr = output_conf.get('do_not_report_hours')
+    if dnr:
+        if common.check_date_in_timerange(dnr, time.time()):
+            return False
+
+    return True
+
+
 class OutputManager(object):
     """ Object group all outputs. """
     def __init__(self, conf, working_dir: str) -> None:
@@ -435,10 +452,15 @@ class OutputManager(object):
         }  # type: dict[str, list]
 
         input_files = self.find_parts()
+        processed_files = []
         for files in input_files:
             group_data = list(filter(None, map(self._load_file, files)))
-            status = qualify_item_to_status(group_data)
-            data_by_status[status].append(group_data)
+            if qualify_item_for_processing(group_data):
+                status = qualify_item_to_status(group_data)
+                data_by_status[status].append(group_data)
+                processed_files.extend(files)
+            else:
+                self._log.debug("files not qualified: %s", files)
 
         all_items = 0
         # sort by input index
@@ -470,16 +492,15 @@ class OutputManager(object):
 
         # delete reported files
         if all_ok:
-            for group in input_files:
-                for fpath in group:
-                    try:
-                        os.remove(fpath)
-                    except IOError as err:
-                        self._log.error("Remove file %s error: %s", fpath, err)
+            for fpath in processed_files:
+                try:
+                    os.remove(fpath)
+                except IOError as err:
+                    self._log.error("Remove file %s error: %s", fpath, err)
 
         self._log.debug("OutputManager: write done")
 
-        metrics.COLLECTOR.put_output_summary(all_items, len(input_files),
+        metrics.COLLECTOR.put_output_summary(all_items, len(processed_files),
                                              time.time() - gstart)
 
     @tc.typecheck
