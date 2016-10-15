@@ -314,3 +314,53 @@ def prepare_filename(base_name: str) -> str:
     # replace ~
     name = os.path.expanduser(name)
     return name
+
+
+@tc.typecheck
+def _parse_hour_min(text: str) -> int:
+    hours = 0  # type: int
+    minutes = 0  # type: int
+    text = text.strip()
+    if ':' in text:
+        hours_str, minutes_str, *_ = text.split(':', 3)
+        hours = int(hours_str) % 24
+        minutes = int(minutes_str) % 60
+    else:
+        hours = int(text) % 24
+
+    return hours * 60 + minutes
+
+
+@tc.typecheck
+def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
+    """ Parse hours ranges defined as:
+        hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
+    Returns iterable: (start_time, end_time) for each valid range
+    start_time, end_time = int: hour * 60 + minutes
+    """
+    for hrang in inp.split(','):
+        if '-' not in hrang:
+            continue
+        start, stop = hrang.split('-')
+        if not start or not stop:
+            continue
+        try:
+            start_hm = _parse_hour_min(start)
+            stop_hm = _parse_hour_min(stop)
+            yield (start_hm, stop_hm)
+        except ValueError:
+            pass
+
+
+def check_date_in_timerange(tsrange: str, timestamp: int) -> bool:
+    """ Check is `timestamp` is one of time ranges defined in `tsrange`"""
+    timestampt = time.localtime(timestamp)
+    tshm = timestampt.tm_hour * 60 + timestampt.tm_min
+    for rstart, rstop in parse_hours_range(tsrange):
+        if rstart < rstop:
+            if rstart <= tshm and tshm <= rstop:
+                return True
+        else:
+            if not (rstop < tshm and rstart > tshm):
+                return True
+    return False

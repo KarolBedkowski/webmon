@@ -185,7 +185,7 @@ def load(ctx: common.Context) -> bool:
         result.meta.update(new_meta)
     if result.status != common.STATUS_UNCHANGED or \
             ctx.input_conf.get("report_unchanged"):
-        ctx.output.put(result, pres)
+        ctx.output.put(result, pres, ctx.input_conf)
     if content is not None:
         ctx.cache.put(ctx.oid, content)
     ctx.cache.put_meta(ctx.oid, result.meta)

@@ -22,6 +22,8 @@ defaults:
     github_user: login
     github_token: 1111111111111111111111111111111111111111
     jamendo_client_id: 00000000
+    output:
+        do_not_report_hours: 0-6
 stats:
     # when set, create stats file for prometheus collector
     #prometheus_output: webmon.prom

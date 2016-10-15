@@ -166,6 +166,9 @@ Common options::
   diff_mode: ndiff                  # diff mode (unified, ndiff, etc.)
   on_error_wait: 12h                # wait some time after loadin error 
                                     # (params like interval)
+  output:                           # varoius parameter that control
+                                    # report generate
+    do_not_report_hours: 23:00-6    # hours:min ranges when no send reports
 
 **Interval**
 Interval can be defined as:
