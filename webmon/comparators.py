@@ -268,5 +268,5 @@ def get_comparator(name: str, conf: ty.Optional[dict]) -> \
     """ Get comparator object by name"""
     cmpcls = common.find_subclass(AbstractComparator, name)
     if cmpcls:
-        return cmpcls(conf)
+        return cmpcls(conf or {})
     raise common.ParamError("Unknown comparator: %s" % name)

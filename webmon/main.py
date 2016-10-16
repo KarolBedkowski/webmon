@@ -40,8 +40,7 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
     """ Compare contents according to configuration. """
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
-        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
-        opts[0] if opts else {})
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, opts)
 
     update_date = result.meta.get('update_date') or time.time()
 
