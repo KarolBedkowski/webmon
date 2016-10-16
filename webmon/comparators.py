@@ -10,6 +10,7 @@ Licence: GPLv2+
 """
 
 import difflib
+import time
 import typing as ty
 
 import typecheck as tc
@@ -35,6 +36,11 @@ class AbstractComparator(object):
         super().__init__()
         self.conf = conf
 
+    def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
+            -> ty.Tuple[str, dict]:
+        """ Process new content """
+        return new, {}
+
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Compare `old` and `new` lists and return formatted result.
@@ -48,7 +54,7 @@ class AbstractComparator(object):
         meta: new metadata [dict]
 
         Return:
-            iter<strings>
+            (strings=content, dict=meta)
         """
         raise NotImplementedError()
 
@@ -103,17 +109,38 @@ class NDiff(AbstractComparator):
                 self.opts)
 
 
+def _instr_separator(instr1: str, instr2: ty.Optional[str]) -> str:
+    """ Get only items from instr1 that not exists in instr2"""
+    if common.RECORD_SEPARATOR in instr1:
+        return common.RECORD_SEPARATOR
+    if instr2 and common.RECORD_SEPARATOR in instr2:
+        return common.RECORD_SEPARATOR
+    return '\n'
+
+
 def _substract_lists(instr1: str, instr2: str) -> str:
     """ Get only items from instr1 that not exists in instr2"""
-    separator = (
-        common.RECORD_SEPARATOR
-        if common.RECORD_SEPARATOR in instr1 or
-        common.RECORD_SEPARATOR in instr2
-        else '\n')
+    separator = _instr_separator(instr1, instr2)
 
     l2set = set(map(hash, instr2.split(separator)))
     return separator.join(item for item in instr1.split(separator)
                           if hash(item) not in l2set)
+
+
+def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
+        ty.Dict[str, int]:
+    if not previous_hash:
+        return {}
+    limit = time.time() - days * 24 * 60 * 60
+    return {hash_: timestamp
+            for hash_, timestamp in previous_hash.items()
+            if timestamp >= limit}
+
+
+def hash_strings(input: str) -> ty.Dict[str, int]:
+    now = int(time.time())
+    # calculate hashs for new items
+    return {hash(item): now for item in input}
 
 
 class Added(AbstractComparator):
@@ -121,10 +148,52 @@ class Added(AbstractComparator):
     name = "added"
 
     @tc.typecheck
+    def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
+            -> ty.Tuple[str, dict]:
+        """ Process new content """
+        check_last_days = self.conf.get('check_last_days')
+        if check_last_days:
+            sep = _instr_separator(new, None)
+            # calculate hashs for new items
+            new_hashes = hash_strings(new.split(sep))
+            meta = self.opts.copy()
+            meta['hashes'] = new_hashes
+            return new, meta
+
+        return new, {}
+
+    @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only added items """
-        return _substract_lists(new, old), self.opts
+        check_last_days = self.conf.get('check_last_days')
+        meta = self.opts.copy()
+        if check_last_days:
+            sep = _instr_separator(new, old)
+            # calculate hashs for new items
+            new_hashes = hash_strings(new.split(sep))
+            ctx.log_debug("new_hashes cnt=%d, %r", len(new_hashes), new_hashes)
+            # hashes in form {hash, ts}
+            comparator_opts = ctx.metadata.get('comparator_opts')
+            previous_hash = comparator_opts.get('hashes') if comparator_opts \
+                else None
+            # put new hashes in meta
+            meta['hashes'] = new_hashes
+            if previous_hash:
+                # found old hashes; can use it for filtering
+                ctx.log_debug("previous_hash cnt=%d, %r", len(previous_hash),
+                              previous_hash)
+                previous_hash = _drop_old_hashes(previous_hash,
+                                                 check_last_days)
+                ctx.log_debug("previous_hash after old filter cnt=%d, %r",
+                              len(previous_hash), previous_hash)
+                result = sep.join(item for item in new.split(sep)
+                                  if hash(item) not in previous_hash)
+                # put old hashes
+                meta['hashes'].update(previous_hash)
+                return result, meta
+
+        return _substract_lists(new, old), meta
 
 
 class Deleted(AbstractComparator):

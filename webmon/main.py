@@ -54,6 +54,20 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
 
 
 @tc.typecheck
+def compare_content_new(content: str, ctx: common.Context,
+                        result: common.Result) -> ty.Tuple[str, dict]:
+    opts = ctx.input_conf.get("diff_options")
+    comparator = comparators.get_comparator(
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
+        opts[0] if opts else {})
+
+    diff, new_meta = comparator.new(
+        content, str(datetime.datetime.now()), ctx, result.meta)
+
+    return diff, {'comparator_opts': new_meta}
+
+
+@tc.typecheck
 def check_last_error_time(ctx: common.Context) -> bool:
     """
     Return true when load error occurred and still `on_error_wait` interval
@@ -122,11 +136,13 @@ def process_content(ctx: common.Context, result: common.Result) \
 
     if status == common.STATUS_UNCHANGED:
         ctx.log_debug("loading - unchanged content")
-        return (common.STATUS_UNCHANGED, prev_content, None, prev_content)
+        new_meta = {'comparator_opts': ctx.metadata.get('comparator_opts')}
+        return (common.STATUS_UNCHANGED, prev_content, new_meta, prev_content)
 
     if prev_content is None:
         ctx.log_debug("loading - new content")
-        return common.STATUS_NEW, content, None, content
+        content, new_meta = compare_content_new(content, ctx, result)
+        return common.STATUS_NEW, content, new_meta, content
 
     if prev_content != content:
         ctx.log_debug("loading - changed content, making diff")
@@ -134,7 +150,8 @@ def process_content(ctx: common.Context, result: common.Result) \
         return common.STATUS_CHANGED, diff, new_meta, content
 
     ctx.log_debug("loading - unchanged content")
-    return (common.STATUS_UNCHANGED, prev_content, None, content)
+    new_meta = {'comparator_opts': ctx.metadata.get('comparator_opts')}
+    return (common.STATUS_UNCHANGED, prev_content, new_meta, content)
 
 
 @tc.typecheck
