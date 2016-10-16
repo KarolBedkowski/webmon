@@ -36,7 +36,7 @@ _LOG = logging.getLogger("main")
 
 #@tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
-                     result: common.Result) -> ty.Tuple[str, dict]:
+                     result: common.Result) -> ty.Tuple[bool, str, dict]:
     """ Compare contents according to configuration. """
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
@@ -45,12 +45,12 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
 
     update_date = result.meta.get('update_date') or time.time()
 
-    diff, new_meta = comparator.compare(
+    result, diff, new_meta = comparator.compare(
         prev_content, str(datetime.datetime.fromtimestamp(update_date)),
         content, str(datetime.datetime.now()), ctx, result.meta)
 
     # ctx.log_debug("compare: diff: %s", diff)
-    return diff, {'comparator_opts': new_meta}
+    return result, diff, {'comparator_opts': new_meta}
 
 
 #@tc.typecheck
@@ -146,8 +146,10 @@ def process_content(ctx: common.Context, result: common.Result) \
 
     if prev_content != content:
         ctx.log_debug("loading - changed content, making diff")
-        diff, new_meta = compare_contents(prev_content, content, ctx, result)
-        return common.STATUS_CHANGED, diff, new_meta, content
+        diff_result, diff, new_meta = compare_contents(
+            prev_content, content, ctx, result)
+        if diff_result:
+            return common.STATUS_CHANGED, diff, new_meta, content
 
     ctx.log_debug("loading - unchanged content")
     new_meta = {'comparator_opts': ctx.metadata.get('comparator_opts')}

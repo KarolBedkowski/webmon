@@ -42,7 +42,7 @@ class AbstractComparator(object):
         return new, {}
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
@@ -54,7 +54,9 @@ class AbstractComparator(object):
         meta: new metadata [dict]
 
         Return:
-            (strings=content, dict=meta)
+            bool - result - True = ok, False = not changed
+            iter<strings>
+            dict - options
         """
         raise NotImplementedError()
 
@@ -68,12 +70,23 @@ class ContextDiff(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
 
-        return "\n".join(difflib.context_diff(
-            old.split('\n'), new.split('\n'),
+        old_lines = old.split('\n')
+        res = list(difflib.context_diff(
+            old_lines, new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n')), self.opts
+            lineterm='\n'))
+        min_changes = self.conf.get("changes_threshold")
+        if min_changes and old_lines and len(res) > 2:
+            changed_lines = sum(1 for line in res[2:]
+                                if line and line[0] != ' ' and line[0] != '*')
+            changes = float(changed_lines) / len(old_date)
+            if changes < min_changes:
+                ctx.log_info("changes not above threshold (%f<%f)", changes,
+                             min_changes)
+            return False, None, None
+        return True, "\n".join(res), self.opts
 
 
 class UnifiedDiff(AbstractComparator):
@@ -84,13 +97,25 @@ class UnifiedDiff(AbstractComparator):
     }
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
-        return "\n".join(difflib.unified_diff(
-            old.split('\n'), new.split('\n'),
+        old_lines = old.split('\n')
+        res = list(difflib.unified_diff(
+            old_lines, new.split('\n'),
             fromfiledate=old_date, tofiledate=new_date,
-            lineterm='\n')), self.opts
+            lineterm='\n'))
+
+        min_changes = self.conf.get("changes_threshold")
+        if min_changes and old_lines and len(res) > 2:
+            changed_lines = sum(1 for line in res[2:]
+                                if line and line[0] != ' ' and line[0] != '@')
+            changes = float(changed_lines) / len(old_date)
+            if changes < min_changes:
+                ctx.log_info("changes not above threshold (%f<%f)", changes,
+                             min_changes)
+            return False, None, None
+        return True, "\n".join(res), self.opts
 
 
 class NDiff(AbstractComparator):
@@ -102,11 +127,21 @@ class NDiff(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
-        return ("\n".join(difflib.ndiff(old.split('\n'), new.split('\n'))),
-                self.opts)
+        old_lines = old.split('\n')
+        res = list(difflib.ndiff(old_lines, new.split('\n')))
+
+        min_changes = self.conf.get("changes_threshold")
+        if min_changes and old_lines and res:
+            changed_lines = sum(1 for line in res if line and line[0] != ' ')
+            changes = float(changed_lines) / len(old_date)
+            if changes < min_changes:
+                ctx.log_info("changes not above threshold (%f<%f)", changes,
+                             min_changes)
+            return False, None, None
+        return True, "\n".join(res), self.opts
 
 
 def _instr_separator(instr1: str, instr2: ty.Optional[str]) -> str:
@@ -123,8 +158,9 @@ def _substract_lists(instr1: str, instr2: str) -> str:
     separator = _instr_separator(instr1, instr2)
 
     l2set = set(map(hash, instr2.split(separator)))
-    return separator.join(item for item in instr1.split(separator)
-                          if hash(item) not in l2set)
+    l1itms = instr1.split(separator)
+    res = list(item for item in l1itms if hash(item) not in l2set)
+    return separator.join(res), len(l1itms), len(l2set), len(res)
 
 
 def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
@@ -164,36 +200,26 @@ class Added(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         """ Get only added items """
-        check_last_days = self.conf.get('check_last_days')
-        meta = self.opts.copy()
-        if check_last_days:
-            sep = _instr_separator(new, old)
-            # calculate hashs for new items
-            new_hashes = hash_strings(new.split(sep))
-            ctx.log_debug("new_hashes cnt=%d, %r", len(new_hashes), new_hashes)
-            # hashes in form {hash, ts}
-            comparator_opts = ctx.metadata.get('comparator_opts')
-            previous_hash = comparator_opts.get('hashes') if comparator_opts \
-                else None
-            # put new hashes in meta
-            meta['hashes'] = new_hashes
-            if previous_hash:
-                # found old hashes; can use it for filtering
-                ctx.log_debug("previous_hash cnt=%d, %r", len(previous_hash),
-                              previous_hash)
-                previous_hash = _drop_old_hashes(previous_hash,
-                                                 check_last_days)
-                ctx.log_debug("previous_hash after old filter cnt=%d, %r",
-                              len(previous_hash), previous_hash)
-                result = sep.join(item for item in new.split(sep)
-                                  if hash(item) not in previous_hash)
-                # put old hashes
-                meta['hashes'].update(previous_hash)
-                return result, meta
+        res, old_cnt, _, changed = _substract_lists(new, old)
 
-        return _substract_lists(new, old), meta
+        min_changes = self.conf.get("changes_threshold")
+        if min_changes and old_cnt:
+            changes = float(changed) / old_cnt
+            if changes < min_changes:
+                ctx.log_info("changes not above threshold (%f<%f)", changes,
+                             min_changes)
+            return False, None, None
+
+        min_changes = self.conf.get("min_changed")
+        if min_changes and old_cnt:
+            if changed < min_changes:
+                ctx.log_info("changes not above minum (%f<%f)", changed,
+                             min_changes)
+            return False, None, None
+
+        return True, res, self.opts
 
 
 class Deleted(AbstractComparator):
@@ -202,9 +228,27 @@ class Deleted(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         """ Get only deleted items """
-        return _substract_lists(old, new), self.opts
+
+        res, old_cnt, _, changed = _substract_lists(old, new)
+
+        min_changes = self.conf.get("changes_threshold")
+        if min_changes and old_cnt:
+            changes = float(changed) / old_cnt
+            if changes < min_changes:
+                ctx.log_info("changes not above threshold (%f<%f)", changes,
+                             min_changes)
+            return False, None, None
+
+        min_changes = self.conf.get("min_changed")
+        if min_changes and old_cnt:
+            if changed < min_changes:
+                ctx.log_info("changes not above minum (%f<%f)", changed,
+                             min_changes)
+            return False, None, None
+
+        return True, res, self.opts
 
 
 class Last(AbstractComparator):
@@ -213,9 +257,9 @@ class Last(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
+                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
         """ Return last (new) version """
-        return new, self.opts
+        return True, new, self.opts
 
 
 #@tc.typecheck
