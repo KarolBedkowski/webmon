@@ -12,6 +12,11 @@ filters:
     - name: html2text
     - name: strip
 interval: 1h
+diff_mode: added
+diff_options:
+  min_changed: 5
+output:
+  do_not_report_hours: 23-6
 ---
 name: "Github - webmon"
 kind: github_commits
