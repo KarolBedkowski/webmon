@@ -2,7 +2,7 @@ WebMon ver 0.x
 ==============
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
-albums, RSS channels. 
+albums, RSS channels.
 Write result to local file or send mail.
 
 Inspired by https://github.com/thp/urlwatch
@@ -11,7 +11,7 @@ Dependences
 -----------
 
 * Python 3.0+
-* requests 
+* requests
 * yaml
 * html2text (for html2text filter)
 * docutils (for html output/reports/mails)
@@ -37,7 +37,7 @@ Options
 -i FILE, --inputs FILE  file with definition of sources; default inputs.yaml
 -c FILE, --config FILE  global configuration, default config.yaml
 --log FILE              save log to file
---cache-dir DIR         path to store last version of pages; default 
+--cache-dir DIR         path to store last version of pages; default
                         ~/.cache/webmon/cache
 --force                 force update all sources; ignore `interval` parameter
 --diff-mode MODE        diff mode (unified, ndiff, context)
@@ -67,13 +67,13 @@ Define program configuration and global / common options.
           to: foo@bar.com     # recipient
           from: foo@bar.com   # sender
           subject: "WebMon"   # mail subject
-          smtp_host: smtp.foo.bar   
-          smtp_port: 465            
-          smtp_login: login         
-          smtp_password: password      
+          smtp_host: smtp.foo.bar
+          smtp_port: 465
+          smtp_login: login
+          smtp_password: password
           smtp_ssl: true      # use ssl/tls
           #smtp_tls: true     # use starttls
-          html: true          # send multipart mail with html 
+          html: true          # send multipart mail with html
           encrypt: gpg        # optional encrypt email with gpg
   defaults:                   # optional default parameters for inputs
       interval: 10m
@@ -164,7 +164,7 @@ Common options::
   interval: 1h                      # min update interval; optional
   report_unchanged: false           # skip in report when no changes
   diff_mode: ndiff                  # diff mode (unified, ndiff, etc.)
-  on_error_wait: 12h                # wait some time after loadin error 
+  on_error_wait: 12h                # wait some time after loadin error
                                     # (params like interval)
   output:                           # varoius parameter that control
                                     # report generate
@@ -173,7 +173,7 @@ Common options::
 **Interval**
 Interval can be defined as:
 
-* number = seconds 
+* number = seconds
 * number with prefix:
 
   * "m" = minutes
@@ -190,6 +190,17 @@ Available modes:
 * `added`   - show only new items
 * `deleted` - show only deleted items
 * `last`    - return last (current) items
+
+
+**diff_options**
+Various options for comarators:
+
+* `min_changes` - minimal number added / deleted items in `added` and
+                  `deleted` modes to report
+* `changes_threshold` - minimal number changes (percentage, 0.0-1.0) to
+                  report (in `context_diff`, `unified_diff`, `ndiff`,
+                  `added`, `deleted`)
+
 
 Filters
 ^^^^^^^
@@ -222,7 +233,7 @@ Filters
   Grep elements by `pattern` - regular expressions.
 
 `wrap`
-  Wrap long lines to `width` characters (default 76) and optionally limit 
+  Wrap long lines to `width` characters (default 76) and optionally limit
   number of lines to `max_lines`.
 
 `split`
@@ -246,7 +257,7 @@ Filters
   * parts - apply filter for each part from input (default)
   * lines - for each part - split into lines and apply filter for each line.
 
-    
+
 Customizations
 --------------
 User my define own filters, inputs, outputs and comparators by creating .py
