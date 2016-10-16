@@ -42,7 +42,8 @@ class AbstractComparator(object):
         return new, {}
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Compare `old` and `new` lists and return formatted result.
 
         Arguments:
@@ -70,8 +71,8 @@ class ContextDiff(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
-
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         old_lines = old.split('\n')
         res = list(difflib.context_diff(
             old_lines, new.split('\n'),
@@ -97,7 +98,8 @@ class UnifiedDiff(AbstractComparator):
     }
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         old_lines = old.split('\n')
@@ -127,7 +129,8 @@ class NDiff(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         old_lines = old.split('\n')
@@ -200,7 +203,8 @@ class Added(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Get only added items """
         res, old_cnt, _, changed = _substract_lists(new, old)
 
@@ -228,7 +232,8 @@ class Deleted(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Get only deleted items """
 
         res, old_cnt, _, changed = _substract_lists(old, new)
@@ -257,7 +262,8 @@ class Last(AbstractComparator):
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
-                ctx: common.Context, meta: dict) -> ty.Tuple[bool, str, dict]:
+                ctx: common.Context, meta: dict) \
+            -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Return last (new) version """
         return True, new, self.opts
 

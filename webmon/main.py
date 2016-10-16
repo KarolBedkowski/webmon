@@ -36,7 +36,8 @@ _LOG = logging.getLogger("main")
 
 #@tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
-                     result: common.Result) -> ty.Tuple[bool, str, dict]:
+                     result: common.Result) \
+        -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
     """ Compare contents according to configuration. """
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
