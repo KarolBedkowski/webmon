@@ -338,6 +338,7 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
     Returns iterable: (start_time, end_time) for each valid range
     start_time, end_time = int: hour * 60 + minutes
     """
+    inp = inp.replace(' ', '').replace('\t', '')
     for hrang in inp.split(','):
         if '-' not in hrang:
             continue

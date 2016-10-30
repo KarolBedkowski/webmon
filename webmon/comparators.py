@@ -137,10 +137,10 @@ def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
             if timestamp >= limit}
 
 
-def hash_strings(input: str) -> ty.Dict[str, int]:
+def hash_strings(inp: str) -> ty.Dict[str, int]:
     now = int(time.time())
     # calculate hashs for new items
-    return {hash(item): now for item in input}
+    return {hash(item): now for item in inp}
 
 
 class Added(AbstractComparator):

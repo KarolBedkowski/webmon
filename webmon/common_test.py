@@ -133,6 +133,7 @@ class TestParseTimeRanges(unittest.TestCase):
 
     def test_03_check_date_in_trange_01(self):
         now = list(time.localtime())
+        print(now)
         tsr = "13-14"
         now[3], now[4] = 12, 13
         self.assertEqual(common.check_date_in_timerange(
@@ -166,8 +167,8 @@ class TestParseTimeRanges(unittest.TestCase):
         self.assertEqual(common.check_date_in_timerange(
             tsr, time.mktime(tuple(now))), False)
 
-    def test_03_check_date_in_trange_02(self):
-        now = list(time.localtime())
+    def test_03_check_date_in_trange_03(self):
+        now = list(time.gmtime())
         tsr = " 04:40-10:50, 11 -12,23:30-2:00"
         now[3], now[4] = 4, 15
         self.assertEqual(common.check_date_in_timerange(
