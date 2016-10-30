@@ -530,7 +530,7 @@ class OutputManager(object):
     def put_error(self, ctx: common.Context, err):
         result = common.Result(ctx.oid, ctx.input_idx)
         result.set_error(err)
-        self.put(result, None, ctc.input_conf)
+        self.put(result, None, ctx.input_conf)
 
 
 def _make_backup(filename):
