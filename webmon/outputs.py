@@ -66,11 +66,16 @@ class AbstractOutput(object):
 
 @tc.typecheck
 def rst_escape(text: str) -> str:
-    return text.replace("\\", "\\\\").replace('`', '\\').replace("*", "\\*").\
-        replace('_', '\\_')
+    text = text.replace("\\", "\\\\").replace('`', '\\').\
+        replace("*", "\\*").replace('_', '\\_').\
+        replace("|", "\\|").rstrip()
+    for header_char in _RST_HEADERS_CHARS:
+        if text == header_char * len(text):
+            text = '\n' + text + '\n'
+    return text
 
 
-_RST_HEADERS_CHARS = ('=', '-', '`', "'")
+_RST_HEADERS_CHARS = ('=', '-', '+', '`', "'", '~', '.', ',')
 
 
 @tc.typecheck
