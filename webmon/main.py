@@ -19,7 +19,7 @@ import pprint
 import time
 import typing as ty
 
-import typecheck as tc
+#import typecheck as tc
 
 from . import (cache, common, comparators, config, filters, inputs,
                logging_setup, outputs, metrics)
@@ -34,7 +34,7 @@ DEFAULT_DIFF_MODE = "ndiff"
 _LOG = logging.getLogger("main")
 
 
-@tc.typecheck
+#@tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) -> ty.Tuple[str, dict]:
     """ Compare contents according to configuration. """
@@ -53,7 +53,7 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
     return diff, {'comparator_opts': new_meta}
 
 
-@tc.typecheck
+#@tc.typecheck
 def compare_content_new(content: str, ctx: common.Context,
                         result: common.Result) -> ty.Tuple[str, dict]:
     opts = ctx.input_conf.get("diff_options")
@@ -67,7 +67,7 @@ def compare_content_new(content: str, ctx: common.Context,
     return diff, {'comparator_opts': new_meta}
 
 
-@tc.typecheck
+#@tc.typecheck
 def check_last_error_time(ctx: common.Context) -> bool:
     """
     Return true when load error occurred and still `on_error_wait` interval
@@ -81,7 +81,7 @@ def check_last_error_time(ctx: common.Context) -> bool:
     return False
 
 
-@tc.typecheck
+#@tc.typecheck
 def load_content(loader, ctx: common.Context) -> common.Result:
     """ Load & filter content """
     start = time.time()
@@ -119,7 +119,7 @@ def load_content(loader, ctx: common.Context) -> common.Result:
     return result
 
 
-@tc.typecheck
+#@tc.typecheck
 def process_content(ctx: common.Context, result: common.Result) \
         -> ty.Tuple[str, str, ty.Optional[dict], str]:
     """Detect content status (changes). Returns content formatted to
@@ -154,7 +154,7 @@ def process_content(ctx: common.Context, result: common.Result) \
     return (common.STATUS_UNCHANGED, prev_content, new_meta, content)
 
 
-@tc.typecheck
+#@tc.typecheck
 def create_error_result(ctx: common.Context, error_msg: str) \
         -> common.Result:
     result = common.Result(ctx.oid, ctx.oid)
@@ -162,7 +162,7 @@ def create_error_result(ctx: common.Context, error_msg: str) \
     return result
 
 
-@tc.typecheck
+#@tc.typecheck
 def load(ctx: common.Context) -> bool:
     """ Load one input defined & configured by context"""
     ctx.log_debug("start loading")
@@ -283,7 +283,7 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-@tc.typecheck
+#@tc.typecheck
 def _list_inputs(inps, conf, args):
     print("Inputs:")
     defaults = _build_defaults(args, conf)
@@ -369,8 +369,8 @@ def main():
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)
 
-    if not args.debug:
-        tc.disable()
+#    if not args.debug:
+#        tc.disable()
 
     _load_user_classes()
 

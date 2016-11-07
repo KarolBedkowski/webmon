@@ -14,7 +14,7 @@ import subprocess
 import textwrap
 import typing as ty
 
-import typecheck as tc
+#import typecheck as tc
 
 from . import common
 
@@ -54,7 +54,7 @@ class AbstractFilter(object):
             if required and not self._conf.get(name):
                 raise common.ParamError("missing parameter " + name)
 
-    @tc.typecheck
+    #@tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         items = []  # type: List[str]
@@ -82,7 +82,7 @@ class Html2Text(AbstractFilter):
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         assert isinstance(item, str)
         try:
@@ -102,7 +102,7 @@ class Strip(AbstractFilter):
         ("chars", "Characters to strip", None, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield item.strip(self._conf['chars'])
 
@@ -118,7 +118,7 @@ class Split(AbstractFilter):
          False, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         sep = self._conf['separator']
         if self._conf['generate_parts']:
@@ -137,7 +137,7 @@ class Sort(AbstractFilter):
         ("mode", "Filtering mode (parts/lines)", "parts", False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    @tc.typecheck
+    #@tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         if self._conf['mode'] == "parts":
@@ -147,7 +147,7 @@ class Sort(AbstractFilter):
                             for item in result.items]
         return result
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         return None
 
@@ -166,7 +166,7 @@ class Grep(AbstractFilter):
         self._re = re.compile(conf["pattern"], re.IGNORECASE | re.LOCALE |
                               re.MULTILINE | re.DOTALL)
 
-    @tc.typecheck
+    #@tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         if self._conf['mode'] == "parts":
@@ -178,7 +178,7 @@ class Grep(AbstractFilter):
         result.items = list(items)
         return result
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         return None
 
@@ -201,7 +201,7 @@ class Wrap(AbstractFilter):
         self._max_lines = self._conf.get("max_lines") or None
         self._width = self._conf.get("width") or 76
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield "\n".join(map(self._wrap_line_keep_indent, item.split('\n')))
 
@@ -230,7 +230,7 @@ class DeCSVlise(AbstractFilter):
         ("strip", "strip whitespaces", False, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         reader = csv.reader([item],
                             delimiter=self._conf['delimiter'],
@@ -284,7 +284,7 @@ class GetElementsByCss(AbstractFilter):
         except SelectorError:
             raise ValueError('Invalid CSS selector for filtering')
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield from _get_elements_by_xpath(self, item, self._expression)
 
@@ -297,7 +297,7 @@ class GetElementsByXpath(AbstractFilter):
         ("xpath", "selector", None, True),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    @tc.typecheck
+    #@tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield from _get_elements_by_xpath(self, item, self._conf["xpath"])
 
@@ -354,7 +354,7 @@ class CommandFilter(AbstractFilter):
                 yield res.decode("utf-8")
 
 
-@tc.typecheck
+#@tc.typecheck
 def get_filter(conf, ctx: common.Context) -> ty.Optional[AbstractFilter]:
     """ Get filter object by configuration """
     name = conf.get("name")

@@ -13,7 +13,7 @@ import difflib
 import time
 import typing as ty
 
-import typecheck as tc
+#import typecheck as tc
 
 from . import common
 
@@ -66,7 +66,7 @@ class ContextDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }  # type: Dict[str, ty.Any]
 
-    @tc.typecheck
+    #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
 
@@ -100,7 +100,7 @@ class NDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    @tc.typecheck
+    #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
@@ -147,7 +147,7 @@ class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
 
-    @tc.typecheck
+    #@tc.typecheck
     def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
             -> ty.Tuple[str, dict]:
         """ Process new content """
@@ -162,7 +162,7 @@ class Added(AbstractComparator):
 
         return new, {}
 
-    @tc.typecheck
+    #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only added items """
@@ -200,7 +200,7 @@ class Deleted(AbstractComparator):
     """ Generate list of deleted (misssing) items """
     name = "deleted"
 
-    @tc.typecheck
+    #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Get only deleted items """
@@ -211,14 +211,14 @@ class Last(AbstractComparator):
     """ Return current version """
     name = "last"
 
-    @tc.typecheck
+    #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) -> ty.Tuple[str, dict]:
         """ Return last (new) version """
         return new, self.opts
 
 
-@tc.typecheck
+#@tc.typecheck
 def get_comparator(name: str, conf: ty.Optional[dict]) -> \
         ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""

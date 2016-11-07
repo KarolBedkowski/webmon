@@ -17,7 +17,7 @@ import pprint
 import time
 import typing as ty
 
-import typecheck as tc
+#import typecheck as tc
 
 from . import config
 
@@ -95,7 +95,7 @@ def get_subclasses_with_name(base_class):
     yield from find(base_class)
 
 
-@tc.typecheck
+#@tc.typecheck
 def parse_interval(instr: ty.Union[str, float, int]) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
@@ -240,7 +240,7 @@ class Result(object):
 
     status = property(_get_status, _set_status)
 
-    @tc.typecheck
+    #@tc.typecheck
     def append(self, item: str):
         self.items.append(item)
         return self
@@ -260,7 +260,7 @@ class Result(object):
         return RECORD_SEPARATOR.join(self.items)
 
 
-@tc.typecheck
+#@tc.typecheck
 def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
     """Deep copy & update `defaults` dict with `conf`."""
     result = copy.deepcopy(defaults)
@@ -280,7 +280,7 @@ def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
     return result
 
 
-@tc.typecheck
+#@tc.typecheck
 def create_missing_dir(path: str):
     """ Check path and if not exists create directory.
         If path exists and is not directory - raise error.
@@ -298,13 +298,13 @@ def is_whitespace(character: str) -> bool:
     return character == ' ' or character == '\t'
 
 
-@tc.typecheck
+#@tc.typecheck
 def get_whitespace_prefix(text: str) -> str:
     """Get all whitespace characters from beginning of `text`"""
     return ''.join(itertools.takewhile(is_whitespace, text))
 
 
-@tc.typecheck
+#@tc.typecheck
 def prepare_filename(base_name: str) -> str:
     if not base_name:
         _LOG.warning("prepare_filename - empty base name")
@@ -316,7 +316,7 @@ def prepare_filename(base_name: str) -> str:
     return name
 
 
-@tc.typecheck
+#@tc.typecheck
 def _parse_hour_min(text: str) -> int:
     hours = 0  # type: int
     minutes = 0  # type: int
@@ -331,7 +331,7 @@ def _parse_hour_min(text: str) -> int:
     return hours * 60 + minutes
 
 
-@tc.typecheck
+#@tc.typecheck
 def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
     """ Parse hours ranges defined as:
         hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
