@@ -142,7 +142,7 @@ class AbstractTextOutput(AbstractOutput):
             yield ''
 
         comparator_opts = item['meta'].get('comparator_opts') or {}
-        content = item['content'].rstrip() or "<no data>"
+        content = (item['content'] or "<no data>").rstrip()
 
         if comparator_opts.get(common.OPTS_PREFORMATTED):
             yield "::"
@@ -154,6 +154,11 @@ class AbstractTextOutput(AbstractOutput):
                 yield from text_to_rst(sec)
                 yield ''
         yield ""
+
+        if item['status'] == common.STATUS_ERROR:
+            yield 'Error'
+            yield '    ' + (item['meta'].get('error') or 'no error message')
+            yield ""
 
         footer = item.get('footer')
         if footer:
