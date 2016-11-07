@@ -239,7 +239,6 @@ def _parse_options():
                         help="show configured inputs")
     parser.add_argument("--sel", help="select (by idx, separated by comma) "
                         "inputs to update")
-    parser.add_argument("--stats-file", help="write stats to file")
     parser.add_argument("--tasks", help="background task to launch",
                         type=int, default=2)
     return parser.parse_args()
