@@ -256,7 +256,9 @@ def _get_elements_by_xpath(filter_, data, expression):
             text = etree.tostring(elem)
         else:
             text = str(elem)
-        if text:
+        if isinstance(text, str):
+            yield text
+        else:
             yield text.decode('utf-8')
 
 
