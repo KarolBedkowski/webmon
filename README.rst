@@ -203,6 +203,9 @@ Filters
   Remove white spaces from beginning and ending of each line; remove blank
   lines
 
+`compact`
+  Remove white spaces from ending of each line; remove doubled blank lines
+
 `get-elements-by-xpath`
   Find all elements in html/xml by xpath defined in parameter `xpath`.
 

@@ -107,6 +107,29 @@ class Strip(AbstractFilter):
         yield item.strip(self._conf['chars'])
 
 
+def _compact_lines(lines: ty.Iterable[str]) -> ty.Iterable[str]:
+    prev_blank = False
+    for line in lines:
+        line = line.rstrip()
+        if line:
+            prev_blank = False
+        else:
+            if prev_blank:
+                continue
+            prev_blank = True
+        yield line
+
+
+class Compact(AbstractFilter):
+    """Compact input text; remove doubled empty lines; whitespaces"""
+
+    name = "compact"
+
+    #@tc.typecheck
+    def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
+        yield "\n".join(_compact_lines(item.split("\n")))
+
+
 class Split(AbstractFilter):
     """Split input on given character"""
 
