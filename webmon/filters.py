@@ -345,9 +345,12 @@ class GetElementsById(AbstractFilter):
         document = etree.fromstringlist([item], html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
             if isinstance(elem, etree._Element):
-                text = etree.tostring(elem)
+                text = etree.tostring(elem)  # type: ty.Union[str, bytes]
                 if text:
-                    yield text.decode('utf-8')
+                    if hasattr(text, 'decode'):
+                        yield text.decode('utf-8')
+                    else:
+                        yield str(text)
             else:
                 yield str(elem)
 

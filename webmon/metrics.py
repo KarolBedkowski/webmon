@@ -3,6 +3,7 @@
 
 import logging
 import threading
+import typing as ty
 
 try:
     import prometheus_client as pc
@@ -53,7 +54,7 @@ class MetricsSimple(AbstractMetricCollector):
                 log.debug(stat)
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
-                  status: str=None):
+                  status: ty.Union[str, property]=None):
         status = status or (result.status if result else None)
         process_time = result.meta['update_duration'] if result else None
         with self._lock:
@@ -134,7 +135,7 @@ class MetricsProm(AbstractMetricCollector):
         pc.write_to_textfile(filename, pc.REGISTRY)
 
     def put_input(self, ctx: common.Context, result: common.Result=None,
-                  status: str=None):
+                  status: ty.Union[str, property]=None):
         status = status or (result.status if result else None)
         process_time = result.meta['update_duration'] if result else None
         if process_time:

@@ -156,7 +156,7 @@ def _instr_separator(instr1: str, instr2: ty.Optional[str]) -> str:
     return '\n'
 
 
-def _substract_lists(instr1: str, instr2: str) -> str:
+def _substract_lists(instr1: str, instr2: str) -> ty.Tuple[str, int, int, int]:
     """ Get only items from instr1 that not exists in instr2"""
     separator = _instr_separator(instr1, instr2)
 
@@ -176,8 +176,8 @@ def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
             if timestamp >= limit}
 
 
-def hash_strings(inp: str) -> ty.Dict[str, int]:
-    now = int(time.time())
+def hash_strings(inp: ty.List[str]) -> ty.Dict[int, int]:
+    now = int(time.time())  # type: int
     # calculate hashs for new items
     return {hash(item): now for item in inp}
 

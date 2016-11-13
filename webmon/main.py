@@ -45,12 +45,12 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
 
     update_date = result.meta.get('update_date') or time.time()
 
-    result, diff, new_meta = comparator.compare(
+    compared, diff, new_meta = comparator.compare(
         prev_content, str(datetime.datetime.fromtimestamp(update_date)),
         content, str(datetime.datetime.now()), ctx, result.meta)
 
     # ctx.log_debug("compare: diff: %s", diff)
-    return result, diff, {'comparator_opts': new_meta}
+    return compared, diff, {'comparator_opts': new_meta}
 
 
 #@tc.typecheck
@@ -159,7 +159,7 @@ def process_content(ctx: common.Context, result: common.Result) \
 #@tc.typecheck
 def create_error_result(ctx: common.Context, error_msg: str) \
         -> common.Result:
-    result = common.Result(ctx.oid, ctx.oid)
+    result = common.Result(ctx.oid, ctx.input_idx)
     result.set_error(error_msg)
     return result
 
