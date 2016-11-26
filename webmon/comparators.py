@@ -229,22 +229,44 @@ class Added(AbstractComparator):
     def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
             -> ty.Tuple[str, dict]:
         """ Process new content """
-        check_last_days = self.conf.get('check_last_days')
-        if check_last_days:
-            sep = _instr_separator(new, None)
-            # calculate hashs for new items
-            new_hashes = hash_strings(new.split(sep))
-            meta = self.opts.copy()
-            meta['hashes'] = new_hashes
-            return new, meta
-
-        return new, {}
+        sep = _instr_separator(new, None)
+        # calculate hashs for new items
+        new_hashes = hash_strings(new.split(sep))
+        meta = self.opts.copy()
+        meta['hashes'] = new_hashes
+        return new, meta
 
     #@tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Get only added items """
+
+        meta = self.opts.copy()
+        sep = _instr_separator(new, old)
+        # calculate hashs for new items
+        new_hashes = hash_strings(new.split(sep))
+        ctx.log_debug("new_hashes cnt=%d, %r", len(new_hashes), new_hashes)
+        # hashes in form {hash, ts}
+        comparator_opts = ctx.metadata.get('comparator_opts')
+        previous_hash = comparator_opts.get('hashes') if comparator_opts \
+            else None
+        # put new hashes in meta
+        meta['hashes'] = new_hashes
+        if previous_hash:
+            # found old hashes; can use it for filtering
+            ctx.log_debug("previous_hash cnt=%d, %r", len(previous_hash),
+                          previous_hash)
+            check_last_days = self.conf.get('check_last_days') or 365
+            previous_hash = _drop_old_hashes(previous_hash, check_last_days)
+            ctx.log_debug("previous_hash after old filter cnt=%d, %r",
+                          len(previous_hash), previous_hash)
+            result = sep.join(item for item in new.split(sep)
+                              if hash(item) not in previous_hash)
+            # put old hashes
+            meta['hashes'].update(previous_hash)
+            return result, meta
+
         res, old_cnt, _, changed = _substract_lists(new, old)
 
         change_th = self.conf.get("changes_threshold")
