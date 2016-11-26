@@ -243,31 +243,42 @@ class Added(AbstractComparator):
         """ Get only added items """
 
         meta = self.opts.copy()
+        # find common separator
         sep = _instr_separator(new, old)
         # calculate hashs for new items
-        new_hashes = hash_strings(new.split(sep))
-        ctx.log_debug("new_hashes cnt=%d, %r", len(new_hashes), new_hashes)
-        # hashes in form {hash, ts}
+        # hashes in form {hash: ts}
         comparator_opts = ctx.metadata.get('comparator_opts')
         previous_hash = comparator_opts.get('hashes') if comparator_opts \
             else None
-        # put new hashes in meta
-        meta['hashes'] = new_hashes
-        if previous_hash:
-            # found old hashes; can use it for filtering
-            ctx.log_debug("previous_hash cnt=%d, %r", len(previous_hash),
-                          previous_hash)
+
+        if not previous_hash:
+            # previous hashes not found - calculate
+            previous_hash = hash_strings(old.split(sep))
+            old_cnt = len(previous_hash)
+            ctx.log_debug("previous_hash not found; calculated cnt=%d",
+                          old_cnt)
+        else:
+            old_cnt = len(previous_hash)
+            ctx.log_debug("previous_hash cnt=%d", old_cnt)
+            # remove old hashes
             check_last_days = self.conf.get('check_last_days') or 365
             previous_hash = _drop_old_hashes(previous_hash, check_last_days)
-            ctx.log_debug("previous_hash after old filter cnt=%d, %r",
-                          len(previous_hash), previous_hash)
-            result = sep.join(item for item in new.split(sep)
-                              if hash(item) not in previous_hash)
-            # put old hashes
-            meta['hashes'].update(previous_hash)
-            return result, meta
+            ctx.log_debug("previous_hash after old filter cnt=%d",
+                          len(previous_hash))
 
-        res, old_cnt, _, changed = _substract_lists(new, old)
+        # filter items
+        new_items = []
+        now = int(time.time())  # type: int
+        for item in new.split(sep):
+            item_hash = hash(item)
+            if item_hash not in previous_hash:
+                previous_hash[item_hash] = now
+                new_items.append(item)
+
+        meta['hashes'] = previous_hash
+        changed = len(new_items)
+        ctx.log_debug("new_items cnt=%d; all_hashes=%d", changed,
+                      len(previous_hash))
 
         change_th = self.conf.get("changes_threshold")
         if change_th and old_cnt:
@@ -275,16 +286,19 @@ class Added(AbstractComparator):
             if changes < change_th:
                 ctx.log_info("changes not above threshold (%f<%f)", changes,
                              change_th)
-            return False, None, None
+            return False, None, meta
 
         min_changed = self.conf.get("min_changed")
         if min_changed and old_cnt:
             if changed < min_changed:
                 ctx.log_info("changes not above minum (%f<%f)", changed,
                              min_changed)
-            return False, None, None
+            return False, None, meta
 
-        return True, res, self.opts
+        if new_items:
+            res = sep.join(new_items)
+            return True, res, meta
+        return False, None, meta
 
 
 class Deleted(AbstractComparator):

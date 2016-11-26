@@ -144,6 +144,7 @@ def process_content(ctx: common.Context, result: common.Result) \
         content, new_meta = compare_content_new(content, ctx, result)
         return common.STATUS_NEW, content, new_meta, content
 
+    new_meta = None
     if prev_content != content:
         ctx.log_debug("loading - changed content, making diff")
         diff_result, diff, new_meta = compare_contents(
@@ -151,8 +152,9 @@ def process_content(ctx: common.Context, result: common.Result) \
         if diff_result:
             return common.STATUS_CHANGED, diff, new_meta, content
 
-    ctx.log_debug("loading - unchanged content")
-    new_meta = {'comparator_opts': ctx.metadata.get('comparator_opts')}
+    ctx.log_debug("loading - unchanged content. %r", new_meta)
+    if new_meta is None:
+        new_meta = {'comparator_opts': ctx.metadata.get('comparator_opts')}
     return (common.STATUS_UNCHANGED, prev_content, new_meta, content)
 
 
