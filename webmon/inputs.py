@@ -115,7 +115,7 @@ class WebInput(AbstractInput):
             return result
 
         if response.status_code == 304:
-            result.set_no_modified()
+            result.set_no_modified("304 code")
             response.close()
             return result
 
@@ -168,7 +168,7 @@ class RssInput(AbstractInput):
         doc = feedparser.parse(url, etag=etag, modified=modified)
         status = doc.get('status') if doc else 400
         if status == 304:
-            result.set_no_modified()
+            result.set_no_modified("304 code")
             return result
         if status == 301:  # permanent redirects
             result.append('Permanently redirects: ' + doc.href)
@@ -188,7 +188,7 @@ class RssInput(AbstractInput):
         entries = doc.get('entries')
 
         if len(entries) == 0 and ctx.last_updated:
-            result.set_no_modified()
+            result.set_no_modified("no items")
             return result
 
         # limit number of entries
@@ -388,7 +388,7 @@ class GithubInput(AbstractInput, GitHubMixin):
 
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
-            result.set_no_modified()
+            result.set_no_modified("not updated")
             return result
 
         if hasattr(repository, "commits"):
@@ -399,7 +399,7 @@ class GithubInput(AbstractInput, GitHubMixin):
 
         if len(commits) == 0:
             ctx.log_debug("GithubInput: not updated - co commits")
-            result.set_no_modified()
+            result.set_no_modified("no items")
             return result
 
         short_list = conf.get("short_list")
@@ -464,7 +464,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
 
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
-            result.set_no_modified()
+            result.set_no_modified("not updated")
             return result
 
         max_items = self._conf["max_items"] or 100
@@ -475,7 +475,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
 
         if len(tags) == 0:
             ctx.log_debug("GithubInput: not updated - no new tags")
-            result.set_no_modified()
+            result.set_no_modified("no items")
             return result
 
         try:
@@ -525,7 +525,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
         if not updated:
             ctx.log_debug("GithubInput: not updated - co commits")
-            result.set_no_modified()
+            result.set_no_modified("not updated")
             return result
 
         max_items = self._conf["max_items"] or 100
@@ -536,7 +536,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
         if len(releases) == 0:
             ctx.log_debug("GithubInput: not updated - no new releases")
-            result.set_no_modified()
+            result.set_no_modified("no items")
             return result
 
         short_list = conf.get("short_list")
@@ -620,7 +620,7 @@ class JamendoAlbumsInput(AbstractInput):
 
         if response.status_code == 304:
             response.close()
-            result.set_no_modified()
+            result.set_no_modified("304 code")
             return result
 
         if response.status_code != 200:

@@ -251,8 +251,10 @@ class Result(object):
         self.meta['last_error'] = time.time()
         return self
 
-    def set_no_modified(self):
+    def set_no_modified(self, comment=None):
         self.status = STATUS_UNCHANGED
+        if comment:
+            self.debug['no_modified_cmt'] = comment
         return self
 
     def format(self) -> str:
