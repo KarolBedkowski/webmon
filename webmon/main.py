@@ -199,7 +199,13 @@ def load(ctx: common.Context) -> bool:
         result.debug['items_final'] = len(result.items)
         result.debug['last_updated'] = ctx.last_updated
 
-    result.status, pres, new_meta, content = process_content(ctx, result)
+    try:
+        result.status, pres, new_meta, content = process_content(ctx, result)
+    except Exception as err:
+        ctx.log_error("processing error: %r", err)
+        result = create_error_result(ctx, str(err))
+        result.status, pres, new_meta, content = process_content(ctx, result)
+
     if new_meta:
         result.meta.update(new_meta)
     if result.status != common.STATUS_UNCHANGED or \
