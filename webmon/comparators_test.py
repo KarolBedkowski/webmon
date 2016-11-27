@@ -98,28 +98,28 @@ class TestComparatorDeleted(unittest.TestCase):
         prev = common.RECORD_SEPARATOR.join(map(str, [1, 2, 3]))
         _, diff, _meta = comparators.Deleted({}).\
             compare(prev, "then", curr, "now", _CONTEXT, {})
-        self.assertEqual(diff, common.RECORD_SEPARATOR.join(map(str, [])))
+        self.assertEqual(diff, None)
 
     def test_deleted_2(self):
         curr = common.RECORD_SEPARATOR.join(map(str, [1, 2, 3, 4, 5]))
         prev = common.RECORD_SEPARATOR.join(map(str, [2, 3]))
         _, diff, _meta = comparators.Deleted({}).\
             compare(prev, "then", curr, "now", _CONTEXT, {})
-        self.assertEqual(diff, common.RECORD_SEPARATOR.join(map(str, [])))
+        self.assertEqual(diff, None)
 
     def test_deleted_3(self):
         curr = common.RECORD_SEPARATOR.join(map(str, [1, 2, 3, 4, 5]))
         prev = common.RECORD_SEPARATOR.join(map(str, [2, 4, 5]))
         _, diff, _meta = comparators.Deleted({}).\
             compare(prev, "then", curr, "now", _CONTEXT, {})
-        self.assertEqual(diff, common.RECORD_SEPARATOR.join(map(str, [])))
+        self.assertEqual(diff, None)
 
     def test_deleted_4(self):
         curr = common.RECORD_SEPARATOR.join(map(str, [1, 2, 3, 4, 5]))
         prev = common.RECORD_SEPARATOR.join(map(str, [2, 4]))
         _, diff, _meta = comparators.Deleted({}).\
             compare(prev, "then", curr, "now", _CONTEXT, {})
-        self.assertEqual(diff, common.RECORD_SEPARATOR.join(map(str, [])))
+        self.assertEqual(diff, None)
 
     def test_deleted_5(self):
         curr = common.RECORD_SEPARATOR.join(map(str, [1, 6]))
