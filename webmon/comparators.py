@@ -12,6 +12,7 @@ Licence: GPLv2+
 import difflib
 import time
 import typing as ty
+import hashlib
 
 #import typecheck as tc
 
@@ -215,10 +216,18 @@ def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
             if timestamp >= limit}
 
 
+def hash_item(item: str) -> str:
+    """Create hash for one item"""
+    m = hashlib.md5()
+    m.update(item.encode('utf-8'))
+    return str(m.hexdigest())
+
+
 def hash_strings(inp: ty.List[str]) -> ty.Dict[int, int]:
+    """Create dict of hashes for items """
     now = int(time.time())  # type: int
     # calculate hashs for new items
-    return {hash(item): now for item in inp}
+    return {hash_item(item): now for item in inp}
 
 
 class Added(AbstractComparator):
@@ -248,37 +257,37 @@ class Added(AbstractComparator):
         # calculate hashs for new items
         # hashes in form {hash: ts}
         comparator_opts = ctx.metadata.get('comparator_opts')
-        previous_hash = comparator_opts.get('hashes') if comparator_opts \
+        known_hashes = comparator_opts.get('hashes') if comparator_opts \
             else None
 
-        if not previous_hash:
+        if not known_hashes:
             # previous hashes not found - calculate
-            previous_hash = hash_strings(old.split(sep))
-            old_cnt = len(previous_hash)
-            ctx.log_debug("previous_hash not found; calculated cnt=%d",
+            known_hashes = hash_strings(old.split(sep))
+            old_cnt = len(known_hashes)
+            ctx.log_debug("known_hashes not found; calculated cnt=%d",
                           old_cnt)
         else:
-            old_cnt = len(previous_hash)
-            ctx.log_debug("previous_hash cnt=%d", old_cnt)
+            old_cnt = len(known_hashes)
+            ctx.log_debug("known_hashes cnt=%d", old_cnt)
             # remove old hashes
             check_last_days = self.conf.get('check_last_days') or 365
-            previous_hash = _drop_old_hashes(previous_hash, check_last_days)
-            ctx.log_debug("previous_hash after old filter cnt=%d",
-                          len(previous_hash))
+            known_hashes = _drop_old_hashes(known_hashes, check_last_days)
+            ctx.log_debug("known_hashes after old filter cnt=%d",
+                          len(known_hashes))
 
         # filter items
         new_items = []
         now = int(time.time())  # type: int
         for item in new.split(sep):
-            item_hash = hash(item)
-            if item_hash not in previous_hash:
-                previous_hash[item_hash] = now
+            item_hash = hash_item(item)
+            if item_hash not in known_hashes:
+                known_hashes[item_hash] = now
                 new_items.append(item)
 
-        meta['hashes'] = previous_hash
+        meta['hashes'] = known_hashes
         changed = len(new_items)
         ctx.log_debug("new_items cnt=%d; all_hashes=%d", changed,
-                      len(previous_hash))
+                      len(known_hashes))
 
         change_th = self.conf.get("changes_threshold")
         if change_th and old_cnt:
