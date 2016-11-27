@@ -63,6 +63,31 @@ class AbstractComparator(object):
         raise NotImplementedError()
 
 
+def _check_changes(ctx: common.Context, changed_lines: int, old_lines: int,
+                   changes_th: ty.Optional[float],
+                   min_changed: ty.Optional[float]) -> bool:
+    if not changed_lines:
+        return False
+
+    if changes_th and old_lines:
+        changes = float(changed_lines) / old_lines
+        ctx.log_debug("changes: %d / %d (%f %%)", changed_lines, old_lines,
+                      changes)
+        if changes < changes_th:
+            ctx.log_info("changes not above threshold (%f<%f)", changes,
+                         changes_th)
+            return False
+
+    if min_changed and old_lines:
+        ctx.log_debug("changes: %f", changed_lines)
+        if changed_lines < min_changed:
+            ctx.log_info("changes not above minimum (%d<%d)",
+                         changed_lines, min_changed)
+            return False
+
+    return True
+
+
 class ContextDiff(AbstractComparator):
     """ Generate formatted context diff of string lists """
     name = "context_diff"
@@ -80,27 +105,12 @@ class ContextDiff(AbstractComparator):
             fromfiledate=old_date, tofiledate=new_date,
             lineterm='\n'))
 
-        changes_th = self.conf.get("changes_threshold")
-        if changes_th and old_lines and res:
-            changed_lines = sum(1 for line in res[2:]
-                                if line and line[0] != ' ' and line[0] != '*')
-            changes = float(changed_lines) / len(old_lines)
-            ctx.log_debug("changes: %d / %d (%f %%)", changed_lines,
-                          len(old_lines), changes)
-            if changes < changes_th:
-                ctx.log_info("changes not above threshold (%f<%f)", changes,
-                             changes_th)
-                return False, None, None
-
-        min_changed = self.conf.get("min_changed")
-        if min_changed and old_lines:
-            changed_lines = sum(1 for line in res[2:]
-                                if line and line[0] != ' ' and line[0] != '*')
-            ctx.log_debug("changes: %f", changed_lines)
-            if changed_lines < min_changed:
-                ctx.log_info("changes not above minimum (%d<%d)",
-                             changed_lines, min_changed)
-                return False, None, None
+        changed_lines = sum(1 for line in res[2:]
+                            if line and line[0] != ' ' and line[0] != '*')
+        if not _check_changes(ctx, changed_lines, len(old_lines),
+                              self.conf.get("changes_threshold"),
+                              self.conf.get("min_changed")):
+            return False, None, None
 
         return True, "\n".join(res), self.opts
 
@@ -123,27 +133,12 @@ class UnifiedDiff(AbstractComparator):
             fromfiledate=old_date, tofiledate=new_date,
             lineterm='\n'))
 
-        changes_th = self.conf.get("changes_threshold")
-        if changes_th and old_lines and res:
-            changed_lines = sum(1 for line in res[2:]
-                                if line and line[0] != ' ' and line[0] != '@')
-            changes = float(changed_lines) / len(old_lines)
-            ctx.log_debug("changes: %d / %d (%f %%)", changed_lines,
-                          len(old_lines), changes)
-            if changes < changes_th:
-                ctx.log_info("changes not above threshold (%f<%f)", changes,
-                             changes_th)
-                return False, None, None
-
-        min_changed = self.conf.get("min_changed")
-        if min_changed and old_lines:
-            changed_lines = sum(1 for line in res[2:]
-                                if line and line[0] != ' ' and line[0] != '@')
-            ctx.log_debug("changes: %f", changed_lines)
-            if changed_lines < min_changed:
-                ctx.log_info("changes not above minimum (%d<%d)",
-                             changed_lines, min_changed)
-                return False, None, None
+        changed_lines = sum(1 for line in res[2:]
+                            if line and line[0] != ' ' and line[0] != '@')
+        if not _check_changes(ctx, changed_lines, len(old_lines),
+                              self.conf.get("changes_threshold"),
+                              self.conf.get("min_changed")):
+            return False, None, None
 
         return True, "\n".join(res), self.opts
 
@@ -164,25 +159,11 @@ class NDiff(AbstractComparator):
         old_lines = old.split('\n')
         res = list(difflib.ndiff(old_lines, new.split('\n')))
 
-        changes_th = self.conf.get("changes_threshold")
-        if changes_th and old_lines and res:
-            changed_lines = sum(1 for line in res if line and line[0] != ' ')
-            changes = float(changed_lines) / len(old_lines)
-            ctx.log_debug("changes: %d / %d (%f %%)", changed_lines,
-                          len(old_lines), changes)
-            if changes < changes_th:
-                ctx.log_info("changes not above threshold (%f<%f)", changes,
-                             changes_th)
-                return False, None, None
-
-        min_changed = self.conf.get("min_changed")
-        if min_changed and old_lines:
-            changed_lines = sum(1 for line in res if line and line[0] != ' ')
-            ctx.log_debug("changes: %f", changed_lines)
-            if changed_lines < min_changed:
-                ctx.log_info("changes not above minimum (%d<%d)",
-                             changed_lines, min_changed)
-                return False, None, None
+        changed_lines = sum(1 for line in res if line and line[0] != ' ')
+        if not _check_changes(ctx, changed_lines, len(old_lines),
+                              self.conf.get("changes_threshold"),
+                              self.conf.get("min_changed")):
+            return False, None, None
 
         return True, "\n".join(res), self.opts
 
@@ -289,20 +270,10 @@ class Added(AbstractComparator):
         ctx.log_debug("new_items cnt=%d; all_hashes=%d", changed,
                       len(known_hashes))
 
-        change_th = self.conf.get("changes_threshold")
-        if change_th and old_cnt:
-            changes = float(changed) / old_cnt
-            if changes < change_th:
-                ctx.log_info("changes not above threshold (%f<%f)", changes,
-                             change_th)
-            return False, None, meta
-
-        min_changed = self.conf.get("min_changed")
-        if min_changed and old_cnt:
-            if changed < min_changed:
-                ctx.log_info("changes not above minum (%f<%f)", changed,
-                             min_changed)
-            return False, None, meta
+        if not _check_changes(ctx, changed, old_cnt,
+                              self.conf.get("changes_threshold"),
+                              self.conf.get("min_changed")):
+            return False, None, None
 
         if new_items:
             res = sep.join(new_items)
@@ -322,19 +293,9 @@ class Deleted(AbstractComparator):
 
         res, old_cnt, _, changed = _substract_lists(old, new)
 
-        change_th = self.conf.get("changes_threshold")
-        if change_th and old_cnt:
-            changes = float(changed) / old_cnt
-            if changes < change_th:
-                ctx.log_info("changes not above threshold (%f<%f)", changes,
-                             change_th)
-            return False, None, None
-
-        min_changed = self.conf.get("min_changed")
-        if min_changed and old_cnt:
-            if changed < min_changed:
-                ctx.log_info("changes not above minimum (%f<%f)", changed,
-                             min_changed)
+        if not _check_changes(ctx, changed, old_cnt,
+                              self.conf.get("changes_threshold"),
+                              self.conf.get("min_changed")):
             return False, None, None
 
         return True, res, self.opts
