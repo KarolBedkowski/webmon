@@ -118,7 +118,7 @@ def text_to_rst(text: str) -> ty.Iterable[str]:
 class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
-    def _format_item_header(self, item: dict) -> str:
+    def _format_item_header(self, item: dict) -> ty.Iterable[str]:
         update_date = item['meta'].get('update_date')
         if update_date:
             yield time.strftime("%x %X", time.localtime(update_date))
@@ -390,7 +390,7 @@ def qualify_item_to_status(group: ty.Iterable) -> str:
     return common.STATUS_UNCHANGED
 
 
-def qualify_item_for_processing(group: ty.Iterable) -> bool:
+def qualify_item_for_processing(group: ty.List) -> bool:
     """Check items & its configuration for processing (i.e. allow skip)"""
     last_item = group[-1]
     conf = last_item.get('input_conf')
@@ -422,7 +422,7 @@ class OutputManager(object):
             [ file path ]
         """
         files = collections.defaultdict(list)
-        # type: ty.DefaultDict[str, ty.List[ty.Tuple[str, str]]]
+        # type: ty.DefaultDict[str, ty.List[str]]
         for fname in sorted(os.listdir(self._working_dir)):
             fpath = os.path.join(self._working_dir, fname)
             if not os.path.isfile(fpath):
@@ -462,7 +462,7 @@ class OutputManager(object):
         }  # type: dict[str, list]
 
         input_files = self.find_parts()
-        processed_files = []
+        processed_files = []  # type: ty.List[str]
         for files in input_files:
             group_data = list(filter(None, map(self._load_file, files)))
             if qualify_item_for_processing(group_data):

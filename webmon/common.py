@@ -251,8 +251,10 @@ class Result(object):
         self.meta['last_error'] = time.time()
         return self
 
-    def set_no_modified(self):
+    def set_no_modified(self, comment=None):
         self.status = STATUS_UNCHANGED
+        if comment:
+            self.debug['no_modified_cmt'] = comment
         return self
 
     def format(self) -> str:
@@ -353,7 +355,8 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
             pass
 
 
-def check_date_in_timerange(tsrange: str, timestamp: int) -> bool:
+def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
+        -> bool:
     """ Check is `timestamp` is one of time ranges defined in `tsrange`"""
     timestampt = time.localtime(timestamp)
     tshm = timestampt.tm_hour * 60 + timestampt.tm_min
