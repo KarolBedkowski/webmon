@@ -201,7 +201,7 @@ def hash_item(item: str) -> str:
     """Create hash for one item"""
     m = hashlib.md5()
     m.update(item.encode('utf-8'))
-    return str(m.hexdigest())
+    return m.hexdigest()
 
 
 def hash_strings(inp: ty.List[str]) -> ty.Dict[int, int]:
