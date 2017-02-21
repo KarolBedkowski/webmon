@@ -103,7 +103,7 @@ class WebInput(AbstractInput):
             response = requests.request(url=url, method='GET',
                                         headers=headers,
                                         timeout=self._conf['timeout'])
-            if not respons:
+            if not response:
                 result.set_error("no result")
                 return result
             response.raise_for_status()
