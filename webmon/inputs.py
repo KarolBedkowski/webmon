@@ -665,15 +665,17 @@ def _jamendo_build_service_url(conf, last_updated):
     return url
 
 
-def _jamendo_album_to_url(album):
-    return 'https://www.jamendo.com/album/{}/'.format(album['id'])
+def _jamendo_album_to_url(album_id):
+    if not album_id:
+        return ''
+    return 'https://www.jamendo.com/album/{}/'.format(album_id)
 
 
 def _jamendo_format_short_list(results):
     for result in results:
         yield "\n".join(
             " ".join((album['releasedate'], album["name"],
-                      _jamendo_album_to_url(album)))
+                      _jamendo_album_to_url(album['id'])))
             for album in result.get('albums') or [])
 
 
@@ -681,4 +683,116 @@ def _jamendo_format_long_list(results):
     for result in results:
         for album in result.get('albums') or []:
             yield " ".join((album['releasedate'], album["name"],
-                            _jamendo_album_to_url(album)))
+                            _jamendo_album_to_url(album['id'])))
+
+
+class JamendoTracksInput(AbstractInput):
+    """Load data from jamendo - new tracks for artists"""
+
+    name = "jamendo_tracks"
+    params = AbstractInput.params + [
+        ("artist_id", "artist id", None, False),
+        ("artist", "artist name", None, False),
+        ("jamendo_client_id", "jamendo client id", None, True),
+        ("short_list", "show compact list", True, False),
+    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+
+    def load(self):
+        """ Return one part - page content. """
+        ctx = self._ctx
+        conf = self._conf
+        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
+                                 "Gecko/20100101 Firefox/45.0"}
+        if not (conf.get("artist_id") or conf.get("artist")):
+            raise common.ParamError(
+                "missing parameter 'artist' or 'artist_id'")
+
+        last_updated = time.time() - _JAMENDO_MAX_AGE
+        if ctx.last_updated and ctx.last_updated > last_updated:
+            last_updated = ctx.last_updated
+
+        url = _jamendo_build_service_url_tracks(conf, last_updated)
+
+        result = common.Result(ctx.oid, ctx.input_idx)
+        ctx.log_debug("JamendoTracksInput: loading url: %s", url)
+        try:
+            response = requests.request(url=url, method='GET',
+                                        headers=headers)
+            response.raise_for_status()
+        except requests.exceptions.ReadTimeout:
+            response.set_error("timeout")
+            return
+        except Exception as err:
+            response.set_error(err)
+            return
+
+        if response.status_code == 304:
+            response.close()
+            result.set_no_modified("304 code")
+            return result
+
+        if response.status_code != 200:
+            msg = "Response code: %d" % response.status_code
+            if response.text:
+                msg += "\n" + response.text
+            response.close()
+            response.set_error(msg)
+            return err
+
+        res = json.loads(response.text)
+
+        if res['headers']['status'] != 'success':
+            response.close()
+            raise common.InputError(self, res['headers']['error_message'])
+
+        if conf.get('short_list'):
+            result.items.extend(
+                _jamendo_track_format_short_list(res['results']))
+        else:
+            result.items.extend(
+                _jamendo_track_format_long_list(res['results']))
+
+        response.close()
+        ctx.log_debug("JamendoTrackInput: load done")
+        return result
+
+
+def _jamendo_build_service_url_tracks(conf, last_updated):
+    last_updated = time.strftime("%Y-%m-%d",
+                                 time.localtime(last_updated))
+    today = time.strftime("%Y-%m-%d")
+    artist = (("name=" + conf["artist"]) if conf.get('artist')
+              else ("id=" + str(conf["artist_id"])))
+    url = 'https://api.jamendo.com/v3.0/artists/tracks?'
+    url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
+                     "format=json&order=track_releasedate_desc",
+                     artist,
+                     "album_datebetween=" + last_updated + "_" + today))
+    return url
+
+
+def _jamendo_track_to_url(track_id):
+    if not track_id:
+        return ''
+    return 'https://www.jamendo.com/track/{}/'.format(track_id)
+
+
+def _jamendo_track_format_short_list(results):
+    for result in results:
+        yield "\n".join(
+            " ".join((track['releasedate'], track["name"],
+                      _jamendo_track_to_url(track['id'])))
+            for track in result.get('tracks') or [])
+
+
+def _jamendo_track_format_long_list(results):
+    for result in results:
+        for track in result.get('tracks') or []:
+            res_track = [track['releasedate'], track["name"],
+                         _jamendo_track_to_url(track['id'])]
+            album = track.get('album_id')
+            if album:
+                res_track.append(" (" + track['album_name'] +
+                                 _jamendo_album_to_url(track['album_id']))
+
+            yield " ".join(res_track)
