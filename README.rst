@@ -48,7 +48,7 @@ Options
 
 Configuration
 -------------
-Configuration files may me placed in current dir, ~/.config/webmon/ direcrtory
+Configuration files may me placed in current dir, ~/.config/webmon/ directory
 or direct specified by appropriate option.
 
 config.yaml
@@ -166,7 +166,7 @@ Common options::
   diff_mode: ndiff                  # diff mode (unified, ndiff, etc.)
   on_error_wait: 12h                # wait some time after loadin error
                                     # (params like interval)
-  output:                           # varoius parameter that control
+  output:                           # various parameter that control
                                     # report generate
     do_not_report_hours: 23:00-6    # hours:min ranges when no send reports
 
@@ -193,7 +193,7 @@ Available modes:
 
 
 **diff_options**
-Various options for comarators:
+Options for comparators:
 
 * `min_changes` - minimal number added / deleted items in `added` and
                   `deleted` modes to report
