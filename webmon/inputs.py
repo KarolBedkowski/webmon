@@ -98,10 +98,14 @@ class WebInput(AbstractInput):
         ctx.log_debug("WebInput: loading url: %s; headers: %r", url, headers)
         result = common.Result(ctx.oid, ctx.input_idx)
         result.link = url
+        response = None
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
                                         timeout=self._conf['timeout'])
+            if not respons:
+                result.set_error("no result")
+                return result
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
             result.set_error("timeout")
