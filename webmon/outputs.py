@@ -22,6 +22,7 @@ import time
 import typing as ty
 from datetime import datetime
 import textwrap
+import re
 
 from docutils.core import publish_string
 
@@ -64,11 +65,16 @@ class AbstractOutput(object):
         raise NotImplementedError()
 
 
+# escape '_' -> '\_'
+_RST_ESCAPE_UN_RE = re.compile(r"(\S)_(\s)")
+
+
 #@tc.typecheck
 def rst_escape(text: str) -> str:
     text = text.replace("\\", "\\\\").replace('`', '\\').\
-        replace("*", "\\*").replace('_', '\\_').\
+        replace("*", "\\*").\
         replace("|", "\\|").rstrip()
+    text = _RST_ESCAPE_UN_RE.sub(r"\1\_\2", text)
     for header_char in _RST_HEADERS_CHARS:
         if text == header_char * len(text):
             text = '\n' + text + '\n'
