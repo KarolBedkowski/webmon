@@ -144,13 +144,25 @@ GitHub releases::
   github_user: login     # github user login, may be placed in config.yaml
   github_token: 1111...  # github user token, may be placed in config.yaml
 
-Jamendo sources::
+Jamendo sources - albums::
 
   kind: jamendo_albums
   name: "jamendo - "
   artist: artist         # artist name, use name or id
   artist_id: 1234        # artist id
   interval: 1d
+  short_list: True
+  jamendo_client_id: 00000000  # jamendo api client id, may be placed in
+                               # config.yaml
+
+Jamendo sources - tracks / singles::
+
+  kind: jamendo_tracks
+  name: "jamendo - "
+  artist: artist         # artist name, use name or id
+  artist_id: 1234        # artist id
+  interval: 1d
+  short_list: True
   jamendo_client_id: 00000000  # jamendo api client id, may be placed in
                                # config.yaml
 
