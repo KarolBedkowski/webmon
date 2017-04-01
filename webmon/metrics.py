@@ -128,7 +128,11 @@ class MetricsProm(AbstractMetricCollector):
 
         pc.REGISTRY.unregister(pc.PROCESS_COLLECTOR)
         self._process_collector = pc.ProcessCollector(namespace="webmon")
-        pc.REGISTRY.register(self._process_collector)
+        try:
+            pc.REGISTRY.register(self._process_collector)
+        except ValueError:
+            # already registered
+            pass
 
     def write(self):
         filename = common.prepare_filename(self.conf['prometheus_output'])
