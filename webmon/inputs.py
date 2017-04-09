@@ -76,6 +76,17 @@ class AbstractInput(object):
         interval = common.parse_interval(interval)
         return self._ctx.last_updated + interval < time.time()
 
+    def next_update(self) -> int:
+        if not self._ctx.last_updated:
+            return 0
+
+        interval = self._conf["interval"]
+        if not interval:
+            return 0
+
+        interval = common.parse_interval(interval)
+        return self._ctx.last_updated + interval
+
 
 class WebInput(AbstractInput):
     """Load data from web (http/https)"""
