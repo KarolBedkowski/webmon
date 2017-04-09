@@ -71,9 +71,13 @@ _RST_ESCAPE_UN_RE = re.compile(r"(\S)_(\s)")
 
 #@tc.typecheck
 def rst_escape(text: str) -> str:
-    text = text.replace("\\", "\\\\").replace('`', '\\').\
+    text = text.replace("\\", "\\\\").\
+        replace('`', '\\').\
         replace("*", "\\*").\
-        replace("|", "\\|").rstrip()
+        replace("|", "\\|").\
+        rstrip()
+    if text[-1] == '_':
+        text = text[:-1] + "\_"
     text = _RST_ESCAPE_UN_RE.sub(r"\1\_\2", text)
     for header_char in _RST_HEADERS_CHARS:
         if text == header_char * len(text):
