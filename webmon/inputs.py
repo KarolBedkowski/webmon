@@ -669,7 +669,7 @@ def _jamendo_build_service_url(conf, last_updated):
     artist = (("name=" + conf["artist"]) if conf.get('artist')
               else ("id=" + str(conf["artist_id"])))
     url = 'https://api.jamendo.com/v3.0/artists/albums?'
-    url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
+    url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
                      "format=json&order=album_releasedate_desc",
                      artist,
                      "album_datebetween=" + last_updated + "_" + today))
@@ -775,7 +775,7 @@ def _jamendo_build_service_url_tracks(conf, last_updated):
     artist = (("name=" + conf["artist"]) if conf.get('artist')
               else ("id=" + str(conf["artist_id"])))
     url = 'https://api.jamendo.com/v3.0/artists/tracks?'
-    url += '&'.join(("client_id=" + conf.get('client_id', '56d30c95'),
+    url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
                      "format=json&order=track_releasedate_desc",
                      artist,
                      "album_datebetween=" + last_updated + "_" + today))
