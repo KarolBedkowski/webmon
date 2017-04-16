@@ -333,11 +333,10 @@ def _list_inputs_dbg(inps, conf, args):
         next_update_ts = loader.next_update()
         if next_update_ts:
             next_update = time.strftime(
-                   "%x %X", time.localtime(next_update_ts))
+                "%x %X", time.localtime(next_update_ts))
         else:
             next_update = 'now'
 
-        need_update = loader.need_update() and " [need update]" or ""
         print(" {:2d} {:<40s}  {}  last: {}  next: {}  {}  {}".format(
             idx, name, act, last_update, next_update,
             ctx.metadata.get('status'), oid))

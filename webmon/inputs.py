@@ -171,7 +171,7 @@ class RssInput(AbstractInput):
         ctx = self._ctx
         feedparser.PARSE_MICROFORMATS = 0
         feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
-                                 "Gecko/20100101 Firefox/45.0"
+                                "Gecko/20100101 Firefox/45.0"
         modified = time.localtime(ctx.last_updated) \
             if ctx.last_updated else None
         url = self._conf['url']
