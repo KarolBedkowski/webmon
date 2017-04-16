@@ -76,6 +76,8 @@ def rst_escape(text: str) -> str:
         replace("*", "\\*").\
         replace("|", "\\|").\
         rstrip()
+    if not text:
+        return text
     if text[-1] == '_':
         text = text[:-1] + "\_"
     text = _RST_ESCAPE_UN_RE.sub(r"\1\_\2", text)
