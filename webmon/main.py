@@ -180,7 +180,7 @@ def load(ctx: common.Context) -> bool:
         ctx.log_info("no update required")
         return False
 
-    if check_last_error_time(ctx):
+    if not ctx.args.force and check_last_error_time(ctx):
         ctx.log_info("waiting after error")
         return False
 
