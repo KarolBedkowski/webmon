@@ -644,7 +644,7 @@ class JamendoAlbumsInput(AbstractInput):
                 msg += "\n" + response.text
             response.close()
             response.set_error(msg)
-            return err
+            return response
 
         res = json.loads(response.text)
 
@@ -748,7 +748,7 @@ class JamendoTracksInput(AbstractInput):
                 msg += "\n" + response.text
             response.close()
             response.set_error(msg)
-            return err
+            return response
 
         res = json.loads(response.text)
 
