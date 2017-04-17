@@ -58,8 +58,7 @@ def compare_content_new(content: str, ctx: common.Context,
                         result: common.Result) -> ty.Tuple[str, dict]:
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
-        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE,
-        opts[0] if opts else {})
+        ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, opts)
 
     diff, new_meta = comparator.new(
         content, str(datetime.datetime.now()), ctx, result.meta)
