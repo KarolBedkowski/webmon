@@ -103,7 +103,8 @@ def gen_input_oid(conf: dict) -> str:
 # ignored keys when calculating oid
 _OID_IGNORED_KEYS = {
     "interval", "diff_mode", "on_error_wait", "report_unchanged",
-    "output", 'diff_options'
+    "output", 'diff_options',
+    "jamendo_client_id", "github_user", "github_token",
 }
 
 # configuration defaults for inputs
