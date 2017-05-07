@@ -262,8 +262,8 @@ class Added(AbstractComparator):
         for item in new.split(sep):
             item_hash = hash_item(item)
             if item_hash not in known_hashes:
-                known_hashes[item_hash] = now
                 new_items.append(item)
+            known_hashes[item_hash] = now
 
         meta['hashes'] = known_hashes
         changed = len(new_items)
