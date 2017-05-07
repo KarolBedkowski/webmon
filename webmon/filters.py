@@ -3,7 +3,7 @@
 Default filters definition.
 Filters get one content and transform it to another.
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -14,13 +14,13 @@ import subprocess
 import textwrap
 import typing as ty
 
-#import typecheck as tc
+# import typecheck as tc
 
 from . import common
 
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 
 class AbstractFilter(object):
@@ -54,7 +54,7 @@ class AbstractFilter(object):
             if required and not self._conf.get(name):
                 raise common.ParamError("missing parameter " + name)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         items = []  # type: List[str]
@@ -82,7 +82,7 @@ class Html2Text(AbstractFilter):
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         assert isinstance(item, str)
         try:
@@ -102,7 +102,7 @@ class Strip(AbstractFilter):
         ("chars", "Characters to strip", None, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield item.strip(self._conf['chars'])
 
@@ -125,7 +125,7 @@ class Compact(AbstractFilter):
 
     name = "compact"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield "\n".join(_compact_lines(item.split("\n")))
 
@@ -141,7 +141,7 @@ class Split(AbstractFilter):
          False, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         sep = self._conf['separator']
         if self._conf['generate_parts']:
@@ -160,7 +160,7 @@ class Sort(AbstractFilter):
         ("mode", "Filtering mode (parts/lines)", "parts", False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         if self._conf['mode'] == "parts":
@@ -170,7 +170,7 @@ class Sort(AbstractFilter):
                             for item in result.items]
         return result
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         return None
 
@@ -189,7 +189,7 @@ class Grep(AbstractFilter):
         self._re = re.compile(conf["pattern"], re.IGNORECASE | re.LOCALE |
                               re.MULTILINE | re.DOTALL)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
         if self._conf['mode'] == "parts":
@@ -201,7 +201,7 @@ class Grep(AbstractFilter):
         result.items = list(items)
         return result
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         return None
 
@@ -224,7 +224,7 @@ class Wrap(AbstractFilter):
         self._max_lines = self._conf.get("max_lines") or None
         self._width = self._conf.get("width") or 76
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield "\n".join(map(self._wrap_line_keep_indent, item.split('\n')))
 
@@ -253,7 +253,7 @@ class DeCSVlise(AbstractFilter):
         ("strip", "strip whitespaces", False, False),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         reader = csv.reader([item],
                             delimiter=self._conf['delimiter'],
@@ -271,10 +271,12 @@ def _get_elements_by_xpath(filter_, data, expression):
         from lxml import etree
     except ImportError:
         raise common.FilterError(filter_, "module lxml not found")
+    # pylint: disable=no-member
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
     document = etree.fromstringlist([data], html_parser)
     for elem in document.xpath(expression):
+        # pylint: disable=protected-access
         if isinstance(elem, etree._Element):
             text = etree.tostring(elem)
         else:
@@ -309,7 +311,7 @@ class GetElementsByCss(AbstractFilter):
         except SelectorError:
             raise ValueError('Invalid CSS selector for filtering')
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield from _get_elements_by_xpath(self, item, self._expression)
 
@@ -322,7 +324,7 @@ class GetElementsByXpath(AbstractFilter):
         ("xpath", "selector", None, True),
     ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         yield from _get_elements_by_xpath(self, item, self._conf["xpath"])
 
@@ -340,10 +342,12 @@ class GetElementsById(AbstractFilter):
             from lxml import etree
         except ImportError:
             raise common.FilterError(self, "module lxml not found")
+        # pylint: disable=no-member
         html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                        strip_cdata=True)
         document = etree.fromstringlist([item], html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
+            # pylint: disable=protected-access
             if isinstance(elem, etree._Element):
                 text = etree.tostring(elem)  # type: ty.Union[str, bytes]
                 if text:
@@ -382,7 +386,7 @@ class CommandFilter(AbstractFilter):
                 yield res.decode("utf-8")
 
 
-#@tc.typecheck
+# @tc.typecheck
 def get_filter(conf, ctx: common.Context) -> ty.Optional[AbstractFilter]:
     """ Get filter object by configuration """
     name = conf.get("name")

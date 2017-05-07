@@ -2,7 +2,7 @@
 """
 Commons elements - errors etc
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -17,12 +17,12 @@ import pprint
 import time
 import typing as ty
 
-#import typecheck as tc
+# import typecheck as tc
 
 from . import config
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 
 _LOG = logging.getLogger("common")
@@ -95,7 +95,7 @@ def get_subclasses_with_name(base_class):
     yield from find(base_class)
 
 
-#@tc.typecheck
+# @tc.typecheck
 def parse_interval(instr: ty.Union[str, float, int]) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
@@ -128,8 +128,8 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
 
 
 class Context(object):
-    """Processing context
-    """
+    """Processing context """
+    # pylint: disable=too-many-instance-attributes
     _log = logging.getLogger("context")
 
     def __init__(self, input_conf: dict, gcache, idx: int, output, args) \
@@ -150,7 +150,6 @@ class Context(object):
         # output manager
         self.output = output
         # app arguments
-        # TODO: zmienić
         self.args = args
         # last loader metadata
         self.metadata = {}  # type: Dict[str, ty.Any]
@@ -205,6 +204,7 @@ def status_human_str(status: str) -> str:
 
 
 class Result(object):
+    # pylint: disable=too-many-instance-attributes
     FIELDS = ['title', 'link']
 
     def __init__(self, oid: str, idx: int=0) -> None:
@@ -240,7 +240,7 @@ class Result(object):
 
     status = property(_get_status, _set_status)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def append(self, item: str):
         self.items.append(item)
         return self
@@ -262,7 +262,7 @@ class Result(object):
         return RECORD_SEPARATOR.join(self.items)
 
 
-#@tc.typecheck
+# @tc.typecheck
 def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
     """Deep copy & update `defaults` dict with `conf`."""
     result = copy.deepcopy(defaults)
@@ -282,7 +282,7 @@ def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
     return result
 
 
-#@tc.typecheck
+# @tc.typecheck
 def create_missing_dir(path: str):
     """ Check path and if not exists create directory.
         If path exists and is not directory - raise error.
@@ -300,13 +300,13 @@ def is_whitespace(character: str) -> bool:
     return character == ' ' or character == '\t'
 
 
-#@tc.typecheck
+# @tc.typecheck
 def get_whitespace_prefix(text: str) -> str:
     """Get all whitespace characters from beginning of `text`"""
     return ''.join(itertools.takewhile(is_whitespace, text))
 
 
-#@tc.typecheck
+# @tc.typecheck
 def prepare_filename(base_name: str) -> str:
     if not base_name:
         _LOG.warning("prepare_filename - empty base name")
@@ -318,7 +318,7 @@ def prepare_filename(base_name: str) -> str:
     return name
 
 
-#@tc.typecheck
+# @tc.typecheck
 def _parse_hour_min(text: str) -> int:
     hours = 0  # type: int
     minutes = 0  # type: int
@@ -333,13 +333,14 @@ def _parse_hour_min(text: str) -> int:
     return hours * 60 + minutes
 
 
-#@tc.typecheck
+# @tc.typecheck
 def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
     """ Parse hours ranges defined as:
         hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
     Returns iterable: (start_time, end_time) for each valid range
     start_time, end_time = int: hour * 60 + minutes
     """
+    # pylint: disable=invalid-sequence-index
     inp = inp.replace(' ', '').replace('\t', '')
     for hrang in inp.split(','):
         if '-' not in hrang:

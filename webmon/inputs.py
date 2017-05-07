@@ -4,7 +4,7 @@ Standard inputs classes.
 Input generate some content according to given configuration (i.e. download it
 from internet).
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -22,7 +22,7 @@ import requests
 from . import common
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 _GITHUB_MAX_AGE = 86400 * 90  # 90 days
 _JAMENDO_MAX_AGE = 86400 * 90  # 90 days
@@ -123,7 +123,7 @@ class WebInput(AbstractInput):
             if response:
                 response.close()
             return result
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             result.set_error(err)
             if response:
                 response.close()
@@ -164,6 +164,7 @@ class RssInput(AbstractInput):
 
     def load(self):
         """ Return rss items as one or many parts; each part is on article. """
+        # pylint: disable=too-many-locals
         try:
             import feedparser
         except ImportError:
@@ -246,6 +247,7 @@ class RssInput(AbstractInput):
         return "\n".join(res).strip()
 
     def _get_fields_to_load(self) -> ty.Tuple[ty.Iterable[str], bool]:
+        # pylint: disable=invalid-sequence-index
         add_content = False
         cfields = (field.strip() for field in self._conf["fields"].split(","))
         fields = [field for field in cfields if field]
@@ -334,6 +336,7 @@ def get_input(ctx):
 
 class GitHubMixin(object):
     """Support functions for GitHub"""
+    # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _github_check_repo_updated(repository,
@@ -345,6 +348,7 @@ class GitHubMixin(object):
             true when repo is updated
         )
         """
+        # pylint: disable=invalid-sequence-index
         min_date = time.time() - _GITHUB_MAX_AGE
         updated = True
         if last_updated:
@@ -424,7 +428,7 @@ class GithubInput(AbstractInput, GitHubMixin):
         try:
             result.items = [form_fun(commit, full_message)
                             for commit in commits]
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             result.set_error(err)
             return result
 
@@ -561,7 +565,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
                 _format_gh_release_long
             result.items.extend(form_fun(release, full_message)
                                 for release in releases)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             result.set_error(err)
             return result
 
@@ -629,7 +633,7 @@ class JamendoAlbumsInput(AbstractInput):
         except requests.exceptions.ReadTimeout:
             response.set_error("timeout")
             return
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             response.set_error(err)
             return
 
@@ -722,7 +726,7 @@ class JamendoTracksInput(AbstractInput):
         if ctx.last_updated and ctx.last_updated > last_updated:
             last_updated = ctx.last_updated
 
-        url = _jamendo_build_service_url_tracks(conf, last_updated)
+        url = _jamendo_build_url_tracks(conf, last_updated)
 
         result = common.Result(ctx.oid, ctx.input_idx)
         ctx.log_debug("JamendoTracksInput: loading url: %s", url)
@@ -733,7 +737,7 @@ class JamendoTracksInput(AbstractInput):
         except requests.exceptions.ReadTimeout:
             response.set_error("timeout")
             return
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             response.set_error(err)
             return
 
@@ -758,17 +762,17 @@ class JamendoTracksInput(AbstractInput):
 
         if conf.get('short_list'):
             result.items.extend(
-                _jamendo_track_format_short_list(res['results']))
+                _jamendo_track_format_short(res['results']))
         else:
             result.items.extend(
-                _jamendo_track_format_long_list(res['results']))
+                _jamendo_track_format_long(res['results']))
 
         response.close()
         ctx.log_debug("JamendoTrackInput: load done")
         return result
 
 
-def _jamendo_build_service_url_tracks(conf, last_updated):
+def _jamendo_build_url_tracks(conf, last_updated):
     last_updated = time.strftime("%Y-%m-%d",
                                  time.localtime(last_updated))
     today = time.strftime("%Y-%m-%d")
@@ -788,7 +792,7 @@ def _jamendo_track_to_url(track_id):
     return 'https://www.jamendo.com/track/{}/'.format(track_id)
 
 
-def _jamendo_track_format_short_list(results):
+def _jamendo_track_format_short(results):
     for result in results:
         yield "\n".join(
             " ".join((track['releasedate'], track["name"],
@@ -796,7 +800,7 @@ def _jamendo_track_format_short_list(results):
             for track in result.get('tracks') or [])
 
 
-def _jamendo_track_format_long_list(results):
+def _jamendo_track_format_long(results):
     for result in results:
         for track in result.get('tracks') or []:
             res_track = [track['releasedate'], track["name"],

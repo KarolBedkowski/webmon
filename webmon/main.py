@@ -2,7 +2,7 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -19,13 +19,13 @@ import pprint
 import time
 import typing as ty
 
-#import typecheck as tc
+# import typecheck as tc
 
 from . import (cache, common, comparators, config, filters, inputs,
                logging_setup, outputs, metrics)
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 VERSION = "0.2"
 APP_NAME = "webmon"
@@ -34,11 +34,12 @@ DEFAULT_DIFF_MODE = "ndiff"
 _LOG = logging.getLogger("main")
 
 
-#@tc.typecheck
+# @tc.typecheck
 def compare_contents(prev_content: str, content: str, ctx: common.Context,
                      result: common.Result) \
         -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
     """ Compare contents according to configuration. """
+    # pylint: disable=invalid-sequence-index
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, opts)
@@ -53,9 +54,10 @@ def compare_contents(prev_content: str, content: str, ctx: common.Context,
     return compared, diff, {'comparator_opts': new_meta}
 
 
-#@tc.typecheck
+# @tc.typecheck
 def compare_content_new(content: str, ctx: common.Context,
                         result: common.Result) -> ty.Tuple[str, dict]:
+    # pylint: disable=invalid-sequence-index
     opts = ctx.input_conf.get("diff_options")
     comparator = comparators.get_comparator(
         ctx.input_conf["diff_mode"] or DEFAULT_DIFF_MODE, opts)
@@ -66,7 +68,7 @@ def compare_content_new(content: str, ctx: common.Context,
     return diff, {'comparator_opts': new_meta}
 
 
-#@tc.typecheck
+# @tc.typecheck
 def check_last_error_time(ctx: common.Context) -> bool:
     """
     Return true when load error occurred and still `on_error_wait` interval
@@ -80,7 +82,7 @@ def check_last_error_time(ctx: common.Context) -> bool:
     return False
 
 
-#@tc.typecheck
+# @tc.typecheck
 def load_content(loader, ctx: common.Context) -> common.Result:
     """ Load & filter content """
     start = time.time()
@@ -118,13 +120,14 @@ def load_content(loader, ctx: common.Context) -> common.Result:
     return result
 
 
-#@tc.typecheck
+# @tc.typecheck
 def process_content(ctx: common.Context, result: common.Result) \
         -> ty.Tuple[str, str, ty.Optional[dict], str]:
     """Detect content status (changes). Returns content formatted to
     write into cache.
     Returns (status, diff_result, new metadata, content after processing)
     """
+    # pylint: disable=invalid-sequence-index
     status = result.status
     if status == common.STATUS_ERROR:
         err = result.meta['error']
@@ -157,7 +160,7 @@ def process_content(ctx: common.Context, result: common.Result) \
     return (common.STATUS_UNCHANGED, prev_content, new_meta, content)
 
 
-#@tc.typecheck
+# @tc.typecheck
 def create_error_result(ctx: common.Context, error_msg: str) \
         -> common.Result:
     result = common.Result(ctx.oid, ctx.input_idx)
@@ -165,7 +168,7 @@ def create_error_result(ctx: common.Context, error_msg: str) \
     return result
 
 
-#@tc.typecheck
+# @tc.typecheck
 def load(ctx: common.Context) -> bool:
     """ Load one input defined & configured by context"""
     ctx.log_debug("start loading")
@@ -202,7 +205,7 @@ def load(ctx: common.Context) -> bool:
 
     try:
         result.status, pres, new_meta, content = process_content(ctx, result)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
         ctx.log_error("processing error: %r", err)
         result = create_error_result(ctx, str(err))
         result.status, pres, new_meta, content = process_content(ctx, result)
@@ -293,7 +296,7 @@ def _load_user_classes():
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-#@tc.typecheck
+# @tc.typecheck
 def _list_inputs(inps, conf, args):
     print("Inputs:")
     defaults = _build_defaults(args, conf)
@@ -304,7 +307,7 @@ def _list_inputs(inps, conf, args):
         print(" {:2d} {:<40s} {}".format(idx, name, act))
 
 
-#@tc.typecheck
+# @tc.typecheck
 def _list_inputs_dbg(inps, conf, args):
     try:
         gcache = cache.Cache(os.path.join(
@@ -318,10 +321,6 @@ def _list_inputs_dbg(inps, conf, args):
         params = common.apply_defaults(defaults, inp_conf)
         ctx = common.Context(params, gcache, idx, None, args)
         ctx.metadata = ctx.cache.get_meta(ctx.oid) or {}
-        name = config.get_input_name(params, idx)
-        loader = inputs.get_input(ctx)
-        act = "ENB" if params.get("enable", True) else "DIS"
-        oid = config.gen_input_oid(params)
 
         if ctx.last_updated:
             last_update = time.strftime("%x %X",
@@ -329,6 +328,7 @@ def _list_inputs_dbg(inps, conf, args):
         else:
             last_update = 'never loaded'
 
+        loader = inputs.get_input(ctx)
         next_update_ts = loader.next_update()
         if next_update_ts:
             next_update = time.strftime(
@@ -337,8 +337,13 @@ def _list_inputs_dbg(inps, conf, args):
             next_update = 'now'
 
         print(" {:2d} {:<40s}  {}  last: {}  next: {}  {}  {}".format(
-            idx, name, act, last_update, next_update,
-            ctx.metadata.get('status'), oid))
+            idx,
+            config.get_input_name(params, idx),
+            "ENB" if params.get("enable", True) else "DIS",
+            last_update, next_update,
+            ctx.metadata.get('status'),
+            config.gen_input_oid(params)
+        ))
 
 
 def _build_defaults(args, conf):
@@ -377,7 +382,7 @@ def load_all(args, inps, conf, selection=None):
         ctx = common.Context(params, gcache, idx, output, args)
         try:
             load(ctx)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             ctx.log_error("loading error: %s",
                           str(err).replace("\n", "; "))
             ctx.output.put_error(ctx, str(err))

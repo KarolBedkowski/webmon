@@ -4,7 +4,7 @@ Default outputs.
 Output get new/changed/deleted contents and present it in human-readable
 format. I.e. generate report, send mail.
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -27,9 +27,12 @@ import re
 from docutils.core import publish_string
 
 import yaml
-#import typecheck as tc
+# import typecheck as tc
 
 from . import (common, metrics)
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 _DOCUTILS_HTML_OVERRIDES = {
     'stylesheet_path': os.path.join(os.path.dirname(__file__), "main.css")
@@ -69,7 +72,7 @@ class AbstractOutput(object):
 _RST_ESCAPE_UN_RE = re.compile(r"(\S)_(\s)")
 
 
-#@tc.typecheck
+# @tc.typecheck
 def rst_escape(text: str) -> str:
     text = text.replace("\\", "\\\\").\
         replace('`', '\\').\
@@ -90,12 +93,13 @@ def rst_escape(text: str) -> str:
 _RST_HEADERS_CHARS = ('=', '-', '+', '`', "'", '~', '.', ',')
 
 
-#@tc.typecheck
+# @tc.typecheck
 def yield_rst_header(text: str, level: int) -> ty.Iterable[str]:
     if text:
         yield ''
         yield text
-        yield _RST_HEADERS_CHARS[level] * len(text)
+        head_char = _RST_HEADERS_CHARS[level]
+        yield head_char * len(text)
         yield ''
 
 
@@ -131,12 +135,13 @@ class AbstractTextOutput(AbstractOutput):
     """Simple text reporter"""
 
     def _format_item_header(self, item: dict) -> ty.Iterable[str]:
+        # pylint: disable=no-self-use
         update_date = item['meta'].get('update_date')
         if update_date:
             yield time.strftime("%x %X", time.localtime(update_date))
         yield "*" + common.status_human_str(item['status']) + "*"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _format_item(self, item: dict, show_header: bool):
         """ Generate section for one result """
         if show_header:
@@ -185,9 +190,10 @@ class AbstractTextOutput(AbstractOutput):
             yield wrap_debug_info("DEBUG: " + str(item['debug']))
             yield ""
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _get_stats_str(self, groups: dict) ->str:
         """ Generate header """
+        # pylint: disable=no-self-use
         return ";  ".join(
             "*%s*: %d" % (title, len(items)) for title, items in [
                 ("Changed", groups[common.STATUS_CHANGED]),
@@ -196,7 +202,7 @@ class AbstractTextOutput(AbstractOutput):
                 ("Error", groups[common.STATUS_ERROR])
             ] if items)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _gen_section(self, title: str, items: list):
         """ Generate section (changed/new/errors/etc)"""
         if not items:
@@ -213,7 +219,7 @@ class AbstractTextOutput(AbstractOutput):
                 yield from self._format_item(content, show_items_headers)
         yield ''
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _mk_report(self, groups: dict, footer=None):
         """ Generate whole report"""
         yield "========"
@@ -288,7 +294,7 @@ class ConsoleOutput(AbstractTextOutput):
 
     name = "console"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def report(self, items: dict, footer: ty.Optional[str]=None):
         print("\n".join(self._mk_report(items, footer)))
 
@@ -324,7 +330,7 @@ class EMailOutput(AbstractTextOutput):
         if encrypt and encrypt not in ('gpg', ):
             raise common.ParamError("invalid encrypt parameter: %r" % encrypt)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def report(self, items: dict, footer: ty.Optional[str]=None):
         conf = self._conf
         body = "\n".join(self._mk_report(items, footer))
@@ -378,7 +384,7 @@ class EMailOutput(AbstractTextOutput):
         return stdout
 
 
-#@tc.typecheck
+# @tc.typecheck
 def _get_output(name: str, params: dict) -> ty.Optional[AbstractOutput]:
     if not params.get("enabled", True):
         return None
@@ -390,7 +396,7 @@ def _get_output(name: str, params: dict) -> ty.Optional[AbstractOutput]:
         return out
 
 
-#@tc.typecheck
+# @tc.typecheck
 def qualify_item_to_status(group: ty.Iterable) -> str:
     """ Qualify items to one of the groups by status.
     Items in list can have various statuses
@@ -444,7 +450,7 @@ class OutputManager(object):
                 files[oid].append(fpath)
         return files.values()
 
-    #@tc.typecheck
+    # @tc.typecheck
     def _load_file(self, fpath: str) -> dict:
         self._log.debug("_load_file %r", fpath)
         with open(fpath, "r") as ifile:
@@ -463,6 +469,7 @@ class OutputManager(object):
 
     def write(self, footer=None, debug: bool=False):
         """ Write all reports; footer is optionally included. """
+        # pylint: disable=too-many-locals
         self._log.debug("OutputManager: writing...")
         gstart = time.time()
 
@@ -505,7 +512,7 @@ class OutputManager(object):
                     output.report(data_by_status, footer)
                     metrics.COLLECTOR.put_output(
                         rep, time.time() - start, "success")
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-except
                 metrics.COLLECTOR.put_output(rep, time.time() - start,
                                              "error")
                 self._log.exception("OutputManager: write %s error: %s",
@@ -525,7 +532,7 @@ class OutputManager(object):
         metrics.COLLECTOR.put_output_summary(all_items, len(processed_files),
                                              time.time() - gstart)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def put(self, part: common.Result, content: str, input_conf: dict):
         assert isinstance(part, common.Result)
         dst_file = os.path.join(self._working_dir, part.oid + "." +
@@ -548,7 +555,7 @@ class OutputManager(object):
         with open(dst_file, "w") as ofile:
             yaml.safe_dump(outp, ofile)
 
-    #@tc.typecheck
+    # @tc.typecheck
     def put_error(self, ctx: common.Context, err):
         result = common.Result(ctx.oid, ctx.input_idx)
         result.set_error(err)

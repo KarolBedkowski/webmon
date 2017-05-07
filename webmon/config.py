@@ -2,7 +2,7 @@
 """
 Configuration related functions.
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -22,7 +22,7 @@ except ImportError:
 import yaml
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 _LOG = logging.getLogger("conf")
 

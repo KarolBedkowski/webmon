@@ -3,7 +3,7 @@
 Comparators - classes that get previous and current version and return
 human-readable differences.
 
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -14,12 +14,12 @@ import time
 import typing as ty
 import hashlib
 
-#import typecheck as tc
+# import typecheck as tc
 
 from . import common
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 
 class AbstractComparator(object):
@@ -40,6 +40,7 @@ class AbstractComparator(object):
     def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
             -> ty.Tuple[str, dict]:
         """ Process new content """
+        # pylint: disable=no-self-use,unused-argument,invalid-sequence-index
         return new, {}
 
     def compare(self, old: str, old_date: str, new: str, new_date: str,
@@ -60,6 +61,7 @@ class AbstractComparator(object):
             iter<strings>
             dict - options
         """
+        # pylint: disable=no-self-use,unused-argument,invalid-sequence-index
         raise NotImplementedError()
 
 
@@ -95,10 +97,11 @@ class ContextDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }  # type: Dict[str, ty.Any]
 
-    #@tc.typecheck
+    # @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
+        # pylint: disable=invalid-sequence-index
         old_lines = old.split('\n')
         res = list(difflib.context_diff(
             old_lines, new.split('\n'),
@@ -125,6 +128,7 @@ class UnifiedDiff(AbstractComparator):
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
+        # pylint: disable=invalid-sequence-index
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         old_lines = old.split('\n')
@@ -150,10 +154,11 @@ class NDiff(AbstractComparator):
         common.OPTS_PREFORMATTED: True,
     }
 
-    #@tc.typecheck
+    # @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
+        # pylint: disable=invalid-sequence-index
         old = old.replace(common.RECORD_SEPARATOR, '\n\n')
         new = new.replace(common.RECORD_SEPARATOR, '\n\n')
         old_lines = old.split('\n')
@@ -179,6 +184,7 @@ def _instr_separator(instr1: str, instr2: ty.Optional[str]) -> str:
 
 def _substract_lists(instr1: str, instr2: str) -> ty.Tuple[str, int, int, int]:
     """ Get only items from instr1 that not exists in instr2"""
+    # pylint: disable=invalid-sequence-index
     separator = _instr_separator(instr1, instr2)
 
     l2set = set(map(hash, instr2.split(separator)))
@@ -199,9 +205,9 @@ def _drop_old_hashes(previous_hash: ty.Dict[str, int], days: int) -> \
 
 def hash_item(item: str) -> str:
     """Create hash for one item"""
-    m = hashlib.md5()
-    m.update(item.encode('utf-8'))
-    return m.hexdigest()
+    chsum = hashlib.md5()
+    chsum.update(item.encode('utf-8'))
+    return chsum.hexdigest()
 
 
 def hash_strings(inp: ty.List[str]) -> ty.Dict[int, int]:
@@ -215,10 +221,11 @@ class Added(AbstractComparator):
     """ Generate list of added (new) items """
     name = "added"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def new(self, new: str, new_date: str, ctx: common.Context, meta: dict) \
             -> ty.Tuple[str, dict]:
         """ Process new content """
+        # pylint: disable=invalid-sequence-index
         sep = _instr_separator(new, None)
         # calculate hashs for new items
         new_hashes = hash_strings(new.split(sep))
@@ -226,11 +233,12 @@ class Added(AbstractComparator):
         meta['hashes'] = new_hashes
         return new, meta
 
-    #@tc.typecheck
+    # @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Get only added items """
+        # pylint: disable=invalid-sequence-index,too-many-locals
 
         meta = self.opts.copy()
         # find common separator
@@ -285,11 +293,12 @@ class Deleted(AbstractComparator):
     """ Generate list of deleted (misssing) items """
     name = "deleted"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Get only deleted items """
+        # pylint: disable=invalid-sequence-index
 
         res, old_cnt, _, changed = _substract_lists(old, new)
 
@@ -305,15 +314,16 @@ class Last(AbstractComparator):
     """ Return current version """
     name = "last"
 
-    #@tc.typecheck
+    # @tc.typecheck
     def compare(self, old: str, old_date: str, new: str, new_date: str,
                 ctx: common.Context, meta: dict) \
             -> ty.Tuple[bool, ty.Optional[str], ty.Optional[dict]]:
         """ Return last (new) version """
+        # pylint: disable=invalid-sequence-index
         return True, new, self.opts
 
 
-#@tc.typecheck
+# @tc.typecheck
 def get_comparator(name: str, conf: ty.Optional[dict]) -> \
         ty.Optional[AbstractComparator]:
     """ Get comparator object by name"""

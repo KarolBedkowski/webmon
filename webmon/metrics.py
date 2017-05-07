@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+Application metrics.
+
+Copyright (c) Karol Będkowski, 2016-2017
+
+This file is part of webmon.
+Licence: GPLv2+
+"""
 
 import logging
 import threading
@@ -11,6 +19,9 @@ except ImportError:
     pc = None
 
 from . import common
+
+__author__ = "Karol Będkowski"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
 
 
 class AbstractMetricCollector(object):
@@ -86,6 +97,7 @@ class MetricsSimple(AbstractMetricCollector):
 
 class MetricsProm(AbstractMetricCollector):
     """Export metrics to prometheus"""
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, conf):
         super().__init__(conf)
         # inputs
@@ -143,14 +155,18 @@ class MetricsProm(AbstractMetricCollector):
         status = status or (result.status if result else None)
         process_time = result.meta['update_duration'] if result else None
         if process_time:
+            # pylint: disable=no-member
             self._inp_loading_time.labels(ctx.name).set(process_time)
+        # pylint: disable=no-member
         self._inp_by_status.labels(status, ctx.name).inc()
 
     def put_loading_summary(self, total_duration: float=None):
         self._total_loading_duration.set(total_duration)
 
     def put_output(self, output: str, process_time: float, status: str):
+        # pylint: disable=no-member
         self._outp_process_time.labels(output).set(process_time)
+        # pylint: disable=no-member
         self._outp_status.labels(status, output).inc()
 
     def put_output_summary(self, inputs: int, files: int,

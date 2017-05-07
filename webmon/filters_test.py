@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+# pylint: skip-file
 """
-Copyright (c) Karol Będkowski, 2016
+Copyright (c) Karol Będkowski, 2016-2017
 
 This file is part of webmon.\
 Licence: GPLv2+
