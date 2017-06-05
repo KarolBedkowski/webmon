@@ -69,7 +69,7 @@ class AbstractOutput(object):
 
 
 # escape '_' -> '\_'
-_RST_ESCAPE_UN_RE = re.compile(r"(\S)_(\s)")
+_RST_ESCAPE_UN_RE = re.compile(r"(\S)_([\s.,!:;?])")
 
 
 # @tc.typecheck
