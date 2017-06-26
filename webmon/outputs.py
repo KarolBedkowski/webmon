@@ -81,9 +81,10 @@ def rst_escape(text: str) -> str:
         rstrip()
     if not text:
         return text
-    if text[-1] == '_':
-        text = text[:-1] + r"\_"
-    text = _RST_ESCAPE_UN_RE.sub(r"\1\_\2", text)
+#    if text[-1] == '_':
+#        text = text[:-1] + r"\_"
+#    text = _RST_ESCAPE_UN_RE.sub(r"\1\_\2", text)
+    text = text.replace("_", r"\_")
     for header_char in _RST_HEADERS_CHARS:
         if text == header_char * len(text):
             text = '\n' + text + '\n'
