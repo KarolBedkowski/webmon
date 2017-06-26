@@ -113,7 +113,8 @@ class WebInput(AbstractInput):
         try:
             response = requests.request(url=url, method='GET',
                                         headers=headers,
-                                        timeout=self._conf['timeout'])
+                                        timeout=self._conf['timeout'],
+                                        allow_redirects=True)
             if not response:
                 result.set_error("no result")
                 return result
@@ -178,6 +179,7 @@ class RssInput(AbstractInput):
         url = self._conf['url']
         result = common.Result(ctx.oid, ctx.input_idx)
         result.link = url
+        result.footer = ""
         etag = result.meta['etag'] = ctx.metadata.get('etag')
         ctx.log_debug("RssInput: loading from %s, etag=%r, modified=%r",
                       url, etag, modified)
@@ -187,12 +189,10 @@ class RssInput(AbstractInput):
             result.set_no_modified("304 code")
             return result
         if status == 301:  # permanent redirects
-            result.append('Permanently redirects: ' + doc.href)
-            return result
+            result.footer = 'Permanently redirects: ' + doc.href + " "
         if status == 302:
-            result.append('Temporary redirects: ' + doc.href)
-            return result
-        if status != 200:
+            result.footer = 'Temporary redirects: ' + doc.href + " "
+        if status not in (200, 301, 302):
             ctx.log_error("load document error %s: %s", status, doc)
             summary = "Loading page error: %s" % status
             feed = doc.get('feed')
@@ -219,8 +219,8 @@ class RssInput(AbstractInput):
         result.items.extend(self._load_entry(entry, fields, add_content)
                             for entry in entries)
 
-        result.footer = ("Loaded only last %d items" % max_items
-                         if limited else "All items loaded")
+        result.footer += ("Loaded only last %d items" % max_items
+                          if limited else "All items loaded")
 
         # update metadata
         result.meta['etag'] = doc.get('etag')
