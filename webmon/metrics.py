@@ -138,14 +138,6 @@ class MetricsProm(AbstractMetricCollector):
             "Status processed in report by status",
             ['status', "output"])
 
-        pc.REGISTRY.unregister(pc.PROCESS_COLLECTOR)
-        self._process_collector = pc.ProcessCollector(namespace="webmon")
-        try:
-            pc.REGISTRY.register(self._process_collector)
-        except ValueError:
-            # already registered
-            pass
-
     def write(self):
         filename = common.prepare_filename(self.conf['prometheus_output'])
         pc.write_to_textfile(filename, pc.REGISTRY)
