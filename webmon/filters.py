@@ -36,7 +36,7 @@ class AbstractFilter(object):
     # parameters - list of tuples (name, description, default, required)
     params = [
         ("mode", "Filtering mode", "parts", False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf: dict, ctx: common.Context) -> None:
         super().__init__()
@@ -58,7 +58,7 @@ class AbstractFilter(object):
     # @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
         result = result.clone()
-        items = []  # type: List[str]
+        items = []  # type: ty.List[str]
         for item in result.items:
             items.extend(self._filter(item, result))
         result.items = items
@@ -75,7 +75,7 @@ class Html2Text(AbstractFilter):
     params = [
         ("mode", "Filtering mode", "parts", False),
         ("width", "Max line width", 999999, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def validate(self):
         super().validate()
@@ -101,7 +101,7 @@ class Strip(AbstractFilter):
     name = "strip"
     params = [
         ("chars", "Characters to strip", None, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
@@ -140,7 +140,7 @@ class Split(AbstractFilter):
         ("max_split", "Maximum number of lines", -1, False),
         ("generate_parts", "Generate parts instead of split into lines",
          False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
@@ -159,7 +159,7 @@ class Sort(AbstractFilter):
     name = "sort"
     params = [
         ("mode", "Filtering mode (parts/lines)", "parts", False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     # @tc.typecheck
     def filter(self, result: common.Result) -> common.Result:
@@ -183,7 +183,7 @@ class Grep(AbstractFilter):
     params = [
         ("mode", "Filtering mode (parts/lines)", "parts", False),
         ("pattern", "Regular expression", None, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
         super().__init__(conf, ctx)
@@ -218,7 +218,7 @@ class Wrap(AbstractFilter):
     params = [
         ("width", "Maximal line width", 76, False),
         ("max_lines", "Max number of lines", None, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
         super().__init__(conf, ctx)
@@ -252,7 +252,7 @@ class DeCSVlise(AbstractFilter):
         ("generate_parts", "Generate parts instead of split into lines",
          False, False),
         ("strip", "strip whitespaces", False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
@@ -294,7 +294,7 @@ class GetElementsByCss(AbstractFilter):
     name = "get-elements-by-css"
     params = [
         ("sel", "selector", None, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, conf, ctx):
         super().__init__(conf, ctx)
@@ -323,7 +323,7 @@ class GetElementsByXpath(AbstractFilter):
     name = "get-elements-by-xpath"
     params = [
         ("xpath", "selector", None, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     # @tc.typecheck
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
@@ -336,7 +336,7 @@ class GetElementsById(AbstractFilter):
     name = "get-elements-by-id"
     params = [
         ("sel", "selector", None, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         try:
@@ -369,7 +369,7 @@ class CommandFilter(AbstractFilter):
         ("command", "command to run", None, True),
         ("split_lines", "split filter results on newline character",
          False, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
         subp = subprocess.Popen(self._conf["command"],
