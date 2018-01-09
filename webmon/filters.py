@@ -3,11 +3,12 @@
 Default filters definition.
 Filters get one content and transform it to another.
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
 """
+import io
 import csv
 import re
 import subprocess
@@ -20,7 +21,7 @@ from . import common
 
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 
 class AbstractFilter(object):
@@ -274,7 +275,7 @@ def _get_elements_by_xpath(filter_, data, expression):
     # pylint: disable=no-member
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
-    document = etree.fromstringlist([data], html_parser)
+    document = etree.parse(io.StringIO(data), html_parser)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
         if isinstance(elem, etree._Element):
@@ -345,7 +346,7 @@ class GetElementsById(AbstractFilter):
         # pylint: disable=no-member
         html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                        strip_cdata=True)
-        document = etree.fromstringlist([item], html_parser)
+        document = etree.parse(io.StringIO(item), html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
             # pylint: disable=protected-access
             if isinstance(elem, etree._Element):
