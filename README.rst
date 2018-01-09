@@ -19,6 +19,7 @@ Dependences
 * feedparser (for rss input)
 * github3py (for github api; pip install --pre github3.py)
 * typecheck-decorator
+* cssselect & python3-lxml (for elements filtering)
 
 
 Usage
