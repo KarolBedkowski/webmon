@@ -261,6 +261,11 @@ Filters
   Filter items by external program. Options: `command` (command to lauch),
   `split_lines` (split result into items by new line characters).
 
+`head`
+  Get top items. Options: `count` (number of items).
+
+`tail`
+  Get last items. Options: `count` (number of items).
 
 **Common options**
 

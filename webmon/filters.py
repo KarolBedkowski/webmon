@@ -131,6 +131,34 @@ class Compact(AbstractFilter):
         yield "\n".join(_compact_lines(item.split("\n")))
 
 
+class Head(AbstractFilter):
+    """Get top x lines"""
+
+    name = "head"
+    params = [
+        ("count", "Maximum number of first lines to get", 20, True),
+    ]
+
+    # @tc.typecheck
+    def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
+        count = self._conf['count']
+        yield "\n".join(item.split("\n", count + 1)[:count])
+
+
+class Tail(AbstractFilter):
+    """Get top x lines"""
+
+    name = "tail"
+    params = [
+        ("count", "Maximum number of last lines to get", 20, True),
+    ]
+
+    # @tc.typecheck
+    def _filter(self, item: str, result: common.Result) -> ty.Iterable[str]:
+        count = self._conf['count']
+        yield "\n".join(item.split("\n")[-count:])
+
+
 class Split(AbstractFilter):
     """Split input on given character"""
 
