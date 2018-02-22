@@ -4,7 +4,7 @@ Default outputs.
 Output get new/changed/deleted contents and present it in human-readable
 format. I.e. generate report, send mail.
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -32,7 +32,7 @@ import yaml
 from . import (common, metrics)
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 _DOCUTILS_HTML_OVERRIDES = {
     'stylesheet_path': os.path.join(os.path.dirname(__file__), "main.css")
@@ -216,7 +216,12 @@ class AbstractTextOutput(AbstractOutput):
             assert isinstance(item, list)
             assert len(item) > 0
             fitem = item[-1]
-            yield from yield_rst_header(fitem['title'], 2)
+            title = fitem.get('title')
+            if not title:
+                input_conf = fitem['input_conf']
+                title = input_conf.get('name') or input_conf.get('url') or \
+                    fitem.get('oid') or 'unknown'
+            yield from yield_rst_header(title, 2)
             show_items_headers = len(item) > 1
             for content in item:
                 yield from self._format_item(content, show_items_headers)
