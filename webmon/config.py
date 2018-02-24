@@ -2,7 +2,7 @@
 """
 Configuration related functions.
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -22,7 +22,7 @@ except ImportError:
 import yaml
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 _LOG = logging.getLogger("conf")
 
@@ -86,7 +86,7 @@ def _find_config_file(name: str, must_exists: bool=True) -> str:
     # try ~/.config/webmon/
     bname = os.path.basename(name)
     fpath = os.path.expanduser(os.path.join("~", ".config", "webmon", bname))
-    return fpath if not must_exists or os.path.isfile(fpath) else None
+    return fpath if not must_exists or os.path.isfile(fpath) else name
 
 
 def gen_input_oid(conf: dict) -> str:
