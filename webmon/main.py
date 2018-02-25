@@ -2,7 +2,7 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -25,7 +25,7 @@ from . import (cache, common, comparators, config, filters, inputs,
                logging_setup, outputs, metrics)
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 VERSION = "0.2"
 APP_NAME = "webmon"
@@ -412,6 +412,41 @@ def load_all(args, inps, conf, selection=None):
     metrics.COLLECTOR.write()
 
 
+def check_libraries():
+    try:
+        from lxml import etree
+    except ImportError:
+        _LOG.warn("missing lxml library")
+    try:
+        import cssselect
+    except ImportError:
+        _LOG.warn("missing cssselect library")
+    try:
+        import html2text
+    except ImportError:
+        _LOG.warn("missing html2text library")
+    try:
+        import docutils.core
+    except ImportError:
+        _LOG.warn("missing docutils library")
+    try:
+        import yaml
+    except ImportError:
+        _LOG.warn("missing yaml library")
+    try:
+        import requests
+    except ImportError:
+        _LOG.warn("missing requests library")
+    try:
+        import feedparser
+    except ImportError:
+        _LOG.warn("missing feedparser library")
+    try:
+        import github3
+    except ImportError:
+        _LOG.warn("missing github3 library")
+
+
 def main():
     """Main function."""
 
@@ -419,6 +454,8 @@ def main():
 
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)
+
+    check_libraries()
 
 #    if not args.debug:
 #        tc.disable()
