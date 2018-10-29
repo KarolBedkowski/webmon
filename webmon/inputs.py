@@ -4,7 +4,7 @@ Standard inputs classes.
 Input generate some content according to given configuration (i.e. download it
 from internet).
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -22,13 +22,13 @@ import requests
 from . import common
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 _GITHUB_MAX_AGE = 86400 * 90  # 90 days
 _JAMENDO_MAX_AGE = 86400 * 90  # 90 days
 
 
-class AbstractInput(object):
+class AbstractInput:
     """ Abstract/Base class for all inputs """
 
     # name used in configuration
@@ -38,7 +38,7 @@ class AbstractInput(object):
         ("name", "input name", None, False),
         ("interval", "update interval", None, False),
         ("report_unchanged", "report data even is not changed", False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def __init__(self, ctx: common.Context) -> None:
         super().__init__()
@@ -95,7 +95,7 @@ class WebInput(AbstractInput):
     params = AbstractInput.params + [
         ("url", "Web page url", None, True),
         ("timeout", "loading timeout", 30, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self) -> common.Result:
         """ Return one part - page content. """
@@ -161,7 +161,7 @@ class RssInput(AbstractInput):
         ("max_items", "Maximal number of articles to load", None, False),
         ("html2text", "Convert html content to plain text", False, False),
         ("fields", "Fields to load from rss", _RSS_DEFAULT_FIELDS, True),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """ Return rss items as one or many parts; each part is on article. """
@@ -203,7 +203,7 @@ class RssInput(AbstractInput):
 
         entries = doc.get('entries')
 
-        if len(entries) == 0 and ctx.last_updated:
+        if not entries and ctx.last_updated:
             result.set_no_modified("no items")
             return result
 
@@ -290,7 +290,7 @@ class CmdInput(AbstractInput):
     params = AbstractInput.params + [
         ("cmd", "Command to run", None, True),
         ("split", "Split content", False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self) -> common.Result:
         """ Return command output as one part
@@ -332,9 +332,10 @@ def get_input(ctx):
         return inp
 
     ctx.log_error("unknown input kind: %s; skipping input", kind)
+    return None
 
 
-class GitHubMixin(object):
+class GitHubMixin:
     """Support functions for GitHub"""
     # pylint: disable=too-few-public-methods
 
@@ -388,7 +389,7 @@ class GithubInput(AbstractInput, GitHubMixin):
         ("github_token", "user personal token", None, False),
         ("short_list", "show commits as short list", True, False),
         ("full_message", "show commits whole commit body", False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self) -> common.Result:
         """Return commits."""
@@ -416,7 +417,7 @@ class GithubInput(AbstractInput, GitHubMixin):
             commits = list(repository.iter_commits(since=data_since,
                                                    etag=etag))
 
-        if len(commits) == 0:
+        if not commits:
             ctx.log_debug("GithubInput: not updated - co commits")
             result.set_no_modified("no items")
             return result
@@ -464,7 +465,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         ("github_user", "user login", None, False),
         ("github_token", "user personal token", None, False),
         ("max_items", "Maximal number of tags to load", None, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """Return commits."""
@@ -492,7 +493,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
-        if len(tags) == 0:
+        if not tags:
             ctx.log_debug("GithubInput: not updated - no new tags")
             result.set_no_modified("no items")
             return result
@@ -525,7 +526,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         ("github_token", "user personal token", None, False),
         ("max_items", "Maximal number of releases to load", None, False),
         ("full_message", "show commits whole commit body", False, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """Return releases."""
@@ -553,7 +554,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
 
-        if len(releases) == 0:
+        if not releases:
             ctx.log_debug("GithubInput: not updated - no new releases")
             result.set_no_modified("no items")
             return result
@@ -566,6 +567,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
             result.items.extend(form_fun(release, full_message)
                                 for release in releases)
         except Exception as err:  # pylint: disable=broad-except
+            ctx.log_exception("github load error", err)
             result.set_error(err)
             return result
 
@@ -606,7 +608,7 @@ class JamendoAlbumsInput(AbstractInput):
         ("artist", "artist name", None, False),
         ("jamendo_client_id", "jamendo client id", None, True),
         ("short_list", "show compact list", True, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """ Return one part - page content. """
@@ -711,7 +713,7 @@ class JamendoTracksInput(AbstractInput):
         ("artist", "artist name", None, False),
         ("jamendo_client_id", "jamendo client id", None, True),
         ("short_list", "show compact list", True, False),
-    ]  # type: List[ty.Tuple[str, str, ty.Any, bool]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool]]
 
     def load(self):
         """ Return one part - page content. """

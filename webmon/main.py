@@ -191,11 +191,11 @@ def load(ctx: common.Context) -> bool:
     try:
         result = load_content(loader, ctx)
     except common.InputError as err:
-        ctx.log_error("input error on %s: %r", err.input, err)
+        ctx.log_exception("input error on %s: %r", err.input, err)
         ctx.log_debug("input error params: %s", err.input.dump_debug())
         result = create_error_result(ctx, str(err))
     except common.FilterError as err:
-        ctx.log_error("filter error on %s: %r", err.filter, err)
+        ctx.log_exception("filter error on %s: %r", err.filter, err)
         ctx.log_debug("filter error params: %s", err.filter.dump_debug())
         result = create_error_result(ctx, str(err))
 
@@ -206,7 +206,7 @@ def load(ctx: common.Context) -> bool:
     try:
         result.status, pres, new_meta, content = process_content(ctx, result)
     except Exception as err:  # pylint: disable=broad-except
-        ctx.log_error("processing error: %r", err)
+        ctx.log_exception("processing error: %r", err)
         result = create_error_result(ctx, str(err))
         result.status, pres, new_meta, content = process_content(ctx, result)
 
@@ -383,8 +383,7 @@ def load_all(args, inps, conf, selection=None):
         try:
             load(ctx)
         except Exception as err:  # pylint: disable=broad-except
-            ctx.log_error("loading error: %s",
-                          str(err).replace("\n", "; "))
+            ctx.log_exception("loading error: %s", err)
             ctx.output.put_error(ctx, str(err))
         del ctx
 

@@ -2,7 +2,7 @@
 """
 Commons elements - errors etc
 
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2018
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -22,7 +22,7 @@ import typing as ty
 from . import config
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2018"
 
 
 _LOG = logging.getLogger("common")
@@ -180,10 +180,10 @@ class Context(object):
             self._log.debug(self._log_prefix + fmt, *args, **kwds)
 
     def log_error(self, fmt, *args, **kwds):
-        if self.debug:
-            self._log.exception(self._log_prefix + fmt, *args, **kwds)
-        else:
-            self._log.error(self._log_prefix + fmt, *args, **kwds)
+        self._log.error(self._log_prefix + fmt, *args, **kwds)
+
+    def log_exception(self, fmt, *args, **kwds):
+        self._log.exception(self._log_prefix + fmt, *args, **kwds)
 
 
 STATUS_NEW = 'new'
