@@ -15,8 +15,11 @@ import json
 import subprocess
 import time
 import typing as ty
+import ssl
 
 import requests
+from requests import adapters
+from urllib3 import poolmanager
 # import typecheck as tc
 
 from . import common
@@ -629,9 +632,9 @@ class JamendoAlbumsInput(AbstractInput):
         result = common.Result(ctx.oid, ctx.input_idx)
         ctx.log_debug("JamendoAlbumsInput: loading url: %s", url)
         try:
-            response = requests.request(url=url, method='GET',
-                                        headers=headers,
-                                        verify=False)
+            sess = requests.Session()
+            sess.mount("https://", ForceTLSV1Adapter())
+            response = sess.request(url=url, method='GET', headers=headers)
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
             result.set_error("timeout")
@@ -734,8 +737,9 @@ class JamendoTracksInput(AbstractInput):
         result = common.Result(ctx.oid, ctx.input_idx)
         ctx.log_debug("JamendoTracksInput: loading url: %s", url)
         try:
-            response = requests.request(url=url, method='GET',
-                                        headers=headers)
+            sess = requests.Session()
+            sess.mount("https://", ForceTLSV1Adapter())
+            response = sess.request(url=url, method='GET', headers=headers)
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
             result.set_error("timeout")
@@ -814,3 +818,15 @@ def _jamendo_track_format_long(results):
                                  _jamendo_album_to_url(track['album_id']))
 
             yield " ".join(res_track)
+
+
+class ForceTLSV1Adapter(adapters.HTTPAdapter):
+    """Require TLSv1 for the connection"""
+
+    def init_poolmanager(self, connections, maxsize, block=False):
+        self.poolmanager = poolmanager.PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            ssl_version=ssl.PROTOCOL_TLSv1,
+        )
