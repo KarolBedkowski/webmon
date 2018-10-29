@@ -628,14 +628,15 @@ class JamendoAlbumsInput(AbstractInput):
         ctx.log_debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             response = requests.request(url=url, method='GET',
-                                        headers=headers)
+                                        headers=headers,
+                                        verify=False)
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
-            response.set_error("timeout")
-            return
+            result.set_error("timeout")
+            return response
         except Exception as err:  # pylint: disable=broad-except
-            response.set_error(err)
-            return
+            result.set_error(err)
+            return response
 
         if response.status_code == 304:
             response.close()
@@ -647,7 +648,7 @@ class JamendoAlbumsInput(AbstractInput):
             if response.text:
                 msg += "\n" + response.text
             response.close()
-            response.set_error(msg)
+            result.set_error(msg)
             return response
 
         res = json.loads(response.text)
@@ -735,11 +736,11 @@ class JamendoTracksInput(AbstractInput):
                                         headers=headers)
             response.raise_for_status()
         except requests.exceptions.ReadTimeout:
-            response.set_error("timeout")
-            return
+            result.set_error("timeout")
+            return response
         except Exception as err:  # pylint: disable=broad-except
-            response.set_error(err)
-            return
+            result.set_error(err)
+            return response
 
         if response.status_code == 304:
             response.close()
@@ -751,7 +752,7 @@ class JamendoTracksInput(AbstractInput):
             if response.text:
                 msg += "\n" + response.text
             response.close()
-            response.set_error(msg)
+            result.set_error(msg)
             return response
 
         res = json.loads(response.text)
