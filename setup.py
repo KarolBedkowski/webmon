@@ -20,7 +20,7 @@ REQUIRES = [
     'PyYAML',
     'html2text',
     'feedparser'
-    'github3'
+    'github3.py'
 ]
 
 
