@@ -581,17 +581,20 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
 
 def _format_gh_release_short(release, _full_message):
-    res = [release.name, release.created_at.strftime("%x %X")]
+    res = [release.label, release.name,
+           release.created_at.strftime("%x %X"),
+           release.state]
     if release.html_url:
         res.append(release.html_url)
     if release.body:
         res.append(release.body().strip().split('\n', 1)[0].rstrip())
-    return " ".join(res)
+    return " ".join(map(str, filter(None, res)))
 
 
 def _format_gh_release_long(release, full_message):
-    res = [release.name,
-           '\n\n    Date: ', release.created_at.strftime("%x %X")]
+    res = [release.label, release.name,
+           '\n\n    Date: ', release.created_at.strftime("%x %X"),
+           release.state]
     if release.html_url:
         res.append('\n\n    ')
         res.append(release.html_url)
@@ -599,7 +602,7 @@ def _format_gh_release_long(release, full_message):
         res.append('\n\n')
         res.extend('   ' + line.strip()
                    for line in release.body.strip().split('\n'))
-    return "".join(res)
+    return " ".join(map(str, filter(None, res)))
 
 
 class JamendoAlbumsInput(AbstractInput):
