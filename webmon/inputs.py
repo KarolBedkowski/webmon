@@ -433,6 +433,7 @@ class GithubInput(AbstractInput, GitHubMixin):
             result.items = [form_fun(commit, full_message)
                             for commit in commits]
         except Exception as err:  # pylint: disable=broad-except
+            ctx.log_exception("github load error", err)
             result.set_error(err)
             return result
 
@@ -502,8 +503,9 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
             return result
 
         try:
-            result.items.extend(_format_gh_tag(tag) for tag in tags)
+            result.items.extend(filter(None, map(_format_gh_tag, tags)))
         except Exception as err:
+            ctx.log_exception("github load error", err)
             raise common.InputError(self, err)
 
         # add header
@@ -581,9 +583,8 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
 
 def _format_gh_release_short(release, _full_message):
-    res = [release.label, release.name,
-           release.created_at.strftime("%x %X"),
-           release.state]
+    res = [release.name, release.tag_name,
+           release.created_at.strftime("%x %X")]
     if release.html_url:
         res.append(release.html_url)
     if release.body:
@@ -592,9 +593,8 @@ def _format_gh_release_short(release, _full_message):
 
 
 def _format_gh_release_long(release, full_message):
-    res = [release.label, release.name,
-           '\n\n    Date: ', release.created_at.strftime("%x %X"),
-           release.state]
+    res = [release.name, release.tag_name,
+           '\n\n    Date: ', release.created_at.strftime("%x %X")]
     if release.html_url:
         res.append('\n\n    ')
         res.append(release.html_url)
