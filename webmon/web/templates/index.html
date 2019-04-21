@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Entries{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+	{% for entry in entries %}
+		<article>
+			<header>
+				<h4><a href="{{entry.url }}">{{ entry.title }}</a>
+					{% if entry.source.group %}<small>[{{ entry.source.group.name }}]</small>{% endif %}
+				</h4>
+				<p>{{ entry.source.name}} | &#9716;<time>{{ entry.updated|age }}</time></p>
+			</header>
+			{% if entry.content %}
+				{% if entry.get_opt('preformated') %}
+				<pre>{{ entry.content|safe }}</pre>
+				{% else %}
+				{{ entry.content|docutils|safe }}
+				{% endif %}
+			{% endif %}
+		</article>
+	{% endfor %}
+{% endblock %}
+  </body>
+</html>
