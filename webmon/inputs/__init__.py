@@ -46,7 +46,11 @@ def get_input(source: model.Source):
     scls = common.find_subclass(AbstractInput, source.kind)
     if scls:
         inp = scls(source)
-        inp.validate()
         return inp
 
     raise UnknownInputException()
+
+
+def enumerate_inputs():
+    return [name
+            for name, scls in common.get_subclasses_with_name(AbstractInput)]

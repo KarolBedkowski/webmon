@@ -10,7 +10,7 @@ insert into source_groups (name) values ("main");
 
 insert into sources (group_id, kind, name, interval, settings, filters)
 values (1, 'url', 'hn', 10, '{"url": "https://news.ycombinator.com/"}',
-    '[{"name": "get-elements-by-css", "sel": ".title"}, {"name": "html2text"}, {"name": "strip"}, {"name": "grep", "invert": true, "pattern": "^\\d+\\.$"}]'
+    '[{"name": "get-elements-by-css", "sel": ".title"}, {"name": "html2text"}, {"name": "strip"}, {"name": "grep", "invert": true, "pattern": "^\\d+\\.$"}, {"name": "remove_visited"}, {"name": "join"}]'
 );
 
 insert into sources (group_id, kind, name, interval, settings, filters)

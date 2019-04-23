@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Source{% endblock %}</h1>
+<style>
+	input,textarea,select {width: 75%;}
+	label {width: 20%; display: inline-block; vertical-align: top;}
+</style>
+{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		<p>
+			<label for="source-kind">Kind</label>
+			<input type="text" id="source-kind" readonly="readonly" value="{{ source.kind }}" />
+		</p>
+		<p>
+			<label for="source-name">Name</label>
+			<input type="text" name="name" id="source-name" value="{{ source.name }}"/>
+		</p>
+		<p>
+			<label for="source-group">Group</label>
+			<select name="group_id" id="source-group" value="{{ source.group_id }}">
+				<option value=""></option>
+				{% for group in groups %}
+				<option value="{{ group.id }}" {% if group.id == source.group_id %} selected="selected"{% endif %}>{{ group.name }}</option>
+				{% endfor %}
+			</select>
+		</p>
+		<p>
+			<label for="source-interval">Interval</label>
+			<input type="number" name="interval" id="source-interval" value="{{ source.interval }}"/>
+		</p>
+		<p>
+			<fieldset>
+				<legend>Settings</legend>
+				{% for sett in source.settings %}
+					{{ rf.render_field('sett', sett) }}
+				{% endfor %}
+			</fieldset>
+		</p>
+		<p>
+			<label for="source-filters">Filters</label>
+			<textarea name="filters" id="source-filters">{{ source.filters }}</textarea>
+		</p>
+		<button type="submit">Save</button>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

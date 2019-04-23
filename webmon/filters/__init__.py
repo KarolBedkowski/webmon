@@ -24,10 +24,13 @@ def _load_filters():
     from . import strip
     from . import diff
     from . import grep
+    from . import history
+    from . import join
     try:
         from . import split_text
-    except ImportError:
-        _LOG.warning("module lxml not found")
+    except ImportError as err:
+        _LOG.warning("module not found: %s", err)
+
 
 _load_filters()
 

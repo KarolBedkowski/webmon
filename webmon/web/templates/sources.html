@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% import '_render_source.html' as rs %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Sources{% endblock %}</h1>
+  <nav>
+	  <a href="{{ url_for("browser.refresh_all_sources")}}">Refresh all</a>
+	  <a href="{{ url_for("browser.source_new")}}">New source</a>
+  </nav>
+{% endblock %}
+
+{% block content %}
+	{% for source in sources %}
+		{{ rs.render_source(source) }}
+	{% endfor %}
+{% endblock %}
+
+  </body>
+</html>

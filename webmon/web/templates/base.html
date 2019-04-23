@@ -3,25 +3,79 @@
 	<head>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title>Base</title>
+		<title>{% block title %}{% endblock %}</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<style type="text/css">
-			body{margin: auto;max-width:80ch;color:#444;font-family:sans-serif;line-height: 1.5}
-			h1,h2,h3,h4{color: #333}
+			body{margin: 0 auto;max-width:80ch;color:#444;font-family:sans-serif;line-height: 1.5;}
+			h1,h2,h3{color: #333;margin: 1em 0 0 0}
+			h4{color: #333;margin: 0}
 			pre{background: #eee;padding: 1em;}
-			header p{font-size: 90%}
-			article {border: 1px solid #ccc;margin: 1em; padding: 0 0.5em;}
+			article header nav {font-size: 80%;margin: 0}
+			article header nav a {font-size: 80%;margin: 0}
+			article {border: 1px solid #ccc;margin: 0.5em; padding: 0.2em 0.5em;}
+			input{ height: 1em;}
+			nav a {margin-right: 2em}
+			nav {margin-bottom: 2em;}
+			.flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;}
+			article[data-state=read] {background-color: #eee;}
+			article[data-state=read] a[data-action=mark_read]:before{content: "✓ Mark unread";}
+			article[data-state=unread] a[data-action=mark_read]:before{content: "Mark read";}
 		</style>
 	</head>
 	<body>
+		<header id="main-header">
+			<nav>
+				<a href="{{ url_for("browser.unread") }}">Unread</a>
+				<a href="{{ url_for("browser.sources") }}">Sources</a>
+				<a href="{{ url_for("browser.groups") }}">Groups</a>
+			</nav>
+		</header>
+		<section id="flashes">
+			{% for message in get_flashed_messages() %}
+			<div class="flash">{{ message }}</div>
+			{% endfor %}
+		</section>
 		<section class="content">
 			<header>
 				{% block header %}{% endblock %}
 			</header>
-			{% for message in get_flashed_messages() %}
-			<div class="flash">{{ message }}</div>
-			{% endfor %}
 			{% block content %}{% endblock %}
 		</section>
 	</body>
+	<script type="text/javascript">
+		document.addEventListener("DOMContentLoaded", function() {
+			let mark_read_url = "{{ url_for("browser.entry_mark_read_api") }}";
+			document.querySelectorAll("a[data-action=mark_read]").forEach((element) => {
+				element.onclick = (event) => {
+					event.preventDefault();
+					let formData = new FormData();
+					formData.append("entry_id", element.dataset["entryId"]);
+					let article = element.closest('article');
+					if (article.dataset["state"] == "read") {
+						formData.append("new_state", "unread");
+					} else {
+						formData.append("new_state", "read");
+					}
+					//element.attributes['href'] = "";
+					fetch(mark_read_url, {
+						method: "POST",
+						body: formData,
+					})
+					.then((resp) => {
+						return resp.text();
+					})
+					.then((data) => {
+						if (data == "read" || data == "unread") {
+							article.dataset["state"] = data;
+						}
+						//element.attributes['href'] = "#";
+					})
+					.catch((error) => {
+						window.console.log(error);
+						//element.attributes['href'] = "#";
+					});
+				};
+			});
+		});
+	</script>
 </html>

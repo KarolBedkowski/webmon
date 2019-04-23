@@ -1,0 +1,19 @@
+{% macro render_field(prefix, field) -%}
+	<p>
+		<label>{{ field.description }}</label>
+		{% if field.type == 'str' %}
+			<input type="text" name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"
+				{% if field.requred %}requred="requred"{% endif %} />
+		{% elif field.type == 'number' %}
+			<input type="number" name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"
+				{% if field.requred %}requred="requred"{% endif %} />
+		{% elif field.type == 'select' %}
+			<select name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"
+				{% if field.requred %}requred="requred"{% endif %} >
+				{% for value, description in field.options %}
+				<option value="{{ value }}">{{ description }}</option>
+				{% endfor %}
+			</select>
+		{% endif %}
+	</p>
+{%- endmacro %}

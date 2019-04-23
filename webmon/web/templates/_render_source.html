@@ -1,0 +1,14 @@
+{% macro render_source(source) -%}
+	<article>
+		<header>
+			<h4><a href="{{ url_for('browser.source_entries', source_id=source.id) }}">{{ source.name }}</a>
+				{% if source.group %}<small>[{{ source.group.name }}]</small>{% endif %}
+			</h4>
+			<p> &#9716;<time>{{ source.state.last_update|age }}</time>
+				| <a href="{{ url_for('browser.refresh', source_id=source.id)}}">Refresh</a>
+				| <a href="{{ url_for('browser.source_mark_read', source_id=source.id) }}">Mark read</a>
+				| <a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
+			</p>
+		</header>
+	</article>
+{%- endmacro %}

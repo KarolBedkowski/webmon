@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+	<h1>{% block title %}Entries in {{ source.name }} ({{ entries|length }}){% endblock %}</h1>
+	<nav>
+		{% if max_id %}
+		<a href="{{ url_for('browser.source_mark_read', source_id=source.id, max_id=max_id) }}">Mark read</a>
+		{% endif %}
+		<a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
+		{% if showed_all %}
+		<a href="{{ url_for('browser.source_entries', source_id=source.id) }}">Show unread only</a>
+		{% else %}
+		<a href="{{ url_for('browser.source_entries_all', source_id=source.id) }}">Show all</a>
+		{% endif %}
+	</nav>
+{% endblock %}
+
+{% block content %}
+	{% for entry in entries %}
+		{{ re.render_entry(entry) }}
+	{% endfor %}
+{% endblock %}
+  </body>
+</html>

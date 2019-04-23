@@ -26,6 +26,8 @@ class NotFound(Exception):
 
 class DB(object):
 
+    INSTANCE = None
+
     def __init__(self, filename: str) -> None:
         super().__init__()
         self._filename = filename
@@ -38,12 +40,24 @@ class DB(object):
     def clone(self):
         return DB(self._filename)
 
-    @staticmethod
-    def initialize(filename):
+    @classmethod
+    def get(cls):
+        return cls.INSTANCE.clone()
+
+    @classmethod
+    def initialize(cls, filename):
         common.create_missing_dir(os.path.dirname(filename))
         db = DB(filename)
         db._update_schema()
+        cls.INSTANCE = db
         return db
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+        return isinstance(value, TypeError)
 
     def close(self):
         if self._conn is not None:
@@ -77,6 +91,20 @@ class DB(object):
         self._conn.commit()
         return group
 
+    def get_sources(self, group_id=None):
+        cur = self._conn.cursor()
+        groups = {g.id: g for g in self.get_groups()}
+        if group_id is None:
+            cur.execute(_GET_SOURCES_SQL)
+        else:
+            cur.execute(_GET_SOURCES_BY_GROUP_SQL, (group_id, ))
+        for row in cur:
+            source = _source_from_row(row)
+            source.state = _state_from_row(row)
+            source.group = groups.get(source.group_id) if source.group_id \
+                else None
+            yield source
+
     def get_source(self, id_, with_state=False, with_group=True):
         cur = self._conn.cursor()
         cur.execute(_GET_SOURCE_SQL, (id_, ))
@@ -87,7 +115,7 @@ class DB(object):
         source = _source_from_row(row)
         if with_state:
             source.state = self.get_state(source.id)
-        if with_group:
+        if with_group and source.group_id:
             source.group = self.get_group(source.group_id)
 
         return source
@@ -101,8 +129,25 @@ class DB(object):
         else:
             row.append(source.id)
             cur.execute(_UPDATE_SOURCE_SQL, row)
+            _LOG.debug("Row: %r", row)
         self._conn.commit()
         return source
+
+    def refresh(self, source_id=None, group_id=None, refresh_all=False):
+        cur = self._conn.cursor()
+        if refresh_all:
+            cur.execute(
+                "update source_state set next_update=datetime('now')")
+        if group_id:
+            cur.execute(
+                "update source_state set next_update=datetime('now') "
+                "where source_id in (select id from sources where group_id=?)",
+                (group_id, ))
+        elif source_id:
+            cur.execute(
+                "update source_state set next_update=datetime('now')"
+                " where source_id=?", (source_id, ))
+        self._conn.commit()
 
     def get_state(self, source_id):
         cur = self._conn.cursor()
@@ -135,6 +180,36 @@ class DB(object):
             entry.source = _source_from_row(row)
             if entry.source.group_id:
                 entry.source.group = _source_group_from_row(row)
+            _LOG.debug("entry %s", entry)
+            yield entry
+
+    def get_entries(self, source_id=None, group_id=None, unread=True):
+        cur = self._conn.cursor()
+        if source_id:
+            if unread:
+                cur.execute(_GET_UNREAD_ENTRIES_BY_SOURCE_SQL, (source_id, ))
+            else:
+                cur.execute(_GET_ENTRIES_BY_SOURCE_SQL, (source_id, ))
+        elif group_id:
+            if unread:
+                cur.execute(_GET_UNREAD_ENTRIES_BY_GROUP_SQL, (group_id, ))
+            else:
+                cur.execute(_GET_ENTRIES_BY_GROUP_SQL, (group_id, ))
+        else:
+            if unread:
+                cur.execute(_GET_UNREAD_ENTRIES_SQL)
+            else:
+                cur.execute(_GET_ENTRIES_SQL)
+        groups = {}
+        for row in cur:
+            entry = _entry_from_row(row)
+            entry.source = _source_from_row(row)
+            if entry.source.group_id:
+                group = groups.get(entry.source.group_id)
+                if not group:
+                    group = groups[entry.source.group_id] = \
+                        _source_group_from_row(row)
+                entry.source.group = group
             _LOG.debug("entry %s", entry)
             yield entry
 
@@ -180,6 +255,63 @@ class DB(object):
         _LOG.debug("new entries: %d", len(rows))
         cur.executemany(_INSERT_ENTRY_SQL, rows)
         self._conn.commit()
+
+    def mark_read(self, entry_id=None, group_id=None, source_id=None,
+                  max_id=None, read=True):
+        read = 1 if read else 0
+        _LOG.info("mark_read entry_id=%r, group_id=%r, source_id=%r, "
+                  "max_id=%r, read=%r", entry_id, group_id, source_id,
+                  max_id, read)
+        cur = self._conn.cursor()
+        if group_id:
+            if max_id:
+                cur.execute(
+                    "update entries set read_mark=? where source_id in "
+                    "( select id from sources where group_id=?) and id <= ?",
+                    (read, group_id, max_id))
+            else:
+                cur.execute(
+                    "update entries set read_mark=? where source_id in "
+                    "( select id from sources where group_id=?)",
+                    (read, group_id))
+        elif source_id:
+            if max_id:
+                cur.execute(
+                    "update entries set read_mark=? where source_id = ? "
+                    "and id <= ?",
+                    (read, source_id, max_id))
+            else:
+                cur.execute(
+                    "update entries set read_mark=? where source_id = ?",
+                    (read, source_id))
+        elif entry_id:
+            cur.execute(
+                "update entries set read_mark=? where id = ? "
+                "and read_mark = ?",
+                (read, entry_id, 1-read))
+        elif max_id:
+            cur.execute(
+                "update entries set read_mark=? where id <= ?",
+                (read, max_id))
+        changed = cur.rowcount
+        _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
+                   changed)
+        self._conn.commit()
+        return changed
+
+    def check_entry_oids(self, oids, source_id):
+        cur = self._conn.cursor()
+        cur.execute(
+            "select oid from history_oids where source_id=? and oid in ("
+            + ", ".join("'" + oid + "'" for oid in oids) + ")",
+            (source_id, ))
+        result = {row[0] for row in cur}
+        new_oids = (oid for oid in oids if oid not in result)
+        cur.executemany(
+            "insert into history_oids(source_id, oid) values (?, ?)",
+            [(source_id, oid) for oid in new_oids])
+        self._conn.commit()
+        return result
 
     def get_setting(self, key, converter=None):
         cur = self._conn.cursor()
@@ -251,7 +383,6 @@ def _source_from_row(row):
 
 def _source_to_row(source):
     return [
-        source.id,
         source.group_id,
         source.kind,
         source.name,
@@ -329,12 +460,38 @@ def _source_group_from_row(row):
                              row["source_group_name"])
 
 
+
+_GET_SOURCE_GROUPS_SQL = """
+select id as source_group_id, name as source_group_name
+from source_groups;
+"""
+
 _GET_SOURCE_SQL = """
 select id as source_id, group_id as source_group_id,
     kind as source_kind, name as source_name, interval as source_interval,
     settings as source_settings, filters as source_filters
 from sources where id=?
 """
+
+_GET_SOURCES_SQL = """
+select s.id as source_id, s.group_id as source_group_id,
+    s.kind as source_kind, s.name as source_name,
+    s.interval as source_interval, s.settings as source_settings,
+    s.filters as source_filters,
+    ss.source_id as source_state_source_id,
+    ss.next_update as source_state_next_update,
+    ss.last_update as source_state_last_update,
+    ss.last_error as source_state_last_error,
+    ss.error_counter as source_state_error_counter,
+    ss.success_counter as source_state_success_counter,
+    ss.status as source_state_status,
+    ss.error as source_state_error,
+    ss.state as source_state_state
+from sources s
+left join source_state ss on ss.source_id = s.id
+"""
+
+_GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL + " where group_id = ?"
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, name, interval, settings, filters)
@@ -400,7 +557,7 @@ select
 where oid=?
 '''
 
-_GET_UNREAD_ENTRIES_SQL = '''
+_GET_ENTRIES_SQL_MAIN = '''
 select
     e.id as entry_id,
     e.source_id as entry_source_id,
@@ -420,7 +577,35 @@ select
 from entries e
 join sources s on s.id = e.source_id
 left join source_groups sg on sg.id = s.group_id
+'''
+
+_GET_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
+order by e.updated
+'''
+
+_GET_UNREAD_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where read_mark = 0
+order by e.updated
+'''
+
+_GET_UNREAD_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where read_mark = 0 and e.source_id=?
+order by e.updated
+'''
+
+_GET_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where e.source_id=?
+order by e.updated
+'''
+
+_GET_UNREAD_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where read_mark = 0 and s.group_id=?
+order by e.updated
+'''
+
+_GET_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where s.group_id=?
+order by e.updated
 '''
 
 # _INSERT_ENTRY_SQL = """

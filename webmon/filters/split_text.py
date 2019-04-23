@@ -14,15 +14,16 @@ import io
 import typing as ty
 
 from lxml import etree
+from cssselect import GenericTranslator, SelectorError
 
-from webmon import common, model
+from webmon import model
 
 from ._abstract import AbstractFilter
 
 _ = ty
 
 
-def _get_elements_by_xpath(filter_, entry: model.Entry, expression: str):
+def _get_elements_by_xpath(entry: model.Entry, expression: str):
     # pylint: disable=no-member
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
@@ -53,16 +54,12 @@ class GetElementsByCss(AbstractFilter):
         super().validate()
         sel = self._conf["sel"]
         try:
-            from cssselect import GenericTranslator, SelectorError
-        except ImportError:
-            raise common.FilterError("Missing cssselect module")
-        try:
             self._expression = GenericTranslator().css_to_xpath(sel)
         except SelectorError:
             raise ValueError('Invalid CSS selector for filtering')
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        yield from _get_elements_by_xpath(self, entry, self._expression)
+        yield from _get_elements_by_xpath(entry, self._expression)
 
 
 class GetElementsByXpath(AbstractFilter):
@@ -75,7 +72,7 @@ class GetElementsByXpath(AbstractFilter):
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        yield from _get_elements_by_xpath(self, entry, self._conf["xpath"])
+        yield from _get_elements_by_xpath(entry, self._conf["xpath"])
 
 
 class GetElementsById(AbstractFilter):
@@ -105,9 +102,5 @@ class GetElementsById(AbstractFilter):
 def _new_entry(entry, content):
     new_entry = entry.clone()
     new_entry.status = 'new'
-    if len(content) > 50:
-        new_entry.title = new_entry.content[:50] + "…"
-        new_entry.content = content
-    else:
-        new_entry.title = new_entry.content
+    new_entry.content = content
     return new_entry

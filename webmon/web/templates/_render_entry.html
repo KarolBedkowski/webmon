@@ -1,0 +1,22 @@
+{% macro render_entry(entry) -%}
+	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}">
+		<header>
+			<h4><a href="{{entry.url }}">{{ entry.human_title() }}</a>
+				{% if entry.source.group %}<small>[{{ entry.source.group.name }}]</small>{% endif %}
+			</h4>
+			<nav>
+				<a href="{{ url_for('browser.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
+				| &#9716;<time>{{ entry.updated|age }}</time>
+				| <a href="#" data-action="mark_read" data-entry-id="{{ entry.id }}">&nbsp;</a>
+			</nav>
+		</header>
+		<!-- {{ entry }} -->
+		{% if entry.content %}
+			{% if entry.get_opt('preformated') %}
+			<pre>{{ entry.content|safe }}</pre>
+			{% else %}
+			{{ entry.content|docutils|safe }}
+			{% endif %}
+		{% endif %}
+	</article>
+{%- endmacro %}

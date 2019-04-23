@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}New source{% endblock %}</h1>
+<style>
+	input,textarea,select {width: 75%;}
+	label {width: 20%; display: inline-block; vertical-align: top;}
+</style>
+{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		<p>
+			<label for="source-kind">Kind</label>
+			<select name="kind" id="source-group" required="required" value="{{ kind }}">
+				{% for kind in kinds %}
+				<option value="{{ kind }}">{{ kind }}</option>
+				{% endfor %}
+			</select>
+		</p>
+		<p>
+			<label for="source-name">Name</label>
+			<input type="text" name="name" id="source-name" required="required" value="{{ name }}" />
+		</p>
+		<button type="submit">Save</button>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

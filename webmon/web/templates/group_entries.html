@@ -5,10 +5,10 @@
   <body>
 
 {% block header %}
-	<h1>{% block title %}Entries{% endblock %} ({{ entries|length }})</h1>
+	<h1>{% block title %}Group Entries{% endblock %} ({{ entries|length}})</h1>
 	<nav>
 		{% if max_id %}
-		<a href="{{ url_for('browser.entries_mark_read', max_id=max_id) }}">Mark read</a>
+		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
 		{% endif %}
 	</nav>
 {% endblock %}

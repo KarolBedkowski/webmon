@@ -43,6 +43,7 @@ def create_app(dbfile):
                 template_folder=template_folder)
     app.config.from_mapping(
         DBFILE=dbfile,
+        SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
     )
     app.app_context().push()
 
@@ -56,7 +57,7 @@ def create_app(dbfile):
     app.jinja_env.filters['age'] = _age_filter
 
     from . import browser
-    app.register_blueprint(browser.bp)
+    app.register_blueprint(browser.BP)
 
     @app.route("/")
     def hello():
@@ -67,5 +68,6 @@ def create_app(dbfile):
 
 def start_app(db):
     app = create_app(db)
-    http_server = WSGIServer(('', 5000), app)
-    http_server.serve_forever()
+    app.run(debug=True)
+    #http_server = WSGIServer(('', 5000), app)
+    #http_server.serve_forever()

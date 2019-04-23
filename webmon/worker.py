@@ -38,7 +38,7 @@ class CheckWorker(threading.Thread):
 
             if not self._todo_queue.empty():
                 workers = []
-                for i in range(self._get_num_workers()):
+                for _ in range(self._get_num_workers()):
                     worker = FetchWorker(self._db, self._todo_queue)
                     worker.start()
                     workers.append(worker)
@@ -47,9 +47,7 @@ class CheckWorker(threading.Thread):
                     worker.join()
 
             _LOG.info("CheckWorker check done")
-            return
-            wait = self._get_wait_time()
-            time.sleep(wait * 60)
+            time.sleep(60)
 
         self._db.close()
 
@@ -78,6 +76,7 @@ class FetchWorker(threading.Thread):
         source = self._db.get_source(id_=source_id, with_state=True)
         try:
             inp = inputs.get_input(source)
+            inp.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
             return
