@@ -36,7 +36,8 @@ class DB(object):
                                      isolation_level="EXCLUSIVE",
                                      detect_types=sqlite3.PARSE_DECLTYPES)
         self._conn.row_factory = sqlite3.Row
-        self._conn.executescript("PRAGMA journal_mode=WAL")
+        self._conn.executescript("PRAGMA journal_mode=WAL;"
+                                 "PRAGMA foreign_keys = ON;")
 
     def clone(self):
         return DB(self._filename)
@@ -62,6 +63,7 @@ class DB(object):
 
     def close(self):
         if self._conn is not None:
+            self._conn.executescript("PRAGMA optimize")
             self._conn.close()
             self._conn = None
 
@@ -102,6 +104,7 @@ class DB(object):
         for row in cur:
             source = _source_from_row(row)
             source.state = _state_from_row(row)
+            source.unread = row['unread']
             source.group = groups.get(source.group_id) if source.group_id \
                 else None
             yield source
@@ -551,7 +554,9 @@ select s.id as source_id, s.group_id as source_group_id,
     ss.success_counter as source_state_success_counter,
     ss.status as source_state_status,
     ss.error as source_state_error,
-    ss.state as source_state_state
+    ss.state as source_state_state,
+    (select count(*)
+        from entries where source_id=s.id and read_mark=0) as unread
 from sources s
 left join source_state ss on ss.source_id = s.id
 """

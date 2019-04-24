@@ -2,7 +2,8 @@
 	<article>
 		<header>
 			<h4><a href="{{ url_for('browser.source_entries', source_id=source.id) }}">{{ source.name }}</a>
-				{% if source.group %}<small>[{{ source.group.name }}]</small>{% endif %}
+				{% if source.unread %}({{ source.unread }}){% endif %}
+				{% if source.group %} <a class="group-tag" href="{{ url_for("browser.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
 			</h4>
 			<p> &#9716;<time>{{ source.state.last_update|age }}</time>
 				| <a href="{{ url_for('browser.source_refresh', source_id=source.id)}}">Refresh</a>

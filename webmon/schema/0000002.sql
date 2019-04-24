@@ -7,7 +7,7 @@
 
 -- global application settings
 CREATE TABLE settings (
-    key         varchar not null,
+    key         varchar not null PRIMARY KEY,
     value       json,
     value_type  varchar,
     description varchar
@@ -15,13 +15,13 @@ CREATE TABLE settings (
 
 
 CREATE TABLE source_groups (
-    id      integer primary key autoincrement,
+    id      integer PRIMARY KEY autoincrement,
     name    varchar
 );
 
 -- sources configuration
 CREATE TABLE sources (
-    id                  integer primary key autoincrement,
+    id                  integer PRIMARY KEY autoincrement,
     group_id            integer references source_groups(id) on delete set null,
     kind                varchar not null,   -- source type
     name                varchar not null,   -- source name
@@ -30,9 +30,11 @@ CREATE TABLE sources (
     filters             json
 );
 
+CREATE INDEX source_group_id_idx ON sources(group_id);
+
 -- source state
 CREATE TABLE source_state (
-    source_id       integer primary key references sources(id) on delete cascade,
+    source_id       integer PRIMARY KEY references sources(id) on delete cascade,
     next_update     timestamp,          -- next update
     last_update     timestamp,
     last_error      timestamp,
@@ -43,9 +45,10 @@ CREATE TABLE source_state (
     state           json
 );
 
+CREATE INDEX source_states_next_update_idx ON source_state(next_update);
 
 CREATE TABLE entries (
-    id          integer primary key autoincrement,
+    id          integer PRIMARY KEY autoincrement,
     source_id   integer not null references sources(id) on delete cascade,
     updated     timestamp,
     created     timestamp,
@@ -58,6 +61,12 @@ CREATE TABLE entries (
     opts        json,
     content     text
 );
+
+CREATE INDEX entries_source_id_idx ON entries(source_id);
+CREATE INDEX entries_read_idx ON entries(read_mark, updated);
+CREATE INDEX entries_star_idx ON entries(star_mark, updated);
+CREATE INDEX entries_oid_idx ON entries(oid);
+CREATE INDEX entries_updated_idx ON entries(updated);
 
 
 

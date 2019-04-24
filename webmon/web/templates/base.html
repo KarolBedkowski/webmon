@@ -7,6 +7,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<style type="text/css">
 			body{margin: 2em auto;max-width:80ch;color:#444;font-family:sans-serif;line-height: 1.5;}
+			a{color: #222;}
 			h1,h2,h3{color: #333;margin: 1em 0 0 0}
 			h4{color: #333;margin: 0}
 			pre{background: #eee;padding: 1em;}
@@ -21,9 +22,10 @@
 			article[data-state=read] {background-color: #eee;}
 			article[data-state=read] a[data-action=mark_read]:before{content: "✓ Mark unread";}
 			article[data-state=unread] a[data-action=mark_read]:before{content: "Mark read";}
-			article[data-starred=star] a[data-action=mark_star]:before{content: "★ Remove star";}
-			article[data-starred=unstar] a[data-action=mark_star]:before{content: "Mark star";}
+			article[data-starred=star] a[data-action=mark_star]:before{content: "★ Starred"; font-weight: bold}
+			article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Mark star";}
 			article[data-starred=star] {border-color: red; border-width: 2px;}
+			.group-tag{background-color: #ff9;border: 1px solid black; font-size: 75%; padding: 0.1em; text-decoration: None;margin-left:1em;}
 		</style>
 	</head>
 	<body>

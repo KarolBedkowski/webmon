@@ -51,6 +51,9 @@ class WebInput(AbstractInput):
         if state.last_update:
             headers['If-Modified-Since'] = email.utils.formatdate(
                 state.last_update.timestamp())
+        etag = state.state.get('etag') if state.state else None
+        if etag:
+            headers['If-None-Match'] = etag
         url = self._conf['url']
         response = None
         try:
@@ -79,6 +82,7 @@ class WebInput(AbstractInput):
             entry.url = url
             entry.content = response.text
             new_state = state.new_ok()
+            new_state.set_state('etag', response.headers.get('ETag'))
             return new_state, [entry]
         except requests.exceptions.ReadTimeout:
             return state.new_error("timeout"), []

@@ -61,6 +61,8 @@ class RssInput(AbstractInput):
             return _fail_error(state, doc, status)
 
         entries = doc.get('entries')
+        entries = [entry for entry in entries
+                   if entry.updated_parsed > state.last_update]
         if status == 304 or not entries:
             new_state = state.new_not_modified()
             new_state.set_state('etag', doc.get('etag'))

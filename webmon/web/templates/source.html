@@ -46,7 +46,10 @@
 			<label for="source-filters">Filters</label>
 			<textarea name="filters" id="source-filters">{{ source.filters }}</textarea>
 		</p>
-		<button type="submit">Save</button>
+		<p>
+			<button type="submit">Save</button>
+			<a href="{{ url_for('browser.source_delete', source_id=source.id, delete_self=1) }}">Delete</a>
+		</p>
 	</form>
 {% endblock %}
 

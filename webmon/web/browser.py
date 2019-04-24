@@ -92,6 +92,8 @@ def source_delete(source_id):
     db = get_db()
     db.source_delete(source_id)
     flash("Source deleted")
+    if request.args.get("delete_self"):
+        return redirect(url_for("browser.sources"))
     return redirect(request.headers.get('Referer')
                     or url_for("browser.sources"))
 

@@ -54,6 +54,8 @@ class Source:
         self.group = None
         self.state = None
 
+        self.unread = None
+
     def __str__(self):
         return obj2str(self)
 
@@ -113,7 +115,7 @@ class SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.error = error
-        state.last_update = datetime.datetime.now()
+        state.last_update = self.last_update
         state.status = 'error'
         state.success_counter = self.success_counter
         state.error_counter = self.error_counter + 1

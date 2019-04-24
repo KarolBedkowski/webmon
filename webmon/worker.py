@@ -16,7 +16,7 @@ import threading
 import logging
 import datetime
 
-from . import inputs, common, filters
+from . import inputs, common, filters, db
 
 _LOG = logging.getLogger("main")
 
@@ -70,7 +70,11 @@ class FetchWorker(threading.Thread):
 
     def _process_source(self, source_id):
         _LOG.info("processing source %d", source_id)
-        source = self._db.get_source(id_=source_id, with_state=True)
+        try:
+            source = self._db.get_source(id_=source_id, with_state=True)
+        except db.NotFound:
+            _LOG.error("source %d not found!", source_id)
+            return
         try:
             inp = inputs.get_input(source, self._db.get_settings_map())
             inp.validate()
