@@ -65,7 +65,7 @@ class SourceForm:
         src.group_id = source.id
         src.kind = source.kind
         src.name = source.name
-        src.interval = source.interval
+        src.interval = source.interval or ''
         src.model_settings = source.settings
         src.filters = json.dumps(source.filters) if source.filters else ''
         return src
@@ -74,7 +74,7 @@ class SourceForm:
         group_id = form['group_id']
         self.group_id = int(group_id) if group_id else None
         self.name = form['name']
-        self.interval = int(form['interval'])
+        self.interval = form['interval']
         self.filters = form['filters']
         self.model_settings = self.model_settings or {}
         param_types = input_.get_param_types()
@@ -91,9 +91,30 @@ class SourceForm:
         src = src.clone()
         src.group_id = self.group_id
         src.name = self.name
-        src.interval = self.interval
+        src.interval = self.interval or '1h'
         src.filters = json.loads(self.filters) if self.filters else None
         _LOG.debug("src.filters: %r", src.filters)
         _LOG.debug("self.filters: %r", self.filters)
         src.settings = self.model_settings
         return src
+
+
+class GroupForm:
+    def __init__(self):
+        self.id = None
+        self.name = None
+
+    @staticmethod
+    def from_model(group: model.SourceGroup):
+        form = GroupForm()
+        form.id = group.id
+        form.name = group.name
+        return form
+
+    def update_from_request(self, form):
+        self.name = form['name']
+
+    def update_model(self, group: model.SourceGroup):
+        group = group.clone()
+        group.name = self.name
+        return group

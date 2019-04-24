@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Settings{% endblock %}</h1>
+<style>
+	input,textarea,select {width: 75%;}
+	label {width: 20%; display: inline-block; vertical-align: top;}
+</style>
+{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		{% for sett in settings %}
+		<p>
+			<label>{{ sett.description or sett.key}}</label>
+			{% if sett.type in ('int', 'float') %}
+			<input type="number" name="{{ sett.key }}" value="{{ sett.value }}" />
+			{% else %}
+			<input type="text" name="{{ sett.key }}" value="{{ sett.value }}" />
+			{% endif %}
+		</p>
+		{% endfor %}
+		<button type="submit">Save</button>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

@@ -51,11 +51,8 @@ class CheckWorker(threading.Thread):
 
         self._db.close()
 
-    def _get_wait_time(self):
-        return self._db.get_setting("check_interval", int) or 5
-
     def _get_num_workers(self):
-        return self._db.get_setting("workers", int) or 4
+        return self._db.get_setting_value("workers")
 
 
 class FetchWorker(threading.Thread):
@@ -75,7 +72,7 @@ class FetchWorker(threading.Thread):
         _LOG.info("processing source %d", source_id)
         source = self._db.get_source(id_=source_id, with_state=True)
         try:
-            inp = inputs.get_input(source)
+            inp = inputs.get_input(source, self._db.get_settings_map())
             inp.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
@@ -83,7 +80,16 @@ class FetchWorker(threading.Thread):
         if not inp:
             return
 
-        new_state, entries = inp.load(source.state)
+        try:
+            new_state, entries = inp.load(source.state)
+        except Exception as err:
+            _LOG.error("load source id=%d error: %s", source_id, err)
+            new_state = source.state.new_error(str(err))
+            new_state.next_update = datetime.datetime.now() + \
+                datetime.timedelta(
+                    minutes=common.parse_interval(source.interval))
+            self._db.save_state(new_state)
+            return
 
         if new_state.next_update is None:
             last_update = source.state.last_update or datetime.datetime.now()

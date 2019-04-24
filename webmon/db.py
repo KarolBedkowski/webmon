@@ -11,6 +11,7 @@ import logging
 import os.path
 import sqlite3
 import json
+import typing as ty
 
 from . import common, model
 
@@ -126,12 +127,20 @@ class DB(object):
         if source.id is None:
             cur.execute(_INSERT_SOURCE_SQL, row)
             source.id = cur.lastrowid
+            state = model.SourceState.new(source.id)
+            self.save_state(state)
         else:
             row.append(source.id)
             cur.execute(_UPDATE_SOURCE_SQL, row)
-            _LOG.debug("Row: %r", row)
         self._conn.commit()
         return source
+
+    def source_delete(self, source_id: int) -> int:
+        cur = self._conn.cursor()
+        cur.execute("delete from sources where id=?", (source_id, ))
+        updated = cur.rowcount
+        self._conn.commit()
+        return updated
 
     def refresh(self, source_id=None, group_id=None, refresh_all=False):
         cur = self._conn.cursor()
@@ -167,9 +176,9 @@ class DB(object):
     def get_sources_to_fetch(self):
         cur = self._conn.cursor()
         ids = [row[0] for row in
-               cur.execute("""select source_id
-                           from source_state
-                           where next_update <= datetime('now')""")
+               cur.execute(
+                   """select source_id from source_state
+                      where next_update <= datetime('now', 'localtime')""")
                ]
         return ids
 
@@ -180,7 +189,15 @@ class DB(object):
             entry.source = _source_from_row(row)
             if entry.source.group_id:
                 entry.source.group = _source_group_from_row(row)
-            _LOG.debug("entry %s", entry)
+            yield entry
+
+    def get_starred_entries(self):
+        cur = self._conn.cursor()
+        for row in cur.execute(_GET_STARRED_ENTRIES_SQL):
+            entry = _entry_from_row(row)
+            entry.source = _source_from_row(row)
+            if entry.source.group_id:
+                entry.source.group = _source_group_from_row(row)
             yield entry
 
     def get_entries(self, source_id=None, group_id=None, unread=True):
@@ -299,6 +316,19 @@ class DB(object):
         self._conn.commit()
         return changed
 
+    def mark_star(self, entry_id=None, star=True):
+        star = 1 if star else 0
+        _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
+        cur = self._conn.cursor()
+        cur.execute(
+            "update entries set star_mark=? where id = ? and star_mark = ?",
+            (star, entry_id, 1-star))
+        changed = cur.rowcount
+        _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
+                   changed)
+        self._conn.commit()
+        return changed
+
     def check_entry_oids(self, oids, source_id):
         cur = self._conn.cursor()
         cur.execute(
@@ -313,15 +343,43 @@ class DB(object):
         self._conn.commit()
         return result
 
-    def get_setting(self, key, converter=None):
+    def get_settings(self) -> ty.Iterable[model.Setting]:
+        cur = self._conn.cursor()
+        cur.execute("select key, value, value_type, description from settings")
+        for row in cur:
+            yield _setting_from_row(row)
+
+    def get_setting(self, key: str) -> model.Setting:
+        cur = self._conn.cursor()
+        cur.execute("select key, value, value_type, description "
+                    "from settings where key=?", (key, ))
+        row = cur.fetchone()
+        return _setting_from_row(row) if row else None
+
+    def save_setting(self, setting: model.Setting):
+        cur = self._conn.cursor()
+        cur.execute("update settings set value=? where key=?",
+                    (setting.key, json.dumps(setting.value)))
+        self._conn.commit()
+
+    def save_settings(self, settings: ty.List[model.Setting]):
+        cur = self._conn.cursor()
+        rows = [(json.dumps(setting.value), setting.key)
+                for setting in settings]
+        cur.executemany("update settings set value=? where key=?", rows)
+        self._conn.commit()
+
+    def get_setting_value(self, key: str, default=None) -> ty.Any:
         cur = self._conn.cursor()
         cur.execute("select value from settings where key=?", (key, ))
         row = cur.fetchone()
-        if row is None:
-            return None
-        if converter is not None:
-            return converter(row[0])
-        return row[0]
+        if row is None or row[0] is None:
+            return default
+        return json.loads(row[0]) if isinstance(row[0], str) else row[0]
+
+    def get_settings_map(self) -> ty.Dict[str, ty.Any]:
+        return {key: val for key, val
+                in self._conn.execute("select key, value from settings")}
 
     def _update_schema(self):
         schema_ver = self._get_schema_version()
@@ -455,10 +513,17 @@ def _entry_to_row(entry):
     ]
 
 
+def _setting_from_row(row) -> model.Setting:
+    value = row['value']
+    if value  and isinstance(value, str):
+        value = json.loads(value)
+    return model.Setting(row['key'], value, row['value_type'],
+                         row['description'])
+
+
 def _source_group_from_row(row):
     return model.SourceGroup(row["source_group_id"],
                              row["source_group_name"])
-
 
 
 _GET_SOURCE_GROUPS_SQL = """
@@ -473,7 +538,7 @@ select id as source_id, group_id as source_group_id,
 from sources where id=?
 """
 
-_GET_SOURCES_SQL = """
+_GET_SOURCES_SQL_BASE = """
 select s.id as source_id, s.group_id as source_group_id,
     s.kind as source_kind, s.name as source_name,
     s.interval as source_interval, s.settings as source_settings,
@@ -491,7 +556,12 @@ from sources s
 left join source_state ss on ss.source_id = s.id
 """
 
-_GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL + " where group_id = ?"
+_GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + """
+order by s.name """
+
+_GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL_BASE + """
+where group_id = ?
+order by s.name """
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, name, interval, settings, filters)
@@ -605,6 +675,11 @@ order by e.updated
 
 _GET_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where s.group_id=?
+order by e.updated
+'''
+
+_GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where star_mark = 1
 order by e.updated
 '''
 

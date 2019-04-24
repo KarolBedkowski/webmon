@@ -7,27 +7,25 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-Convert html to text.
+Wrap entry content lines
 """
 import typing as ty
-import logging
-
-import html2text as h2t
+import textwrap
 
 from webmon import common, model
 
 from ._abstract import AbstractFilter
 
 _ = ty
-_LOG = logging.getLogger(__name__)
 
 
 class Html2Text(AbstractFilter):
     """Convert html to text using html2text module."""
 
-    name = "html2text"
+    name = "wrap"
     params = [
-        ("width", "Max line width", 999999, True, None),
+        ("width", "Max line width", 76, True, None),
+        ("max_lines", "Max number of lines", None, False, None),
     ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
 
     def validate(self):
@@ -35,11 +33,15 @@ class Html2Text(AbstractFilter):
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
             raise common.ParamError("invalid width: %r" % width)
+        max_lines = self._conf.get("max_lines")
+        if not isinstance(width, int) or width < 1:
+            raise common.ParamError("invalid max_lines: %r" % max_lines)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        if not entry.content:
-            return
-        conv = h2t.HTML2Text(bodywidth=self._conf.get("width"))
-        conv.protect_links = True
-        entry.content = conv.handle(entry.content)
+        if entry.content:
+            indent = common.get_whitespace_prefix(entry.content)
+            entry.content = textwrap.fill(
+                entry.content, break_long_words=False, break_on_hyphens=False,
+                initial_indent=indent, subsequent_indent=indent,
+                max_lines=self._conf['max_lines'], width=self._conf['width'])
         yield entry

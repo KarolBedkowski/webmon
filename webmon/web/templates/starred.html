@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+	<h1>{% block title %}Starred{% endblock %} ({{ entries|length }})</h1>
+{% endblock %}
+
+{% block content %}
+	{% for entry in entries %}
+		{{ re.render_entry(entry) }}
+	{% endfor %}
+{% endblock %}
+  </body>
+</html>

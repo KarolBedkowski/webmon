@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Group{% endblock %}</h1>
+<style>
+	input,textarea,select {width: 75%;}
+	label {width: 20%; display: inline-block; vertical-align: top;}
+</style>
+{% endblock %}
+
+{% block content %}
+	<form method="POST">
+		<p>
+			<label for="source-name">Name</label>
+			<input type="text" name="name" id="source-name" required="required" value="{{ group.name or '' }}" />
+		</p>
+		<button type="submit">Save</button>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

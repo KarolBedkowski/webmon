@@ -6,7 +6,7 @@
 		<title>{% block title %}{% endblock %}</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<style type="text/css">
-			body{margin: 0 auto;max-width:80ch;color:#444;font-family:sans-serif;line-height: 1.5;}
+			body{margin: 2em auto;max-width:80ch;color:#444;font-family:sans-serif;line-height: 1.5;}
 			h1,h2,h3{color: #333;margin: 1em 0 0 0}
 			h4{color: #333;margin: 0}
 			pre{background: #eee;padding: 1em;}
@@ -17,17 +17,23 @@
 			nav a {margin-right: 2em}
 			nav {margin-bottom: 2em;}
 			.flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;}
+			.error{width: 75%; background-color: #fee; padding: 1em;margin: 0 auto;}
 			article[data-state=read] {background-color: #eee;}
 			article[data-state=read] a[data-action=mark_read]:before{content: "✓ Mark unread";}
 			article[data-state=unread] a[data-action=mark_read]:before{content: "Mark read";}
+			article[data-starred=star] a[data-action=mark_star]:before{content: "★ Remove star";}
+			article[data-starred=unstar] a[data-action=mark_star]:before{content: "Mark star";}
+			article[data-starred=star] {border-color: red; border-width: 2px;}
 		</style>
 	</head>
 	<body>
 		<header id="main-header">
 			<nav>
-				<a href="{{ url_for("browser.unread") }}">Unread</a>
+				<a href="{{ url_for("browser.entries_unread") }}">Entries</a>
+				<a href="{{ url_for("browser.entries_starred") }}">Starred</a>
 				<a href="{{ url_for("browser.sources") }}">Sources</a>
 				<a href="{{ url_for("browser.groups") }}">Groups</a>
+				<a href="{{ url_for("system.settings") }}">Settings</a>
 			</nav>
 		</header>
 		<section id="flashes">
@@ -49,14 +55,14 @@
 				element.onclick = (event) => {
 					event.preventDefault();
 					let formData = new FormData();
-					formData.append("entry_id", element.dataset["entryId"]);
 					let article = element.closest('article');
+					formData.append("entry_id", article.dataset["entryId"]);
 					if (article.dataset["state"] == "read") {
-						formData.append("new_state", "unread");
+						formData.append("value", "unread");
 					} else {
-						formData.append("new_state", "read");
+						formData.append("value", "read");
 					}
-					//element.attributes['href'] = "";
+					element.attributes['href'] = "";
 					fetch(mark_read_url, {
 						method: "POST",
 						body: formData,
@@ -68,11 +74,43 @@
 						if (data == "read" || data == "unread") {
 							article.dataset["state"] = data;
 						}
-						//element.attributes['href'] = "#";
+						element.attributes['href'] = "#";
 					})
 					.catch((error) => {
 						window.console.log(error);
-						//element.attributes['href'] = "#";
+						element.attributes['href'] = "#";
+					});
+				};
+			});
+			let mark_star_url = "{{ url_for("browser.entry_mark_star_api") }}";
+			document.querySelectorAll("a[data-action=mark_star]").forEach((element) => {
+				element.onclick = (event) => {
+					event.preventDefault();
+					let formData = new FormData();
+					let article = element.closest('article');
+					formData.append("entry_id", article.dataset["entryId"]);
+					if (article.dataset["starred"] == "star") {
+						formData.append("value", "unstar");
+					} else {
+						formData.append("value", "star");
+					}
+					element.attributes['href'] = "";
+					fetch(mark_star_url, {
+						method: "POST",
+						body: formData,
+					})
+					.then((resp) => {
+						return resp.text();
+					})
+					.then((data) => {
+						if (data == "star" || data == "unstar") {
+							article.dataset["starred"] = data;
+						}
+						element.attributes['href'] = "#";
+					})
+					.catch((error) => {
+						window.console.log(error);
+						element.attributes['href'] = "#";
 					});
 				};
 			});

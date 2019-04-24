@@ -7,8 +7,10 @@
 
 -- global application settings
 CREATE TABLE settings (
-    key     varchar not null,
-    value   json
+    key         varchar not null,
+    value       json,
+    value_type  varchar,
+    description varchar
 );
 
 

@@ -10,6 +10,7 @@
 		{% if max_id %}
 		<a href="{{ url_for('browser.source_mark_read', source_id=source.id, max_id=max_id) }}">Mark read</a>
 		{% endif %}
+		<a href="{{ url_for('browser.source_refresh', source_id=source.id) }}">Refresh</a>
 		<a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
 		{% if showed_all %}
 		<a href="{{ url_for('browser.source_entries', source_id=source.id) }}">Show unread only</a>

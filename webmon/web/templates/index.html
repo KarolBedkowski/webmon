@@ -10,6 +10,11 @@
 		{% if max_id %}
 		<a href="{{ url_for('browser.entries_mark_read', max_id=max_id) }}">Mark read</a>
 		{% endif %}
+		{% if showed_all %}
+		<a href="{{ url_for('browser.entries_unread') }}">Show unread only</a>
+		{% else %}
+		<a href="{{ url_for('browser.entries_all') }}">Show all</a>
+		{% endif %}
 	</nav>
 {% endblock %}
 

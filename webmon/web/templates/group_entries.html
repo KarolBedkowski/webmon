@@ -10,6 +10,12 @@
 		{% if max_id %}
 		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
 		{% endif %}
+		<a href="{{ url_for('browser.refresh_group', group_id=group.id) }}">Refresh</a>
+		{% if showed_all %}
+		<a href="{{ url_for('browser.group_entries', group_id=group.id) }}">Show unread only</a>
+		{% else %}
+		<a href="{{ url_for('browser.group_entries_all', group_id=group.id) }}">Show all</a>
+		{% endif %}
 	</nav>
 {% endblock %}
 

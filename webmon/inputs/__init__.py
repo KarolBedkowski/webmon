@@ -22,6 +22,7 @@ _LOG = logging.getLogger(__name__)
 def _load_plugins():
     from . import file_input
     from . import web_input
+    from . import jamendo
 
     try:
         from . import github
@@ -41,11 +42,11 @@ class UnknownInputException(Exception):
     pass
 
 
-def get_input(source: model.Source):
+def get_input(source: model.Source, sys_settings):
     """ Get input class according to configuration """
     scls = common.find_subclass(AbstractInput, source.kind)
     if scls:
-        inp = scls(source)
+        inp = scls(source, sys_settings)
         return inp
 
     raise UnknownInputException()

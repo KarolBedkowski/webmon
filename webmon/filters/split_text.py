@@ -12,6 +12,7 @@ Filters for splitting input text into many entries
 """
 import io
 import typing as ty
+import logging
 
 from lxml import etree
 from cssselect import GenericTranslator, SelectorError
@@ -21,6 +22,7 @@ from webmon import model
 from ._abstract import AbstractFilter
 
 _ = ty
+_LOG = logging.getLogger(__name__)
 
 
 def _get_elements_by_xpath(entry: model.Entry, expression: str):
@@ -31,7 +33,7 @@ def _get_elements_by_xpath(entry: model.Entry, expression: str):
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
         if isinstance(elem, etree._Element):
-            content = etree.tostring(elem)
+            content = etree.tostring(elem).decode('utf-8')
         else:
             content = str(elem)
         yield _new_entry(entry, content)
@@ -92,7 +94,7 @@ class GetElementsById(AbstractFilter):
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
             # pylint: disable=protected-access
             if isinstance(elem, etree._Element):
-                text = etree.tostring(elem)  # type: ty.Union[str, bytes]
+                text = etree.tostring(elem).decode('utf-8')
                 if text:
                     yield _new_entry(entry, text)
             else:

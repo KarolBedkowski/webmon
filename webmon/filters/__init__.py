@@ -26,6 +26,8 @@ def _load_filters():
     from . import grep
     from . import history
     from . import join
+    from . import sort
+    from . import wrap
     try:
         from . import split_text
     except ImportError as err:

@@ -2,10 +2,10 @@
 	<p>
 		<label>{{ field.description }}</label>
 		{% if field.type == 'str' %}
-			<input type="text" name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"
+			<input type="text" name="{{ prefix }}-{{ field.name}}" value="{{ field.value or '' }}"
 				{% if field.requred %}requred="requred"{% endif %} />
 		{% elif field.type == 'number' %}
-			<input type="number" name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"
+			<input type="number" name="{{ prefix }}-{{ field.name}}" value="{{ field.value or '' }}"
 				{% if field.requred %}requred="requred"{% endif %} />
 		{% elif field.type == 'select' %}
 			<select name="{{ prefix }}-{{ field.name}}" value="{{ field.value }}"

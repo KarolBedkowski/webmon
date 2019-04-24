@@ -51,3 +51,19 @@ class Compact(AbstractFilter):
 
         entry.content = '\n'.join(clean())
         yield entry
+
+
+class Head(AbstractFilter):
+    """Get given top lines from input"""
+
+    name = "head"
+    params = [
+        ("count", "Maximum number of last lines to get", 20, True, None),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+
+    def _filter(self, entry: model.Entry) -> model.Entries:
+        if not entry.content:
+            return
+        entry.content = '\n'.join(
+            entry.content.split(None)[:self._conf['count']])
+        yield entry

@@ -53,6 +53,7 @@ class GitHubMixin:
 
     def _github_get_repository(self, conf: dict):
         """Create repository object according to configuration. """
+        github = None
         if conf.get("github_user") and conf.get("github_token"):
             try:
                 github = github3.login(username=conf.get("github_user"),

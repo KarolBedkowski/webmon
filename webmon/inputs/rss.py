@@ -72,7 +72,7 @@ class RssInput(AbstractInput):
         if status == 301:  # permanent redirects
             new_state.set_state("info", 'Permanently redirects: ' + doc.href)
         elif status == 302:
-            new_state.set_state('Temporary redirects: ' + doc.href)
+            new_state.set_state('info', 'Temporary redirects: ' + doc.href)
 
         load_content = self._conf['load_content']
         items = [self._load_entry(entry, load_content)

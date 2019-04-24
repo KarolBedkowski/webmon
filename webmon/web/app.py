@@ -15,14 +15,15 @@ import datetime
 
 from flask import Flask, g
 from gevent.pywsgi import WSGIServer
-from docutils.core import publish_parts
+import markdown2
 
 
 def _docutils_filter(body):
     if not body:
         return body
-    return publish_parts(
-        body, writer_name='html', settings=None)['fragment']
+#    return publish_parts(
+#        body, writer_name='html', settings=None)['fragment']
+    return markdown2.markdown(body)
 
 
 def _age_filter(date):
@@ -58,6 +59,9 @@ def create_app(dbfile):
 
     from . import browser
     app.register_blueprint(browser.BP)
+
+    from . import system
+    app.register_blueprint(system.BP)
 
     @app.route("/")
     def hello():

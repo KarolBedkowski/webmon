@@ -34,6 +34,12 @@ class SourceGroup:
         self.id = id_
         self.name = name
 
+    def clone(self):
+        sg = SourceGroup()
+        sg.id = self.id
+        sg.name = self.name
+        return sg
+
 
 class Source:
     def __init__(self):
@@ -75,6 +81,16 @@ class SourceState:
         self.error = None
         self.state = None
 
+    @staticmethod
+    def new(source_id):
+        source = SourceState()
+        source.source_id = source_id
+        source.next_update = datetime.datetime.now()
+        source.error_counter = 0
+        source.success_counter = 0
+        source.status = 'new'
+        return source
+
     def create_new(self):
         new_state = SourceState()
         new_state.source_id = self.source_id
@@ -96,7 +112,6 @@ class SourceState:
     def new_error(self, error: str):
         state = SourceState()
         state.source_id = self.source_id
-        state.last_update = datetime.datetime.now()
         state.error = error
         state.last_update = datetime.datetime.now()
         state.status = 'error'
@@ -118,6 +133,7 @@ class SourceState:
     def set_state(self, key, value):
         if self.state is None:
             self.state = {}
+        curr_val = self.state.get(key)
         self.state[key] = value
 
     def get_state(self, key, default=None):
@@ -190,3 +206,23 @@ class Entry:
 
 
 Entries = ty.Iterable[Entry]
+
+
+class Setting:
+    def __init__(self, key=None, value=None, value_type=None,
+                 description=None):
+        self.key = key
+        self.value = value
+        self.value_type = value_type
+        self.description = description
+
+    def set_value(self, value):
+        if self.value_type == 'int':
+            self.value = int(value)
+        elif self.value_type == 'float':
+            self.value = float(value)
+        else:
+            self.value = str(value)
+
+    def __str__(self):
+        return obj2str(self)

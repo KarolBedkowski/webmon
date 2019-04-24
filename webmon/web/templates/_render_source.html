@@ -5,10 +5,17 @@
 				{% if source.group %}<small>[{{ source.group.name }}]</small>{% endif %}
 			</h4>
 			<p> &#9716;<time>{{ source.state.last_update|age }}</time>
-				| <a href="{{ url_for('browser.refresh', source_id=source.id)}}">Refresh</a>
+				| <a href="{{ url_for('browser.source_refresh', source_id=source.id)}}">Refresh</a>
 				| <a href="{{ url_for('browser.source_mark_read', source_id=source.id) }}">Mark read</a>
 				| <a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
+				| <a href="{{ url_for('browser.source_delete', source_id=source.id) }}">Delete</a>
 			</p>
+			{% if source.state.status == 'error' %}
+			<p class="error">Error: {{ source.state.error}} at {{ source.state.last_update}} times: {{ source.state.error_counter}}</p>
+			{% endif %}
+			{% if source.state.state and source.state.state.get('info') %}
+					<p>source.state.state.get('info')</p>
+			{% endif %}
 		</header>
 	</article>
 {%- endmacro %}

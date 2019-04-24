@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+	<h1>{% block title %}Entry{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+	{{ re.render_entry(entry) }}
+{% endblock %}
+  </body>
+</html>

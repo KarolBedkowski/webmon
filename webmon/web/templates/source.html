@@ -25,7 +25,6 @@
 		<p>
 			<label for="source-group">Group</label>
 			<select name="group_id" id="source-group" value="{{ source.group_id }}">
-				<option value=""></option>
 				{% for group in groups %}
 				<option value="{{ group.id }}" {% if group.id == source.group_id %} selected="selected"{% endif %}>{{ group.name }}</option>
 				{% endfor %}
@@ -33,7 +32,7 @@
 		</p>
 		<p>
 			<label for="source-interval">Interval</label>
-			<input type="number" name="interval" id="source-interval" value="{{ source.interval }}"/>
+			<input type="text" name="interval" id="source-interval" value="{{ source.interval or '' }}"/>
 		</p>
 		<p>
 			<fieldset>

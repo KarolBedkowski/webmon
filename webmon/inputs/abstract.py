@@ -11,9 +11,11 @@ Abstract input definition
 """
 
 import typing as ty
-
+import logging
 
 from webmon import model, common
+
+_LOG = logging.getLogger(__name__)
 
 
 class AbstractInput:
@@ -25,12 +27,15 @@ class AbstractInput:
     # options, type)
     params = []  # type: ty.List[ty.Tuple[str, str, ty.Any,bool,ty.Any,ty.Any]]
 
-    def __init__(self, source: model.Source) -> None:
+    def __init__(self, source: model.Source,
+                 sys_settings: ty.Dict[str, ty.Any]) -> None:
         super().__init__()
         self._source = source
-        self._conf = common.apply_defaults(
+        conf = common.apply_defaults(
             {key: val for key, _name, val, _req, _opts, _type in self.params},
-            source.settings)
+            sys_settings)
+        self._conf = common.apply_defaults(conf, source.settings)
+        _LOG.debug("Source %s: conf: %r", source.id, conf)
 
     def dump_debug(self):
         return " ".join(("<", self.__class__.__name__, str(self._source),

@@ -11,4 +11,7 @@ report*
 *.prom
 tags
 pylint*
+*/old/
+webmon.db*
 
+/.gtm/
