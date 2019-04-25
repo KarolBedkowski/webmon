@@ -381,7 +381,8 @@ class DB(object):
         return json.loads(row[0]) if isinstance(row[0], str) else row[0]
 
     def get_settings_map(self) -> ty.Dict[str, ty.Any]:
-        return {key: val for key, val
+        return {key: json.loads(val) if isinstance(val, str) else val
+                for key, val
                 in self._conn.execute("select key, value from settings")}
 
     def _update_schema(self):
@@ -518,7 +519,7 @@ def _entry_to_row(entry):
 
 def _setting_from_row(row) -> model.Setting:
     value = row['value']
-    if value  and isinstance(value, str):
+    if value and isinstance(value, str):
         value = json.loads(value)
     return model.Setting(row['key'], value, row['value_type'],
                          row['description'])

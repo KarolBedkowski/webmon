@@ -40,7 +40,7 @@ class JamendoAlbumsInput(AbstractInput):
     ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def load(self, state: model.SourceState) -> \
-            (model.SourceState, [model.Entry]):
+            ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return one part - page content. """
         conf = self._conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
@@ -49,12 +49,12 @@ class JamendoAlbumsInput(AbstractInput):
             raise common.ParamError(
                 "missing parameter 'artist' or 'artist_id'")
 
-        last_updated = datetime.datetime.now() - \
+        last_update = datetime.datetime.now() - \
             datetime.timedelta(days=_JAMENDO_MAX_AGE)
-        if state.last_update and state.last_updated > last_updated:
-            last_updated = state.last_updated
+        if state.last_update and state.last_update > last_update:
+            last_update = state.last_update
 
-        url = _jamendo_build_service_url(conf, last_updated)
+        url = _jamendo_build_service_url(conf, last_update)
         _LOG.debug("JamendoAlbumsInput: loading url: %s", url)
         try:
             sess = requests.Session()
@@ -94,8 +94,8 @@ class JamendoAlbumsInput(AbstractInput):
 
 
 def _jamendo_build_service_url(conf: ty.Dict[str, ty.Any],
-                               last_updated: datetime.datetime) -> str:
-    last_updated = last_updated.strftime("%Y-%m-%d")
+                               last_update: datetime.datetime) -> str:
+    last_update_str = last_update.strftime("%Y-%m-%d")
     today = time.strftime("%Y-%m-%d")
     artist = (("name=" + conf["artist"]) if conf.get('artist')
               else ("id=" + str(conf["artist_id"])))
@@ -103,7 +103,7 @@ def _jamendo_build_service_url(conf: ty.Dict[str, ty.Any],
     url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
                      "format=json&order=album_releasedate_desc",
                      artist,
-                     "album_datebetween=" + last_updated + "_" + today))
+                     "album_datebetween=" + last_update_str + "_" + today))
     return url
 
 
@@ -147,7 +147,7 @@ class JamendoTracksInput(AbstractInput):
     ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def load(self, state: model.SourceState) -> \
-            (model.SourceState, [model.Entry]):
+            ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return one part - page content. """
         conf = self._conf
         headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
@@ -156,12 +156,12 @@ class JamendoTracksInput(AbstractInput):
             raise common.ParamError(
                 "missing parameter 'artist' or 'artist_id'")
 
-        last_updated = datetime.datetime.now() - \
+        last_update = datetime.datetime.now() - \
             datetime.timedelta(days=_JAMENDO_MAX_AGE)
-        if state.last_update and state.last_updated > last_updated:
-            last_updated = state.last_updated
+        if state.last_update and state.last_update > last_update:
+            last_update = state.last_update
 
-        url = _jamendo_build_url_tracks(conf, last_updated)
+        url = _jamendo_build_url_tracks(conf, last_update)
 
         _LOG.debug("JamendoTracksInput: loading url: %s", url)
         try:
@@ -201,8 +201,8 @@ class JamendoTracksInput(AbstractInput):
         return new_state, entries
 
 
-def _jamendo_build_url_tracks(conf, last_updated):
-    last_updated = last_updated.strftime("%Y-%m-%d")
+def _jamendo_build_url_tracks(conf, last_update):
+    last_update = last_update.strftime("%Y-%m-%d")
     today = time.strftime("%Y-%m-%d")
     artist = (("name=" + conf["artist"]) if conf.get('artist')
               else ("id=" + str(conf["artist_id"])))
@@ -210,7 +210,7 @@ def _jamendo_build_url_tracks(conf, last_updated):
     url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
                      "format=json&order=track_releasedate_desc",
                      artist,
-                     "album_datebetween=" + last_updated + "_" + today))
+                     "album_datebetween=" + last_update + "_" + today))
     return url
 
 
@@ -250,7 +250,8 @@ def _jamendo_track_format_long(source, results):
 class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
     """Require TLSv1 for the connection"""
 
-    def init_poolmanager(self, connections, maxsize, block=False):
+    def init_poolmanager(self, connections, maxsize, block=False,
+                         **_pool_kwargs):
         self.poolmanager = poolmanager.PoolManager(
             num_pools=connections,
             maxsize=maxsize,
