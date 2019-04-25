@@ -385,6 +385,34 @@ class DB(object):
                 for key, val
                 in self._conn.execute("select key, value from settings")}
 
+    def get_user(self, id_=None, login=None) -> ty.Optional[model.User]:
+        cur = self._conn.cursor()
+        if id_:
+            cur.execute("select id, login, email, password, active, admin "
+                        "from users where id=?", (id_, ))
+        elif login:
+            cur.execute("select id, login, email, password, active, admin "
+                        "from users where login=?", (login, ))
+        else:
+            return None
+        row = cur.fetchone()
+        if not row:
+            return None
+        user = _user_from_row(row)
+        return user
+
+    def save_user(self, user: model.User) -> ty.Optional[model.User]:
+        cur = self._conn.cursor()
+        cur.execute("select 1 from users where login=?", (user.login, ))
+        if cur.fetchone():
+            return None
+        cur.execute(
+            "insert into users (id, login, email, password, active, admin) "
+            "values (?, ?, ?, ?, ?, ?)", _user_to_row(user))
+        user.id = cur.lastrowid
+        self._conn.commit()
+        return user
+
     def _update_schema(self):
         schema_ver = self._get_schema_version()
         _LOG.info("current schema version: %r", schema_ver)
@@ -515,6 +543,27 @@ def _entry_to_row(entry):
         json.dumps(entry.opts),
         entry.content,
     ]
+
+
+def _user_from_row(row) -> model.User:
+    return model.User(
+        id_=row['id'],
+        email=row['email'],
+        password=row['password'],
+        active=row['active'],
+        admin=row['admin']
+    )
+
+
+def _user_to_row(user: model.User):
+    return (
+        user.id,
+        user.login,
+        user.email,
+        user.password,
+        user.active,
+        user.admin
+    )
 
 
 def _setting_from_row(row) -> model.Setting:

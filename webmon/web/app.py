@@ -45,6 +45,7 @@ def create_app(dbfile):
     app.config.from_mapping(
         DBFILE=dbfile,
         SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
+        SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
     )
     app.app_context().push()
 
@@ -62,6 +63,9 @@ def create_app(dbfile):
 
     from . import system
     app.register_blueprint(system.BP)
+
+    from . import security
+    app.register_blueprint(security.BP)
 
     @app.route("/")
     def hello():

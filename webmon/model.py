@@ -10,9 +10,13 @@
 
 """
 
+import os
 import hashlib
 import datetime
 import typing as ty
+import logging
+
+_LOG = logging.getLogger(__name__)
 
 
 def _val2str(value):
@@ -135,7 +139,6 @@ class SourceState:
     def set_state(self, key, value):
         if self.state is None:
             self.state = {}
-        curr_val = self.state.get(key)
         self.state[key] = value
 
     def get_state(self, key, default=None):
@@ -228,3 +231,27 @@ class Setting:
 
     def __str__(self):
         return obj2str(self)
+
+
+class User:
+    def __init__(self, id_=None, login=None, email=None, password=None,
+                 active=None, admin=None):
+        self.id = id_
+        self.login = login
+        self.email = email
+        self.password = password
+        self.active = active
+        self.admin = admin
+
+    def hash_password(self, password):
+        salt = os.urandom(16)
+        phash = hashlib.scrypt(
+            password.encode('utf-8'), salt=salt, n=16, r=16, p=2)
+        self.password = salt.hex() + phash.hex()
+
+    def verify_password(self, password):
+        salt = bytes.fromhex(self.password[:32])
+        passw = bytes.fromhex(self.password[32:])
+        phash = hashlib.scrypt(
+            password.encode('utf-8'), salt=salt, n=16, r=16, p=2)
+        return passw == phash

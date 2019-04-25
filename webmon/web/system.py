@@ -16,7 +16,7 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
 )
 
-from webmon.web import get_db
+from webmon.web import get_db, login_required
 #from webmon import inputs, model
 #from . import forms
 
@@ -26,6 +26,7 @@ BP = Blueprint('system', __name__, url_prefix='/system')
 
 
 @BP.route('/settings', methods=["POST", "GET"])
+@login_required
 def settings():
     db = get_db()
     settings = list(db.get_settings())

@@ -49,6 +49,10 @@ def _parse_options():
     parser.add_argument("--migrate",
                         help="migrate inputs from file",
                         dest="migrate_filename")
+    parser.add_argument("--add-user",
+                        help="add user; arguments in form "
+                        "<login>:<password>[:admin]",
+                        dest="add_user")
     return parser.parse_args()
 
 
@@ -70,6 +74,22 @@ def _show_abilities_cls(title, base_cls):
 def show_abilities():
     _show_abilities_cls("Inputs:", inputs.AbstractInput)
     _show_abilities_cls("Filters:", filters.AbstractFilter)
+
+
+def add_user(database, args):
+    from webmon import model
+    user_pass_adm = args.split(':')
+    if len(user_pass_adm) < 2:
+        print("wrong arguments for --add-user")
+        return
+    user = model.User(login=user_pass_adm[0], active=True)
+    user.hash_password(user_pass_adm[1])
+    user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
+    user = database.save_user(user)
+    if not user:
+        print("user already exists")
+    else:
+        print("user created")
 
 
 def _load_user_classes():
@@ -145,9 +165,14 @@ def main():
     dbfile = "./webmon.db"
     database = db.DB.initialize(dbfile)
 
+    if args.add_user:
+        add_user(database, args.add_user)
+        return
+
     if args.migrate_filename:
         from . import migrate
         migrate.migrate(args.migrate_filename)
+        return
 
     cworker = worker.CheckWorker(database.clone())
     cworker.start()
