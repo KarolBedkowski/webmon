@@ -122,17 +122,24 @@ def source_edit(source_id):
     source = db.get_source(source_id)
     inp = inputs.get_input(source, {})
     source_form = forms.SourceForm.from_model(source)
+    errors = {}
 
     if request.method == 'POST':
         source_form.update_from_request(request.form, inp)
-        source = source_form.update_model(source)
-        db.save_source(source)
-        return redirect(url_for('browser.sources'))
+        errors = source_form.validate()
+        if not errors:
+            source = source_form.update_model(source)
+            db.save_source(source)
+            return redirect(url_for('browser.sources'))
 
     source_form.settings = [forms.Field.from_input_params(
         param, source_form.model_settings) for param in inp.params]
     return render_template(
-        "source.html", groups=db.get_groups(), source=source_form)
+        "source.html",
+        groups=db.get_groups(),
+        source=source_form,
+        errors=errors
+    )
 
 
 @BP.route("/source/<int:source_id>/entries/all")

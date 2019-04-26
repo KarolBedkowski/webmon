@@ -68,9 +68,15 @@ class SourceForm:
             result["kind"] = "Missing source kind"
         else:
             from webmon import inputs
-            inputs_names = [name for name, _ in inputs.enumerate_inputs()]
+            inputs_names = inputs.enumerate_inputs()
             if self.kind not in inputs_names:
                 result["kind"] = "Unknown kind"
+        if self.interval:
+            from webmon import common
+            try:
+                common.parse_interval(self.interval)
+            except ValueError:
+                result['interval'] = "invalid interval"
         return result
 
     @staticmethod
@@ -133,3 +139,9 @@ class GroupForm:
         group = group.clone()
         group.name = self.name
         return group
+
+    def validate(self) -> ty.Dict[str, str]:
+        result = {}
+        if not self.name:
+            result['name'] = "Missing name"
+        return result

@@ -13,6 +13,14 @@
 {% endblock %}
 
 {% block content %}
+	{% if errors %}
+		<p class="error">
+			<b>Validation errors:</b>
+			{% for field, err in errors.items() %}
+			<br/>{{ err }}
+			{% endfor %}
+		<p>
+	{% endif %}
 	<form method="POST">
 		<p>
 			<label for="source-kind">Kind</label>
