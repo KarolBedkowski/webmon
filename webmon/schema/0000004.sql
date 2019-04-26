@@ -6,7 +6,7 @@
  */
 
 CREATE TABLE history_oids (
-    source_id           integer references source(id) on delete cascade,
+    source_id           integer references sources(id) on delete cascade,
     oid                 varchar not null,
     created             timestamp default CURRENT_TIMESTAMP,
     PRIMARY KEY(source_id, oid)

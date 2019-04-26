@@ -90,7 +90,7 @@ class JamendoAlbumsInput(AbstractInput):
         response.close()
         _LOG.debug("JamendoAlbumsInput: load done")
         new_state = state.new_ok()
-        return new_state, result
+        return new_state, list(result)
 
 
 def _jamendo_build_service_url(conf: ty.Dict[str, ty.Any],
@@ -198,7 +198,7 @@ class JamendoTracksInput(AbstractInput):
 
         response.close()
         new_state = state.new_ok()
-        return new_state, entries
+        return new_state, list(entries)
 
 
 def _jamendo_build_url_tracks(conf, last_update):

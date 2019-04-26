@@ -238,10 +238,18 @@ def group_entries_all(group_id):
 @BP.route("/group/<int:group_id>/mark/read")
 def group_mark_read(group_id):
     db = get_db()
-    max_id = int(request.args['max_id'])
+    max_id = request.args.get('max_id')
+    max_id = int(max_id) if max_id else max_id
     db.mark_read(group_id=group_id, max_id=max_id)
     if request.method == 'POST':
         return "ok"
+    if request.args.get('go') == 'next':
+        # go to next unread group
+        group_id = db.get_next_unread_group()
+        _LOG.info("next group: %r", group_id)
+        if group_id:
+            return redirect(url_for('browser.group_entries',
+                                    group_id=group_id))
     return redirect(request.headers.get('Referer')
                     or url_for("browser.groups"))
 

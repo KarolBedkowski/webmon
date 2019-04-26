@@ -20,7 +20,7 @@
 	<body>
 		<section id="flashes">
 			{% for message in get_flashed_messages() %}
-			<div class="flash">{{ message }}</div>
+			<div class="flash error">{{ message }}</div>
 			{% endfor %}
 		</section>
 		<section class="content">
@@ -31,11 +31,11 @@
 				<input type="hidden" value="{{ request.args.get('back', '') }}"/>
 				<p>
 					<label>Login</label>
-					<input type="text" name="login" />
+					<input type="text" name="login" required="required" />
 				</p>
 				<p>
 					<label>Password</label>
-					<input type="password" name="password" />
+					<input type="password" name="password" required="required" />
 				</p>
 				<p><button type="submit">Login</button><p>
 		</section>

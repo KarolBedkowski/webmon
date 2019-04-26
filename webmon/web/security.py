@@ -38,3 +38,11 @@ def login():
         flash("Invalid user and/or password")
 
     return render_template("login.html", )
+
+
+@BP.route('/logout')
+def logout():
+    del session['user']
+    del session['user_admin']
+    session.modified = True
+    return redirect(url_for('browser.index'))

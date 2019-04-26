@@ -12,10 +12,14 @@
 
 import os
 import datetime
+import logging
 
-from flask import Flask, g
+from flask import Flask, g, url_for, session, request, redirect
 from gevent.pywsgi import WSGIServer
 import markdown2
+
+
+_LOG = logging.getLogger(__name__)
 
 
 def _docutils_filter(body):
@@ -70,6 +74,12 @@ def create_app(dbfile):
     @app.route("/")
     def hello():
         return "Hello World!"
+
+    @app.before_request
+    def login_required():
+        if session.get('user') is None and \
+                request.path != '/sec/login':
+            return redirect(url_for('sec.login', back=request.url))
 
     return app
 

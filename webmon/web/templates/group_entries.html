@@ -9,6 +9,7 @@
 	<nav>
 		{% if max_id %}
 		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
+		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">Mark read and go to next group</a>
 		{% endif %}
 		<a href="{{ url_for('browser.refresh_group', group_id=group.id) }}">Refresh</a>
 		{% if showed_all %}
@@ -24,5 +25,15 @@
 		{{ re.render_entry(entry) }}
 	{% endfor %}
 {% endblock %}
+
+{% block footer %}
+	<nav>
+		{% if max_id %}
+		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
+		<a href="{{ url_for('browser.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">Mark read and go to next group</a>
+		{% endif %}
+	</nav>
+{% endblock %}
+
   </body>
 </html>

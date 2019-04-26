@@ -98,6 +98,7 @@ class GithubInput(AbstractInput, GitHubMixin):
         else:
             commits = list(repository.iter_commits(
                 since=data_since, etag=etag))
+
         if not commits:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
@@ -174,6 +175,8 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
+        tags = [tag for tag in tags if tag.last_modified > state.last_update]
+
         if not tags:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
@@ -236,6 +239,11 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
             releases = list(repository.releases(max_items, etag=etag))
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
+
+        releases = [
+            release for release in releases
+            if release.created_at > state.last_update
+        ]
 
         if not releases:
             new_state = state.new_not_modified()

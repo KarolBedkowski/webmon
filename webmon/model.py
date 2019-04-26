@@ -34,9 +34,11 @@ def obj2str(obj):
 
 
 class SourceGroup:
-    def __init__(self, id_=None, name=None):
+    def __init__(self, id_=None, name=None, unread=None):
         self.id = id_
         self.name = name
+
+        self.unread = unread
 
     def clone(self):
         sg = SourceGroup()

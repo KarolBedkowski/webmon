@@ -7,7 +7,8 @@
 {% block header %}
   <h1>{% block title %}Groups{% endblock %}</h1>
   <nav>
-	<a href="{{ url_for('browser.group_new') }}">New</a>
+	  <a href="{{ url_for("browser.sources_refresh")}}">Refresh all</a>
+	  <a href="{{ url_for('browser.group_new') }}">New</a>
   </nav>
 {% endblock %}
 
@@ -15,7 +16,9 @@
 	{% for group in groups %}
 		<article>
 			<header>
-				<h4><a href="{{ url_for('browser.group_entries', group_id=group.id) }}">{{ group.name }}</a></h4>
+				<h4><a href="{{ url_for('browser.group_entries', group_id=group.id) }}">{{ group.name }}</a>
+					{% if group.unread %}({{ group.unread }}){% endif %}
+				</h4>
 				<p><a href="{{ url_for('browser.refresh_group', group_id=group.id)}}">Refresh</a>
 					| <a href="{{ url_for('browser.group_edit', group_id=group.id)}}">Edit</a>
 					| <a href="{{ url_for('browser.group_mark_read', group_id=group.id)}}">Mark read</a>

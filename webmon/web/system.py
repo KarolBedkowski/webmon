@@ -16,7 +16,7 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
 )
 
-from webmon.web import get_db, login_required
+from webmon.web import get_db
 #from webmon import inputs, model
 #from . import forms
 
@@ -26,7 +26,6 @@ BP = Blueprint('system', __name__, url_prefix='/system')
 
 
 @BP.route('/settings', methods=["POST", "GET"])
-@login_required
 def settings():
     db = get_db()
     settings = list(db.get_settings())
@@ -35,6 +34,7 @@ def settings():
             if sett.key in request.form:
                 sett.set_value(request.form[sett.key])
         db.save_settings(settings)
+        flash("Settings saved")
         return redirect(url_for("system.settings"))
 
     return render_template("system/settings.html", settings=settings)

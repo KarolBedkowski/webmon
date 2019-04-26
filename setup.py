@@ -14,13 +14,13 @@ CLASSIFIERS = [
 REQUIRES = [
     'setuptools',
     'requests',
-    'typecheck-decorator',
-    'docutils'
+    'markdown2'
     'lxml',
     'PyYAML',
     'html2text',
-    'feedparser'
-    'github3.py'
+    'feedparser',
+    'github3.py',
+    'flask'
 ]
 
 

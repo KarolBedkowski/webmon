@@ -69,9 +69,9 @@ class DB(object):
 
     def get_groups(self):
         cur = self._conn.cursor()
-        cur.execute("select id, name from source_groups")
-        groups = [model.SourceGroup(id, name)
-                  for id, name in cur]
+        cur.execute(_GET_SOURCE_GROUPS_SQL)
+        groups = [model.SourceGroup(id, name, unread)
+                  for id, name, unread in cur]
         return groups
 
     def get_group(self, id_):
@@ -93,6 +93,15 @@ class DB(object):
                         (group.name, group.id))
         self._conn.commit()
         return group
+
+    def get_next_unread_group(self):
+        cur = self._conn.cursor()
+        cur.execute(
+            "select group_id "
+            "from sources s join entries e on e.source_id = s.id "
+            "where e.read_mark = 0 order by e.id limit 1")
+        row = cur.fetchone()
+        return row[0] if row else None
 
     def get_sources(self, group_id=None):
         cur = self._conn.cursor()
@@ -333,13 +342,17 @@ class DB(object):
         return changed
 
     def check_entry_oids(self, oids, source_id):
+        assert source_id
         cur = self._conn.cursor()
-        cur.execute(
-            "select oid from history_oids where source_id=? and oid in ("
-            + ", ".join("'" + oid + "'" for oid in oids) + ")",
-            (source_id, ))
-        result = {row[0] for row in cur}
-        new_oids = (oid for oid in oids if oid not in result)
+        result = set()
+        for idx in range(0, len(oids), 100):
+            part_oids = oids[idx:idx+100]
+            part_oids = ", ".join("'" + oid + "'" for oid in part_oids)
+            cur.execute(
+                "select oid from history_oids where source_id=? and oid in ("
+                + part_oids + ")", (source_id, ))
+            result.update({row[0] for row in cur})
+        new_oids = [oid for oid in oids if oid not in result]
         cur.executemany(
             "insert into history_oids(source_id, oid) values (?, ?)",
             [(source_id, oid) for oid in new_oids])
@@ -759,4 +772,14 @@ _UPDATE_ENTRY_SQL = """
 update entries set source_id=?, updated=?, created=?, read_mark=?, star_mark=?,
 status=?, oid=?, title=?, url=?, opts=?, content=?
 where id=?
+"""
+
+_GET_SOURCE_GROUPS_SQL = """
+select sg.id, sg.name,
+    (select count(*)
+        from entries e
+        join sources s on e.source_id = s.id
+        where e.read_mark = 0 and s.group_id = sg.id
+    ) as unread
+from source_groups sg
 """
