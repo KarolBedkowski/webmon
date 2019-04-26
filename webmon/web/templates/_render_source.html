@@ -9,7 +9,7 @@
 				| <a href="{{ url_for('browser.source_refresh', source_id=source.id)}}">Refresh</a>
 				| <a href="{{ url_for('browser.source_mark_read', source_id=source.id) }}">Mark read</a>
 				| <a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
-				| <a href="{{ url_for('browser.source_delete', source_id=source.id) }}">Delete</a>
+				| <a href="{{ url_for('browser.source_delete', source_id=source.id) }}" data-req-confirm="yes">Delete</a>
 			</p>
 			{% if source.state.status == 'error' %}
 			<p class="error">Error: {{ source.state.error}} at {{ source.state.last_update}} times: {{ source.state.error_counter}}</p>

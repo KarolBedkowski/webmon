@@ -428,12 +428,12 @@ class DB(object):
 
     def _update_schema(self):
         schema_ver = self._get_schema_version()
-        _LOG.info("current schema version: %r", schema_ver)
+        _LOG.debug("current schema version: %r", schema_ver)
         schama_files = os.path.join(os.path.dirname(__file__), 'schema')
         for fname in os.listdir(schama_files):
             try:
                 version = int(os.path.splitext(fname)[0])
-                _LOG.info("found update: %r", version)
+                _LOG.debug("found update: %r", version)
                 if version <= schema_ver:
                     continue
             except ValueError:

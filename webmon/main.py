@@ -177,7 +177,7 @@ def main():
     cworker = worker.CheckWorker(database.clone())
     cworker.start()
 
-    web.start_app(dbfile)
+    web.start_app(dbfile, args.debug)
 
     database.close()
 

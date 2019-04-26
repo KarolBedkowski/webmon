@@ -20,7 +20,7 @@
 			{% if entry.get_opt('preformated') %}
 			<pre>{{ entry.content|safe }}</pre>
 			{% else %}
-			{{ entry.content|docutils|safe }}
+			{{ entry.content|format_body|safe }}
 			{% endif %}
 		{% endif %}
 	</article>

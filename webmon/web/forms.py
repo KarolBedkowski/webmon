@@ -58,6 +58,21 @@ class SourceForm:
         self.settings = None
         self.filters = None
 
+    def validate(self) -> ty.Dict[str, str]:
+        result = {}
+        if not self.group_id:
+            result['group_id'] = "Missing group"
+        if not self.name:
+            result["name"] = "Missing name"
+        if not self.kind:
+            result["kind"] = "Missing source kind"
+        else:
+            from webmon import inputs
+            inputs_names = [name for name, _ in inputs.enumerate_inputs()]
+            if self.kind not in inputs_names:
+                result["kind"] = "Unknown kind"
+        return result
+
     @staticmethod
     def from_model(source: model.Source):
         src = SourceForm()
@@ -71,11 +86,11 @@ class SourceForm:
         return src
 
     def update_from_request(self, form, input_):
-        group_id = form['group_id']
+        group_id = form['group_id'].strip()
         self.group_id = int(group_id) if group_id else None
-        self.name = form['name']
-        self.interval = form['interval']
-        self.filters = form['filters']
+        self.name = form['name'].strip()
+        self.interval = form['interval'].strip()
+        self.filters = form['filters'].strip()
         self.model_settings = self.model_settings or {}
         param_types = input_.get_param_types()
         for key, val in form.items():
@@ -112,7 +127,7 @@ class GroupForm:
         return form
 
     def update_from_request(self, form):
-        self.name = form['name']
+        self.name = form['name'].strip()
 
     def update_model(self, group: model.SourceGroup):
         group = group.clone()

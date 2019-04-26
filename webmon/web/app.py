@@ -22,7 +22,7 @@ import markdown2
 _LOG = logging.getLogger(__name__)
 
 
-def _docutils_filter(body):
+def _format_body_filter(body):
     if not body:
         return body
 #    return publish_parts(
@@ -41,7 +41,7 @@ def _age_filter(date):
     return str(int(diff//86400)) + "d"
 
 
-def create_app(dbfile):
+def create_app(dbfile, debug):
     template_folder = os.path.join(os.path.dirname(__file__), 'templates')
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True,
@@ -59,7 +59,7 @@ def create_app(dbfile):
         if db is not None:
             db.close()
 
-    app.jinja_env.filters['docutils'] = _docutils_filter
+    app.jinja_env.filters['format_body'] = _format_body_filter
     app.jinja_env.filters['age'] = _age_filter
 
     from . import browser
@@ -84,8 +84,10 @@ def create_app(dbfile):
     return app
 
 
-def start_app(db):
-    app = create_app(db)
-    app.run(debug=True)
-    #http_server = WSGIServer(('', 5000), app)
-    #http_server.serve_forever()
+def start_app(db, debug):
+    app = create_app(db, debug)
+    if debug:
+        app.run(debug=True)
+    else:
+        http_server = WSGIServer(('', 5000), app)
+        http_server.serve_forever()

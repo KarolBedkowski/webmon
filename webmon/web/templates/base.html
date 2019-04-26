@@ -120,6 +120,13 @@
 					});
 				};
 			});
+			document.querySelectorAll("a[data-req-confirm=yes]").forEach((element) => {
+				element.onclick = (event) => {
+					if (!confirm("Realy?")) {
+						event.preventDefault()
+					}
+				};
+			});
 		});
 	</script>
 </html>

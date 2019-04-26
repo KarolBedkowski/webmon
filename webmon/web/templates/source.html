@@ -48,7 +48,7 @@
 		</p>
 		<p>
 			<button type="submit">Save</button>
-			<a href="{{ url_for('browser.source_delete', source_id=source.id, delete_self=1) }}">Delete</a>
+			<a href="{{ url_for('browser.source_delete', source_id=source.id, delete_self=1) }}" data-req-confirm="yes">Delete</a>
 		</p>
 	</form>
 {% endblock %}
