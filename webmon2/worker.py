@@ -27,9 +27,13 @@ class CheckWorker(threading.Thread):
         self._todo_queue = queue.Queue()
 
     def run(self):
+        cntr = 0
         with database.DB.get() as db:
             _LOG.info("CheckWorker started")
             while True:
+                if not cntr:
+                    _delete_old_entries(db)
+                cntr = (cntr + 1) % 60
                 _LOG.debug("CheckWorker check start")
                 if self._todo_queue.empty():
                     ids = db.get_sources_to_fetch()
@@ -105,3 +109,13 @@ class FetchWorker(threading.Thread):
         db.save_state(new_state)
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))
+
+
+def _delete_old_entries(db):
+    keep_days = db.get_setting_value('keep_entries_days', 90)
+    if not keep_days:
+        return
+    if not keep_days:
+        return
+    max_datetime = datetime.datetime.now() - datetime.timedelta(days=keep_days)
+    db.delete_old_entries(max_datetime)

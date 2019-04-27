@@ -320,6 +320,14 @@ class DB(object):
         cur.executemany(_INSERT_ENTRY_SQL, rows)
         self._conn.commit()
 
+    def delete_old_entries(self, max_datetime):
+        cur = self._conn.cursor()
+        cur.execute("delete from entries where star_mark=0 and read_mark=0 "
+                    "and updated < ?", (max_datetime, ))
+        deleted = cur.rowcount
+        _LOG.info("delete_old_entries; deleted: %d", deleted)
+        self._conn.commit()
+
     def mark_read(self, entry_id=None, group_id=None, source_id=None,
                   max_id=None, read=True):
         read = 1 if read else 0
@@ -400,7 +408,7 @@ class DB(object):
         for row in cur:
             yield _setting_from_row(row)
 
-    def get_setting(self, key: str) -> model.Setting:
+    def get_setting(self, key: str) -> ty.Optional[model.Setting]:
         cur = self._conn.cursor()
         cur.execute("select key, value, value_type, description "
                     "from settings where key=?", (key, ))
