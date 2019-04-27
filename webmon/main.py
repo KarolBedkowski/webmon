@@ -54,6 +54,7 @@ def _parse_options():
                         help="add user; arguments in form "
                         "<login>:<password>[:admin]",
                         dest="add_user")
+    parser.add_argument("--web-app-root", default="/")
     return parser.parse_args()
 
 
@@ -180,7 +181,7 @@ def main():
     cworker = worker.CheckWorker()
     cworker.start()
 
-    web.start_app(dbfile, args.debug)
+    web.start_app(dbfile, args.debug, args.web_app_root)
 
 
 if __name__ == "__main__":

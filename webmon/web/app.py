@@ -15,6 +15,8 @@ import datetime
 import logging
 
 from flask import Flask, g, url_for, session, request, redirect
+from werkzeug.wsgi import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 import markdown2
 
@@ -43,7 +45,7 @@ def _age_filter(date):
     return str(int(diff//86400)) + "d"
 
 
-def create_app(dbfile, debug):
+def create_app(dbfile, debug, root):
     template_folder = os.path.join(os.path.dirname(__file__), 'templates')
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True,
@@ -52,6 +54,7 @@ def create_app(dbfile, debug):
         DBFILE=dbfile,
         SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
         SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
+        APPLICATION_ROOT=root,
     )
     app.app_context().push()
 
@@ -86,8 +89,18 @@ def create_app(dbfile, debug):
     return app
 
 
-def start_app(db, debug):
-    app = create_app(db, debug)
+def simple_not_found(env, resp):
+    resp('400 Notfound', [('Content-Type', 'text/plain')])
+    return [b'Not found']
+
+
+def start_app(db, debug, root):
+    app = create_app(db, debug, root)
+    _LOG.info("app conf: %r", app.config)
+    if root != '/':
+        app.wsgi_app = DispatcherMiddleware(simple_not_found,
+                                            {root: app.wsgi_app})
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0)
     if debug:
         app.run(debug=True)
     else:

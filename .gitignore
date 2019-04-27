@@ -13,5 +13,8 @@ tags
 pylint*
 */old/
 webmon.db*
+build
+*.egg-info
+dist
 
 /.gtm/
