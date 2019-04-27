@@ -125,9 +125,9 @@ def _check_libraries():
     except ImportError:
         _LOG.warn("missing html2text library")
     try:
-        import docutils.core
+        import markdown2
     except ImportError:
-        _LOG.warn("missing docutils library")
+        _LOG.warn("missing markdown2 library")
     try:
         import yaml
     except ImportError:
