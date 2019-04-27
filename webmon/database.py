@@ -48,6 +48,7 @@ class DB(object):
 
     @classmethod
     def initialize(cls, filename):
+        _LOG.info("initializing database: %s", filename)
         common.create_missing_dir(os.path.dirname(filename))
         db = DB(filename)
         db._update_schema()
@@ -428,7 +429,7 @@ class DB(object):
         return json.loads(row[0]) if isinstance(row[0], str) else row[0]
 
     def get_settings_map(self) -> ty.Dict[str, ty.Any]:
-        return {key: json.loads(val) if isinstance(val, str) else val
+        return {key: json.loads(val) if isinstance(val, str) and val else val
                 for key, val
                 in self._conn.execute("select key, value from settings")}
 
@@ -464,7 +465,7 @@ class DB(object):
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
         schama_files = os.path.join(os.path.dirname(__file__), 'schema')
-        for fname in os.listdir(schama_files):
+        for fname in sorted(os.listdir(schama_files)):
             try:
                 version = int(os.path.splitext(fname)[0])
                 _LOG.debug("found update: %r", version)

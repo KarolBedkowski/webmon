@@ -25,9 +25,10 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
 _ = ty
 
 VERSION = "2.0"
-APP_NAME = "webmon"
+APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
+_DEFAULT_DB_FILE = "~/.local/share/" + APP_NAME + "/" + APP_NAME + ".db"
 
 
 def _parse_options():
@@ -43,8 +44,8 @@ def _parse_options():
     parser.add_argument("--abilities", action="store_true",
                         help="show available filters/inputs/outputs/"
                         "comparators")
-    parser.add_argument('--cache-dir',
-                        default="~/.cache/" + APP_NAME,
+    parser.add_argument('--database-file',
+                        default=_DEFAULT_DB_FILE,
                         help='path to cache directory')
     parser.add_argument("--migrate",
                         help="migrate inputs from file",
@@ -94,7 +95,7 @@ def add_user(args):
 
 
 def _load_user_classes():
-    users_scripts_dir = os.path.expanduser("~/.local/share/webmon")
+    users_scripts_dir = os.path.expanduser("~/.local/share/" + APP_NAME)
     if not os.path.isdir(users_scripts_dir):
         return
 
@@ -162,8 +163,9 @@ def main():
         show_abilities()
         return
 
-    dbfile = os.path.join(os.path.expanduser(args.cache_dir))
-    dbfile = "./webmon.db"
+    dbfile = os.path.expanduser(args.database_file)
+    if args.debug and os.path.isfile('./webmon.db'):
+        dbfile = "./webmon.db"
     database.DB.initialize(dbfile)
 
     if args.add_user:

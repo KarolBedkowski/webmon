@@ -28,8 +28,9 @@ class CheckWorker(threading.Thread):
 
     def run(self):
         with database.DB.get() as db:
+            _LOG.info("CheckWorker started")
             while True:
-                _LOG.info("CheckWorker check start")
+                _LOG.debug("CheckWorker check start")
                 if self._todo_queue.empty():
                     ids = db.get_sources_to_fetch()
                     for id_ in ids:
@@ -45,7 +46,7 @@ class CheckWorker(threading.Thread):
                     for worker in workers:
                         worker.join()
 
-                _LOG.info("CheckWorker check done")
+                _LOG.debug("CheckWorker check done")
                 time.sleep(60)
 
 

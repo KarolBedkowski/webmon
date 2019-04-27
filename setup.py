@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
+import os
 from setuptools import setup, find_packages
 
 from webmon import main
@@ -14,7 +15,7 @@ CLASSIFIERS = [
 REQUIRES = [
     'setuptools',
     'requests',
-    'markdown2'
+    'markdown2',
     'lxml',
     'PyYAML',
     'html2text',
@@ -22,6 +23,17 @@ REQUIRES = [
     'github3.py',
     'flask'
 ]
+
+
+def get_data_files():
+    tmpl_dir = './webmon/web/templates/'
+    yield tmpl_dir, \
+        [os.path.join(tmpl_dir, fname)
+         for fname in os.listdir(tmpl_dir) if fname.endswith('.html')]
+    schema_dir = './webmon/schema/'
+    yield schema_dir, \
+        [os.path.join(schema_dir, fname)
+         for fname in os.listdir(schema_dir) if fname.endswith('.sql')]
 
 
 setup(
@@ -42,7 +54,8 @@ setup(
     install_requires=REQUIRES,
     entry_points="""
        [console_scripts]
-       webmon = webmon.main:main
+       webmon2 = webmon.main:main
     """,
+#    data_files=list(get_data_files()),
     zip_safe=True,
 )

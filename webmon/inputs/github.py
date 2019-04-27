@@ -43,8 +43,6 @@ class GitHubMixin:
         min_date = datetime.now() - timedelta(days=_GITHUB_MAX_AGE)
         updated = True
         if last_updated:
-            _LOG.info("%r", repository.updated_at)
-            _LOG.info("%r", last_updated)
             updated = repository.updated_at > \
                 last_updated.replace(tzinfo=timezone.utc)
             min_date = last_updated
