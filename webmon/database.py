@@ -160,7 +160,7 @@ class DB(object):
         source = self.get_source(source_id, False, False)
         if not source.filters:
             source.filters = [filter_]
-        elif filter_idx < len(source.filters) - 1 and filter_idx >= 0:
+        elif filter_idx < len(source.filters) and filter_idx >= 0:
             source.filters[filter_idx] = filter_
         else:
             source.filters.append(filter_)

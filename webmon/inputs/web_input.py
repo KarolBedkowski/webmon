@@ -42,7 +42,7 @@ class WebInput(AbstractInput):
         if new_state.status != 'error':
             new_state.next_update = datetime.datetime.now() + \
                 datetime.timedelta(
-                    minutes=common.parse_interval(self._source.interval))
+                    seconds=common.parse_interval(self._source.interval))
         return new_state, entries
 
     def _load(self, state: model.SourceState):

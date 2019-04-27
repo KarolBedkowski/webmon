@@ -70,7 +70,7 @@ class FileInput(AbstractInput):
             new_state.status = 'updated' if state.last_update else 'new'
             new_state.next_update = datetime.datetime.now() + \
                 datetime.timedelta(
-                    minutes=common.parse_interval(self._source.interval))
+                    seconds=common.parse_interval(self._source.interval))
             return new_state, [entry]
         except IOError as err:
             return state.new_error(str(err)), []

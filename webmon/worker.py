@@ -79,11 +79,11 @@ class FetchWorker(threading.Thread):
         try:
             new_state, entries = inp.load(source.state)
         except Exception as err:
-            _LOG.error("load source id=%d error: %s", source_id, err)
+            _LOG.exception("load source id=%d error: %s", source_id, err)
             new_state = source.state.new_error(str(err))
             new_state.next_update = datetime.datetime.now() + \
                 datetime.timedelta(
-                    minutes=common.parse_interval(source.interval))
+                    seconds=common.parse_interval(source.interval))
             db.save_state(new_state)
             return
 
@@ -91,7 +91,7 @@ class FetchWorker(threading.Thread):
             last_update = source.state.last_update or datetime.datetime.now()
             new_state.next_update = last_update + \
                 datetime.timedelta(
-                    minutes=common.parse_interval(source.interval))
+                    seconds=common.parse_interval(source.interval))
 
         if source.filters:
             entries, new_state = filters.filter_by(source.filters, entries,

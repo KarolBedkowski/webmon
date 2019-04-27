@@ -123,6 +123,7 @@ class GithubInput(AbstractInput, GitHubMixin):
         entry.title = self._source.name
         entry.status = 'new'
         entry.content = content
+        entry.created = entry.updated = datetime.now()
         return new_state, [entry]
 
 
@@ -175,7 +176,11 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
-        tags = [tag for tag in tags if tag.last_modified > state.last_update]
+        _LOG.debug("tags: %r", tags)
+
+        tags = [tag for tag in tags if not tag.last_modified or
+                tag.last_modified > state.last_update.replace(
+                    tzinfo=timezone.utc)]
 
         if not tags:
             new_state = state.new_not_modified()
@@ -196,6 +201,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         entry.title = self._source.name
         entry.status = 'new'
         entry.content = content
+        entry.created = entry.updated = datetime.now()
         return new_state, [entry]
 
 
@@ -242,7 +248,8 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
         releases = [
             release for release in releases
-            if release.created_at > state.last_update
+            if release.created_at > state.last_update.replace(
+                tzinfo=timezone.utc)
         ]
 
         if not releases:
@@ -269,6 +276,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         entry.title = self._source.name
         entry.status = 'new'
         entry.content = content
+        entry.created = entry.updated = datetime.now()
         return new_state, [entry]
 
 

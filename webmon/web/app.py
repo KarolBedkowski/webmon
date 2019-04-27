@@ -31,9 +31,11 @@ def _format_body_filter(body):
 
 
 def _age_filter(date):
-    if not date:
+    if date is None:
         return ""
     diff = (datetime.datetime.now() - date).total_seconds()
+    if diff < 60:
+        return '<1m'
     if diff < 3600:  # < 1h
         return str(int(diff//60)) + "m"
     if diff < 86400:  # < 1d

@@ -10,7 +10,6 @@
 GUI forms
 """
 
-import json
 import typing as ty
 import logging
 
@@ -28,9 +27,11 @@ class Field:
         self.value = None
         self.required = False  # type: bool
         self.options = None  # type: ty.Optional[ty.Tuple(ty.Any, str)]
+        self._type = None
+        self.fieldname = None
 
     @staticmethod
-    def from_input_params(params, values=None):
+    def from_input_params(params, values=None, prefix=''):
         if len(params) == 5:
             params = list(params) + ["str"]
         fname, fdescr, fdefault, frequired, foptions, ftype = params
@@ -46,7 +47,17 @@ class Field:
         field.required = frequired
         field.options = [(val, val) for val in foptions or []]
         field.value = values.get(field.name, fdefault) if values else None
+        field._type = ftype
+        field.fieldname = prefix + fname
         return field
+
+    def update_from_request(self, form):
+        form_value = form.get(self.fieldname)
+        if form_value is None:
+            return
+        if self._type:
+            form_value = self._type(form_value)
+        self.value = form_value
 
 
 class SourceForm:
@@ -82,43 +93,34 @@ class SourceForm:
         return result
 
     @staticmethod
-    def from_model(source: model.Source):
+    def from_model(source: model.Source, inp_params: list):
         src = SourceForm()
         src.id = source.id
         src.group_id = source.id
         src.kind = source.kind
         src.name = source.name
         src.interval = source.interval or ''
-        src.model_settings = source.settings
-        src.filters = json.dumps(source.filters) if source.filters else ''
+        src.filters = source.filters
+        src.settings = [
+            Field.from_input_params(param, source.settings, 'sett-')
+            for param in inp_params]
         return src
 
-    def update_from_request(self, form, input_):
+    def update_from_request(self, form):
         group_id = form['group_id'].strip()
         self.group_id = int(group_id) if group_id else None
         self.name = form['name'].strip()
         self.interval = form['interval'].strip()
-        self.filters = form['filters'].strip()
-        self.model_settings = self.model_settings or {}
-        param_types = input_.get_param_types()
-        for key, val in form.items():
-            if key.startswith('sett-'):
-                param_name = key[5:]
-                if val:
-                    param_type = param_types[param_name]
-                    self.model_settings[param_name] = param_type(val)
-                else:
-                    self.model_settings[param_name] = None
+        for sett in self.settings:
+            sett.update_from_request(form)
 
     def update_model(self, src: model.Source) -> model.Source:
         src = src.clone()
         src.group_id = self.group_id
         src.name = self.name
-        src.interval = self.interval or '1h'
-        src.filters = json.loads(self.filters) if self.filters else None
-        _LOG.debug("src.filters: %r", src.filters)
-        _LOG.debug("self.filters: %r", self.filters)
-        src.settings = self.model_settings
+        src.interval = self.interval
+        src.filters = self.filters
+        src.settings = {field.name: field.value for field in self.settings}
         return src
 
 

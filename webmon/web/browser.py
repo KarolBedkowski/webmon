@@ -122,11 +122,11 @@ def source_edit(source_id):
     db = get_db()
     source = db.get_source(source_id)
     inp = inputs.get_input(source, {})
-    source_form = forms.SourceForm.from_model(source)
+    source_form = forms.SourceForm.from_model(source, inp.params)
     errors = {}
 
     if request.method == 'POST':
-        source_form.update_from_request(request.form, inp)
+        source_form.update_from_request(request.form)
         errors = source_form.validate()
         if not errors:
             source = source_form.update_model(source)
@@ -136,9 +136,6 @@ def source_edit(source_id):
                 return redirect(url_for("browser.source_filters",
                                         source_id=source.id))
             return redirect(url_for('browser.sources'))
-
-    source_form.settings = [forms.Field.from_input_params(
-        param, source_form.model_settings) for param in inp.params]
 
     return render_template(
         "source.html",
