@@ -21,7 +21,8 @@ REQUIRES = [
     'html2text',
     'feedparser',
     'github3.py',
-    'flask'
+    'flask',
+    'cssselect'
 ]
 
 
@@ -56,6 +57,9 @@ setup(
        [console_scripts]
        webmon2 = webmon2.main:main
     """,
+    package_data={
+        'webmon2': ['web/templates/**/*.html', 'schema/*.sql']
+    },
 #    data_files=list(get_data_files()),
-    zip_safe=True,
+    zip_safe=False,
 )

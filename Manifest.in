@@ -1,0 +1,4 @@
+graft webmon2/web/templates
+graft webmon2/schema
+exclude webmon2/old
+global-exclude *.pyc
