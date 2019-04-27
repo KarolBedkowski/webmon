@@ -12,7 +12,7 @@
 
 import logging
 
-from webmon import model, common
+from webmon2 import model, common
 
 from .abstract import AbstractInput
 

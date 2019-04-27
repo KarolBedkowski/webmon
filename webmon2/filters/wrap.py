@@ -12,7 +12,7 @@ Wrap entry content lines
 import typing as ty
 import textwrap
 
-from webmon import common, model
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

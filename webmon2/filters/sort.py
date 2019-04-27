@@ -12,7 +12,7 @@ Select entries by matching text.
 import typing as ty
 import re
 
-from webmon import model
+from webmon2 import model
 
 from ._abstract import AbstractFilter
 

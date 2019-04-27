@@ -16,8 +16,8 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
 )
 
-from webmon.web import get_db
-from webmon import inputs, model, filters
+from webmon2.web import get_db
+from webmon2 import inputs, model, filters
 from . import forms
 
 

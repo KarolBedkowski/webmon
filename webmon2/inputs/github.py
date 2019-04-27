@@ -15,7 +15,7 @@ from datetime import timezone, datetime, timedelta
 
 import github3
 
-from webmon import common, model
+from webmon2 import common, model
 
 from .abstract import AbstractInput
 

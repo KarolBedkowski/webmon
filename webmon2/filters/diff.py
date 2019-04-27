@@ -13,7 +13,7 @@ import difflib
 import logging
 import typing as ty
 
-from webmon import common, model
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

@@ -17,7 +17,7 @@ import logging
 from lxml import etree
 from cssselect import GenericTranslator, SelectorError
 
-from webmon import model
+from webmon2 import model
 
 from ._abstract import AbstractFilter
 

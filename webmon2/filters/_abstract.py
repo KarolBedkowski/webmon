@@ -13,7 +13,7 @@ Abstract filter definition
 import abc
 import typing as ty
 
-from webmon import common, model
+from webmon2 import common, model
 
 _ = ty
 

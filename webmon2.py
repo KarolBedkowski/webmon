@@ -6,7 +6,7 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-from webmon import main
+from webmon2 import main
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"

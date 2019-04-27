@@ -13,7 +13,7 @@ GUI forms
 import typing as ty
 import logging
 
-from webmon import model
+from webmon2 import model
 
 _ = ty
 _LOG = logging.getLogger(__name__)

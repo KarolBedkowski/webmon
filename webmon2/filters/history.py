@@ -12,7 +12,7 @@ Filter that remove already visited items.
 
 import typing as ty
 
-from webmon import model, database
+from webmon2 import model, database
 from ._abstract import AbstractFilter
 
 _ = ty

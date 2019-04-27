@@ -19,7 +19,7 @@ import logging
 import requests
 from urllib3 import poolmanager
 
-from webmon import common, model
+from webmon2 import common, model
 
 from .abstract import AbstractInput
 

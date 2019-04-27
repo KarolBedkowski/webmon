@@ -11,7 +11,7 @@
 
 import typing as ty
 
-from webmon import model
+from webmon2 import model
 from ._abstract import AbstractFilter
 
 _ = ty

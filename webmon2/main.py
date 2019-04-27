@@ -79,7 +79,7 @@ def show_abilities():
 
 
 def add_user(args):
-    from webmon import model
+    from webmon2 import model
     user_pass_adm = args.split(':')
     if len(user_pass_adm) < 2:
         print("wrong arguments for --add-user")

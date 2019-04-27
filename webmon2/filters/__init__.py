@@ -11,7 +11,7 @@
 """
 import logging
 
-from webmon import common, model
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

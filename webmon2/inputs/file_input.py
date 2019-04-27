@@ -13,7 +13,7 @@ import os
 import datetime
 import logging
 
-from webmon import common, model
+from webmon2 import common, model
 
 from .abstract import AbstractInput
 

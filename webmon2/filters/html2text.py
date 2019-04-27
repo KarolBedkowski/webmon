@@ -14,7 +14,7 @@ import logging
 
 import html2text as h2t
 
-from webmon import common, model
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

@@ -16,7 +16,7 @@ import typing as ty
 
 import requests
 
-from webmon import common, model
+from webmon2 import common, model
 
 from .abstract import AbstractInput
 

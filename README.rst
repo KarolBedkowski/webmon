@@ -29,7 +29,7 @@ Usage
    config.yaml - define outputs, smtp etc;
    inputs.yaml - list of website / commands to monitor
 
-2. launch `webmon.py`
+2. launch `webmon2.py`
 
 Options
 ^^^^^^^

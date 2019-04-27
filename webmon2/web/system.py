@@ -16,9 +16,7 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
 )
 
-from webmon.web import get_db
-#from webmon import inputs, model
-#from . import forms
+from webmon2.web import get_db
 
 
 _LOG = logging.getLogger(__name__)

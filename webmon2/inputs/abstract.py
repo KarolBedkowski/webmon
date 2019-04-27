@@ -13,7 +13,7 @@ Abstract input definition
 import typing as ty
 import logging
 
-from webmon import model, common
+from webmon2 import model, common
 
 _LOG = logging.getLogger(__name__)
 

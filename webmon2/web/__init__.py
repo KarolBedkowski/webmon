@@ -3,7 +3,7 @@
 from functools import wraps
 from flask import g, request, redirect, url_for, session
 
-from webmon.database import DB
+from webmon2.database import DB
 
 from .app import start_app
 
