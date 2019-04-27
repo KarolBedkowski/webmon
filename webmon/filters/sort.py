@@ -24,7 +24,7 @@ class Sort(AbstractFilter):
 
     name = "sort"
     params = [
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def __init__(self, conf):
         super().__init__(conf)

@@ -56,6 +56,9 @@
 		</p>
 		<p>
 			<button type="submit">Save</button>
+			<button type="submit" value="edit_filters" name="next_action">Save and edit filters</button>
+			&nbsp;
+			&nbsp;
 			<a href="{{ url_for('browser.source_delete', source_id=source.id, delete_self=1) }}" data-req-confirm="yes">Delete</a>
 		</p>
 	</form>

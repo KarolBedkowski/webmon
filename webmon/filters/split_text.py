@@ -44,8 +44,8 @@ class GetElementsByCss(AbstractFilter):
 
     name = "get-elements-by-css"
     params = [
-        ("sel", "selector", None, True, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("sel", "selector", None, True, None, str),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
     stop_change_content = True
 
     def __init__(self, conf):
@@ -69,8 +69,8 @@ class GetElementsByXpath(AbstractFilter):
 
     name = "get-elements-by-xpath"
     params = [
-        ("xpath", "selector", None, True, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("xpath", "selector", None, True, None, str),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -82,8 +82,8 @@ class GetElementsById(AbstractFilter):
 
     name = "get-elements-by-id"
     params = [
-        ("sel", "selector", None, True, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("sel", "selector", None, True, None, str),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:

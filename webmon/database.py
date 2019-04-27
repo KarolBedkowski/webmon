@@ -51,6 +51,7 @@ class DB(object):
         common.create_missing_dir(os.path.dirname(filename))
         db = DB(filename)
         db._update_schema()
+        db.close()
         cls.INSTANCE = db
         return db
 
@@ -153,6 +154,39 @@ class DB(object):
         updated = cur.rowcount
         self._conn.commit()
         return updated
+
+    def source_update_filter(self, source_id: int, filter_idx: int,
+                             filter_: ty.Dict[str, ty.Any]):
+        source = self.get_source(source_id, False, False)
+        if not source.filters:
+            source.filters = [filter_]
+        elif filter_idx < len(source.filters) - 1 and filter_idx >= 0:
+            source.filters[filter_idx] = filter_
+        else:
+            source.filters.append(filter_)
+        self.save_source(source)
+
+    def source_delete_filter(self, source_id: int, filter_idx: int):
+        source = self.get_source(source_id, False, False)
+        if source.filters and filter_idx < len(source.filters):
+            del source.filters[filter_idx]
+            self.save_source(source)
+
+    def source_move_filter(self, source_id: int, filter_idx: int,
+                           direction: str):
+        source = self.get_source(source_id, False, False)
+        if not source.filters or filter_idx >= len(source.filters) \
+                or len(source.filters) == 1:
+            return
+        if direction == 'up' and filter_idx > 0:
+            source.filters[filter_idx - 1], source.filters[filter_idx] = \
+                source.filters[filter_idx], source.filters[filter_idx - 1]
+            self.save_source(source)
+
+        if direction == 'down' and filter_idx < len(source.filters) - 2:
+            source.filters[filter_idx + 1], source.filters[filter_idx] = \
+                source.filters[filter_idx], source.filters[filter_idx + 1]
+            self.save_source(source)
 
     def refresh(self, source_id=None, group_id=None, refresh_all=False):
         cur = self._conn.cursor()

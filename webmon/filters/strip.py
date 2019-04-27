@@ -22,8 +22,8 @@ class Strip(AbstractFilter):
 
     name = "strip"
     params = [
-        ("chars", "Characters to strip", None, False, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("chars", "Characters to strip", None, False, None, str),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         entry.content = entry.content.strip(self._conf['chars'])
@@ -35,7 +35,7 @@ class Compact(AbstractFilter):
 
     name = "compact"
     params = [
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:
@@ -58,8 +58,8 @@ class Head(AbstractFilter):
 
     name = "head"
     params = [
-        ("count", "Maximum number of last lines to get", 20, True, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("count", "Maximum number of last lines to get", 20, True, None, int),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:

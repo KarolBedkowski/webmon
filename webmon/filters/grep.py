@@ -24,9 +24,9 @@ class Grep(AbstractFilter):
 
     name = "grep"
     params = [
-        ("pattern", "Regular expression", None, True, None),
-        ("invert", "Accept items not matching", False, False, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("pattern", "Regular expression", None, True, None, str),
+        ("invert", "Accept items not matching", False, False, None, bool),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def __init__(self, conf):
         super().__init__(conf)

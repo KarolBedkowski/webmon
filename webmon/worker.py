@@ -16,67 +16,59 @@ import threading
 import logging
 import datetime
 
-from . import inputs, common, filters, db
+from . import inputs, common, filters, database
 
 _LOG = logging.getLogger("main")
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, db):
+    def __init__(self):
         threading.Thread.__init__(self, daemon=True)
-        self._db = db
         self._todo_queue = queue.Queue()
 
     def run(self):
-        self._db = self._db.clone()
-        while True:
-            _LOG.info("CheckWorker check start")
-            if self._todo_queue.empty():
-                ids = self._db.get_sources_to_fetch()
-                for id_ in ids:
-                    self._todo_queue.put(id_)
+        with database.DB.get() as db:
+            while True:
+                _LOG.info("CheckWorker check start")
+                if self._todo_queue.empty():
+                    ids = db.get_sources_to_fetch()
+                    for id_ in ids:
+                        self._todo_queue.put(id_)
 
-            if not self._todo_queue.empty():
-                workers = []
-                for _ in range(self._get_num_workers()):
-                    worker = FetchWorker(self._db, self._todo_queue)
-                    worker.start()
-                    workers.append(worker)
+                if not self._todo_queue.empty():
+                    workers = []
+                    for _ in range(db.get_setting_value("workers")):
+                        worker = FetchWorker(self._todo_queue)
+                        worker.start()
+                        workers.append(worker)
 
-                for worker in workers:
-                    worker.join()
+                    for worker in workers:
+                        worker.join()
 
-            _LOG.info("CheckWorker check done")
-            time.sleep(60)
-
-        self._db.close()
-
-    def _get_num_workers(self):
-        return self._db.get_setting_value("workers")
+                _LOG.info("CheckWorker check done")
+                time.sleep(60)
 
 
 class FetchWorker(threading.Thread):
-    def __init__(self, db, todo_queue):
+    def __init__(self, todo_queue):
         threading.Thread.__init__(self)
-        self._db = db
         self._todo_queue = todo_queue
 
     def run(self):
-        self._db = self._db.clone()
-        while not self._todo_queue.empty():
-            source_id = self._todo_queue.get()
-            self._process_source(source_id)
-        self._db.close()
+        with database.DB.get() as db:
+            while not self._todo_queue.empty():
+                source_id = self._todo_queue.get()
+                self._process_source(db, source_id)
 
-    def _process_source(self, source_id):
+    def _process_source(self, db, source_id):
         _LOG.info("processing source %d", source_id)
         try:
-            source = self._db.get_source(id_=source_id, with_state=True)
-        except db.NotFound:
+            source = db.get_source(id_=source_id, with_state=True)
+        except database.NotFound:
             _LOG.error("source %d not found!", source_id)
             return
         try:
-            inp = inputs.get_input(source, self._db.get_settings_map())
+            inp = inputs.get_input(source, db.get_settings_map())
             inp.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
@@ -92,7 +84,7 @@ class FetchWorker(threading.Thread):
             new_state.next_update = datetime.datetime.now() + \
                 datetime.timedelta(
                     minutes=common.parse_interval(source.interval))
-            self._db.save_state(new_state)
+            db.save_state(new_state)
             return
 
         if new_state.next_update is None:
@@ -108,7 +100,7 @@ class FetchWorker(threading.Thread):
         for entry in entries:
             entry.calculate_oid()
 
-        self._db.insert_entries(entries)
-        self._db.save_state(new_state)
+        db.insert_entries(entries)
+        db.save_state(new_state)
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))

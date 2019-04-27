@@ -1,10 +1,17 @@
+""" Web interface """
 
 from functools import wraps
-from flask import current_app, g, request, redirect, url_for, session
+from flask import g, request, redirect, url_for, session
 
-from webmon.db import DB
+from webmon.database import DB
 
 from .app import start_app
+
+__all__ = (
+    "start_app",
+    "get_db",
+    "login_required"
+)
 
 
 def get_db():
@@ -14,10 +21,10 @@ def get_db():
     return database
 
 
-def login_required(f):
-    @wraps(f)
+def login_required(func):
+    @wraps(func)
     def decorated_function(*args, **kwargs):
         if session.get('user') is None:
             return redirect(url_for('sec.login', back=request.url))
-        return f(*args, **kwargs)
+        return func(*args, **kwargs)
     return decorated_function

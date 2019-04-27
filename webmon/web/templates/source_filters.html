@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Source{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+	<h1>Filters</h1>
+	<p>
+		<ul>
+			{% for filter in filters %}
+			<li>{{ filter.name }} <br/>
+				<a href="{{ url_for("browser.source_filter_move", source_id=source.id, idx=loop.index0, move="up") }}">Move up</a> |
+				<a href="{{ url_for("browser.source_filter_move", source_id=source.id, idx=loop.index0, move="down") }}">Move down</a> |
+				<a href="{{ url_for("browser.source_filter_edit", source_id=source.id, idx=loop.index0) }}">Edit</a> |
+				<a href="{{ url_for("browser.source_filter_delete", source_id=source.id, idx=loop.index0) }}">Delete</a>
+			</li>
+			{% endfor %}
+		</ul>
+	</p>
+	<p>
+		<a href="{{ url_for("browser.source_filter_add", source_id=source.id) }}">Add filter</a>
+	</p>
+{% endblock %}
+
+  </body>
+</html>

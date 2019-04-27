@@ -17,7 +17,7 @@ from flask import (
 )
 
 from webmon.web import get_db
-from webmon import inputs, model
+from webmon import inputs, model, filters
 from . import forms
 
 
@@ -97,6 +97,7 @@ def source_delete(source_id):
     return redirect(request.headers.get('Referer')
                     or url_for("browser.sources"))
 
+
 @BP.route("/source/new", methods=['POST', 'GET'])
 def source_new():
     kind = None
@@ -130,10 +131,15 @@ def source_edit(source_id):
         if not errors:
             source = source_form.update_model(source)
             db.save_source(source)
+            next_action = request.form.get("next_action")
+            if next_action == 'edit_filters':
+                return redirect(url_for("browser.source_filters",
+                                        source_id=source.id))
             return redirect(url_for('browser.sources'))
 
     source_form.settings = [forms.Field.from_input_params(
         param, source_form.model_settings) for param in inp.params]
+
     return render_template(
         "source.html",
         groups=db.get_groups(),
@@ -177,6 +183,74 @@ def source_mark_read(source_id):
         return "ok"
     return redirect(request.headers.get('Referer')
                     or url_for("browser.unread"))
+
+
+@BP.route("/source/<int:source_id>/filters")
+def source_filters(source_id):
+    db = get_db()
+    source = db.get_source(source_id)
+    filters = [
+        forms.Filter(fltr['name'])
+        for fltr in source.filters or []
+    ]
+    return render_template("source_filters.html",
+                           source=source,
+                           filters=filters)
+
+
+@BP.route("/source/<int:source_id>/filter/add")
+def source_filter_add(source_id):
+    filters_name = filters.filters_name()
+    return render_template("filter_new.html",
+                           source_id=source_id,
+                           filters_name=filters_name)
+
+
+@BP.route("/source/<int:source_id>/filter/<idx>/edit", methods=['GET', 'POST'])
+def source_filter_edit(source_id, idx):
+    db = get_db()
+    source = db.get_source(source_id)
+    idx = int(idx)
+    if idx < 0 or idx >= len(source.filters or []):  # new filter
+        conf = {'name': request.args['name']}
+    else:
+        conf = source.filters[idx]
+    fltr = filters.get_filter(conf)
+    if request.method == 'POST':
+        param_types = fltr.get_param_types()
+        for key, val in request.form.items():
+            if key.startswith('sett-'):
+                param_name = key[5:]
+                if val:
+                    param_type = param_types[param_name]
+                    conf[param_name] = param_type(val)
+                else:
+                    conf[param_name] = None
+        fltr = filters.get_filter(conf)
+        fltr.validate()
+        db.source_update_filter(source_id, idx, conf)
+        return redirect(url_for("browser.source_filters", source_id=source_id))
+
+    settings = [forms.Field.from_input_params(
+        param, conf) for param in fltr.params]
+    return render_template("filter_edit.html",
+                           filter=conf,
+                           source=source,
+                           settings=settings)
+
+
+@BP.route("/source/<int:source_id>/filter/<int:idx>/move/<move>")
+def source_filter_move(source_id, idx, move):
+    db = get_db()
+    db.source_move_filter(source_id, idx, move)
+    return redirect(url_for("browser.source_filters", source_id=source_id))
+
+
+@BP.route("/source/<int:source_id>/filter/<int:idx>/delete")
+def source_filter_delete(source_id, idx):
+    db = get_db()
+    db.source_delete_filter(source_id, idx)
+    return redirect(url_for("browser.source_filters", source_id=source_id))
 
 
 @BP.route("/groups")

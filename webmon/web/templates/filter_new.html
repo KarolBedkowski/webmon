@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Source - add filter{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+	<h1>New filter</h1>
+	<p>Available filters:</p>
+	<p>
+		<ul>
+			{% for name in filters_name %}
+			<li><a href="{{ url_for("browser.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a></li>
+			{% endfor %}
+		</ul>
+	</p>
+	<p>
+		<a href="{{ url_for("browser.source_edit", source_id=source_id) }}">Back to source</a>
+	</p>
+{% endblock %}
+
+  </body>
+</html>

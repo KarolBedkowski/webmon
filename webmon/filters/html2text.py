@@ -27,8 +27,8 @@ class Html2Text(AbstractFilter):
 
     name = "html2text"
     params = [
-        ("width", "Max line width", 999999, True, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+        ("width", "Max line width", 999999, True, None, int),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def validate(self):
         super().validate()

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}filter{% endblock %}</h1>
+<style>
+	input,textarea,select {width: 75%;}
+	label {width: 20%; display: inline-block; vertical-align: top;}
+</style>
+{% endblock %}
+
+{% block content %}
+	{% if errors %}
+		<p class="error">
+			<b>Validation errors:</b>
+			{% for field, err in errors.items() %}
+			<br/>{{ err }}
+			{% endfor %}
+		<p>
+	{% endif %}
+	<form method="POST">
+		<p>
+			<label for="filter-name">Name</label>
+			<input type="text" name="name" id="filter-name" value="{{ filter.name }}" readonly="readonly" />
+		</p>
+		<p>
+			<fieldset>
+				<legend>Settings</legend>
+				{% for sett in filter.settings %}
+					{{ rf.render_field('sett', sett) }}
+				{% endfor %}
+			</fieldset>
+		</p>
+		<p>
+			<button type="submit">Save</button>
+		</p>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

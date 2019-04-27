@@ -15,7 +15,7 @@ import typing as ty
 
 import yaml
 
-from . import model, db
+from . import model, database
 
 _LOG = logging.getLogger(__file__)
 
@@ -97,22 +97,21 @@ _MIGR_FUNCS = {
 
 def migrate(filename):
     _LOG.info("migration %s start", filename)
-    database = db.DB.get()
-    for inp in _load_inputs(filename):
-        _LOG.info("migrating %r", inp)
-        mfunc = _MIGR_FUNCS.get(inp.get('kind', 'url'))
-        if mfunc:
-            try:
-                source = mfunc(inp)
-            except Exception as err:
-                _LOG.exception("error migrating %r: %s", inp, err)
-                continue
-            if not source:
-                _LOG.error("wrong source: %s", source)
-                continue
-            source.filters = inp.get('filters')
-            _LOG.info("new source: %s", source)
-            database.save_source(source)
-    database.close()
+    with database.DB.get() as db:
+        for inp in _load_inputs(filename):
+            _LOG.info("migrating %r", inp)
+            mfunc = _MIGR_FUNCS.get(inp.get('kind', 'url'))
+            if mfunc:
+                try:
+                    source = mfunc(inp)
+                except Exception as err:
+                    _LOG.exception("error migrating %r: %s", inp, err)
+                    continue
+                if not source:
+                    _LOG.error("wrong source: %s", source)
+                    continue
+                source.filters = inp.get('filters')
+                _LOG.info("new source: %s", source)
+                db.save_source(source)
 
     _LOG.info("migration %s finished", filename)

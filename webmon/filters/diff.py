@@ -23,15 +23,15 @@ _ = ty
 
 
 class NDiff(AbstractFilter):
-    """Convert html to text using html2text module."""
+    """Compare text with previous version (in state)."""
 
     name = "ndiff"
     params = [
         ("threshold", "Skip elements when changes percent is below this level",
-         1.0, False, None),
+         1.0, False, None, float),
         ("min_changed", "Skip elements when changes lines is below this level",
-         1.0, False, None),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any]]
+         1, False, None, int),
+    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     stop_change_content = True
 

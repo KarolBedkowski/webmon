@@ -16,7 +16,7 @@ import os.path
 import typing as ty
 
 
-from . import db, inputs, logging_setup, filters, common
+from . import database, inputs, logging_setup, filters, common
 from . import worker
 from . import web
 
@@ -76,7 +76,7 @@ def show_abilities():
     _show_abilities_cls("Filters:", filters.AbstractFilter)
 
 
-def add_user(database, args):
+def add_user(args):
     from webmon import model
     user_pass_adm = args.split(':')
     if len(user_pass_adm) < 2:
@@ -85,7 +85,8 @@ def add_user(database, args):
     user = model.User(login=user_pass_adm[0], active=True)
     user.hash_password(user_pass_adm[1])
     user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
-    user = database.save_user(user)
+    with database.DB.get() as db:
+        user = db.save_user(user)
     if not user:
         print("user already exists")
     else:
@@ -163,10 +164,10 @@ def main():
 
     dbfile = os.path.join(os.path.expanduser(args.cache_dir))
     dbfile = "./webmon.db"
-    database = db.DB.initialize(dbfile)
+    database.DB.initialize(dbfile)
 
     if args.add_user:
-        add_user(database, args.add_user)
+        add_user(args.add_user)
         return
 
     if args.migrate_filename:
@@ -174,12 +175,10 @@ def main():
         migrate.migrate(args.migrate_filename)
         return
 
-    cworker = worker.CheckWorker(database.clone())
+    cworker = worker.CheckWorker()
     cworker.start()
 
     web.start_app(dbfile, args.debug)
-
-    database.close()
 
 
 if __name__ == "__main__":

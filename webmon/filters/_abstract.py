@@ -29,7 +29,7 @@ class AbstractFilter:
     def __init__(self, config: dict) -> None:
         super().__init__()
         self._conf = common.apply_defaults(
-            {key: val for key, _desc, val, _req, _opt in self.params},
+            {key: val for (key, _desc, val, *_) in self.params},
             config)  # type: ty.Dict[str, ty.Any]
 
     def dump_debug(self):
@@ -38,7 +38,7 @@ class AbstractFilter:
 
     def validate(self):
         """ Validate filter parameters """
-        for name, _, _, required, _ in self.params or []:
+        for name, _, _, required, *_ in self.params or []:
             if required and not self._conf.get(name):
                 raise common.ParamError("missing parameter " + name)
 
@@ -52,3 +52,12 @@ class AbstractFilter:
     @abc.abstractmethod
     def _filter(self, entry: model.Entry) -> model.Entries:
         raise NotImplementedError()
+
+    @classmethod
+    def get_param_types(cls) -> ty.Dict[str, str]:
+        return {name: ptype for name, *_, ptype in cls.params}
+
+    @classmethod
+    def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
+        return {name: default for name, _, default, *_ in cls.params
+                if default is not None}

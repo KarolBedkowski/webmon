@@ -31,6 +31,8 @@ class Field:
 
     @staticmethod
     def from_input_params(params, values=None):
+        if len(params) == 5:
+            params = list(params) + ["str"]
         fname, fdescr, fdefault, frequired, foptions, ftype = params
         field = Field()
         field.name = fname
@@ -145,3 +147,9 @@ class GroupForm:
         if not self.name:
             result['name'] = "Missing name"
         return result
+
+
+class Filter:
+    def __init__(self, name=None):
+        self.name = name
+        self.parametes = []
