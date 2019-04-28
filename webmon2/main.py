@@ -59,6 +59,8 @@ def _parse_options():
                         "<login>:<password>",
                         dest="change_user_pass")
     parser.add_argument("--web-app-root", default="/")
+    parser.add_argument("--workers", type=int, default=2,
+                        help="number of background workers")
     return parser.parse_args()
 
 
@@ -201,7 +203,7 @@ def main():
         migrate.migrate(args.migrate_filename)
         return
 
-    cworker = worker.CheckWorker()
+    cworker = worker.CheckWorker(args.workers)
     cworker.start()
 
     web.start_app(dbfile, args.debug, args.web_app_root)

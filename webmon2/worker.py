@@ -22,14 +22,16 @@ _LOG = logging.getLogger("main")
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self):
+    def __init__(self, workers=4):
+        # TODO: param workers
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
+        self._workers = workers
 
     def run(self):
         cntr = 0
         with database.DB.get() as db:
-            _LOG.info("CheckWorker started")
+            _LOG.info("CheckWorker started; workers: %d", self._workers)
             while True:
                 if not cntr:
                     _delete_old_entries(db)
@@ -42,7 +44,7 @@ class CheckWorker(threading.Thread):
 
                 if not self._todo_queue.empty():
                     workers = []
-                    for _ in range(db.get_setting_value("workers")):
+                    for _ in range(self._workers):
                         worker = FetchWorker(self._todo_queue)
                         worker.start()
                         workers.append(worker)
