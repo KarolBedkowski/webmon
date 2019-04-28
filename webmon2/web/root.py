@@ -22,7 +22,7 @@ from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)
-BP = Blueprint('browser', __name__, url_prefix='/')
+BP = Blueprint('root', __name__, url_prefix='/')
 
 
 @BP.route('/')
@@ -42,7 +42,7 @@ def sources_refresh():
     db.refresh(refresh_all=True)
     flash("Sources mark to refresh")
     return redirect(request.headers.get('Referer')
-                    or url_for("browser.sources"))
+                    or url_for("root.sources"))
 
 
 @BP.route("/groups")

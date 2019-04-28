@@ -19,6 +19,9 @@
 {% endblock %}
 
 {% block content %}
+	{% if not entries %}
+		<p>No entries...</p>
+	{% endif %}
 	{% for entry in entries %}
 		{{ re.render_entry(entry) }}
 	{% endfor %}

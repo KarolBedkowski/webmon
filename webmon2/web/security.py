@@ -35,7 +35,7 @@ def login():
             session['user_admin'] = bool(user.admin)
             session.permanent = True
             return redirect(
-                request.form.get('back', url_for('browser.index')))
+                request.form.get('back', url_for('root.index')))
         flash("Invalid user and/or password")
 
     return render_template("login.html", )
@@ -46,4 +46,4 @@ def logout():
     del session['user']
     del session['user_admin']
     session.modified = True
-    return redirect(url_for('browser.index'))
+    return redirect(url_for('root.index'))

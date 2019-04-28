@@ -45,8 +45,8 @@ def create_app(dbfile, debug, root):
     from . import _filters
     _filters.register(app)
 
-    from . import browser
-    app.register_blueprint(browser.BP)
+    from . import root
+    app.register_blueprint(root.BP)
 
     from . import entries
     app.register_blueprint(entries.BP)

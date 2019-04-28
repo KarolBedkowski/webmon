@@ -5,14 +5,14 @@
   <body>
 
 {% block header %}
-	<h1>{% block title %}Group Entries{% endblock %} ({{ entries|length}})</h1>
+	<h1>{% block title %}Entries in {{ group.name}}{% endblock %} ({{ total_entries }})</h1>
 	<nav>
 		{% if max_id %}
 		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
 		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">Mark read and go to next group</a>
 		{% endif %}
 		<a href="{{ url_for('group.refresh_group', group_id=group.id) }}">Refresh</a>
-		{% if showed_all %}
+		{% if showed == 'all' %}
 		<a href="{{ url_for('group.group_entries', group_id=group.id) }}">Show unread only</a>
 		{% else %}
 		<a href="{{ url_for('group.group_entries', group_id=group.id, mode='all') }}">Show all</a>
@@ -21,6 +21,9 @@
 {% endblock %}
 
 {% block content %}
+	{% if not entries %}
+		<p>No entries...</p>
+	{% endif %}
 	{% for entry in entries %}
 		{{ re.render_entry(entry) }}
 	{% endfor %}

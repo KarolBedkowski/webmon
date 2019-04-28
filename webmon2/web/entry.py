@@ -37,7 +37,7 @@ def entry_mark_read(entry_id):
     db = get_db()
     db.mark_read(entry_id=entry_id)
     return redirect(request.headers.get('Referer')
-                    or url_for("browser.sources"))
+                    or url_for("root.sources"))
 
 
 @BP.route('/mark/read', methods=["POST"])

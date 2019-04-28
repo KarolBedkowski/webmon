@@ -7,7 +7,7 @@
 {% block header %}
   <h1>{% block title %}Groups{% endblock %}</h1>
   <nav>
-	  <a href="{{ url_for("browser.sources_refresh")}}">Refresh all</a>
+	  <a href="{{ url_for("root.sources_refresh")}}">Refresh all</a>
 	  <a href="{{ url_for('group.group_new') }}">New</a>
   </nav>
 {% endblock %}
