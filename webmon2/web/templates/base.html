@@ -15,9 +15,11 @@
 			article header nav a {font-size: 80%;margin: 0}
 			article {border: 1px solid #ccc;margin: 0.5em; padding: 0.2em 0.5em;}
 			input{ height: 1em;}
+			input,textarea,select {width: 75%;}
+			label {width: 20%; display: inline-block; vertical-align: top;}
 			nav a {margin-right: 2em}
 			nav {margin-bottom: 2em;}
-			.flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;}
+			.flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;border-radius: 5px;}
 			.error{width: 75%; background-color: #fee; padding: 1em;margin: 0 auto;}
 			article[data-state=read] {background-color: #eee;}
 			article[data-state=read] a[data-action=mark_read]:before{content: "✔︎ Read";}
@@ -25,8 +27,9 @@
 			article[data-starred=star] a[data-action=mark_star]:before{content: "★ Starred"; font-weight: bold}
 			article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star";}
 			article[data-starred=star] {border-color: red; border-width: 2px;}
-			.group-tag{background-color: #ff9;border: 1px solid black; font-size: 75%; padding: 0.1em; text-decoration: None;margin-left:1em; float: right}
+			.group-tag{background-color: #ff9;border: 1px solid black; font-size: 75%; padding: 0.2em; text-decoration: None;margin-left:1em; float: right;border-radius: 4px;}
 		</style>
+		{% block styles %}{% endblock %}
 	</head>
 	<body>
 		<header id="main-header">
@@ -129,4 +132,5 @@
 			});
 		});
 	</script>
+	{% block scripts %}{% endblock %}
 </html>

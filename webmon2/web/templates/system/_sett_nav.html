@@ -1,0 +1,6 @@
+{% macro render_header() -%}
+	<nav>
+		<a href="{{ url_for("system.sett_user") }}">User</a>
+		<a href="{{ url_for("system.sett_globals") }}">Global parameters</a>
+	</nav>
+{%- endmacro %}

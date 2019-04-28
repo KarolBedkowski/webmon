@@ -58,8 +58,8 @@ setup(
        webmon2 = webmon2.main:main
     """,
     package_data={
-        'webmon2': ['web/templates/**/*.html', 'schema/*.sql']
+        'webmon2': ['web/templates/*.html', 'web/templates/**/*.html',
+                    'schema/*.sql']
     },
-#    data_files=list(get_data_files()),
     zip_safe=False,
 )

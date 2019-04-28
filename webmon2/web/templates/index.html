@@ -23,5 +23,13 @@
 		{{ re.render_entry(entry) }}
 	{% endfor %}
 {% endblock %}
+
+{% block footer %}
+	<nav>
+		{% if max_id %}
+		<a href="{{ url_for('browser.entries_mark_read', max_id=max_id) }}">Mark read</a>
+		{% endif %}
+	</nav>
+{% endblock footer %}
   </body>
 </html>

@@ -25,7 +25,7 @@ class NotFound(Exception):
     pass
 
 
-class DB(object):
+class DB:
 
     INSTANCE = None
 
@@ -59,7 +59,7 @@ class DB(object):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(self, type_, value, traceback):
         self.close()
         return isinstance(value, TypeError)
 
@@ -328,35 +328,12 @@ class DB(object):
         _LOG.info("delete_old_entries; deleted: %d", deleted)
         self._conn.commit()
 
-    def mark_read(self, entry_id=None, group_id=None, source_id=None,
-                  max_id=None, read=True):
+    def mark_read(self, entry_id=None, max_id=None, read=True):
         read = 1 if read else 0
-        _LOG.info("mark_read entry_id=%r, group_id=%r, source_id=%r, "
-                  "max_id=%r, read=%r", entry_id, group_id, source_id,
+        _LOG.info("mark_read entry_id=%r, max_id=%r, read=%r", entry_id,
                   max_id, read)
         cur = self._conn.cursor()
-        if group_id:
-            if max_id:
-                cur.execute(
-                    "update entries set read_mark=? where source_id in "
-                    "( select id from sources where group_id=?) and id <= ?",
-                    (read, group_id, max_id))
-            else:
-                cur.execute(
-                    "update entries set read_mark=? where source_id in "
-                    "( select id from sources where group_id=?)",
-                    (read, group_id))
-        elif source_id:
-            if max_id:
-                cur.execute(
-                    "update entries set read_mark=? where source_id = ? "
-                    "and id <= ?",
-                    (read, source_id, max_id))
-            else:
-                cur.execute(
-                    "update entries set read_mark=? where source_id = ?",
-                    (read, source_id))
-        elif entry_id:
+        if entry_id:
             cur.execute(
                 "update entries set read_mark=? where id = ? "
                 "and read_mark = ?",
@@ -365,6 +342,47 @@ class DB(object):
             cur.execute(
                 "update entries set read_mark=? where id <= ?",
                 (read, max_id))
+        changed = cur.rowcount
+        _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
+                   changed)
+        self._conn.commit()
+        return changed
+
+    def group_mark_read(self, group_id=None, max_id=None, read=True):
+        read = 1 if read else 0
+        _LOG.info("group_mark_read group_id=%r,max_id=%r, read=%r",
+                  group_id, max_id, read)
+        cur = self._conn.cursor()
+        if max_id:
+            cur.execute(
+                "update entries set read_mark=? where source_id in "
+                "( select id from sources where group_id=?) and id <= ?",
+                (read, group_id, max_id))
+        else:
+            cur.execute(
+                "update entries set read_mark=? where source_id in "
+                "( select id from sources where group_id=?)",
+                (read, group_id))
+        changed = cur.rowcount
+        _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
+                   changed)
+        self._conn.commit()
+        return changed
+
+    def source_mark_read(self, source_id=None, max_id=None, read=True):
+        read = 1 if read else 0
+        _LOG.info("source_mark_read source_id=%r, max_id=%r, read=%r",
+                  source_id, max_id, read)
+        cur = self._conn.cursor()
+        if max_id:
+            cur.execute(
+                "update entries set read_mark=? where source_id = ? "
+                "and id <= ? and read_mark=?",
+                (read, source_id, max_id))
+        else:
+            cur.execute(
+                "update entries set read_mark=? where source_id = ?",
+                (read, source_id))
         changed = cur.rowcount
         _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
                    changed)
@@ -459,13 +477,21 @@ class DB(object):
 
     def save_user(self, user: model.User) -> ty.Optional[model.User]:
         cur = self._conn.cursor()
-        cur.execute("select 1 from users where login=?", (user.login, ))
-        if cur.fetchone():
-            return None
-        cur.execute(
-            "insert into users (id, login, email, password, active, admin) "
-            "values (?, ?, ?, ?, ?, ?)", _user_to_row(user))
-        user.id = cur.lastrowid
+        if user.id:
+            cur.execute(
+                "update users set login=:login, email=:email, "
+                "password=:password, active=:active, admin=admin "
+                "where id=:id",
+                _user_to_row(user))
+        else:
+            cur.execute("select 1 from users where login=?", (user.login, ))
+            if cur.fetchone():
+                return None
+            cur.execute(
+                "insert into users (login, email, password, active, admin) "
+                "values (:login, :email, :password, :active, :admin)",
+                _user_to_row(user))
+            user.id = cur.lastrowid
         self._conn.commit()
         return user
 
@@ -612,14 +638,14 @@ def _user_from_row(row) -> model.User:
 
 
 def _user_to_row(user: model.User):
-    return (
-        user.id,
-        user.login,
-        user.email,
-        user.password,
-        user.active,
-        user.admin
-    )
+    return {
+        'id': user.id,
+        'login': user.login,
+        'email': user.email,
+        'password': user.password,
+        'active': user.active,
+        'admin': user.admin
+    }
 
 
 def _setting_from_row(row) -> model.Setting:

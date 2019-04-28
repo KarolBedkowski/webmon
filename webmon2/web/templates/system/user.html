@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Settings{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<h2>User</h2>
+	<form method="POST" autocomplete="new-password">
+		<fieldset>
+			<legend>Change password</legend>
+			<p>
+				<label>Current password:</label>
+				<input type="password" name="curr_password" required="required" />
+			</p>
+			<p>
+				<label>New password:</label>
+				<input type="password" name="new_password1" required="required" />
+			</p>
+			<p>
+				<label>New password again:</label>
+				<input type="password" name="new_password2" required="required" />
+			</p>
+			<p><button type="submit">Save</button></p>
+		</fieldset>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

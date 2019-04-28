@@ -175,7 +175,7 @@ def source_entries(source_id):
 def source_mark_read(source_id):
     db = get_db()
     max_id = int(request.args['max_id'])
-    db.mark_read(source_id=source_id, max_id=max_id)
+    db.source_mark_read(source_id=source_id, max_id=max_id)
     if request.method == 'POST':
         return "ok"
     return redirect(request.headers.get('Referer')
@@ -318,7 +318,7 @@ def group_mark_read(group_id):
     db = get_db()
     max_id = request.args.get('max_id')
     max_id = int(max_id) if max_id else max_id
-    db.mark_read(group_id=group_id, max_id=max_id)
+    db.group_mark_read(group_id=group_id, max_id=max_id)
     if request.method == 'POST':
         return "ok"
     if request.args.get('go') == 'next':

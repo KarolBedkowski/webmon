@@ -1,15 +1,13 @@
 {% extends 'base.html' %}
 {% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
 <!DOCTYPE html>
 <html>
   <body>
 
 {% block header %}
   <h1>{% block title %}Settings{% endblock %}</h1>
-<style>
-	input,textarea,select {width: 75%;}
-	label {width: 20%; display: inline-block; vertical-align: top;}
-</style>
+  {{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
