@@ -630,6 +630,7 @@ def _entry_to_row(entry):
 def _user_from_row(row) -> model.User:
     return model.User(
         id_=row['id'],
+        login=row['login'],
         email=row['email'],
         password=row['password'],
         active=row['active'],

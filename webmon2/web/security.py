@@ -33,6 +33,7 @@ def login():
         if user and user.active and user.verify_password(fpassword):
             session['user'] = user.id
             session['user_admin'] = bool(user.admin)
+            session.permanent = True
             return redirect(
                 request.form.get('back', url_for('browser.index')))
         flash("Invalid user and/or password")

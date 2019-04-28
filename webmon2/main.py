@@ -54,6 +54,10 @@ def _parse_options():
                         help="add user; arguments in form "
                         "<login>:<password>[:admin]",
                         dest="add_user")
+    parser.add_argument("--change-user-password",
+                        help="change user password; arguments in form "
+                        "<login>:<password>",
+                        dest="change_user_pass")
     parser.add_argument("--web-app-root", default="/")
     return parser.parse_args()
 
@@ -93,6 +97,21 @@ def add_user(args):
         print("user already exists")
     else:
         print("user created")
+
+
+def change_user_pass(args):
+    user_pass = args.split(':')
+    if len(user_pass) != 2:
+        print("wrong arguments for --reset-password; required login:pass")
+        return
+    with database.DB.get() as db:
+        user = db.get_user(login=user_pass[0])
+        if not user:
+            print("user not found")
+            return
+        user.hash_password(user_pass[1])
+        user = db.save_user(user)
+        print("password changed")
 
 
 def _load_user_classes():
@@ -171,6 +190,10 @@ def main():
 
     if args.add_user:
         add_user(args.add_user)
+        return
+
+    if args.change_user_pass:
+        change_user_pass(args.change_user_pass)
         return
 
     if args.migrate_filename:
