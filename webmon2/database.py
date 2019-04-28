@@ -229,15 +229,6 @@ class DB:
                ]
         return ids
 
-    def get_unread_entries(self):
-        cur = self._conn.cursor()
-        for row in cur.execute(_GET_UNREAD_ENTRIES_SQL):
-            entry = _entry_from_row(row)
-            entry.source = _source_from_row(row)
-            if entry.source.group_id:
-                entry.source.group = _source_group_from_row(row)
-            yield entry
-
     def get_starred_entries(self):
         cur = self._conn.cursor()
         for row in cur.execute(_GET_STARRED_ENTRIES_SQL):
@@ -247,23 +238,32 @@ class DB:
                 entry.source.group = _source_group_from_row(row)
             yield entry
 
-    def get_entries(self, source_id=None, group_id=None, unread=True):
+    def get_entries_total_count(self, source_id=None, group_id=None,
+                                unread=True) -> int:
         cur = self._conn.cursor()
-        if source_id:
-            if unread:
-                cur.execute(_GET_UNREAD_ENTRIES_BY_SOURCE_SQL, (source_id, ))
-            else:
-                cur.execute(_GET_ENTRIES_BY_SOURCE_SQL, (source_id, ))
-        elif group_id:
-            if unread:
-                cur.execute(_GET_UNREAD_ENTRIES_BY_GROUP_SQL, (group_id, ))
-            else:
-                cur.execute(_GET_ENTRIES_BY_GROUP_SQL, (group_id, ))
-        else:
-            if unread:
-                cur.execute(_GET_UNREAD_ENTRIES_SQL)
-            else:
-                cur.execute(_GET_ENTRIES_SQL)
+        args = {
+            'group_id': group_id,
+            'source_id': source_id,
+        }
+        sql = _get_entries_get_sql(source_id, group_id, unread)
+        sql = "select count(*) from (" + sql + ")"
+        cur.execute(sql, args)
+        return cur.fetchone()[0]
+
+    def get_entries(self, source_id=None, group_id=None, unread=True,
+                    offset=None, limit=None):
+        cur = self._conn.cursor()
+        args = {
+            'limit': limit or 25,
+            'offset': offset or 0,
+            'group_id': group_id,
+            'source_id': source_id,
+        }
+        sql = _get_entries_get_sql(source_id, group_id, unread)
+        if not unread:
+            # for unread there is no pagination
+            sql += " limit :limit offset :offset"
+        cur.execute(sql, args)
         groups = {}
         for row in cur:
             entry = _entry_from_row(row)
@@ -328,10 +328,10 @@ class DB:
         _LOG.info("delete_old_entries; deleted: %d", deleted)
         self._conn.commit()
 
-    def mark_read(self, entry_id=None, max_id=None, read=True):
+    def mark_read(self, entry_id=None, min_id=None, max_id=None, read=True):
         read = 1 if read else 0
-        _LOG.info("mark_read entry_id=%r, max_id=%r, read=%r", entry_id,
-                  max_id, read)
+        _LOG.info("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r",
+                  entry_id, min_id, max_id, read)
         cur = self._conn.cursor()
         if entry_id:
             cur.execute(
@@ -340,15 +340,16 @@ class DB:
                 (read, entry_id, 1-read))
         elif max_id:
             cur.execute(
-                "update entries set read_mark=? where id <= ?",
-                (read, max_id))
+                "update entries set read_mark=? where id <= ? and id >= ?",
+                (read, max_id, min_id or 0))
         changed = cur.rowcount
         _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
                    changed)
         self._conn.commit()
         return changed
 
-    def group_mark_read(self, group_id=None, max_id=None, read=True):
+    def group_mark_read(self, group_id=None, min_id=None, max_id=None,
+                        read=True):
         read = 1 if read else 0
         _LOG.info("group_mark_read group_id=%r,max_id=%r, read=%r",
                   group_id, max_id, read)
@@ -356,8 +357,8 @@ class DB:
         if max_id:
             cur.execute(
                 "update entries set read_mark=? where source_id in "
-                "( select id from sources where group_id=?) and id <= ?",
-                (read, group_id, max_id))
+                "( select id from sources where group_id=?) and id <= ? "
+                " and id >= ?", (read, group_id, max_id, min_id or 0))
         else:
             cur.execute(
                 "update entries set read_mark=? where source_id in "
@@ -369,7 +370,8 @@ class DB:
         self._conn.commit()
         return changed
 
-    def source_mark_read(self, source_id=None, max_id=None, read=True):
+    def source_mark_read(self, source_id=None, min_id=None, max_id=None,
+                         read=True):
         read = 1 if read else 0
         _LOG.info("source_mark_read source_id=%r, max_id=%r, read=%r",
                   source_id, max_id, read)
@@ -377,8 +379,8 @@ class DB:
         if max_id:
             cur.execute(
                 "update entries set read_mark=? where source_id = ? "
-                "and id <= ? and read_mark=?",
-                (read, source_id, max_id))
+                "and id <= ? and read_mark=? and id >= ?",
+                (read, source_id, max_id, 1-read, min_id or 0))
         else:
             cur.execute(
                 "update entries set read_mark=? where source_id = ?",
@@ -788,37 +790,37 @@ left join source_groups sg on sg.id = s.group_id
 '''
 
 _GET_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-order by e.updated
+order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where read_mark = 0
-order by e.updated
+order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and e.source_id=?
-order by e.updated
+where read_mark = 0 and e.source_id=:source_id
+order by e.id
 '''
 
 _GET_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where e.source_id=?
-order by e.updated
+where e.source_id=:source_id
+order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and s.group_id=?
-order by e.updated
+where read_mark = 0 and s.group_id=:group_id
+order by e.id
 '''
 
 _GET_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where s.group_id=?
-order by e.updated
+where s.group_id=:group_id
+order by e.id
 '''
 
 _GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where star_mark = 1
-order by e.updated
+order by e.id
 '''
 
 # _INSERT_ENTRY_SQL = """
@@ -853,3 +855,17 @@ select sg.id, sg.name,
     ) as unread
 from source_groups sg
 """
+
+
+def _get_entries_get_sql(source_id, group_id, unread) -> str:
+    if source_id:
+        if unread:
+            return _GET_UNREAD_ENTRIES_BY_SOURCE_SQL
+        return _GET_ENTRIES_BY_SOURCE_SQL
+    if group_id:
+        if unread:
+            return _GET_UNREAD_ENTRIES_BY_GROUP_SQL
+        return _GET_ENTRIES_BY_GROUP_SQL
+    if unread:
+        return _GET_UNREAD_ENTRIES_SQL
+    return _GET_ENTRIES_SQL

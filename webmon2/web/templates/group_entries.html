@@ -15,7 +15,7 @@
 		{% if showed_all %}
 		<a href="{{ url_for('browser.group_entries', group_id=group.id) }}">Show unread only</a>
 		{% else %}
-		<a href="{{ url_for('browser.group_entries_all', group_id=group.id) }}">Show all</a>
+		<a href="{{ url_for('browser.group_entries', group_id=group.id, mode='all') }}">Show all</a>
 		{% endif %}
 	</nav>
 {% endblock %}

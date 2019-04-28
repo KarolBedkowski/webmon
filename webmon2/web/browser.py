@@ -11,6 +11,7 @@ Web gui
 """
 
 import logging
+import typing as ty
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
@@ -23,6 +24,23 @@ from . import forms
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint('browser', __name__, url_prefix='/')
+_PAGE_LIMIT = 25
+
+
+def _preprate_entries_list(entries: ty.List[model.Entry], page: int,
+                           total_entries: int) -> ty.Dict[str, ty.Any]:
+    info = {
+        'min_id': min(entry.id for entry in entries) if entries else None,
+        'max_id': max(entry.id for entry in entries) if entries else None,
+        'more': page is not None and (page + 1) * _PAGE_LIMIT < total_entries,
+        'entries': entries,
+        'next_page': (min(page + 1, int(total_entries / _PAGE_LIMIT))
+                      if page is not None else None),
+        'prev_page': (max(0, page - 1) if page is not None else None),
+        'total_entries': total_entries,
+        'page': page,
+    }
+    return info
 
 
 @BP.route('/')
@@ -33,19 +51,25 @@ def index():
 @BP.route('/entries/unread')
 def entries_unread():
     db = get_db()
-    entries = list(db.get_unread_entries())
+    entries = list(db.get_entries(unread=True))
+    min_id = min(entry.id for entry in entries) if entries else None
     max_id = max(entry.id for entry in entries) if entries else None
-    return render_template("index.html", entries=entries, max_id=max_id,
-                           showed_all=False)
+    return render_template("entries.html", showed='unread',
+                           total_entries=len(entries),
+                           min_id=min_id, max_id=max_id,
+                           entries=entries)
 
 
-@BP.route('/entries/all')
-def entries_all():
+@BP.route('/entries/all/', defaults={'page': 0})
+@BP.route('/entries/all/<int:page>')
+def entries_all(page):
     db = get_db()
-    entries = list(db.get_entries(unread=False))
-    max_id = max(entry.id for entry in entries) if entries else None
-    return render_template("index.html", entries=entries, max_id=max_id,
-                           showed_all=True)
+    limit, offset = _PAGE_LIMIT, page * _PAGE_LIMIT
+    total_entries = db.get_entries_total_count(unread=False)
+    entries = list(db.get_entries(limit=limit, offset=offset,
+                                  unread=False))
+    data = _preprate_entries_list(entries, page, total_entries)
+    return render_template("entries.html", showed='all', **data)
 
 
 @BP.route('/entries/starred')
@@ -58,7 +82,8 @@ def entries_starred():
 @BP.route('/entries/mark/read')
 def entries_mark_read():
     db = get_db()
-    db.mark_read(max_id=int(request.args['max_id']))
+    db.mark_read(max_id=int(request.args['max_id']),
+                 min_id=int(request.args['min_id']))
     return redirect(request.headers.get('Referer')
                     or url_for("browser.entries_unread"))
 
@@ -145,29 +170,23 @@ def source_edit(source_id):
     )
 
 
-@BP.route("/source/<int:source_id>/entries/all")
-def source_entries_all(source_id):
+@BP.route("/source/<int:source_id>/entries",
+          defaults={"mode": "unread", "page": 0})
+@BP.route("/source/<int:source_id>/entries/<mode>", defaults={"page": 0})
+@BP.route("/source/<int:source_id>/entries/<mode>/<int:page>")
+def source_entries(source_id, mode, page):
     db = get_db()
-    entries = list(db.get_entries(source_id=source_id, unread=False))
-    max_id = max(entry.id for entry in entries) if entries else None
+    offset = (page or 0) * _PAGE_LIMIT
+    entries = list(db.get_entries(
+        source_id=source_id, unread=mode == 'unread', limit=_PAGE_LIMIT,
+        offset=offset))
+    total_entries = db.get_entries_total_count(
+        unread=False, source_id=source_id) if mode == 'all' else len(entries)
+    data = _preprate_entries_list(entries, page, total_entries)
     return render_template("source_entries.html",
-                           entries=entries,
-                           max_id=max_id,
                            source=db.get_source(source_id, with_group=True),
-                           showed_all=True,
-                           )
-
-
-@BP.route("/source/<int:source_id>/entries")
-def source_entries(source_id):
-    db = get_db()
-    entries = list(db.get_entries(source_id=source_id))
-    max_id = max(entry.id for entry in entries) if entries else None
-    return render_template("source_entries.html",
-                           entries=entries,
-                           max_id=max_id,
-                           source=db.get_source(source_id, with_group=True),
-                           showed_all=False,
+                           showed='all' if mode == 'all' else 'unread',
+                           **data
                            )
 
 
@@ -186,21 +205,21 @@ def source_mark_read(source_id):
 def source_filters(source_id):
     db = get_db()
     source = db.get_source(source_id)
-    filters = [
+    filter_fields = [
         forms.Filter(fltr['name'])
         for fltr in source.filters or []
     ]
     return render_template("source_filters.html",
                            source=source,
-                           filters=filters)
+                           filters=filter_fields)
 
 
 @BP.route("/source/<int:source_id>/filter/add")
 def source_filter_add(source_id):
-    filters_name = filters.filters_name()
+    filter_names = filters.filter_names()
     return render_template("filter_new.html",
                            source_id=source_id,
-                           filters_name=filters_name)
+                           filter_names=filter_names)
 
 
 @BP.route("/source/<int:source_id>/filter/<idx>/edit", methods=['GET', 'POST'])

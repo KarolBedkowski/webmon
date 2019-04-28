@@ -79,6 +79,6 @@ def filter_by(filters_conf: [dict], entries: model.Entries,
     return list(entries), curr_state
 
 
-def filters_name():
+def filter_names():
     return [name
             for name, scls in common.get_subclasses_with_name(AbstractFilter)]

@@ -5,17 +5,17 @@
   <body>
 
 {% block header %}
-	<h1>{% block title %}Entries in {{ source.name }} ({{ entries|length }}){% endblock %}</h1>
+	<h1>{% block title %}Entries in {{ source.name }} ({{ total_entries }}){% endblock %}</h1>
 	<nav>
 		{% if max_id %}
-		<a href="{{ url_for('browser.source_mark_read', source_id=source.id, max_id=max_id) }}">Mark read</a>
+		<a href="{{ url_for('browser.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}">Mark read</a>
 		{% endif %}
 		<a href="{{ url_for('browser.source_refresh', source_id=source.id) }}">Refresh</a>
 		<a href="{{ url_for('browser.source_edit', source_id=source.id) }}">Edit</a>
-		{% if showed_all %}
+		{% if showed == 'all' %}
 		<a href="{{ url_for('browser.source_entries', source_id=source.id) }}">Show unread only</a>
 		{% else %}
-		<a href="{{ url_for('browser.source_entries_all', source_id=source.id) }}">Show all</a>
+		<a href="{{ url_for('browser.source_entries', source_id=source.id, mode='all') }}">Show all</a>
 		{% endif %}
 	</nav>
 {% endblock %}
@@ -25,5 +25,22 @@
 		{{ re.render_entry(entry) }}
 	{% endfor %}
 {% endblock %}
+
+{% block footer %}
+	<nav>
+		{% if max_id %}
+		<a href="{{ url_for('browser.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}">Mark read</a>
+		{% endif %}
+		{% if showed == 'all' %}
+			{% if page > 0 %}
+				<a href="{{ url_for('browser.source_entries', source_id=source.id, page=prev_page, mode='all') }}">Prev page</a>
+			{% endif %}
+			{% if more %}
+				<a href="{{ url_for('browser.source_entries', source_id=source.id, page=next_page, mode='all') }}">Next page</a>
+			{% endif %}
+		{% endif %}
+	</nav>
+{% endblock %}
+
   </body>
 </html>

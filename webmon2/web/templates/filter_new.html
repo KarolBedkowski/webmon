@@ -13,7 +13,7 @@
 	<p>Available filters:</p>
 	<p>
 		<ul>
-			{% for name in filters_name %}
+			{% for name in filter_names %}
 			<li><a href="{{ url_for("browser.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a></li>
 			{% endfor %}
 		</ul>
