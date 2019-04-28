@@ -502,6 +502,8 @@ class DB:
         _LOG.debug("current schema version: %r", schema_ver)
         schama_files = os.path.join(os.path.dirname(__file__), 'schema')
         for fname in sorted(os.listdir(schama_files)):
+            if not fname.endswith('.sql'):
+                continue
             try:
                 version = int(os.path.splitext(fname)[0])
                 _LOG.debug("found update: %r", version)
