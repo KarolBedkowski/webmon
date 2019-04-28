@@ -17,7 +17,7 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash
 )
 
-from webmon2.web import get_db
+from webmon2.web import get_db, _commons as c
 from webmon2 import model
 from . import forms
 
@@ -66,14 +66,21 @@ def group_sources(group_id: int):
 
 @BP.route("/group/<int:group_id>/entries")
 @BP.route("/group/<int:group_id>/entries/<mode>")
-def group_entries(group_id, mode=None):
+@BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
+def group_entries(group_id, mode=None, page=0):
     db = get_db()
+    offset = (page or 0) * c.PAGE_LIMIT
     sgroup = db.get_group(group_id)
-    entries = list(db.get_entries(group_id=group_id, unread=mode != 'all'))
-    max_id = max(entry.id for entry in entries) if entries else None
-    return render_template("group_entries.html", entries=entries,
-                           max_id=max_id, group=sgroup,
-                           showed_all=mode == 'all')
+    entries = list(db.get_entries(group_id=group_id, unread=mode != 'all',
+                                  limit=c.PAGE_LIMIT, offset=offset))
+    total_entries = db.get_entries_total_count(
+        unread=False, group_id=group_id) if mode == 'all' else len(entries)
+    data = c.preprate_entries_list(entries, page, total_entries)
+    return render_template(
+        "group_entries.html",
+        group=sgroup,
+        showed='all' if mode == 'all' else None,
+        **data)
 
 
 @BP.route("/group/<int:group_id>/mark/read")

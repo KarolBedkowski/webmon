@@ -29,8 +29,16 @@
 {% block footer %}
 	<nav>
 		{% if max_id %}
-		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id) }}">Mark read</a>
-		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">Mark read and go to next group</a>
+		<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id) }}">Mark visible read</a>
+		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">Mark all read and go to next group</a>
+		{% endif %}
+		{% if showed == 'all' %}
+			{% if page > 0 %}
+				<a href="{{ url_for('group.group_entries', group_id=group.id, mode='all', page=prev_page) }}">Prev page</a>
+			{% endif %}
+			{% if more %}
+				<a href="{{ url_for('group.group_entries', group_id=group.id, mode='all', page=next_page) }}">Next page</a>
+			{% endif %}
 		{% endif %}
 	</nav>
 {% endblock %}
