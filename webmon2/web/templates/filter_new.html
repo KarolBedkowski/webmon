@@ -14,12 +14,12 @@
 	<p>
 		<ul>
 			{% for name in filter_names %}
-			<li><a href="{{ url_for("browser.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a></li>
+			<li><a href="{{ url_for("source.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a></li>
 			{% endfor %}
 		</ul>
 	</p>
 	<p>
-		<a href="{{ url_for("browser.source_edit", source_id=source_id) }}">Back to source</a>
+		<a href="{{ url_for("source.source_edit", source_id=source_id) }}">Back to source</a>
 	</p>
 {% endblock %}
 

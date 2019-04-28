@@ -24,7 +24,7 @@ BP = Blueprint('system', __name__, url_prefix='/system')
 
 
 @BP.route('/settings/', methods=["POST", "GET"])
-def settings():
+def sett_index():
     return redirect(url_for("system.sett_user"))
 
 

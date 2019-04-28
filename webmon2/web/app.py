@@ -48,6 +48,18 @@ def create_app(dbfile, debug, root):
     from . import browser
     app.register_blueprint(browser.BP)
 
+    from . import entries
+    app.register_blueprint(entries.BP)
+
+    from . import source
+    app.register_blueprint(source.BP)
+
+    from . import group
+    app.register_blueprint(group.BP)
+
+    from . import entry
+    app.register_blueprint(entry.BP)
+
     from . import system
     app.register_blueprint(system.BP)
 

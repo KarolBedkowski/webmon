@@ -13,7 +13,7 @@ GUI forms
 import typing as ty
 import logging
 
-from webmon2 import model
+from webmon2 import model, inputs, common
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -80,12 +80,10 @@ class SourceForm:
         if not self.kind:
             result["kind"] = "Missing source kind"
         else:
-            from webmon import inputs
             inputs_names = inputs.enumerate_inputs()
             if self.kind not in inputs_names:
                 result["kind"] = "Unknown kind"
         if self.interval:
-            from webmon import common
             try:
                 common.parse_interval(self.interval)
             except ValueError:

@@ -1,16 +1,16 @@
 {% macro render_source(source) -%}
 	<article>
 		<header>
-			<h4><a href="{{ url_for('browser.source_entries', source_id=source.id) }}">{{ source.name }}</a>
+			<h4><a href="{{ url_for('source.source_entries', source_id=source.id) }}">{{ source.name }}</a>
 				{% if source.unread %}({{ source.unread }}){% endif %}
-				{% if source.group %} <a class="group-tag" href="{{ url_for("browser.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
+				{% if source.group %} <a class="group-tag" href="{{ url_for("group.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
 			</h4>
 			<nav>
 				&#9716; <time>{{ source.state.last_update|age }}</time>
-				| <a href="{{ url_for('browser.source_refresh', source_id=source.id)}}">↺ Refresh</a>
-				| <a href="{{ url_for('browser.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
-				| <a href="{{ url_for('browser.source_edit', source_id=source.id) }}">✎ Edit</a>
-				| <a href="{{ url_for('browser.source_delete', source_id=source.id) }}" data-req-confirm="yes">✘ Delete</a>
+				| <a href="{{ url_for('source.source_refresh', source_id=source.id)}}">↺ Refresh</a>
+				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
+				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
+				| <a href="{{ url_for('source.source_delete', source_id=source.id) }}" data-req-confirm="yes">✘ Delete</a>
 			</nav>
 			{% if source.state.status == 'error' %}
 			<p class="error">Error: {{ source.state.error}} at {{ source.state.last_update}} times: {{ source.state.error_counter}}</p>

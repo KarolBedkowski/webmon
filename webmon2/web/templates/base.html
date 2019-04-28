@@ -35,11 +35,11 @@
 	<body>
 		<header id="main-header">
 			<nav>
-				<a href="{{ url_for("browser.entries_unread") }}">Entries</a>
-				<a href="{{ url_for("browser.entries_starred") }}">Starred</a>
+				<a href="{{ url_for("entries.entries_unread") }}">Entries</a>
+				<a href="{{ url_for("entries.entries_starred") }}">Starred</a>
 				<a href="{{ url_for("browser.sources") }}">Sources</a>
 				<a href="{{ url_for("browser.groups") }}">Groups</a>
-				<a href="{{ url_for("system.settings") }}">Settings</a>
+				<a href="{{ url_for("system.sett_index") }}">Settings</a>
 				<a href="{{ url_for("sec.logout") }}">Logout</a>
 			</nav>
 		</header>
@@ -60,7 +60,7 @@
 	</body>
 	<script type="text/javascript">
 		document.addEventListener("DOMContentLoaded", function() {
-			let mark_read_url = "{{ url_for("browser.entry_mark_read_api") }}";
+			let mark_read_url = "{{ url_for("entry.entry_mark_read_api") }}";
 			document.querySelectorAll("a[data-action=mark_read]").forEach((element) => {
 				element.onclick = (event) => {
 					event.preventDefault();
@@ -92,7 +92,7 @@
 					});
 				};
 			});
-			let mark_star_url = "{{ url_for("browser.entry_mark_star_api") }}";
+			let mark_star_url = "{{ url_for("entry.entry_mark_star_api") }}";
 			document.querySelectorAll("a[data-action=mark_star]").forEach((element) => {
 				element.onclick = (event) => {
 					event.preventDefault();
