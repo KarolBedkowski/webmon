@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash
+    Blueprint, render_template, redirect, url_for, request, flash, session
 )
 
 from webmon2.web import get_db, _commons as c
@@ -27,11 +27,6 @@ _LOG = logging.getLogger(__name__)
 BP = Blueprint('group', __name__, url_prefix='/group')
 
 
-@BP.route("/group/new")
-def group_new():
-    return redirect(url_for("group.group_edit", group_id=0))
-
-
 @BP.route("/group/<int:group_id>/refresh")
 def refresh_group(group_id):
     db = get_db()
@@ -41,10 +36,12 @@ def refresh_group(group_id):
                     or url_for("root.groups"))
 
 
+@BP.route("/group/new")
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
-def group_edit(group_id):
+def group_edit(group_id=0):
     db = get_db()
-    sgroup = db.get_group(group_id) if group_id else model.SourceGroup()
+    sgroup = db.get_group(group_id) if group_id \
+        else model.SourceGroup(user_id=session['user'])
     form = forms.GroupForm.from_model(sgroup)
 
     if request.method == 'POST':
@@ -59,9 +56,10 @@ def group_edit(group_id):
 @BP.route('/group/<int:group_id>/sources')
 def group_sources(group_id: int):
     db = get_db()
+    user_id = session['user']
     return render_template("group_sources.html",
                            group=db.get_group(group_id),
-                           sources=list(db.get_sources(group_id)))
+                           sources=list(db.get_sources(user_id, group_id)))
 
 
 @BP.route("/group/<int:group_id>/entries")
@@ -71,10 +69,13 @@ def group_entries(group_id, mode=None, page=0):
     db = get_db()
     offset = (page or 0) * c.PAGE_LIMIT
     sgroup = db.get_group(group_id)
-    entries = list(db.get_entries(group_id=group_id, unread=mode != 'all',
+    user_id = session['user']
+    entries = list(db.get_entries(user_id, group_id=group_id,
+                                  unread=mode != 'all',
                                   limit=c.PAGE_LIMIT, offset=offset))
     total_entries = db.get_entries_total_count(
-        unread=False, group_id=group_id) if mode == 'all' else len(entries)
+        session['user'], unread=False, group_id=group_id) \
+        if mode == 'all' else len(entries)
     data = c.preprate_entries_list(entries, page, total_entries)
     return render_template(
         "group_entries.html",
@@ -93,7 +94,7 @@ def group_mark_read(group_id):
         return "ok"
     if request.args.get('go') == 'next':
         # go to next unread group
-        group_id = db.get_next_unread_group()
+        group_id = db.get_next_unread_group(session['user'])
         _LOG.info("next group: %r", group_id)
         if group_id:
             return redirect(url_for('group.group_entries',

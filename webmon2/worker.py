@@ -15,6 +15,7 @@ import time
 import threading
 import logging
 import datetime
+import random
 
 from . import inputs, common, filters, database
 
@@ -75,10 +76,13 @@ class FetchWorker(threading.Thread):
             _LOG.error("source %d not found!", source_id)
             return
         try:
-            inp = inputs.get_input(source, db.get_settings_map())
+            sys_settings = db.get_settings_map(source.user_id)
+            _LOG.debug('sys_settings: %r', sys_settings)
+            inp = inputs.get_input(source, sys_settings)
             inp.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
+            _save_state_error(db, source, err)
             return
         if not inp:
             return
@@ -87,11 +91,7 @@ class FetchWorker(threading.Thread):
             new_state, entries = inp.load(source.state)
         except Exception as err:
             _LOG.exception("load source id=%d error: %s", source_id, err)
-            new_state = source.state.new_error(str(err))
-            new_state.next_update = datetime.datetime.now() + \
-                datetime.timedelta(
-                    seconds=common.parse_interval(source.interval))
-            db.save_state(new_state)
+            _save_state_error(db, source, err)
             return
 
         if new_state.next_update is None:
@@ -114,10 +114,22 @@ class FetchWorker(threading.Thread):
 
 
 def _delete_old_entries(db):
-    keep_days = db.get_setting_value('keep_entries_days', 90)
-    if not keep_days:
-        return
-    if not keep_days:
-        return
-    max_datetime = datetime.datetime.now() - datetime.timedelta(days=keep_days)
-    db.delete_old_entries(max_datetime)
+    users = list(db.get_users())
+    for user in users:
+        keep_days = db.get_setting_value('keep_entries_days', user.id,
+                                         default=90)
+        if not keep_days:
+            continue
+        max_datetime = datetime.datetime.now() - \
+            datetime.timedelta(days=keep_days)
+        db.delete_old_entries(user.id, max_datetime)
+
+
+def _save_state_error(db, source, err):
+    next_check_delta = common.parse_interval(source.interval or '1d')
+    # add some random time
+    next_check_delta += random.randint(600, 3600)
+    new_state = source.state.new_error(str(err))
+    new_state.next_update = datetime.datetime.now() + \
+        datetime.timedelta(seconds=next_check_delta)
+    db.save_state(new_state)

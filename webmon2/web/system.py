@@ -31,7 +31,8 @@ def sett_index():
 @BP.route('/settings/globals', methods=["POST", "GET"])
 def sett_globals():
     db = get_db()
-    settings = list(db.get_settings())
+    user_id = session['user']
+    settings = list(db.get_settings(user_id))
     if request.method == 'POST':
         for sett in settings:
             if sett.key in request.form:

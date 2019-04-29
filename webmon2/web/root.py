@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash
+    Blueprint, render_template, redirect, url_for, request, flash, session
 )
 
 from webmon2.web import get_db
@@ -33,7 +33,8 @@ def index():
 @BP.route('/sources')
 def sources():
     db = get_db()
-    return render_template("sources.html", sources=db.get_sources())
+    user_id = session['user']
+    return render_template("sources.html", sources=db.get_sources(user_id))
 
 
 @BP.route("/sources/refresh")
@@ -48,4 +49,5 @@ def sources_refresh():
 @BP.route("/groups")
 def groups():
     db = get_db()
-    return render_template("groups.html", groups=db.get_groups())
+    user_id = session['user']
+    return render_template("groups.html", groups=db.get_groups(user_id))

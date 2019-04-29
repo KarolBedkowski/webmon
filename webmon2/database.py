@@ -51,7 +51,7 @@ class DB:
         _LOG.info("initializing database: %s", filename)
         common.create_missing_dir(os.path.dirname(filename))
         db = DB(filename)
-        db._update_schema()
+        db.update_schema()
         db.close()
         cls.INSTANCE = db
         return db
@@ -69,26 +69,31 @@ class DB:
             self._conn.close()
             self._conn = None
 
-    def get_groups(self):
+    def get_groups(self, user_id):
+        assert user_id
         cur = self._conn.cursor()
-        cur.execute(_GET_SOURCE_GROUPS_SQL)
-        groups = [model.SourceGroup(id, name, unread)
-                  for id, name, unread in cur]
+        cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
+        groups = [model.SourceGroup(id, name, unread, user_id)
+                  for id, name, user_id, unread in cur]
         return groups
 
     def get_group(self, id_):
         cur = self._conn.cursor()
-        cur.execute("select id, name from source_groups where id=?", (id_, ))
+        cur.execute(
+            "select id as source_group_id, name as source_group_name, "
+            "user_id as source_group_user_id from source_groups where id=?",
+            (id_, ))
         row = cur.fetchone()
         if not row:
             raise NotFound
-        return model.SourceGroup(row[0], row[1])
+        return _source_group_from_row(row)
 
     def save_group(self, group):
         cur = self._conn.cursor()
         if group.id is None:
-            cur.execute("insert into source_groups (name) values (?)",
-                        (group.name, ))
+            cur.execute(
+                "insert into source_groups (name, user_id) values (?, ?)",
+                (group.name, group.user_id))
             group.id = cur.lastrowid
         else:
             cur.execute("update source_groups set name=? where id=?",
@@ -96,22 +101,23 @@ class DB:
         self._conn.commit()
         return group
 
-    def get_next_unread_group(self):
+    def get_next_unread_group(self, user_id):
         cur = self._conn.cursor()
         cur.execute(
             "select group_id "
             "from sources s join entries e on e.source_id = s.id "
-            "where e.read_mark = 0 order by e.id limit 1")
+            "where e.read_mark = 0 and s.user_id=? "
+            "order by e.id limit 1", (user_id, ))
         row = cur.fetchone()
         return row[0] if row else None
 
-    def get_sources(self, group_id=None):
+    def get_sources(self, user_id, group_id=None):
         cur = self._conn.cursor()
-        groups = {g.id: g for g in self.get_groups()}
+        groups = {g.id: g for g in self.get_groups(user_id)}
         if group_id is None:
-            cur.execute(_GET_SOURCES_SQL)
+            cur.execute(_GET_SOURCES_SQL, (user_id, ))
         else:
-            cur.execute(_GET_SOURCES_BY_GROUP_SQL, (group_id, ))
+            cur.execute(_GET_SOURCES_BY_GROUP_SQL, (group_id, user_id))
         for row in cur:
             source = _source_from_row(row)
             source.state = _state_from_row(row)
@@ -144,7 +150,6 @@ class DB:
             state = model.SourceState.new(source.id)
             self.save_state(state)
         else:
-            row.append(source.id)
             cur.execute(_UPDATE_SOURCE_SQL, row)
         self._conn.commit()
         return source
@@ -161,7 +166,7 @@ class DB:
         source = self.get_source(source_id, False, False)
         if not source.filters:
             source.filters = [filter_]
-        elif filter_idx < len(source.filters) and filter_idx >= 0:
+        elif 0 <= filter_idx < len(source.filters):
             source.filters[filter_idx] = filter_
         else:
             source.filters.append(filter_)
@@ -229,28 +234,30 @@ class DB:
                ]
         return ids
 
-    def get_starred_entries(self):
+    def get_starred_entries(self, user_id: int):
+        assert user_id, 'no user_id'
         cur = self._conn.cursor()
-        for row in cur.execute(_GET_STARRED_ENTRIES_SQL):
+        for row in cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id}):
             entry = _entry_from_row(row)
             entry.source = _source_from_row(row)
             if entry.source.group_id:
                 entry.source.group = _source_group_from_row(row)
             yield entry
 
-    def get_entries_total_count(self, source_id=None, group_id=None,
+    def get_entries_total_count(self, user_id, source_id=None, group_id=None,
                                 unread=True) -> int:
         cur = self._conn.cursor()
         args = {
             'group_id': group_id,
             'source_id': source_id,
+            "user_id": user_id,
         }
         sql = _get_entries_get_sql(source_id, group_id, unread)
         sql = "select count(*) from (" + sql + ")"
         cur.execute(sql, args)
         return cur.fetchone()[0]
 
-    def get_entries(self, source_id=None, group_id=None, unread=True,
+    def get_entries(self, user_id, source_id=None, group_id=None, unread=True,
                     offset=None, limit=None):
         cur = self._conn.cursor()
         args = {
@@ -258,11 +265,14 @@ class DB:
             'offset': offset or 0,
             'group_id': group_id,
             'source_id': source_id,
+            "user_id": user_id,
         }
         sql = _get_entries_get_sql(source_id, group_id, unread)
         if not unread:
             # for unread there is no pagination
             sql += " limit :limit offset :offset"
+        _LOG.debug("sql: %r", sql)
+        _LOG.debug("args: %r", args)
         cur.execute(sql, args)
         groups = {}
         for row in cur:
@@ -296,7 +306,6 @@ class DB:
             cur.execute(_INSERT_ENTRY_SQL, row)
             entry.id = cur.lastrowid
         else:
-            row.append(entry.id)
             cur.execute(_UPDATE_ENTRY_SQL, row)
         self._conn.commit()
         return entry
@@ -314,42 +323,46 @@ class DB:
             _entry_to_row(entry)
             for entry in entries
             if entry.status == 'updated' or
-            cur.execute(_CHECK_ENTRY_SQL, (entry.oid, )).fetchone() is None
+            cur.execute(_CHECK_ENTRY_SQL,
+                        (entry.oid, entry.user_id)).fetchone() is None
         ]
         _LOG.debug("new entries: %d", len(rows))
         cur.executemany(_INSERT_ENTRY_SQL, rows)
         self._conn.commit()
 
-    def delete_old_entries(self, max_datetime):
+    def delete_old_entries(self, user_id: int, max_datetime):
         cur = self._conn.cursor()
         cur.execute("delete from entries where star_mark=0 and read_mark=0 "
-                    "and updated < ?", (max_datetime, ))
+                    "and updated<? and user_id=?", (max_datetime, user_id))
         deleted = cur.rowcount
-        _LOG.info("delete_old_entries; deleted: %d", deleted)
+        _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
+                  deleted)
         self._conn.commit()
 
-    def mark_read(self, entry_id=None, min_id=None, max_id=None, read=True):
+    def mark_read(self, user_id: int, entry_id=None, min_id=None, max_id=None,
+                  read=True):
+        assert user_id and (entry_id or max_id)
         read = 1 if read else 0
-        _LOG.info("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r",
-                  entry_id, min_id, max_id, read)
+        _LOG.info("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
+                  "user_id=%r", entry_id, min_id, max_id, read, user_id)
         cur = self._conn.cursor()
         if entry_id:
             cur.execute(
                 "update entries set read_mark=? where id = ? "
-                "and read_mark = ?",
-                (read, entry_id, 1-read))
+                "and read_mark = ? and user_id=?",
+                (read, entry_id, 1-read, user_id))
         elif max_id:
             cur.execute(
-                "update entries set read_mark=? where id <= ? and id >= ?",
-                (read, max_id, min_id or 0))
+                "update entries set read_mark=? where id <= ? and id >= ? "
+                "and user_id=?", (read, max_id, min_id or 0, user_id))
         changed = cur.rowcount
         _LOG.debug("total changes: %d, changed: %d", self._conn.total_changes,
                    changed)
         self._conn.commit()
         return changed
 
-    def group_mark_read(self, group_id=None, min_id=None, max_id=None,
-                        read=True):
+    def group_mark_read(self, group_id, min_id=None, max_id=None, read=True):
+        assert group_id, "no group id"
         read = 1 if read else 0
         _LOG.info("group_mark_read group_id=%r,max_id=%r, read=%r",
                   group_id, max_id, read)
@@ -422,44 +435,63 @@ class DB:
         self._conn.commit()
         return result
 
-    def get_settings(self) -> ty.Iterable[model.Setting]:
+    def get_settings(self, user_id) -> ty.Iterable[model.Setting]:
         cur = self._conn.cursor()
-        cur.execute("select key, value, value_type, description from settings")
+        if user_id is None:
+            cur.execute(
+                "select key, value, value_type, description from settings")
+        else:
+            cur.execute(
+                "select key, value, value_type, description from settings "
+                "where user_id=?", (user_id, ))
         for row in cur:
             yield _setting_from_row(row)
 
-    def get_setting(self, key: str) -> ty.Optional[model.Setting]:
+    def get_setting(self, key: str, user_id: int) \
+            -> ty.Optional[model.Setting]:
         cur = self._conn.cursor()
         cur.execute("select key, value, value_type, description "
-                    "from settings where key=?", (key, ))
+                    "from settings where key=? and user_id=?",
+                    (key, user_id))
         row = cur.fetchone()
         return _setting_from_row(row) if row else None
 
     def save_setting(self, setting: model.Setting):
         cur = self._conn.cursor()
-        cur.execute("update settings set value=? where key=?",
-                    (setting.key, json.dumps(setting.value)))
+        cur.execute("update settings set value=? where key=? and user_id=?",
+                    (setting.key, json.dumps(setting.value), setting.user_id))
         self._conn.commit()
 
     def save_settings(self, settings: ty.List[model.Setting]):
         cur = self._conn.cursor()
-        rows = [(json.dumps(setting.value), setting.key)
+        rows = [(json.dumps(setting.value), setting.key, setting.user_id)
                 for setting in settings]
-        cur.executemany("update settings set value=? where key=?", rows)
+        cur.executemany(
+            "update settings set value=? where key=? and user_id=?", rows)
         self._conn.commit()
 
-    def get_setting_value(self, key: str, default=None) -> ty.Any:
+    def get_setting_value(self, key: str, user_id: int, default=None) \
+            -> ty.Any:
         cur = self._conn.cursor()
-        cur.execute("select value from settings where key=?", (key, ))
+        cur.execute("select value from settings where key=? and user_id=?",
+                    (key, user_id))
         row = cur.fetchone()
         if row is None or row[0] is None:
             return default
         return json.loads(row[0]) if isinstance(row[0], str) else row[0]
 
-    def get_settings_map(self) -> ty.Dict[str, ty.Any]:
+    def get_settings_map(self, user_id: int) -> ty.Dict[str, ty.Any]:
         return {key: json.loads(val) if isinstance(val, str) and val else val
                 for key, val
-                in self._conn.execute("select key, value from settings")}
+                in self._conn.execute(
+                    "select key, value from settings where user_id=?",
+                    (user_id, ))}
+
+    def get_users(self) -> ty.Iterable[model.User]:
+        cur = self._conn.cursor()
+        for row in cur.execute(
+                "select id, login, email, password, active, admin from users"):
+            yield _user_from_row(row)
 
     def get_user(self, id_=None, login=None) -> ty.Optional[model.User]:
         cur = self._conn.cursor()
@@ -497,7 +529,7 @@ class DB:
         self._conn.commit()
         return user
 
-    def _update_schema(self):
+    def update_schema(self):
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
         schama_files = os.path.join(os.path.dirname(__file__), 'schema')
@@ -554,18 +586,21 @@ def _source_from_row(row):
     row_keys = row.keys()
     source.settings = _get_json_if_exists(row_keys, "source_settings", row)
     source.filters = _get_json_if_exists(row_keys, "source_filters", row)
+    source.user_id = row['source_user_id']
     return source
 
 
 def _source_to_row(source):
-    return [
-        source.group_id,
-        source.kind,
-        source.name,
-        source.interval,
-        json.dumps(source.settings),
-        json.dumps(source.filters)
-    ]
+    return {
+        'group_id': source.group_id,
+        'kind': source.kind,
+        'name': source.name,
+        'interval': source.interval,
+        'settings': json.dumps(source.settings) if source.settings else None,
+        'filters': json.dumps(source.filters) if source.filters else None,
+        'user_id': source.user_id,
+        'id': source.id,
+    }
 
 
 def _state_from_row(row):
@@ -612,23 +647,26 @@ def _entry_from_row(row):
     entry.opts = _get_json_if_exists(row_keys, "entry_opts", row)
     if "entry_content" in row_keys:
         entry.content = row["entry_content"]
+    entry.user_id = row['entry_user_id']
     return entry
 
 
-def _entry_to_row(entry):
-    return [
-        entry.source_id,
-        entry.updated,
-        entry.created,
-        entry.read_mark,
-        entry.star_mark,
-        entry.status,
-        entry.oid,
-        entry.title,
-        entry.url,
-        json.dumps(entry.opts),
-        entry.content,
-    ]
+def _entry_to_row(entry: model.Entry) -> ty.Dict[str, ty.Any]:
+    return {
+        'source_id': entry.source_id,
+        'updated': entry.updated,
+        'created': entry.created,
+        'read_mark': entry.read_mark,
+        'star_mark': entry.star_mark,
+        'status': entry.status,
+        'oid': entry.oid,
+        'title': entry.title,
+        'url': entry.url,
+        'opts': json.dumps(entry.opts),
+        'content': entry.content,
+        'id': entry.id,
+        'user_id': entry.user_id,
+    }
 
 
 def _user_from_row(row) -> model.User:
@@ -663,18 +701,15 @@ def _setting_from_row(row) -> model.Setting:
 
 def _source_group_from_row(row):
     return model.SourceGroup(row["source_group_id"],
-                             row["source_group_name"])
+                             row["source_group_name"],
+                             row["source_group_user_id"])
 
-
-_GET_SOURCE_GROUPS_SQL = """
-select id as source_group_id, name as source_group_name
-from source_groups;
-"""
 
 _GET_SOURCE_SQL = """
 select id as source_id, group_id as source_group_id,
     kind as source_kind, name as source_name, interval as source_interval,
-    settings as source_settings, filters as source_filters
+    settings as source_settings, filters as source_filters,
+    user_id as source_user_id
 from sources where id=?
 """
 
@@ -683,6 +718,7 @@ select s.id as source_id, s.group_id as source_group_id,
     s.kind as source_kind, s.name as source_name,
     s.interval as source_interval, s.settings as source_settings,
     s.filters as source_filters,
+    s.user_id as source_user_id,
     ss.source_id as source_state_source_id,
     ss.next_update as source_state_next_update,
     ss.last_update as source_state_last_update,
@@ -699,21 +735,25 @@ left join source_state ss on ss.source_id = s.id
 """
 
 _GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + """
+where s.user_id=?
 order by s.name """
 
 _GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL_BASE + """
-where group_id = ?
+where group_id = ? and s.user_id = ?
 order by s.name """
 
 _INSERT_SOURCE_SQL = """
-insert into sources (group_id, kind, name, interval, settings, filters)
-values (?, ?, ?, ?, ?, ?)
+insert into sources (group_id, kind, interval, settings, filters,
+    user_id, name)
+    values (:group_id, :kind, :interval, :settings, :filters, :user_id, :name)
 """
 
 _UPDATE_SOURCE_SQL = """
-update sources set group_id=?, kind=?, name=?, interval=?, settings=?,
-    filters=?
-where id=?"""
+update sources
+set group_id=:group_id, kind=:kind, name=:name, interval=:interval,
+    settings=:settings, filters=:filters
+where id=:id
+"""
 
 _GET_STATE_SQL = """
 select source_id as source_state_source_id,
@@ -747,7 +787,8 @@ select
     title as entry_title,
     url as entry_url,
     opts as entry_opts,
-    content as entry_content
+    content as entry_content,
+    user as entry_user_id,
 from entries where id=?
 
 '''
@@ -765,7 +806,8 @@ select
     title as entry_title,
     url as entry_url,
     opts as entry_opts,
-    content as entry_content
+    content as entry_content,
+    user_id as entry_user_id
 where oid=?
 '''
 
@@ -783,20 +825,24 @@ select
     e.url as entry_url,
     e.opts as entry_opts,
     e.content as entry_content,
+    e.user_id as entry_user_id,
     s.id as source_id, s.group_id as source_group_id, s.kind as source_kind,
     s.name as source_name, s.interval as source_interval,
-    sg.id as source_group_id, sg.name as source_group_name
+    s.user_id as source_user_id,
+    sg.id as source_group_id, sg.name as source_group_name,
+    sg.user_id as source_group_user_id
 from entries e
 join sources s on s.id = e.source_id
 left join source_groups sg on sg.id = s.group_id
 '''
 
 _GET_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where e.user_id=:user_id
 order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0
+where read_mark = 0 and e.user_id=:user_id
 order by e.id
 '''
 
@@ -821,7 +867,7 @@ order by e.id
 '''
 
 _GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where star_mark = 1
+where e.star_mark = 1 and e.user_id=:user_id
 order by e.id
 '''
 
@@ -834,28 +880,32 @@ order by e.id
 
 _INSERT_ENTRY_SQL = """
 insert into entries (source_id, updated, created,
-read_mark, star_mark, status, oid, title, url, opts, content)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    read_mark, star_mark, status, oid, title, url, opts, content, user_id)
+values (:source_id, :updated, :created,
+    :read_mark, :star_mark, :status, :oid, :title, :url, :opts, :content,
+    :user_id)
 """
 
 _CHECK_ENTRY_SQL = """
-select 1 from entries where oid=?
+select 1 from entries where oid=? and user_id=?
 """
 
 _UPDATE_ENTRY_SQL = """
-update entries set source_id=?, updated=?, created=?, read_mark=?, star_mark=?,
-status=?, oid=?, title=?, url=?, opts=?, content=?
-where id=?
+update entries set source_id=:source_id, updated=:updated, created=:created,
+    read_mark=:read_mark, star_mark=:star_mark, status=:status, oid=:oid,
+    title=:title, url=:url, opts=:opts, content=:content
+where id=:id
 """
 
 _GET_SOURCE_GROUPS_SQL = """
-select sg.id, sg.name,
+select sg.id, sg.name, sg.user_id,
     (select count(*)
         from entries e
         join sources s on e.source_id = s.id
         where e.read_mark = 0 and s.group_id = sg.id
     ) as unread
 from source_groups sg
+where sg.user_id=?
 """
 
 

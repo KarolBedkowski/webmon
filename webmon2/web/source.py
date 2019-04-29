@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash
+    Blueprint, render_template, redirect, url_for, request, flash, session
 )
 
 from webmon2.web import get_db, _commons as c
@@ -58,6 +58,7 @@ def source_new():
             source = model.Source()
             source.kind = kind
             source.name = name
+            source.user_id = session['user']
             source = db.save_source(source)
             return redirect(url_for("source.source_edit",
                                     source_id=source.id))
@@ -72,6 +73,7 @@ def source_edit(source_id):
     inp = inputs.get_input(source, {})
     source_form = forms.SourceForm.from_model(source, inp.params)
     errors = {}
+    user_id = session['user']
 
     if request.method == 'POST':
         source_form.update_from_request(request.form)
@@ -84,10 +86,9 @@ def source_edit(source_id):
                 return redirect(url_for("source.source_filters",
                                         source_id=source.id))
             return redirect(url_for('root.sources'))
-
     return render_template(
         "source.html",
-        groups=db.get_groups(),
+        groups=db.get_groups(user_id),
         source=source_form,
         errors=errors
     )
@@ -99,18 +100,19 @@ def source_edit(source_id):
 def source_entries(source_id, mode='unread', page=0):
     db = get_db()
     offset = (page or 0) * c.PAGE_LIMIT
+    user_id = session['user']
     entries = list(db.get_entries(
-        source_id=source_id, unread=mode == 'unread', limit=c.PAGE_LIMIT,
-        offset=offset))
+        user_id, source_id=source_id, unread=mode == 'unread',
+        limit=c.PAGE_LIMIT, offset=offset))
     total_entries = db.get_entries_total_count(
-        unread=False, source_id=source_id) if mode == 'all' else len(entries)
+        user_id, unread=False, source_id=source_id) \
+        if mode == 'all' else len(entries)
     data = c.preprate_entries_list(entries, page, total_entries)
     return render_template(
         "source_entries.html",
         source=db.get_source(source_id, with_group=True),
         showed='all' if mode == 'all' else 'unread',
-        **data
-        )
+        **data)
 
 
 @BP.route("/<int:source_id>/mark/read")

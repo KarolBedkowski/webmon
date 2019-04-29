@@ -7,7 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Models
 """
 
 import os
@@ -34,9 +34,10 @@ def obj2str(obj):
 
 
 class SourceGroup:
-    def __init__(self, id_=None, name=None, unread=None):
+    def __init__(self, id_=None, name=None, unread=None, user_id=None):
         self.id = id_
         self.name = name
+        self.user_id = user_id
 
         self.unread = unread
 
@@ -44,6 +45,7 @@ class SourceGroup:
         sg = SourceGroup()
         sg.id = self.id
         sg.name = self.name
+        sg.user_id = self.user_id
         return sg
 
 
@@ -56,6 +58,7 @@ class Source:
         self.interval = None
         self.settings = None
         self.filters = None
+        self.user_id = None
 
         self.group = None
         self.state = None
@@ -74,6 +77,7 @@ class Source:
         src.interval = self.interval
         src.settings = self.settings
         src.filters = self.filters
+        src.user_id = self.user_id
         return src
 
 
@@ -164,6 +168,7 @@ class Entry:
         self.url = None
         self.content = None
         self.opts = None
+        self.user_id = None
 
         self.source = None
 
@@ -182,11 +187,13 @@ class Entry:
         entry.url = self.url
         entry.opts = self.opts.copy() if self.opts else None
         entry.content = self.content
+        entry.user_id = self.user_id
         return entry
 
     @staticmethod
     def for_source(source: Source):
         entry = Entry(source_id=source.id)
+        entry.user_id = source.user_id
         return entry
 
     def calculate_oid(self):
@@ -217,11 +224,12 @@ Entries = ty.Iterable[Entry]
 
 class Setting:
     def __init__(self, key=None, value=None, value_type=None,
-                 description=None):
+                 description=None, user_id=None):
         self.key = key
         self.value = value
         self.value_type = value_type
         self.description = description
+        self.user_id = user_id
 
     def set_value(self, value):
         if self.value_type == 'int':

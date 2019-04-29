@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request
+    Blueprint, render_template, redirect, url_for, request, session
 )
 
 from webmon2.web import get_db
@@ -35,7 +35,8 @@ def entry(entry_id):
 @BP.route("/<int:entry_id>/mark/read")
 def entry_mark_read(entry_id):
     db = get_db()
-    db.mark_read(entry_id=entry_id)
+    user_id = session['user']
+    db.mark_read(user_id, entry_id=entry_id)
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
 
@@ -44,8 +45,9 @@ def entry_mark_read(entry_id):
 def entry_mark_read_api():
     db = get_db()
     entry_id = int(request.form["entry_id"])
+    user_id = session['user']
     state = request.form['value']
-    updated = db.mark_read(entry_id=entry_id, read=state == 'read')
+    updated = db.mark_read(user_id, entry_id=entry_id, read=state == 'read')
     return state if updated else ""
 
 
