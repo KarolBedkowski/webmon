@@ -29,6 +29,9 @@ BP = Blueprint('entry', __name__, url_prefix='/entry')
 def entry(entry_id):
     db = get_db()
     entry_ = db.get_entry(entry_id, with_source=True, with_group=True)
+    if not entry_.read_mark:
+        db.mark_read(entry_id=entry_id)
+        entry_.read_mark = 1
     return render_template("entry.html", entry=entry_)
 
 

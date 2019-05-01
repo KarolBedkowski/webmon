@@ -354,18 +354,17 @@ class DB:
                   deleted)
         self._conn.commit()
 
-    def mark_read(self, user_id: int, entry_id=None, min_id=None, max_id=None,
-                  read=True):
-        assert user_id and (entry_id or max_id)
+    def mark_read(self, user_id: int = None, entry_id=None, min_id=None,
+                  max_id=None, read=True):
+        assert entry_id or (user_id and max_id)
         read = 1 if read else 0
-        _LOG.info("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
-                  "user_id=%r", entry_id, min_id, max_id, read, user_id)
+        _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
+                   "user_id=%r", entry_id, min_id, max_id, read, user_id)
         cur = self._conn.cursor()
         if entry_id:
             cur.execute(
                 "update entries set read_mark=? where id = ? "
-                "and read_mark = ? and user_id=?",
-                (read, entry_id, 1-read, user_id))
+                "and read_mark = ?", (read, entry_id, 1-read))
         elif max_id:
             cur.execute(
                 "update entries set read_mark=? where id <= ? and id >= ? "
