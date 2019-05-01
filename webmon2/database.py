@@ -297,7 +297,8 @@ class DB:
             _LOG.debug("entry %s", entry)
             yield entry
 
-    def get_entry(self, id_=None, oid=None):
+    def get_entry(self, id_=None, oid=None, with_source=False,
+                  with_group=False):
         assert id_ is not None or oid is not None
         cur = self._conn.cursor()
         if id_ is not None:
@@ -307,7 +308,11 @@ class DB:
         row = cur.fetchone()
         if not row:
             raise NotFound()
-        return _entry_from_row(row)
+        entry = _entry_from_row(row)
+        if with_source:
+            entry.source = self.get_source(entry.source_id,
+                                           with_group=with_group)
+        return entry
 
     def save_entry(self, entry):
         row = _entry_to_row(entry)

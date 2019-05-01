@@ -28,7 +28,7 @@ BP = Blueprint('entry', __name__, url_prefix='/entry')
 @BP.route("/<int:entry_id>")
 def entry(entry_id):
     db = get_db()
-    entry_ = db.get_entry(entry_id)
+    entry_ = db.get_entry(entry_id, with_source=True, with_group=True)
     return render_template("entry.html", entry=entry_)
 
 
