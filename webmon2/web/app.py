@@ -69,44 +69,34 @@ def create_app(debug, root):
 
     @app.before_request
     def login_required():
+        request.req_start_time = time.time()
         if session.get('user') is None and \
                 request.path not in('/sec/login', '/metrics'):
             return redirect(url_for('sec.login', back=request.url))
         return None
 
+    @app.after_request
+    def record_request_data(response):
+        resp_time = time.time() - request.req_start_time
+        _REQUEST_LATENCY.labels(request.endpoint, request.method).\
+            observe(resp_time)
+        _REQUEST_COUNT.labels(request.method, request.endpoint,
+                              response.status_code).inc()
+        return response
+
     return app
 
 
-class MetricMiddleware():
-    REQUEST_COUNT = Counter(
-        'webmon2_request_count', 'App Request Count',
-        ['endpoint', 'method', 'http_status']
-    )
-    REQUEST_LATENCY = Histogram(
-        'webmon2_request_latency_seconds',
-        'Request latency',
-        ['endpoint', 'method'],
-        buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0]
-    )
-
-    def __init__(self, app):
-        app.before_request(self._start_timer)
-        app.after_request(self._record_request_data)
-        app.after_request(self._stop_timer)
-
-    def _start_timer(self):
-        request.start_time = time.time()
-
-    def _stop_timer(self, response):
-        resp_time = time.time() - request.start_time
-        self.REQUEST_LATENCY.labels(request.endpoint, request.method).\
-            observe(resp_time)
-        return response
-
-    def _record_request_data(self, response):
-        self.REQUEST_COUNT.labels(request.method, request.endpoint,
-                                  response.status_code).inc()
-        return response
+_REQUEST_COUNT = Counter(
+    'webmon2_request_count', 'App Request Count',
+    ['endpoint', 'method', 'http_status']
+)
+_REQUEST_LATENCY = Histogram(
+    'webmon2_request_latency_seconds',
+    'Request latency',
+    ['endpoint', 'method'],
+    buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0]
+)
 
 
 def simple_not_found(_env, resp):
@@ -116,7 +106,6 @@ def simple_not_found(_env, resp):
 
 def start_app(debug, root):
     app = create_app(debug, root)
-    MetricMiddleware(app)
 
     if root != '/':
         app.wsgi_app = DispatcherMiddleware(simple_not_found,
