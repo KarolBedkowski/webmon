@@ -219,10 +219,10 @@ class Entry:
         return self.content
 
     def is_long_content(self) -> bool:
-        return self.content and len(self.content) > 1024
+        return self.content and len(self.content) > 2048
 
     def get_summary(self):
-        return self.content[:1024] + "…"
+        return '\n'.join(self.content[:2048].split('\n')[:-1]) + "…"
 
 
 Entries = ty.Iterable[Entry]

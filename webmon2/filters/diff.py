@@ -71,6 +71,8 @@ class NDiff(AbstractFilter):
         entry.status = 'updated'
         entry.content = '\n'.join(res)
         entry.set_opt('preformated', True)
+        entry.set_opt('_ndiff_changed_lines', changed_lines)
+        entry.set_opt('_ndiff_old_lines', len(old_lines))
         yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
