@@ -194,21 +194,31 @@ class DB:
                 source.filters[filter_idx], source.filters[filter_idx + 1]
             self.save_source(source)
 
-    def refresh(self, source_id=None, group_id=None, refresh_all=False):
+    def refresh(self, source_id=None, group_id=None):
         cur = self._conn.cursor()
-        if refresh_all:
-            cur.execute(
-                "update source_state set next_update=datetime('now')")
+        args = {"group_id": group_id, "source_id": source_id}
+        sql = ["update source_state "
+               "set next_update=datetime('now', 'localtime') "
+               "where (last_update is null or "
+               "last_update < datetime('now', 'localtime', '-15 minutes')"]
         if group_id:
-            cur.execute(
-                "update source_state set next_update=datetime('now') "
-                "where source_id in (select id from sources where group_id=?)",
-                (group_id, ))
+            sql.append(
+                "and source_id in "
+                "(select id from sources where group_id=:group_id)")
         elif source_id:
-            cur.execute(
-                "update source_state set next_update=datetime('now')"
-                " where source_id=?", (source_id, ))
+            sql.append("and source_id=:source_id")
+        cur.execute(" ".join(sql), args)
+        updated = cur.rowcount
         self._conn.commit()
+        return updated
+
+    def refresh_errors(self):
+        cur = self._conn.cursor()
+        cur.execute("update source_state set next_update=datetime('now') "
+                    "where status='error'")
+        updated = cur.rowcount
+        self._conn.commit()
+        return updated
 
     def get_state(self, source_id):
         cur = self._conn.cursor()

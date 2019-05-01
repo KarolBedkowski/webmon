@@ -8,6 +8,7 @@
   <h1>{% block title %}Sources{% endblock %}</h1>
   <nav>
 	  <a href="{{ url_for("root.sources_refresh")}}">Refresh all</a>
+	  <a href="{{ url_for("root.sources_refresh_err")}}">Refresh sources with errors</a>
 	  <a href="{{ url_for("source.source_new")}}">New source</a>
   </nav>
 {% endblock %}

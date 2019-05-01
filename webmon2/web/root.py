@@ -40,8 +40,17 @@ def sources():
 @BP.route("/sources/refresh")
 def sources_refresh():
     db = get_db()
-    db.refresh(refresh_all=True)
-    flash("Sources mark to refresh")
+    updated = db.refresh()
+    flash("{} sources mark to refresh".format(updated))
+    return redirect(request.headers.get('Referer')
+                    or url_for("root.sources"))
+
+
+@BP.route("/sources/refresh/errors")
+def sources_refresh_err():
+    db = get_db()
+    updated = db.refresh_errors()
+    flash("{} sources with errors mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
 
