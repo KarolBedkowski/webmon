@@ -12,6 +12,7 @@
 import os
 import datetime
 import logging
+import typing as ty
 
 from webmon2 import common, model
 
@@ -32,9 +33,8 @@ class FileInput(AbstractInput):
     ]
 
     def load(self, state: model.SourceState) -> \
-            (model.SourceState, [model.Entry]):
+            ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return one part - page content.
-        TODO: diff
         """
 
         fname = self._conf['filename']

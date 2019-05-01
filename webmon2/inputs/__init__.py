@@ -17,6 +17,11 @@ from webmon2 import model, common
 from .abstract import AbstractInput
 
 _LOG = logging.getLogger(__name__)
+__all__ = (
+    "UnknownInputException",
+    "get_input",
+    "enumerate_inputs"
+)
 
 
 def _load_plugins():

@@ -19,7 +19,7 @@ def _format_body_filter(body):
         return body
 #    return publish_parts(
 #        body, writer_name='html', settings=None)['fragment']
-    return markdown2.markdown(body)
+    return markdown2.markdown(body, extras=["code-friendly"])
 
 
 def _age_filter(date):

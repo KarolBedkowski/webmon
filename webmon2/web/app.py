@@ -22,14 +22,13 @@ from gevent.pywsgi import WSGIServer
 _LOG = logging.getLogger(__name__)
 
 
-def create_app(dbfile, debug, root):
+def create_app(debug, root):
     template_folder = os.path.join(os.path.dirname(__file__), 'templates')
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True,
                 template_folder=template_folder)
     app.config.from_mapping(
         ENV="debug" if debug else 'production',
-        DBFILE=dbfile,
         SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
         SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
         APPLICATION_ROOT=root,
@@ -81,8 +80,8 @@ def simple_not_found(_env, resp):
     return [b'Not found']
 
 
-def start_app(db, debug, root):
-    app = create_app(db, debug, root)
+def start_app(debug, root):
+    app = create_app(debug, root)
     if root != '/':
         app.wsgi_app = DispatcherMiddleware(simple_not_found,
                                             {root: app.wsgi_app})

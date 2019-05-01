@@ -17,6 +17,12 @@ from ._abstract import AbstractFilter
 
 
 _LOG = logging.getLogger(__file__)
+__all__ = (
+    "UnknownFilterException",
+    "get_filter",
+    "filter_by",
+    "filter_names"
+)
 
 
 def _load_filters():

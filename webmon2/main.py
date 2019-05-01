@@ -16,9 +16,7 @@ import os.path
 import typing as ty
 
 
-from . import database, inputs, logging_setup, filters, common
-from . import worker
-from . import web
+from . import database, logging_setup, worker, web, cli
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
@@ -62,58 +60,6 @@ def _parse_options():
     parser.add_argument("--workers", type=int, default=2,
                         help="number of background workers")
     return parser.parse_args()
-
-
-def _show_abilities_cls(title, base_cls):
-    print(title)
-    for name, cls in common.get_subclasses_with_name(base_cls):
-        print("  -", name)
-        if hasattr(cls, "description"):
-            print("    " + cls.description)
-
-        if hasattr(cls, "params") and cls.params:
-            print("    Parameters:")
-            for param in cls.params:
-                print("     - {:<15s}\t{:<20s}\tdef={!r:<10}\treq={!r}".format(
-                    *param))
-    print()
-
-
-def show_abilities():
-    _show_abilities_cls("Inputs:", inputs.AbstractInput)
-    _show_abilities_cls("Filters:", filters.AbstractFilter)
-
-
-def add_user(args):
-    from webmon2 import model
-    user_pass_adm = args.split(':')
-    if len(user_pass_adm) < 2:
-        print("wrong arguments for --add-user")
-        return
-    user = model.User(login=user_pass_adm[0], active=True)
-    user.hash_password(user_pass_adm[1])
-    user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
-    with database.DB.get() as db:
-        user = db.save_user(user)
-    if not user:
-        print("user already exists")
-    else:
-        print("user created")
-
-
-def change_user_pass(args):
-    user_pass = args.split(':')
-    if len(user_pass) != 2:
-        print("wrong arguments for --reset-password; required login:pass")
-        return
-    with database.DB.get() as db:
-        user = db.get_user(login=user_pass[0])
-        if not user:
-            print("user not found")
-            return
-        user.hash_password(user_pass[1])
-        user = db.save_user(user)
-        print("password changed")
 
 
 def _load_user_classes():
@@ -182,7 +128,7 @@ def main():
     _load_user_classes()
 
     if args.abilities:
-        show_abilities()
+        cli.show_abilities()
         return
 
     dbfile = os.path.expanduser(args.database_file)
@@ -190,23 +136,13 @@ def main():
         dbfile = "./webmon.db"
     database.DB.initialize(dbfile)
 
-    if args.add_user:
-        add_user(args.add_user)
-        return
-
-    if args.change_user_pass:
-        change_user_pass(args.change_user_pass)
-        return
-
-    if args.migrate_filename:
-        from . import migrate
-        migrate.migrate(args.migrate_filename)
+    if cli.process_cli(args):
         return
 
     cworker = worker.CheckWorker(args.workers)
     cworker.start()
 
-    web.start_app(dbfile, args.debug, args.web_app_root)
+    web.start_app(args.debug, args.web_app_root)
 
 
 if __name__ == "__main__":

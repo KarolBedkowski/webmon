@@ -29,7 +29,7 @@ BP = Blueprint('entry', __name__, url_prefix='/entry')
 def entry(entry_id):
     db = get_db()
     entry_ = db.get_entry(entry_id)
-    return render_template("entry", entry=entry_)
+    return render_template("entry.html", entry=entry_)
 
 
 @BP.route("/<int:entry_id>/mark/read")
