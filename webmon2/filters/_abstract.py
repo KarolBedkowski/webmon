@@ -29,7 +29,7 @@ class AbstractFilter:
     def __init__(self, config: dict) -> None:
         super().__init__()
         self._conf = common.apply_defaults(
-            {key: val for (key, _desc, val, *_) in self.params},
+            {param.name: param.default for param in self.params},
             config)  # type: ty.Dict[str, ty.Any]
 
     def dump_debug(self):
