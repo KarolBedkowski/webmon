@@ -1,6 +1,6 @@
 # pylint: skip-file
 """
-Copyright (c) Karol Będkowski, 2016-2017
+Copyright (c) Karol Będkowski, 2016-2019
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -62,10 +62,8 @@ class TestApplyDefaults(unittest.TestCase):
         defaults = {
             "a": "123",
             "c": {
-                "c5": {
-                    "a1": "a0",
-                    "a2": "a2",
-                },
+                "a1": "a0",
+                "a2": "a2",
                 "c6": [1, 2, 3],
             },
             "d": 12,
@@ -81,14 +79,14 @@ class TestApplyDefaults(unittest.TestCase):
             }
         }
         res = common.apply_defaults(defaults, conf)
+        print(res)
         self.assertEqual(res["a"], "a")
         self.assertEqual(res["b"], [1, [1, 2, 3], {"12": 12}])
         self.assertEqual(res["c"]["c1"], 123)
         self.assertEqual(res["c"]["c2"], 234)
         self.assertEqual(res["c"]["c3"], [1, 2, 3, 4, 5])
         self.assertEqual(res["c"]["c5"]["a1"], "a1")
-        self.assertEqual(res["c"]["c5"]["a2"], "a2")
-        self.assertEqual(res["c"]["c6"], [1, 2, 3])
+        self.assertTrue('c6' not in res["c"])
         self.assertEqual(res["d"], 12)
 
 
