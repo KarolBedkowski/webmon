@@ -798,7 +798,7 @@ select
     url as entry_url,
     opts as entry_opts,
     content as entry_content,
-    user as entry_user_id,
+    user_id as entry_user_id
 from entries where id=?
 
 '''

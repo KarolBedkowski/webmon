@@ -23,7 +23,7 @@
 		<p>No entries...</p>
 	{% endif %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry) }}
+		{{ re.render_entry(entry, 'summary') }}
 	{% endfor %}
 {% endblock %}
 

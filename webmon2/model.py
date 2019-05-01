@@ -215,8 +215,14 @@ class Entry:
         if self.title:
             return self.title
         if len(self.content) > 50:
-            return self.content[:50] + '...'
+            return self.content[:50] + '…'
         return self.content
+
+    def is_long_content(self) -> bool:
+        return self.content and len(self.content) > 1024
+
+    def get_summary(self):
+        return self.content[:1024] + "…"
 
 
 Entries = ty.Iterable[Entry]

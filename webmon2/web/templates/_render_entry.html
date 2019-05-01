@@ -1,4 +1,4 @@
-{% macro render_entry(entry) -%}
+{% macro render_entry(entry, mode) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<header>
@@ -12,15 +12,18 @@
 				| <a href="#" data-action="mark_star"></a>
 			</nav>
 		</header>
-		<!-- {{ entry }} -->
-	  <!--
-{{ entry.content }}
- -->
-		{% if entry.content %}
+ 		{% if entry.is_long_content() and mode == 'summary' %}
 			{% if entry.get_opt('preformated') %}
-			<pre>{{ entry.content|safe }}</pre>
+				<pre>{{ entry.get_summary()|safe }}</pre>
 			{% else %}
-			{{ entry.content|format_body|safe }}
+				{{ entry.get_summary()|format_body|safe }}
+			{% endif %}
+			<footer><a href="">Read more…</a><footer>
+		{% elif entry.content %}
+			{% if entry.get_opt('preformated') %}
+				<pre>{{ entry.content|safe }}</pre>
+			{% else %}
+				{{ entry.content|format_body|safe }}
 			{% endif %}
 		{% endif %}
 	</article>
