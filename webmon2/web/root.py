@@ -14,10 +14,12 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash, session
+    Blueprint, render_template, redirect, url_for, request, flash, session,
+    Response
 )
 
 from webmon2.web import get_db
+import prometheus_client
 
 
 _ = ty
@@ -60,3 +62,10 @@ def groups():
     db = get_db()
     user_id = session['user']
     return render_template("groups.html", groups=db.get_groups(user_id))
+
+
+
+@BP.route('/metrics')
+def metrics():
+    return Response(prometheus_client.generate_latest(),
+                    mimetype='text/plain; version=0.0.4; charset=utf-8')

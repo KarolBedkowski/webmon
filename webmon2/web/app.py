@@ -12,11 +12,13 @@ Web gui application
 
 import os
 import logging
+import time
 
 from flask import Flask, g, url_for, session, request, redirect
 from werkzeug.wsgi import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
+from prometheus_client import Counter, Histogram
 
 
 _LOG = logging.getLogger(__name__)
@@ -68,11 +70,43 @@ def create_app(debug, root):
     @app.before_request
     def login_required():
         if session.get('user') is None and \
-                request.path != '/sec/login':
+                request.path not in('/sec/login', '/metrics'):
             return redirect(url_for('sec.login', back=request.url))
         return None
 
     return app
+
+
+class MetricMiddleware():
+    REQUEST_COUNT = Counter(
+        'webmon2_request_count', 'App Request Count',
+        ['endpoint', 'method', 'http_status']
+    )
+    REQUEST_LATENCY = Histogram(
+        'webmon2_request_latency_seconds',
+        'Request latency',
+        ['endpoint', 'method'],
+        buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0]
+    )
+
+    def __init__(self, app):
+        app.before_request(self._start_timer)
+        app.after_request(self._record_request_data)
+        app.after_request(self._stop_timer)
+
+    def _start_timer(self):
+        request.start_time = time.time()
+
+    def _stop_timer(self, response):
+        resp_time = time.time() - request.start_time
+        self.REQUEST_LATENCY.labels(request.endpoint, request.method).\
+            observe(resp_time)
+        return response
+
+    def _record_request_data(self, response):
+        self.REQUEST_COUNT.labels(request.method, request.endpoint,
+                                  response.status_code).inc()
+        return response
 
 
 def simple_not_found(_env, resp):
@@ -82,6 +116,8 @@ def simple_not_found(_env, resp):
 
 def start_app(debug, root):
     app = create_app(debug, root)
+    MetricMiddleware(app)
+
     if root != '/':
         app.wsgi_app = DispatcherMiddleware(simple_not_found,
                                             {root: app.wsgi_app})

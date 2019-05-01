@@ -16,10 +16,17 @@ import threading
 import logging
 import datetime
 import random
+from prometheus_client import Counter
 
 from . import inputs, common, filters, database
 
 _LOG = logging.getLogger("main")
+_SOURCES_PROCESSED = Counter(
+    "webmon2_sources_processed", "Sources processed count")
+_SOURCES_PROCESSED_ERRORS = Counter(
+    "webmon2_sources_processed_errors",
+    "Sources processed with errors count")
+
 
 
 class CheckWorker(threading.Thread):
@@ -69,6 +76,7 @@ class FetchWorker(threading.Thread):
                 self._process_source(db, source_id)
 
     def _process_source(self, db, source_id):
+        _SOURCES_PROCESSED.inc()
         _LOG.info("processing source %d", source_id)
         try:
             source = db.get_source(id_=source_id, with_state=True)
@@ -126,6 +134,7 @@ def _delete_old_entries(db):
 
 
 def _save_state_error(db, source, err):
+    _SOURCES_PROCESSED_ERRORS.inc()
     next_check_delta = common.parse_interval(source.interval or '1d')
     # add some random time
     next_check_delta += random.randint(600, 3600)

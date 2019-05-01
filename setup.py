@@ -22,7 +22,8 @@ REQUIRES = [
     'feedparser',
     'github3.py',
     'flask',
-    'cssselect'
+    'cssselect',
+    'prometheus_client'
 ]
 
 
