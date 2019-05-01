@@ -76,7 +76,7 @@ def source_edit(source_id):
     source_form = forms.SourceForm.from_model(source, inp.params)
     source_form.settings = [
         forms.Field.from_input_params(param, source.settings, 'sett-',
-                                      user_settings.get(param[0]))
+                                      user_settings.get(param.name))
         for param in inp.params]
     errors = {}
     user_id = session['user']

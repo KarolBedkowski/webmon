@@ -22,8 +22,6 @@ class History(AbstractFilter):
     """Remove historical visited entries"""
 
     name = "remove_visited"
-    params = [
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:

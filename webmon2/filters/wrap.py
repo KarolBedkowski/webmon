@@ -24,9 +24,10 @@ class Html2Text(AbstractFilter):
 
     name = "wrap"
     params = [
-        ("width", "Max line width", 76, True, None, int),
-        ("max_lines", "Max number of lines", None, False, None, int),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("width", "Max line width", default=76),
+        common.SettingDef("max_lines", "Max number of lines",
+                          value_type=int),
+    ]  # type: ty.List[common.SettingDef]
 
     def validate(self):
         super().validate()

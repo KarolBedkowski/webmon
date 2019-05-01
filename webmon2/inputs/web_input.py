@@ -30,9 +30,9 @@ class WebInput(AbstractInput):
 
     name = "url"
     params = AbstractInput.params + [
-        ("url", "Web page url", None, True, None, str),
-        ("timeout", "loading timeout", 30, True, None, int),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("url", "Web page url", required=True),
+        common.SettingDef("timeout", "loading timeout", default=30),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) -> \
             (model.SourceState, [model.Entry]):

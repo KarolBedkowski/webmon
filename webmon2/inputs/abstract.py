@@ -23,19 +23,16 @@ class AbstractInput:
 
     # name used in configuration
     name = None  # type: ty.Optional[str]
-    # parameters - list of tuples (name, description, default, required,
-    # options, type)
-    params = []  # type: ty.List[ty.Tuple[str, str, ty.Any,bool,ty.Any,ty.Any]]
+    params = []  # type: ty.List[common.SettingDef]
 
     def __init__(self, source: model.Source,
                  sys_settings: ty.Dict[str, ty.Any]) -> None:
         super().__init__()
         self._source = source
-        conf = common.apply_defaults(
-            {key: val for key, _name, val, _req, _opts, _type in self.params},
-            sys_settings)
-        self._conf = common.apply_defaults(conf, source.settings)
-        _LOG.debug("Source %s: conf: %r", source.id, conf)
+        self._conf = common.apply_defaults(
+            {param.name: param.default for param in self.params},
+            sys_settings, source.settings)
+        _LOG.debug("Source %s: conf: %r", source.id, self._conf)
 
     def dump_debug(self):
         return " ".join(("<", self.__class__.__name__, str(self._source),
@@ -51,18 +48,18 @@ class AbstractInput:
         """ Validate input configuration.
             Returns  iterable of (<parameter>, <error>)
         """
-        for name, description, _, required, _, vtype in cls.params or []:
-            if not required:
+        for param in cls.params or []:
+            if not param.required:
                 continue
-            values = [conf[name] for conf in confs if conf.get(name)]
+            values = [conf[param.name] for conf in confs
+                      if conf.get(param.name)]
             if not values:
-                yield (name, 'missing parameter "{}"'.format(description))
+                yield (param.name,
+                       'missing parameter "{}"'.format(param.description))
                 continue
-            try:
-                vtype(values[0])
-            except ValueError:
-                yield (name, 'invalid value {!r} for "{}"'.format(
-                    values[0], description))
+                if not param.validate_value(values[0]):
+                    yield (param.name, 'invalid value {!r} for "{}"'.format(
+                        values[0], param.description))
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:

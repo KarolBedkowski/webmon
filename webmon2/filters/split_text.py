@@ -17,7 +17,7 @@ import logging
 from lxml import etree
 from cssselect import GenericTranslator, SelectorError
 
-from webmon2 import model
+from webmon2 import model, common
 
 from ._abstract import AbstractFilter
 
@@ -44,8 +44,8 @@ class GetElementsByCss(AbstractFilter):
 
     name = "get-elements-by-css"
     params = [
-        ("sel", "selector", None, True, None, str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("sel", "selector", required=True),
+    ]  # type: ty.List[common.SettingDef]
     stop_change_content = True
 
     def __init__(self, conf):
@@ -69,8 +69,8 @@ class GetElementsByXpath(AbstractFilter):
 
     name = "get-elements-by-xpath"
     params = [
-        ("xpath", "selector", None, True, None, str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("xpath", "selector", required=True),
+    ]  # type: ty.List[common.SettingDef]
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -82,8 +82,8 @@ class GetElementsById(AbstractFilter):
 
     name = "get-elements-by-id"
     params = [
-        ("sel", "selector", None, True, None, str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("sel", "selector", required=True),
+    ]  # type: ty.List[common.SettingDef]
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:

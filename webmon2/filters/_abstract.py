@@ -23,7 +23,7 @@ class AbstractFilter:
     """
 
     name = None  # type: ty.Optional[str]
-    params = []  # type: ty.List[ty.Any]
+    params = []  # type: ty.List[common.SettingDef]
     stop_change_content = False
 
     def __init__(self, config: dict) -> None:
@@ -47,18 +47,18 @@ class AbstractFilter:
         """ Validate input configuration.
             Returns  iterable of (<parameter>, <error>)
         """
-        for name, description, _, required, _, vtype in cls.params or []:
-            if not required:
+        for param in cls.params or []:
+            if not param.required:
                 continue
-            values = [conf[name] for conf in confs if conf.get(name)]
+            values = [conf[param.name] for conf in confs
+                      if conf.get(param.name)]
             if not values:
-                yield (name, 'missing parameter "{}"'.format(description))
+                yield (param.name,
+                       'missing parameter "{}"'.format(param.description))
                 continue
-            try:
-                vtype(values[0])
-            except ValueError:
-                yield (name, 'invalid value {!r} for "{}"'.format(
-                    values[0], description))
+            if not param.validate_value(values[0]):
+                yield (param.name, 'invalid value {!r} for "{}"'.format(
+                    values[0], param.description))
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:

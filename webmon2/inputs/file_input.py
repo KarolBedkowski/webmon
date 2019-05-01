@@ -27,9 +27,9 @@ class FileInput(AbstractInput):
 
     name = "file"
     params = AbstractInput.params + [
-        ("filename", "Full file patch", None, True, None, str),
-        ("ignore_missing", "ignore when file is missing", False, True, None,
-         bool),
+        common.SettingDef("filename", "Full file patch", required=True),
+        common.SettingDef("ignore_missing", "ignore when file is missing",
+                          default=False, required=True),
     ]
 
     def load(self, state: model.SourceState) -> \

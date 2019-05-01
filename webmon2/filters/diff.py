@@ -27,11 +27,15 @@ class NDiff(AbstractFilter):
 
     name = "ndiff"
     params = [
-        ("threshold", "Skip elements when changes percent is below this level",
-         1.0, False, None, float),
-        ("min_changed", "Skip elements when changes lines is below this level",
-         1, False, None, int),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef(
+            "threshold",
+            "Skip elements when changes percent is below this level",
+            default=1.0),
+        common.SettingDef(
+            "min_changed",
+            "Skip elements when changes lines is below this level",
+            default=1),
+    ]  # type: ty.List[common.SettingDef]
 
     stop_change_content = True
 

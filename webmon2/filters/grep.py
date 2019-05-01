@@ -12,7 +12,7 @@ Select entries by matching text.
 import typing as ty
 import re
 
-from webmon2 import model
+from webmon2 import model, common
 
 from ._abstract import AbstractFilter
 
@@ -24,9 +24,10 @@ class Grep(AbstractFilter):
 
     name = "grep"
     params = [
-        ("pattern", "Regular expression", None, True, None, str),
-        ("invert", "Accept items not matching", False, False, None, bool),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("pattern", "Regular expression", required=True),
+        common.SettingDef("invert", "Accept items not matching",
+                          default=False),
+    ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):
         super().__init__(conf)

@@ -200,7 +200,7 @@ class DB:
         sql = ["update source_state "
                "set next_update=datetime('now', 'localtime') "
                "where (last_update is null or "
-               "last_update < datetime('now', 'localtime', '-15 minutes')"]
+               "last_update < datetime('now', 'localtime', '-15 minutes'))"]
         if group_id:
             sql.append(
                 "and source_id in "

@@ -31,11 +31,12 @@ class RssInput(AbstractInput):
     """
     name = "rss"
     params = AbstractInput.params + [
-        ("url", "RSS xml url", None, True, None, str),
-        ("max_items", "Maximal number of articles to load", None, False, None,
-         int),
-        ("load_content", "Load content of entries", False, False, None, bool),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("url", "RSS xml url", required=True),
+        common.SettingDef("max_items", "Maximal number of articles to load",
+                          value_type=int),
+        common.SettingDef("load_content", "Load content of entries",
+                          default=False),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:

@@ -69,14 +69,17 @@ class GithubInput(AbstractInput, GitHubMixin):
 
     name = "github_commits"
     params = AbstractInput.params + [
-        ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, True, None, str),
-        ("github_user", "user login", None, True, None, str),
-        ("github_token", "user personal token", None, True, None, str),
-        ("short_list", "show commits as short list", True, False, None, str),
-        ("full_message", "show commits whole commit body", False, False, None,
-         str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("owner", "repository owner", required=True),
+        common.SettingDef("repository", "repository name", required=True),
+        common.SettingDef("github_user", "user login", required=True,
+                          global_param=True),
+        common.SettingDef("github_token", "user personal token", required=True,
+                          global_param=True),
+        common.SettingDef("short_list", "show commits as short list",
+                          default=True),
+        common.SettingDef("full_message", "show commits whole commit body",
+                          default=False),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
@@ -146,13 +149,15 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
 
     name = "github_tags"
     params = AbstractInput.params + [
-        ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, True, None, str),
-        ("github_user", "user login", None, True, None, str),
-        ("github_token", "user personal token", None, True, None, str),
-        ("max_items", "Maximal number of tags to load", None, False, None,
-         str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("owner", "repository owner", required=True),
+        common.SettingDef("repository", "repository name", required=True),
+        common.SettingDef("github_user", "user login", required=True,
+                          global_param=True),
+        common.SettingDef("github_token", "user personal token", required=True,
+                          global_param=True),
+        common.SettingDef("max_items", "Maximal number of tags to load",
+                          value_type=int),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
@@ -214,15 +219,17 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
 
     name = "github_releases"
     params = AbstractInput.params + [
-        ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, True, None, str),
-        ("github_user", "user login", None, True, None, str),
-        ("github_token", "user personal token", None, True, None, str),
-        ("max_items", "Maximal number of releases to load", None, False, None,
-         str),
-        ("full_message", "show commits whole commit body", False, False, None,
-         str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("owner", "repository owner", required=True),
+        common.SettingDef("repository", "repository name", required=True),
+        common.SettingDef("github_user", "user login", required=True,
+                          global_param=True),
+        common.SettingDef("github_token", "user personal token", required=True,
+                          global_param=True),
+        common.SettingDef("max_items", "Maximal number of tags to load",
+                          value_type=int),
+        common.SettingDef("full_message", "show commits whole commit body",
+                          default=False),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:

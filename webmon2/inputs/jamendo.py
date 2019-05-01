@@ -33,11 +33,12 @@ class JamendoAlbumsInput(AbstractInput):
 
     name = "jamendo_albums"
     params = AbstractInput.params + [
-        ("artist_id", "artist id", None, False, None, str),
-        ("artist", "artist name", None, False, None, str),
-        ("jamendo_client_id", "jamendo client id", None, True, None, str),
-        ("short_list", "show compact list", True, False, None, str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("artist_id", "artist id"),
+        common.SettingDef("artist", "artist name"),
+        common.SettingDef("jamendo_client_id", "jamendo client id",
+                          required=True, global_param=True),
+        common.SettingDef("short_list", "show compact list", default=True),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:
@@ -150,11 +151,12 @@ class JamendoTracksInput(AbstractInput):
 
     name = "jamendo_tracks"
     params = AbstractInput.params + [
-        ("artist_id", "artist id", None, False, None, str),
-        ("artist", "artist name", None, False, None, str),
-        ("jamendo_client_id", "jamendo client id", None, True, None, str),
-        ("short_list", "show compact list", True, False, None, str),
-    ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
+        common.SettingDef("artist_id", "artist id"),
+        common.SettingDef("artist", "artist name"),
+        common.SettingDef("jamendo_client_id", "jamendo client id",
+                          required=True, global_param=True),
+        common.SettingDef("short_list", "show compact list", default=True),
+    ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:

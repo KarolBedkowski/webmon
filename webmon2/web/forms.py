@@ -32,24 +32,23 @@ class Field:
         self.setting_value = False
 
     @staticmethod
-    def from_input_params(params, values=None, prefix='', sett_value=None):
-        if len(params) == 5:
-            params = list(params) + ["str"]
-        fname, fdescr, fdefault, frequired, foptions, ftype = params
+    def from_input_params(param, values=None, prefix='', sett_value=None):
         field = Field()
-        field.name = fname
-        field.description = fdescr
-        if foptions:
+        field.name = param.name
+        field.description = param.description
+        if param.options:
             field.type = 'select'
-        elif ftype == int:
+        elif param.type == int:
             field.type = 'number'
+        # TODO: bool, float
         else:
             field.type = 'str'
-        field.required = frequired and not sett_value
-        field.options = [(val, val) for val in foptions or []]
-        field.value = values.get(field.name, fdefault) if values else None
-        field._type = ftype
-        field.fieldname = prefix + fname
+        field.required = param.required and not sett_value
+        field.options = [(val, val) for val in param.options or []]
+        field.value = values.get(field.name, param.default) \
+            if values else None
+        field._type = param.type
+        field.fieldname = prefix + param.name
         field.setting_value = sett_value
         return field
 

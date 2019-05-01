@@ -22,6 +22,8 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
 
 _LOG = logging.getLogger("common")
 
+ConfDict = ty.Dict[str, ty.Any]
+
 
 class ParamError(RuntimeError):
     """Exception raised on missing param"""
@@ -98,22 +100,11 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
         raise ValueError("invalid interval '%s'" % instr)
 
 
-def apply_defaults(defaults: dict, conf: dict) -> ty.Dict[str, ty.Any]:
-    """Deep copy & update `defaults` dict with `conf`."""
-    result = copy.deepcopy(defaults)
-
-    def update(dst, src):
-        for key, val in src.items():
-            if isinstance(val, dict):
-                if key not in dst:
-                    dst[key] = {}
-                update(dst[key], val)
-            else:
-                dst[key] = copy.deepcopy(val)
-
-    if conf:
-        update(result, conf)
-
+def apply_defaults(*confs: ConfDict) -> ConfDict:
+    """Create dict from confs."""
+    result = {}
+    for conf in confs:
+        result.update((key, val) for key, val in conf.items() if val)
     return result
 
 
@@ -188,3 +179,28 @@ def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
             if not (rstop < tshm and rstart > tshm):
                 return True
     return False
+
+
+class SettingDef:
+    def __init__(self, name, description, default=None, required=False,
+                 options=None, value_type=None, global_param=False):
+        self.name = name
+        self.description = description
+        self.default = default
+        self.required = required
+        self.options = options
+        if value_type is None and default is not None:
+            self.type = type(default)
+        else:
+            self.type = str
+        self.global_param = global_param
+
+    def validate_value(self, value) -> bool:
+        if self.required and self.default is None and \
+                (value is None or self.type == str and not value):
+            return False
+        try:
+            self.type(value)
+        except ValueError:
+            return False
+        return True
