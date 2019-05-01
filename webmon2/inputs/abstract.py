@@ -68,9 +68,8 @@ class AbstractInput:
 
     @classmethod
     def get_param_types(cls) -> ty.Dict[str, str]:
-        return {name: ptype for name, *_, ptype in cls.params}
+        return {param.name: param.type for param in cls.params}
 
     @classmethod
     def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
-        return {name: default for name, _, default, *_ in cls.params
-                if default is not None}
+        return {param.name: param.default for param in cls.params}
