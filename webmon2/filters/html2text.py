@@ -11,6 +11,7 @@ Convert html to text.
 """
 import typing as ty
 import logging
+import re
 
 import html2text as h2t
 
@@ -39,7 +40,31 @@ class Html2Text(AbstractFilter):
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:
             return
-        conv = h2t.HTML2Text(bodywidth=self._conf.get("width"))
-        conv.protect_links = True
-        entry.content = conv.handle(entry.content)
+        content = _convert(entry.content, self._conf.get("width"))
+        if entry.url:
+            content = _convert_links(content, entry.url)
+        entry.content = content
         yield entry
+
+
+def _convert(content, bodywidth):
+    conv = h2t.HTML2Text(bodywidth=bodywidth)
+    conv.protect_links = True
+    return conv.handle(content)
+
+
+_RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.I)
+_LINKS_SCHEMA = {'http', 'https', 'mailto', 'ftp'}
+
+
+def _convert_links(content, page_link):
+    """ convert relative links to absolute """
+    def convert_links(match):
+        link = match.group(1)
+        if ':' in link and link.split(':', 1)[0] in _LINKS_SCHEMA:
+            return match.group(0)
+        if link[0] == '/' and page_link[-1] == '/':
+            link = link[1:]
+        return '(<' + page_link + link + '>)'
+
+    return _RE_LINKS.sub(convert_links, content)
