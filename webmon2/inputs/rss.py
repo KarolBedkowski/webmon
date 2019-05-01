@@ -84,7 +84,7 @@ class RssInput(AbstractInput):
         return new_state, items
 
     def _limit_items(self, entries):
-        max_items = self._conf["max_items"]
+        max_items = self._conf.get("max_items")
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
         return entries

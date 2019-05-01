@@ -70,9 +70,9 @@ class GithubInput(AbstractInput, GitHubMixin):
     name = "github_commits"
     params = AbstractInput.params + [
         ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, False, None, str),
-        ("github_user", "user login", None, False, None, str),
-        ("github_token", "user personal token", None, False, None, str),
+        ("repository", "repository name", None, True, None, str),
+        ("github_user", "user login", None, True, None, str),
+        ("github_token", "user personal token", None, True, None, str),
         ("short_list", "show commits as short list", True, False, None, str),
         ("full_message", "show commits whole commit body", False, False, None,
          str),
@@ -147,9 +147,9 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
     name = "github_tags"
     params = AbstractInput.params + [
         ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, False, None, str),
-        ("github_user", "user login", None, False, None, str),
-        ("github_token", "user personal token", None, False, None, str),
+        ("repository", "repository name", None, True, None, str),
+        ("github_user", "user login", None, True, None, str),
+        ("github_token", "user personal token", None, True, None, str),
         ("max_items", "Maximal number of tags to load", None, False, None,
          str),
     ]  # type: ty.List[ty.Tuple[str, str, ty.Any, bool, ty.Any, ty.Any]]
@@ -215,9 +215,9 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
     name = "github_releases"
     params = AbstractInput.params + [
         ("owner", "repository owner", None, True, None, str),
-        ("repository", "repository name", None, False, None, str),
-        ("github_user", "user login", None, False, None, str),
-        ("github_token", "user personal token", None, False, None, str),
+        ("repository", "repository name", None, True, None, str),
+        ("github_user", "user login", None, True, None, str),
+        ("github_token", "user personal token", None, True, None, str),
         ("max_items", "Maximal number of releases to load", None, False, None,
          str),
         ("full_message", "show commits whole commit body", False, False, None,

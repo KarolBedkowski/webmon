@@ -92,6 +92,16 @@ class JamendoAlbumsInput(AbstractInput):
         new_state = state.new_ok()
         return new_state, list(result)
 
+    @classmethod
+    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+        """ Validate input configuration."""
+        yield from super(JamendoAlbumsInput, cls).validate_conf(*confs)
+        artist_id = [conf['artist_id'] for conf in confs
+                     if conf.get('artist_id')]
+        artist = [conf['artist'] for conf in confs if conf.get('artist')]
+        if not artist_id and not artist:
+            yield ('artist_id', "artist name or id is required")
+
 
 def _jamendo_build_service_url(conf: ty.Dict[str, ty.Any],
                                last_update: datetime.datetime) -> str:
@@ -199,6 +209,16 @@ class JamendoTracksInput(AbstractInput):
         response.close()
         new_state = state.new_ok()
         return new_state, list(entries)
+
+    @classmethod
+    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+        """ Validate input configuration."""
+        yield from super(JamendoTracksInput, cls).validate_conf(*confs)
+        artist_id = [conf['artist_id'] for conf in confs
+                     if conf.get('artist_id')]
+        artist = [conf['artist'] for conf in confs if conf.get('artist')]
+        if not artist_id and not artist:
+            yield ('artist_id', "artist name or id is required")
 
 
 def _jamendo_build_url_tracks(conf, last_update):

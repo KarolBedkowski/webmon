@@ -71,15 +71,22 @@ def source_edit(source_id):
     db = get_db()
     source = db.get_source(source_id)
     inp = inputs.get_input(source, {})
+    user_settings = db.get_settings_map(source.user_id)
+    _LOG.debug("user_settings: %r", user_settings)
     source_form = forms.SourceForm.from_model(source, inp.params)
+    source_form.settings = [
+        forms.Field.from_input_params(param, source.settings, 'sett-',
+                                      user_settings.get(param[0]))
+        for param in inp.params]
     errors = {}
     user_id = session['user']
 
     if request.method == 'POST':
         source_form.update_from_request(request.form)
         errors = source_form.validate()
+        source = source_form.update_model(source)
+        errors.update(inp.validate_conf(source.settings, user_settings))
         if not errors:
-            source = source_form.update_model(source)
             db.save_source(source)
             next_action = request.form.get("next_action")
             if next_action == 'edit_filters':
@@ -152,32 +159,51 @@ def source_filter_edit(source_id, idx):
     db = get_db()
     source = db.get_source(source_id)
     idx = int(idx)
-    if idx < 0 or idx >= len(source.filters or []):  # new filter
+    is_new = idx < 0 or idx >= len(source.filters or [])
+    if is_new:  # new filter
+        name = request.args.get('name')
+        if not name:
+            return redirect(url_for("source_filter_add", source_id=source_id))
         conf = {'name': request.args['name']}
     else:
         conf = source.filters[idx]
-    fltr = filters.get_filter(conf)
-    if request.method == 'POST':
-        param_types = fltr.get_param_types()
-        for key, val in request.form.items():
-            if key.startswith('sett-'):
-                param_name = key[5:]
-                if val:
-                    param_type = param_types[param_name]
-                    conf[param_name] = param_type(val)
-                else:
-                    conf[param_name] = None
-        fltr = filters.get_filter(conf)
-        fltr.validate()
-        db.source_update_filter(source_id, idx, conf)
-        return redirect(url_for("source.source_filters", source_id=source_id))
 
-    settings = [forms.Field.from_input_params(
-        param, conf) for param in fltr.params]
-    return render_template("filter_edit.html",
-                           filter=conf,
-                           source=source,
-                           settings=settings)
+    fltr = filters.get_filter(conf)
+
+    # for new filters without parameters, save it
+    if is_new and not fltr.params:
+        return _save_filter(db, source_id, idx, conf)
+
+    errors = {}
+    if request.method == 'POST':
+        conf = _build_filter_conf_from_req(fltr, conf)
+        errors = dict(fltr.validate_conf(conf))
+        if not errors:
+            return _save_filter(db, source_id, idx, conf)
+
+    settings = [forms.Field.from_input_params(param, conf)
+                for param in fltr.params]
+    return render_template("filter_edit.html", filter=conf,
+                           source=source, settings=settings, errors=errors)
+
+
+def _build_filter_conf_from_req(fltr, conf):
+    param_types = fltr.get_param_types()
+    for key, val in request.form.items():
+        if key.startswith('sett-'):
+            param_name = key[5:]
+            if val:
+                param_type = param_types[param_name]
+                conf[param_name] = param_type(val)
+            else:
+                conf[param_name] = None
+    return conf
+
+
+def _save_filter(db, source_id, idx, conf):
+    db.source_update_filter(source_id, idx, conf)
+    flash("Filter saved")
+    return redirect(url_for("source.source_filters", source_id=source_id))
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")

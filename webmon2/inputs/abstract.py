@@ -42,11 +42,27 @@ class AbstractInput:
                          repr(self._conf), ">"))
 
     def validate(self):
-        """ Validate input configuration """
-        for name, _, _, required, *_ in self.params or []:
-            val = self._conf.get(name)
-            if required and val is None:
-                raise common.ParamError("missing parameter " + name)
+        for name, error in self.validate_conf(self._conf):
+            raise common.ParamError("parameter {} error {}".format(
+                name, error))
+
+    @classmethod
+    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+        """ Validate input configuration.
+            Returns  iterable of (<parameter>, <error>)
+        """
+        for name, description, _, required, _, vtype in cls.params or []:
+            if not required:
+                continue
+            values = [conf[name] for conf in confs if conf.get(name)]
+            if not values:
+                yield (name, 'missing parameter "{}"'.format(description))
+                continue
+            try:
+                vtype(values[0])
+            except ValueError:
+                yield (name, 'invalid value {!r} for "{}"'.format(
+                    values[0], description))
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:

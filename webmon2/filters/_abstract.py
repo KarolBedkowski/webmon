@@ -38,9 +38,27 @@ class AbstractFilter:
 
     def validate(self):
         """ Validate filter parameters """
-        for name, _, _, required, *_ in self.params or []:
-            if required and not self._conf.get(name):
-                raise common.ParamError("missing parameter " + name)
+        for name, error in self.validate_conf(self._conf):
+            raise common.ParamError("parameter {} error {}".format(
+                name, error))
+
+    @classmethod
+    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+        """ Validate input configuration.
+            Returns  iterable of (<parameter>, <error>)
+        """
+        for name, description, _, required, _, vtype in cls.params or []:
+            if not required:
+                continue
+            values = [conf[name] for conf in confs if conf.get(name)]
+            if not values:
+                yield (name, 'missing parameter "{}"'.format(description))
+                continue
+            try:
+                vtype(values[0])
+            except ValueError:
+                yield (name, 'invalid value {!r} for "{}"'.format(
+                    values[0], description))
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:

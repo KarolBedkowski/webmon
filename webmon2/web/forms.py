@@ -29,9 +29,10 @@ class Field:
         self.options = None  # type: ty.Optional[ty.Tuple(ty.Any, str)]
         self._type = None
         self.fieldname = None
+        self.setting_value = False
 
     @staticmethod
-    def from_input_params(params, values=None, prefix=''):
+    def from_input_params(params, values=None, prefix='', sett_value=None):
         if len(params) == 5:
             params = list(params) + ["str"]
         fname, fdescr, fdefault, frequired, foptions, ftype = params
@@ -44,11 +45,12 @@ class Field:
             field.type = 'number'
         else:
             field.type = 'str'
-        field.required = frequired
+        field.required = frequired and not sett_value
         field.options = [(val, val) for val in foptions or []]
         field.value = values.get(field.name, fdefault) if values else None
         field._type = ftype
         field.fieldname = prefix + fname
+        field.setting_value = sett_value
         return field
 
     def update_from_request(self, form):
@@ -99,9 +101,6 @@ class SourceForm:
         src.name = source.name
         src.interval = source.interval or ''
         src.filters = source.filters
-        src.settings = [
-            Field.from_input_params(param, source.settings, 'sett-')
-            for param in inp_params]
         return src
 
     def update_from_request(self, form):
