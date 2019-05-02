@@ -21,18 +21,18 @@ from urllib3 import poolmanager
 
 from webmon2 import common, model
 
-from .abstract import AbstractInput
+from .abstract import AbstractSource
 
 
 _LOG = logging.getLogger(__file__)
 _JAMENDO_MAX_AGE = 90  # 90 days
 
 
-class JamendoAlbumsInput(AbstractInput):
+class JamendoAlbumsSource(AbstractSource):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("artist_id", "artist id"),
         common.SettingDef("artist", "artist name"),
         common.SettingDef("jamendo_client_id", "jamendo client id",
@@ -56,7 +56,7 @@ class JamendoAlbumsInput(AbstractInput):
             last_update = state.last_update
 
         url = _jamendo_build_service_url(conf, last_update)
-        _LOG.debug("JamendoAlbumsInput: loading url: %s", url)
+        _LOG.debug("JamendoAlbumsSource: loading url: %s", url)
         try:
             sess = requests.Session()
             sess.mount("https://", ForceTLSV1Adapter())
@@ -89,14 +89,14 @@ class JamendoAlbumsInput(AbstractInput):
             result = _jamendo_format_long_list(self._source, res['results'])
 
         response.close()
-        _LOG.debug("JamendoAlbumsInput: load done")
+        _LOG.debug("JamendoAlbumsSource: load done")
         new_state = state.new_ok()
         return new_state, list(result)
 
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
         """ Validate input configuration."""
-        yield from super(JamendoAlbumsInput, cls).validate_conf(*confs)
+        yield from super(JamendoAlbumsSource, cls).validate_conf(*confs)
         artist_id = [conf['artist_id'] for conf in confs
                      if conf.get('artist_id')]
         artist = [conf['artist'] for conf in confs if conf.get('artist')]
@@ -124,7 +124,7 @@ def _jamendo_album_to_url(album_id):
     return 'https://www.jamendo.com/album/{}/'.format(album_id)
 
 
-def _jamendo_format_short_list(source, results):
+def _jamendo_format_short_list(source, results) -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
         entry.title = source.title
@@ -135,7 +135,7 @@ def _jamendo_format_short_list(source, results):
         yield entry
 
 
-def _jamendo_format_long_list(source, results):
+def _jamendo_format_long_list(source, results) -> model.Entries:
     for result in results:
         for album in result.get('albums') or []:
             entry = model.Entry.for_source(source)
@@ -146,11 +146,11 @@ def _jamendo_format_long_list(source, results):
             yield entry
 
 
-class JamendoTracksInput(AbstractInput):
+class JamendoTracksSource(AbstractSource):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("artist_id", "artist id"),
         common.SettingDef("artist", "artist name"),
         common.SettingDef("jamendo_client_id", "jamendo client id",
@@ -175,7 +175,7 @@ class JamendoTracksInput(AbstractInput):
 
         url = _jamendo_build_url_tracks(conf, last_update)
 
-        _LOG.debug("JamendoTracksInput: loading url: %s", url)
+        _LOG.debug("JamendoTracksSource: loading url: %s", url)
         try:
             sess = requests.Session()
             sess.mount("https://", ForceTLSV1Adapter())
@@ -215,7 +215,7 @@ class JamendoTracksInput(AbstractInput):
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
         """ Validate input configuration."""
-        yield from super(JamendoTracksInput, cls).validate_conf(*confs)
+        yield from super(JamendoTracksSource, cls).validate_conf(*confs)
         artist_id = [conf['artist_id'] for conf in confs
                      if conf.get('artist_id')]
         artist = [conf['artist'] for conf in confs if conf.get('artist')]
@@ -223,7 +223,7 @@ class JamendoTracksInput(AbstractInput):
             yield ('artist_id', "artist name or id is required")
 
 
-def _jamendo_build_url_tracks(conf, last_update):
+def _jamendo_build_url_tracks(conf, last_update) -> str:
     last_update = last_update.strftime("%Y-%m-%d")
     today = time.strftime("%Y-%m-%d")
     artist = (("name=" + conf["artist"]) if conf.get('artist')
@@ -236,13 +236,13 @@ def _jamendo_build_url_tracks(conf, last_update):
     return url
 
 
-def _jamendo_track_to_url(track_id):
+def _jamendo_track_to_url(track_id) -> str:
     if not track_id:
         return ''
     return 'https://www.jamendo.com/track/{}/'.format(track_id)
 
 
-def _jamendo_track_format_short(source, results):
+def _jamendo_track_format_short(source, results) -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
         entry.title = source.title
@@ -253,7 +253,7 @@ def _jamendo_track_format_short(source, results):
         yield entry
 
 
-def _jamendo_track_format_long(source, results):
+def _jamendo_track_format_long(source, results) -> model.Entries:
     for result in results:
         for track in result.get('tracks') or []:
             res_track = [track['releasedate'], track["name"],
@@ -272,8 +272,7 @@ def _jamendo_track_format_long(source, results):
 class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
     """Require TLSv1 for the connection"""
 
-    def init_poolmanager(self, connections, maxsize, block=False,
-                         **_pool_kwargs):
+    def init_poolmanager(self, connections, maxsize, block=False, **_kwargs):
         self.poolmanager = poolmanager.PoolManager(
             num_pools=connections,
             maxsize=maxsize,

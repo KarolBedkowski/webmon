@@ -7,7 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-Abstract input definition
+Abstract source definition
 """
 
 import typing as ty
@@ -18,8 +18,8 @@ from webmon2 import model, common
 _LOG = logging.getLogger(__name__)
 
 
-class AbstractInput:
-    """ Abstract/Base class for all inputs """
+class AbstractSource:
+    """ Abstract/Base class for all sources """
 
     # name used in configuration
     name = None  # type: ty.Optional[str]
@@ -34,7 +34,7 @@ class AbstractInput:
             sys_settings, source.settings)
         _LOG.debug("Source %s: conf: %r", source.id, self._conf)
 
-    def dump_debug(self):
+    def __str__(self):
         return " ".join(("<", self.__class__.__name__, str(self._source),
                          repr(self._conf), ">"))
 

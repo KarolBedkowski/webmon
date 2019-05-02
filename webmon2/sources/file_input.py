@@ -7,7 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Local file source
 """
 import os
 import datetime
@@ -16,17 +16,17 @@ import typing as ty
 
 from webmon2 import common, model
 
-from .abstract import AbstractInput
+from .abstract import AbstractSource
 
 
 _LOG = logging.getLogger(__file__)
 
 
-class FileInput(AbstractInput):
-    """Load data from web (http/https)"""
+class FileSource(AbstractSource):
+    """Load data from local file"""
 
     name = "file"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("filename", "Full file patch", required=True),
         common.SettingDef("ignore_missing", "ignore when file is missing",
                           default=False, required=True),

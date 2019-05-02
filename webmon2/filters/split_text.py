@@ -46,7 +46,6 @@ class GetElementsByCss(AbstractFilter):
     params = [
         common.SettingDef("sel", "selector", required=True),
     ]  # type: ty.List[common.SettingDef]
-    stop_change_content = True
 
     def __init__(self, conf):
         super().__init__(conf)
@@ -84,7 +83,6 @@ class GetElementsById(AbstractFilter):
     params = [
         common.SettingDef("sel", "selector", required=True),
     ]  # type: ty.List[common.SettingDef]
-    stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         # pylint: disable=no-member

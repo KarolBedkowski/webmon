@@ -13,7 +13,7 @@ import difflib
 import logging
 import typing as ty
 
-from webmon2 import common, model
+from webmon2 import common, model, database
 
 from ._abstract import AbstractFilter
 
@@ -30,14 +30,12 @@ class NDiff(AbstractFilter):
         common.SettingDef(
             "threshold",
             "Skip elements when changes percent is below this level",
-            default=1.0),
+            default=0.1),
         common.SettingDef(
             "min_changed",
             "Skip elements when changes lines is below this level",
             default=1),
     ]  # type: ty.List[common.SettingDef]
-
-    stop_change_content = True
 
     def validate(self):
         super().validate()
@@ -54,14 +52,21 @@ class NDiff(AbstractFilter):
         entry = entries[0]
         if not entry.content:
             return
-        if not prev_state.state or not prev_state.state['content']:
+
+        filter_state = None
+        with database.DB.get() as db:
+            filter_state = database.sources.get_filter_state(
+                db, curr_state.source_id, self.name)
+        prev_content = filter_state.get('content') if filter_state else None
+
+        if not prev_content:
             entry = entry.clone()
             entry.status = 'new'
             entry.set_opt('preformated', True)
             yield entry
             return
 
-        old_lines = prev_state.state['content'].split('\n')
+        old_lines = prev_content.split('\n')
         new_lines = entry.content.split('\n')
         res = list(difflib.ndiff(old_lines, new_lines))
 
@@ -70,6 +75,11 @@ class NDiff(AbstractFilter):
                               self._conf.get("threshold"),
                               self._conf.get("min_changed")):
             return
+
+        filter_state = {'content': entry.content}
+        with database.DB.get() as db:
+            database.sources.put_filter_state(
+                db, curr_state.source_id, self.name, filter_state)
 
         entry = entry.clone()
         entry.status = 'updated'

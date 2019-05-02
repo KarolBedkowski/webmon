@@ -28,9 +28,7 @@ class Sort(AbstractFilter):
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:
-        entries = list(entries)
-        entries.sort(key=lambda e: (e.title, e.content))
-        return entries
+        return sorted(entries, key=lambda e: (e.title, e.content))
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass

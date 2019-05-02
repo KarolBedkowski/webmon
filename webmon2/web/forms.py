@@ -13,7 +13,7 @@ GUI forms
 import typing as ty
 import logging
 
-from webmon2 import model, inputs, common
+from webmon2 import model, sources, common
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -81,8 +81,7 @@ class SourceForm:
         if not self.kind:
             result["kind"] = "Missing source kind"
         else:
-            inputs_names = inputs.enumerate_inputs()
-            if self.kind not in inputs_names:
+            if self.kind not in sources.enumerate_sources():
                 result["kind"] = "Unknown kind"
         if self.interval:
             try:
@@ -107,7 +106,7 @@ class SourceForm:
         self.group_id = int(group_id) if group_id else None
         self.name = form['name'].strip()
         self.interval = form['interval'].strip()
-        for sett in self.settings:
+        for sett in self.settings or []:
             sett.update_from_request(form)
 
     def update_model(self, src: model.Source) -> model.Source:
@@ -116,7 +115,8 @@ class SourceForm:
         src.name = self.name
         src.interval = self.interval
         src.filters = self.filters
-        src.settings = {field.name: field.value for field in self.settings}
+        src.settings = {field.name: field.value
+                        for field in self.settings or []}
         return src
 
 

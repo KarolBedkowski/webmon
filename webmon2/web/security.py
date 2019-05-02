@@ -15,7 +15,7 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session
 )
 
-
+from webmon2 import database
 from webmon2.web import get_db
 
 
@@ -29,11 +29,12 @@ def login():
         flogin = request.form['login']
         fpassword = request.form['password']
         db = get_db()
-        user = db.get_user(login=flogin)
+        user = database.users.get_user(db, login=flogin)
         if user and user.active and user.verify_password(fpassword):
             session['user'] = user.id
             session['user_admin'] = bool(user.admin)
             session.permanent = True
+            session.modified = True
             return redirect(
                 request.form.get('back', url_for('root.index')))
         flash("Invalid user and/or password")

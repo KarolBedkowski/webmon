@@ -33,11 +33,10 @@ class History(AbstractFilter):
         oids = [entry.oid for entry in entries]
         visited_oids = set()  # type: ty.Set[str]
         with database.DB.get() as db:
-            visited_oids = db.check_entry_oids(
-                oids, curr_state.source_id)
-        for entry in entries:
-            if entry.oid not in visited_oids:
-                yield entry
+            visited_oids = database.entries.check_oids(
+                db, oids, curr_state.source_id)
+        yield from (entry for entry in entries
+                    if entry.oid not in visited_oids)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass

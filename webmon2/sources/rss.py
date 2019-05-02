@@ -18,7 +18,7 @@ import feedparser
 
 from webmon2 import common, model
 
-from .abstract import AbstractInput
+from .abstract import AbstractSource
 
 
 _LOG = logging.getLogger(__file__)
@@ -26,11 +26,11 @@ _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
 
-class RssInput(AbstractInput):
+class RssSource(AbstractSource):
     """ Load data from rss
     """
     name = "rss"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("url", "RSS xml url", required=True),
         common.SettingDef("max_items", "Maximal number of articles to load",
                           value_type=int),

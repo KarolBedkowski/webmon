@@ -9,6 +9,7 @@
 """
 """
 
+import itertools
 import typing as ty
 
 from webmon2 import model, common
@@ -31,24 +32,17 @@ class Strip(AbstractFilter):
 
 
 class Compact(AbstractFilter):
-    """Strip characters from input"""
+    """Remove empty multiple lines characters from input"""
 
     name = "compact"
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:
             return
-
-        def clean():
-            prev_space = False
-            for line in map(str.rstrip, entry.content.split(None)):
-                if not line and prev_space:
-                    continue
-                prev_space = not line
-                yield line
-
-        entry.content = '\n'.join(clean())
-        yield entry
+        entry.content = '\n'.join(filter(
+            None, map(str.rstrip, entry.content.split('\n'))))
+        if entry.content:
+            yield entry
 
 
 class Head(AbstractFilter):
@@ -64,5 +58,5 @@ class Head(AbstractFilter):
         if not entry.content:
             return
         entry.content = '\n'.join(
-            entry.content.split(None)[:self._conf['count']])
+            itertools.islice(entry.content.split('\n'), self._conf['count']))
         yield entry

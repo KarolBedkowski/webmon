@@ -10,7 +10,7 @@
 command line commands
 """
 
-from . import database, inputs, filters, common
+from . import database, sources, filters, common
 
 
 def _show_abilities_cls(title, base_cls):
@@ -29,7 +29,7 @@ def _show_abilities_cls(title, base_cls):
 
 
 def show_abilities():
-    _show_abilities_cls("Inputs:", inputs.AbstractInput)
+    _show_abilities_cls("Sources:", sources.AbstractSource)
     _show_abilities_cls("Filters:", filters.AbstractFilter)
 
 
@@ -43,7 +43,7 @@ def add_user(args):
     user.hash_password(user_pass_adm[1])
     user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
     with database.DB.get() as db:
-        user = db.save_user(user)
+        user = database.users.save_user(db, user)
     if not user:
         print("user already exists")
     else:
@@ -56,12 +56,12 @@ def change_user_pass(args):
         print("wrong arguments for --reset-password; required login:pass")
         return
     with database.DB.get() as db:
-        user = db.get_user(login=user_pass[0])
+        user = database.users.get_user(db, login=user_pass[0])
         if not user:
             print("user not found")
             return
         user.hash_password(user_pass[1])
-        user = db.save_user(user)
+        user = database.users.save_user(db, user)
         print("password changed")
 
 

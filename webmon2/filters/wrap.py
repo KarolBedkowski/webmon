@@ -19,7 +19,7 @@ from ._abstract import AbstractFilter
 _ = ty
 
 
-class Html2Text(AbstractFilter):
+class Wrap(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "wrap"
@@ -42,7 +42,11 @@ class Html2Text(AbstractFilter):
         if entry.content:
             indent = common.get_whitespace_prefix(entry.content)
             entry.content = textwrap.fill(
-                entry.content, break_long_words=False, break_on_hyphens=False,
-                initial_indent=indent, subsequent_indent=indent,
-                max_lines=self._conf['max_lines'], width=self._conf['width'])
-        yield entry
+                entry.content,
+                break_long_words=False,
+                break_on_hyphens=False,
+                initial_indent=indent,
+                subsequent_indent=indent,
+                max_lines=self._conf['max_lines'],
+                width=self._conf['width'])
+            yield entry

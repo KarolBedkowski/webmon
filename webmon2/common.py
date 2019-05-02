@@ -104,8 +104,9 @@ def apply_defaults(*confs: ConfDict) -> ConfDict:
     """Create dict from confs."""
     result = {}
     for idx, conf in enumerate(confs):
-        result.update((key, val) for key, val in conf.items()
-                      if val or idx == 0)
+        if conf:
+            result.update((key, val) for key, val in conf.items()
+                        if val or idx == 0)
     return result
 
 

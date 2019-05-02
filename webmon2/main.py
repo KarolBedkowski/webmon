@@ -40,13 +40,13 @@ def _parse_options():
     parser.add_argument('--log',
                         help='log file name')
     parser.add_argument("--abilities", action="store_true",
-                        help="show available filters/inputs/outputs/"
+                        help="show available filters/sources"
                         "comparators")
     parser.add_argument('--database-file',
                         default=_DEFAULT_DB_FILE,
                         help='path to cache directory')
     parser.add_argument("--migrate",
-                        help="migrate inputs from file",
+                        help="migrate sources from file",
                         dest="migrate_filename")
     parser.add_argument("--add-user",
                         help="add user; arguments in form "

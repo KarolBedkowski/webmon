@@ -22,10 +22,12 @@
 			{% endfor %}
 		</ul>
 	</p>
-	<p>
-		<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
-		<a href="{{ url_for("source.source_filter_add", source_id=source.id) }}">Add filter</a>
-	</p>
+	<footer>
+		<nav>
+			<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
+			<a href="{{ url_for("source.source_filter_add", source_id=source.id) }}">Add filter</a>
+		</nav>
+	</footer>
 {% endblock %}
 
   </body>

@@ -7,7 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Filters
 """
 import logging
 
@@ -69,20 +69,12 @@ def filter_by(filters_conf: [dict], entries: model.Entries,
               -> (model.Entries, model.SourceState):
     """ Apply filters by configuration to entries list. """
 
-    update_content = True
     for filter_conf in filters_conf:
         fltr = get_filter(filter_conf)
         fltr.validate()
         entries = fltr.filter(entries, prev_state, curr_state)
-        if fltr.stop_change_content:
-            update_content = False
-        elif update_content:
-            entries = list(entries)
-            if entries:
-                curr_state.state = curr_state.state = {}
-                curr_state.state['content'] = entries[0].content
 
-    return list(entries), curr_state
+    return entries
 
 
 def filter_names():

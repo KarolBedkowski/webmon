@@ -17,9 +17,10 @@ from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
     Response
 )
+import prometheus_client
 
 from webmon2.web import get_db
-import prometheus_client
+from webmon2 import database
 
 
 _ = ty
@@ -36,13 +37,14 @@ def index():
 def sources():
     db = get_db()
     user_id = session['user']
-    return render_template("sources.html", sources=db.get_sources(user_id))
+    return render_template("sources.html",
+                           sources=database.sources.find(db, user_id))
 
 
 @BP.route("/sources/refresh")
 def sources_refresh():
     db = get_db()
-    updated = db.refresh()
+    updated = database.sources.refresh(db)
     flash("{} sources mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
@@ -51,7 +53,7 @@ def sources_refresh():
 @BP.route("/sources/refresh/errors")
 def sources_refresh_err():
     db = get_db()
-    updated = db.refresh_errors()
+    updated = database.sources.refresh_errors(db)
     flash("{} sources with errors mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
@@ -61,8 +63,8 @@ def sources_refresh_err():
 def groups():
     db = get_db()
     user_id = session['user']
-    return render_template("groups.html", groups=db.get_groups(user_id))
-
+    return render_template("groups.html",
+                           groups=database.groups.get_groups(db, user_id))
 
 
 @BP.route('/metrics')

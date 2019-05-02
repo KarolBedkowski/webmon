@@ -10,16 +10,29 @@
 Template filters
 """
 import datetime
+import logging
 
 import markdown2
+from werkzeug.contrib.cache import SimpleCache
+
+
+_LOG = logging.getLogger(__file__)
+_BODY_CACHE = SimpleCache(threshold=50, default_timeout=300)
 
 
 def _format_body_filter(body):
     if not body:
         return body
+    body_hash = hash(body)
+    value = _BODY_CACHE.get(body_hash)
+    if value is not None:
+        _LOG.debug("format_body cache hit")
+        return value
 #    return publish_parts(
 #        body, writer_name='html', settings=None)['fragment']
-    return markdown2.markdown(body, extras=["code-friendly"])
+    value = markdown2.markdown(body, extras=["code-friendly"])
+    _BODY_CACHE.set(body_hash, value)
+    return value
 
 
 def _age_filter(date):

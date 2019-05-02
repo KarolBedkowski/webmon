@@ -21,7 +21,7 @@
 		</header>
 		<section id="flashes">
 			{% for message in get_flashed_messages() %}
-			<div class="flash">{{ message }}</div>
+			<div class="flash" tabindex="999">{{ message }}</div>
 			{% endfor %}
 		</section>
 		<section class="content">

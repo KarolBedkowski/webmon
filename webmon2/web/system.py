@@ -17,6 +17,7 @@ from flask import (
 )
 
 from webmon2.web import get_db
+from webmon2 import database
 
 
 _LOG = logging.getLogger(__name__)
@@ -32,14 +33,15 @@ def sett_index():
 def sett_globals():
     db = get_db()
     user_id = session['user']
-    settings = list(db.get_settings(user_id))
+    settings = list(database.settings.get_settings(db, user_id))
     if request.method == 'POST':
         for sett in settings:
             if sett.key in request.form:
                 sett.set_value(request.form[sett.key])
-        db.save_settings(settings)
+            sett.user_id = user_id
+        database.settings.save_settings(db, settings)
         flash("Settings saved")
-        return redirect(url_for("system.globals"))
+        return redirect(url_for("system.sett_globals"))
 
     return render_template("system/globals.html", settings=settings)
 
@@ -55,10 +57,10 @@ def sett_user():
             flash("missing curr_password password")
         else:
             db = get_db()
-            user = db.get_user(id_=session['user'])
+            user = database.users.get_user(db, id_=session['user'])
             if user.verify_password(request.form['curr_password']):
                 user.hash_password(request.form['new_password1'])
-                db.save_user(user)
+                database.users.save_user(db, user)
                 flash("password changed")
             else:
                 flash("wrong current password")

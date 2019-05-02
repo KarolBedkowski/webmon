@@ -24,7 +24,6 @@ class AbstractFilter:
 
     name = None  # type: ty.Optional[str]
     params = []  # type: ty.List[common.SettingDef]
-    stop_change_content = False
 
     def __init__(self, config: dict) -> None:
         super().__init__()
@@ -32,7 +31,7 @@ class AbstractFilter:
             {param.name: param.default for param in self.params},
             config)  # type: ty.Dict[str, ty.Any]
 
-    def dump_debug(self):
+    def __str__(self):
         return " ".join(("<", self.__class__.__name__, self.name,
                          repr(self._conf), ">"))
 
@@ -62,10 +61,8 @@ class AbstractFilter:
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:
-        result = []  # type: ty.List[model.Entry]
         for entry in entries:
-            result.extend(self._filter(entry))
-        return result
+            yield from self._filter(entry)
 
     @abc.abstractmethod
     def _filter(self, entry: model.Entry) -> model.Entries:

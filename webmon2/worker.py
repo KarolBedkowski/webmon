@@ -18,7 +18,7 @@ import datetime
 import random
 from prometheus_client import Counter
 
-from . import inputs, common, filters, database
+from . import sources, common, filters, database
 
 _LOG = logging.getLogger("main")
 _SOURCES_PROCESSED = Counter(
@@ -26,7 +26,6 @@ _SOURCES_PROCESSED = Counter(
 _SOURCES_PROCESSED_ERRORS = Counter(
     "webmon2_sources_processed_errors",
     "Sources processed with errors count")
-
 
 
 class CheckWorker(threading.Thread):
@@ -46,7 +45,7 @@ class CheckWorker(threading.Thread):
                 cntr = (cntr + 1) % 60
                 _LOG.debug("CheckWorker check start")
                 if self._todo_queue.empty():
-                    ids = db.get_sources_to_fetch()
+                    ids = database.sources.get_sources_to_fetch(db)
                     for id_ in ids:
                         self._todo_queue.put(id_)
 
@@ -61,7 +60,7 @@ class CheckWorker(threading.Thread):
                         worker.join()
 
                 _LOG.debug("CheckWorker check done")
-                time.sleep(60)
+                time.sleep(15)
 
 
 class FetchWorker(threading.Thread):
@@ -73,30 +72,34 @@ class FetchWorker(threading.Thread):
         with database.DB.get() as db:
             while not self._todo_queue.empty():
                 source_id = self._todo_queue.get()
-                self._process_source(db, source_id)
+                try:
+                    self._process_source(db, source_id)
+                except:
+                    _LOG.exception("process source %d error", source_id)
 
     def _process_source(self, db, source_id):
         _SOURCES_PROCESSED.inc()
         _LOG.info("processing source %d", source_id)
         try:
-            source = db.get_source(id_=source_id, with_state=True)
+            source = database.sources.get(db, id_=source_id, with_state=True)
         except database.NotFound:
             _LOG.error("source %d not found!", source_id)
             return
         try:
-            sys_settings = db.get_settings_map(source.user_id)
+            sys_settings = database.settings.get_settings_map(
+                db, source.user_id)
             _LOG.debug('sys_settings: %r', sys_settings)
-            inp = inputs.get_input(source, sys_settings)
-            inp.validate()
+            src = sources.get_source(source, sys_settings)
+            src.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
             _save_state_error(db, source, err)
             return
-        if not inp:
+        if not src:
             return
 
         try:
-            new_state, entries = inp.load(source.state)
+            new_state, entries = src.load(source.state)
         except Exception as err:
             _LOG.exception("load source id=%d error: %s", source_id, err)
             _save_state_error(db, source, err)
@@ -109,28 +112,29 @@ class FetchWorker(threading.Thread):
                     seconds=common.parse_interval(source.interval))
 
         if source.filters:
-            entries, new_state = filters.filter_by(source.filters, entries,
-                                                   source.state, new_state)
+            entries = filters.filter_by(source.filters, entries,
+                                        source.state, new_state)
 
+        entries = list(entries)
         for entry in entries:
             entry.calculate_oid()
 
-        db.insert_entries(entries)
-        db.save_state(new_state)
+        database.entries.save_many(db, entries)
+        database.sources.save_state(db, new_state)
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))
 
 
 def _delete_old_entries(db):
-    users = list(db.get_users())
+    users = list(database.users.get_users(db))
     for user in users:
-        keep_days = db.get_setting_value('keep_entries_days', user.id,
-                                         default=90)
+        keep_days = database.settings.get_setting_value(
+            db, 'keep_entries_days', user.id, default=90)
         if not keep_days:
             continue
         max_datetime = datetime.datetime.now() - \
             datetime.timedelta(days=keep_days)
-        db.delete_old_entries(user.id, max_datetime)
+        database.entries.delete_old(db, user.id, max_datetime)
 
 
 def _save_state_error(db, source, err):
@@ -141,4 +145,4 @@ def _save_state_error(db, source, err):
     new_state = source.state.new_error(str(err))
     new_state.next_update = datetime.datetime.now() + \
         datetime.timedelta(seconds=next_check_delta)
-    db.save_state(new_state)
+    database.sources.save_state(db, new_state)

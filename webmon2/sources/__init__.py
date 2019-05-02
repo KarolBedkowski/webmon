@@ -7,27 +7,28 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Data sources
 """
 
 import logging
 
 from webmon2 import model, common
 
-from .abstract import AbstractInput
+from .abstract import AbstractSource
 
 _LOG = logging.getLogger(__name__)
 __all__ = (
     "UnknownInputException",
-    "get_input",
-    "enumerate_inputs"
+    "get_source",
+    "enumerate_sources"
 )
 
 
 def _load_plugins():
     from . import file_input
-    from . import web_input
+    from . import web
     from . import jamendo
+    from . import dummy
 
     try:
         from . import github
@@ -47,16 +48,16 @@ class UnknownInputException(Exception):
     pass
 
 
-def get_input(source: model.Source, sys_settings):
+def get_source(source: model.Source, sys_settings):
     """ Get input class according to configuration """
-    scls = common.find_subclass(AbstractInput, source.kind)
+    scls = common.find_subclass(AbstractSource, source.kind)
     if scls:
-        inp = scls(source, sys_settings)
-        return inp
+        src = scls(source, sys_settings)
+        return src
 
     raise UnknownInputException()
 
 
-def enumerate_inputs():
+def enumerate_sources():
     return [name
-            for name, scls in common.get_subclasses_with_name(AbstractInput)]
+            for name, scls in common.get_subclasses_with_name(AbstractSource)]

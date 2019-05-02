@@ -18,6 +18,7 @@ from flask import (
 )
 
 from webmon2.web import get_db, _commons as c
+from webmon2 import database
 
 
 _ = ty
@@ -34,8 +35,7 @@ def index():
 def entries_unread():
     db = get_db()
     user_id = session['user']
-    entries = list(db.get_entries(user_id, unread=True))
-    _LOG.debug("entries: %r", entries)
+    entries = list(database.entries.find(db, user_id, unread=True))
     min_id = min(entry.id for entry in entries) if entries else None
     max_id = max(entry.id for entry in entries) if entries else None
     return render_template("entries.html", showed='unread',
@@ -50,9 +50,9 @@ def entries_all(page):
     db = get_db()
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
     user_id = session['user']
-    total_entries = db.get_entries_total_count(user_id, unread=False)
-    entries = list(db.get_entries(user_id, limit=limit, offset=offset,
-                                  unread=False))
+    total_entries = database.entries.get_total_count(db, user_id, unread=False)
+    entries = list(database.entries.find(
+        db, user_id, limit=limit, offset=offset, unread=False))
     data = c.preprate_entries_list(entries, page, total_entries)
     return render_template("entries.html", showed='all', **data)
 
@@ -61,7 +61,7 @@ def entries_all(page):
 def entries_starred():
     db = get_db()
     user_id = session['user']
-    entries = list(db.get_starred_entries(user_id))
+    entries = list(database.entries.list_starred(db, user_id))
     return render_template("starred.html", entries=entries)
 
 
@@ -69,9 +69,10 @@ def entries_starred():
 def entries_mark_read():
     db = get_db()
     user_id = session['user']
-    db.mark_read(user_id,
-                 max_id=int(request.args['max_id']),
-                 min_id=int(request.args['min_id']))
+    database.entries.mark_read(
+        db, user_id,
+        max_id=int(request.args['max_id']),
+        min_id=int(request.args['min_id']))
     _LOG.debug("Referer: %r", request.headers.get('Referer'))
     return redirect(request.headers.get('Referer')
                     or url_for("entries.entries_unread"))

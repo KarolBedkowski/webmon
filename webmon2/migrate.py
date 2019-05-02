@@ -20,27 +20,27 @@ from . import model, database
 _LOG = logging.getLogger(__file__)
 
 
-def _load_inputs(filename: str) -> ty.Optional[ty.List[ty.Any]]:
-    """Load inputs configuration from `filename`."""
-    _LOG.debug("loading inputs from %s", filename)
+def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
+    """Load sources configuration from `filename`."""
+    _LOG.debug("loading sources from %s", filename)
     if not os.path.isfile(filename):
-        _LOG.error("loading inputs file error: '%s' not found", filename)
+        _LOG.error("loading sources file error: '%s' not found", filename)
         return None
     try:
         with open(filename) as fin:
             inps = [doc for doc in yaml.load_all(fin)
                     if doc and doc.get("enable", True)]
-            _LOG.debug("loading inputs - found %d enabled inputs",
+            _LOG.debug("loading sources - found %d enabled sources",
                        len(inps))
             if not inps:
-                _LOG.error("loading inputs error: no valid/enabled "
-                           "inputs found")
+                _LOG.error("loading sources error: no valid/enabled "
+                           "sources found")
             return inps
     except IOError as err:
-        _LOG.error("loading inputs from file %s error: %s", filename,
+        _LOG.error("loading sources from file %s error: %s", filename,
                    err)
     except yaml.error.YAMLError as err:
-        _LOG.error("loading inputs from file %s - invalid YAML: %s",
+        _LOG.error("loading sources from file %s - invalid YAML: %s",
                    filename, err)
     return None
 
@@ -98,7 +98,7 @@ _MIGR_FUNCS = {
 def migrate(filename):
     _LOG.info("migration %s start", filename)
     with database.DB.get() as db:
-        for inp in _load_inputs(filename):
+        for inp in _load_sources(filename):
             _LOG.info("migrating %r", inp)
             mfunc = _MIGR_FUNCS.get(inp.get('kind', 'url'))
             if mfunc:
@@ -112,6 +112,6 @@ def migrate(filename):
                     continue
                 source.filters = inp.get('filters')
                 _LOG.info("new source: %s", source)
-                db.save_source(source)
+                database.sources.save(db, source)
 
     _LOG.info("migration %s finished", filename)

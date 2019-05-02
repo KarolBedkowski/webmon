@@ -17,7 +17,7 @@ import github3
 
 from webmon2 import common, model
 
-from .abstract import AbstractInput
+from .abstract import AbstractSource
 
 
 _LOG = logging.getLogger(__file__)
@@ -30,24 +30,21 @@ class GitHubMixin:
     # pylint: disable=too-few-public-methods
 
     @staticmethod
-    def _github_check_repo_updated(repository,
-                                   last_updated: ty.Union[int, float, None]) \
-            -> ty.Tuple[str, bool]:
+    def _github_check_repo_updated(
+            repository, last_updated: ty.Optional[datetime]) \
+            -> ty.Optional[str]:
         """Verify last repository update date.
-        Returns: (
-            formatted minimal date to load,
-            true when repo is updated
-        )
+        Returns: None when repo is not updated or formatted minimal date
+            to load
         """
-        # pylint: disable=invalid-sequence-index
-        min_date = datetime.now() - timedelta(days=_GITHUB_MAX_AGE)
-        updated = True
-        if last_updated:
-            updated = repository.updated_at > \
-                last_updated.replace(tzinfo=timezone.utc)
-            min_date = last_updated
+        if not last_updated:
+            min_date = datetime.now() - timedelta(days=_GITHUB_MAX_AGE)
+            return min_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        return (min_date.strftime("%Y-%m-%dT%H:%M:%SZ"), updated)
+        if repository.updated_at <= last_updated.replace(tzinfo=timezone.utc):
+            return None
+
+        return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def _github_get_repository(self, conf: dict):
         """Create repository object according to configuration. """
@@ -64,11 +61,11 @@ class GitHubMixin:
         return repository
 
 
-class GithubInput(AbstractInput, GitHubMixin):
+class GithubInput(AbstractSource, GitHubMixin):
     """Load last commits from github."""
 
     name = "github_commits"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
         common.SettingDef("github_user", "user login", required=True,
@@ -84,11 +81,10 @@ class GithubInput(AbstractInput, GitHubMixin):
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """Return commits."""
-        conf = self._conf
-        repository = self._github_get_repository(conf)
-        data_since, updated = self._github_check_repo_updated(
+        repository = self._github_get_repository(self._conf)
+        data_since = self._github_check_repo_updated(
             repository, state.last_update)
-        if not updated:
+        if not data_since:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
             return new_state, []
@@ -105,19 +101,19 @@ class GithubInput(AbstractInput, GitHubMixin):
             new_state.set_state('etag', repository.etag)
             return new_state, []
 
-        short_list = conf.get("short_list")
-        full_message = conf.get("full_message") and not short_list
+        short_list = self._conf.get("short_list")
+        full_message = bool(self._conf.get("full_message") and not short_list)
         form_fun = _format_gh_commit_short if short_list else \
             _format_gh_commit_long
         try:
-            content = '\n\n'.join(
-                form_fun(commit, full_message) for commit in commits)
+            content = '\n\n'.join(form_fun(commit, full_message)
+                                  for commit in commits)
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("github load error: %s", err)
-            return state.new_error(err), []
+            return state.new_error(str(err)), []
 
         new_state = state.new_ok()
-        new_state.set_state('etag',  repository.etag)
+        new_state.set_state('etag', repository.etag)
 
         entry = model.Entry.for_source(self._source)
         entry.url = repository.html_url
@@ -144,11 +140,11 @@ def _format_gh_commit_long(commit, full_message: bool) -> str:
     return "".join(result)
 
 
-class GithubTagsInput(AbstractInput, GitHubMixin):
+class GithubTagsSource(AbstractSource, GitHubMixin):
     """Load last tags from github."""
 
     name = "github_tags"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
         common.SettingDef("github_user", "user login", required=True,
@@ -156,7 +152,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         common.SettingDef("github_token", "user personal token", required=True,
                           global_param=True),
         common.SettingDef("max_items", "Maximal number of tags to load",
-                          value_type=int),
+                          default=100),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
@@ -164,27 +160,21 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         """Return commits."""
         conf = self._conf
         repository = self._github_get_repository(conf)
-        _, updated = self._github_check_repo_updated(
-            repository, state.last_update)
-
-        if not updated:
+        if not self._github_check_repo_updated(repository, state.last_update):
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
             return new_state, []
 
         etag = state.get_state('etag')
-        max_items = self._conf["max_items"] or 100
+        max_items = self._conf["max_items"]
         if hasattr(repository, "tags"):
             tags = list(repository.tags(max_items, etag=etag))
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
-        _LOG.debug("tags: %r", tags)
-
         tags = [tag for tag in tags if not tag.last_modified or
                 tag.last_modified > state.last_update.replace(
                     tzinfo=timezone.utc)]
-
         if not tags:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
@@ -197,7 +187,7 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
             raise common.InputError(self, err)
 
         new_state = state.new_ok()
-        new_state.set_state('etag',  repository.etag)
+        new_state.set_state('etag', repository.etag)
 
         entry = model.Entry.for_source(self._source)
         entry.url = repository.html_url
@@ -208,17 +198,17 @@ class GithubTagsInput(AbstractInput, GitHubMixin):
         return new_state, [entry]
 
 
-def _format_gh_tag(tag):
+def _format_gh_tag(tag) -> str:
     if tag.last_modified:
         return tag.name + " " + str(tag.last_modified)
     return tag.name
 
 
-class GithubReleasesInput(AbstractInput, GitHubMixin):
+class GithubReleasesSource(AbstractSource, GitHubMixin):
     """Load last releases from github."""
 
     name = "github_releases"
-    params = AbstractInput.params + [
+    params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
         common.SettingDef("github_user", "user login", required=True,
@@ -234,12 +224,9 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """Return releases."""
-        conf = self._conf
-        repository = self._github_get_repository(conf)
-        _, updated = self._github_check_repo_updated(
-            repository, state.last_update)
-
-        if not updated:
+        repository = self._github_get_repository(self._conf)
+        if not self._github_check_repo_updated(
+                repository, state.last_update):
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
             return new_state, []
@@ -262,8 +249,8 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
             new_state.set_state('etag', repository.etag)
             return new_state, []
 
-        short_list = conf.get("short_list")
-        full_message = conf.get("full_message") and not short_list
+        short_list = self._conf.get("short_list")
+        full_message = self._conf.get("full_message") and not short_list
         try:
             form_fun = _format_gh_release_short if short_list else \
                 _format_gh_release_long
@@ -271,10 +258,10 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
                                   for release in releases)
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("github load error %s", err)
-            return state.new_error(err), []
+            return state.new_error(str(err)), []
 
         new_state = state.new_ok()
-        new_state.set_state('etag',  repository.etag)
+        new_state.set_state('etag', repository.etag)
 
         entry = model.Entry.for_source(self._source)
         entry.url = repository.html_url
@@ -285,7 +272,7 @@ class GithubReleasesInput(AbstractInput, GitHubMixin):
         return new_state, [entry]
 
 
-def _format_gh_release_short(release, _full_message):
+def _format_gh_release_short(release, _full_message) -> str:
     res = [release.name, release.tag_name,
            release.created_at.strftime("%x %X")]
     if release.html_url:
@@ -295,7 +282,7 @@ def _format_gh_release_short(release, _full_message):
     return " ".join(map(str, filter(None, res)))
 
 
-def _format_gh_release_long(release, full_message):
+def _format_gh_release_long(release, full_message: bool) -> str:
     res = [release.name, release.tag_name,
            '\n\n    Date: ', release.created_at.strftime("%x %X")]
     if release.html_url:

@@ -23,7 +23,9 @@ REQUIRES = [
     'github3.py',
     'flask',
     'cssselect',
-    'prometheus_client'
+    'prometheus_client',
+    'Werkzeug',
+    'gevent'
 ]
 
 
