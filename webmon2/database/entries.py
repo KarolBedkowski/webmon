@@ -103,7 +103,7 @@ def save(db, entry: model.Entry):
     return entry
 
 
-def save_many(db, entries: model.Entries):
+def save_many(db, entries: model.Entries, source_id: int):
     # since sqlite in this version not support upsert, simple check, remve
     cur = db.cursor()
     # filter updated entries; should be deleted & inserted
@@ -111,12 +111,14 @@ def save_many(db, entries: model.Entries):
                       if entry.status == 'updated']
     _LOG.debug("delete oids: %d", len(oids_to_delete))
     cur.executemany("delete from entries where oid=?", oids_to_delete)
+    existing_oids = {
+        row[0] for row
+        in cur.execute("select oid from entries where source_id=?",
+                       (source_id, ))}
     rows = [
         dbc.entry_to_row(entry)
         for entry in entries
-        if entry.status == 'updated' or
-        cur.execute(_CHECK_ENTRY_SQL,
-                    (entry.oid, entry.user_id)).fetchone() is None
+        if entry.status == 'updated' or entry.oid not in existing_oids
     ]
     _LOG.debug("new entries: %d", len(rows))
     cur.executemany(_INSERT_ENTRY_SQL, rows)

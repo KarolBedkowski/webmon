@@ -28,9 +28,7 @@ class History(AbstractFilter):
         entries = list(entries)
         if not entries:
             return
-        for entry in entries:
-            entry.calculate_oid()
-        oids = [entry.oid for entry in entries]
+        oids = [entry.calculate_oid() for entry in entries]
         visited_oids = set()  # type: ty.Set[str]
         with database.DB.get() as db:
             visited_oids = database.entries.check_oids(

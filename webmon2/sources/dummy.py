@@ -32,13 +32,14 @@ class DymmySource(AbstractSource):
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:
 
-        if state and state.last_update and \
-                state.last_update > datetime.datetime.now() - \
-                datetime.timedelta(minutes=5):
+        last_check = state.get_state('last_check')
+
+        if last_check and last_check > \
+                datetime.datetime.now().timestamp() - 120:
             return state.new_not_modified(), []
 
         entries = []  # type: ty.List[model.Entry]
-        for idx in range(1, random.randrange(2, 10)):
+        for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
             entry.status = 'new'
@@ -47,9 +48,11 @@ class DymmySource(AbstractSource):
             entry.content = "dummy entry {} on {}".format(
                 idx, datetime.datetime.now()
             )
+            entries.append(entry)
         new_state = state.new_ok()
         new_state.status = 'updated' if state.last_update else 'new'
         new_state.next_update = datetime.datetime.now() + \
             datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval))
+        new_state.set_state('last_check', datetime.datetime.now().timestamp())
         return new_state, entries

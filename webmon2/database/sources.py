@@ -62,7 +62,7 @@ def save(db, source: model.Source) -> model.Source:
         cur.execute(_INSERT_SOURCE_SQL, row)
         source.id = cur.lastrowid
         state = model.SourceState.new(source.id)
-        db.save_state(state)
+        save_state(db, state)
     else:
         cur.execute(_UPDATE_SOURCE_SQL, row)
     db.commit()
@@ -161,7 +161,7 @@ def refresh_errors(db, user_id: int) -> int:
     cur = db.cursor()
     cur.execute("update source_state set next_update=datetime('now') "
                 "where status='error' and source_id in "
-                "(select id from sources where user_id=?",
+                "(select id from sources where user_id=?)",
                 (user_id, ))
     updated = cur.rowcount
     db.commit()

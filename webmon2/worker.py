@@ -88,10 +88,16 @@ class FetchWorker(threading.Thread):
             sys_settings = database.settings.get_map(
                 db, source.user_id)
             _LOG.debug('sys_settings: %r', sys_settings)
+            if not source.interval:
+                interval = sys_settings.get('interval') or '1d'
+                _LOG.debug("source %d has no interval; using default: %r",
+                           source.id, interval)
+                source.interval = interval
             src = sources.get_source(source, sys_settings)
             src.validate()
         except common.ParamError as err:
-            _LOG.error("get input for source id=%d error: %s", source_id, err)
+            _LOG.error("get cource class for source id=%d error: %s",
+                       source_id, err)
             _save_state_error(db, source, str(err))
             return
         if not src:
@@ -114,11 +120,9 @@ class FetchWorker(threading.Thread):
             entries = filters.filter_by(source.filters, entries,
                                         source.state, new_state)
 
-        entries = list(entries)
-        for entry in entries:
-            entry.calculate_oid()
+        entries = list(entry for entry in entries if entry.calculate_oid())
 
-        database.entries.save_many(db, entries)
+        database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))
