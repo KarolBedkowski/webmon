@@ -81,7 +81,7 @@ class SourceForm:
         if not self.kind:
             result["kind"] = "Missing source kind"
         else:
-            if self.kind not in sources.enumerate_sources():
+            if self.kind not in sources.sources_name():
                 result["kind"] = "Unknown kind"
         if self.interval:
             try:

@@ -28,6 +28,8 @@ class DymmySource(AbstractSource):
     name = "dummy"
     params = AbstractSource.params + [
     ]
+    short_info = "Dummy source for development"
+    long_info = ""
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:

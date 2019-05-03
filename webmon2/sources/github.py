@@ -65,6 +65,9 @@ class GithubInput(AbstractSource, GitHubMixin):
     """Load last commits from github."""
 
     name = "github_commits"
+    short_info = "Commit history from Github repository"
+    long_info = 'Source load commits history from configured repository.' \
+        ' For work required configured Github account with token.'
     params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
@@ -144,6 +147,9 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
     """Load last tags from github."""
 
     name = "github_tags"
+    short_info = "Tags from Github repository"
+    long_info = 'Source load tags from configured repository.' \
+        ' For work required configured Github account with token.'
     params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
@@ -208,6 +214,9 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
     """Load last releases from github."""
 
     name = "github_releases"
+    short_info = "Releases from Github repository"
+    long_info = 'Source load releases history from configured repository.' \
+        ' For work required configured Github account with token.'
     params = AbstractSource.params + [
         common.SettingDef("owner", "repository owner", required=True),
         common.SettingDef("repository", "repository name", required=True),
@@ -250,7 +259,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             return new_state, []
 
         short_list = self._conf.get("short_list")
-        full_message = self._conf.get("full_message") and not short_list
+        full_message = bool(self._conf.get("full_message") and not short_list)
         try:
             form_fun = _format_gh_release_short if short_list else \
                 _format_gh_release_long

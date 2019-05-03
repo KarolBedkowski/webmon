@@ -32,6 +32,10 @@ class JamendoAlbumsSource(AbstractSource):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
+    short_info = "Jamendo albums"
+    long_info = 'Check for new albums for given artist in Jamendo. ' \
+        'Either artist is or name must be configured; also source ' \
+        'require configured "jamendo client id"'
     params = AbstractSource.params + [
         common.SettingDef("artist_id", "artist id"),
         common.SettingDef("artist", "artist name"),
@@ -150,6 +154,10 @@ class JamendoTracksSource(AbstractSource):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"
+    short_info = "Jamendo tracks"
+    long_info = 'Check for new tracks for given artist in Jamendo. ' \
+        'Either artist is or name must be configured; also source ' \
+        'require configured "jamendo client id"'
     params = AbstractSource.params + [
         common.SettingDef("artist_id", "artist id"),
         common.SettingDef("artist", "artist name"),

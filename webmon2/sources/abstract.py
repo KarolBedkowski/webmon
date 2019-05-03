@@ -24,6 +24,8 @@ class AbstractSource:
     # name used in configuration
     name = None  # type: ty.Optional[str]
     params = []  # type: ty.List[common.SettingDef]
+    short_info = ""
+    long_info = ""
 
     def __init__(self, source: model.Source,
                  sys_settings: ty.Dict[str, ty.Any]) -> None:
@@ -57,9 +59,9 @@ class AbstractSource:
                 yield (param.name,
                        'missing parameter "{}"'.format(param.description))
                 continue
-                if not param.validate_value(values[0]):
-                    yield (param.name, 'invalid value {!r} for "{}"'.format(
-                        values[0], param.description))
+            if not param.validate_value(values[0]):
+                yield (param.name, 'invalid value {!r} for "{}"'.format(
+                    values[0], param.description))
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:

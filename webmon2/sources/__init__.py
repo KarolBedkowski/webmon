@@ -20,7 +20,8 @@ _LOG = logging.getLogger(__name__)
 __all__ = (
     "UnknownInputException",
     "get_source",
-    "enumerate_sources"
+    "sources_name",
+    "sources_info",
 )
 
 
@@ -58,6 +59,11 @@ def get_source(source: model.Source, sys_settings):
     raise UnknownInputException()
 
 
-def enumerate_sources():
+def sources_name():
     return [name
+            for name, scls in common.get_subclasses_with_name(AbstractSource)]
+
+
+def sources_info():
+    return [(name, scls.short_info, scls.long_info)
             for name, scls in common.get_subclasses_with_name(AbstractSource)]

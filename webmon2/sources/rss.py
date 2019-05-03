@@ -30,6 +30,8 @@ class RssSource(AbstractSource):
     """ Load data from rss
     """
     name = "rss"
+    short_info = "RSS/Atom channel"
+    long_info = 'Load data form RSS/Atom channel. Require define url.'
     params = AbstractSource.params + [
         common.SettingDef("url", "RSS xml url", required=True),
         common.SettingDef("max_items", "Maximal number of articles to load",

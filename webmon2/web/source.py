@@ -63,7 +63,7 @@ def source_new():
             return redirect(url_for("source.source_edit",
                                     source_id=source.id))
     return render_template("source_new.html", kind=kind, name=name,
-                           kinds=sources.enumerate_sources())
+                           sources=sources.sources_info())
 
 
 @BP.route("/<int:source_id>/edit", methods=['POST', 'GET'])
@@ -93,11 +93,13 @@ def source_edit(source_id):
                 return redirect(url_for("source.source_filters",
                                         source_id=source.id))
             return redirect(url_for('root.sources'))
+
     return render_template(
         "source.html",
         groups=database.groups.get_all(db, user_id),
         source=source_form,
-        errors=errors
+        errors=errors,
+        source_def=src,
     )
 
 

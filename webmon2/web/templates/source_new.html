@@ -16,8 +16,8 @@
 		<p>
 			<label for="source-kind">Kind</label>
 			<select name="kind" id="source-group" required="required" value="{{ kind }}">
-				{% for kind in kinds %}
-				<option value="{{ kind }}">{{ kind }}</option>
+				{% for name, short_info, _ in sources %}
+				<option value="{{ name }}">{{ short_info }}</option>
 				{% endfor %}
 			</select>
 		</p>

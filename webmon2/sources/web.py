@@ -29,6 +29,8 @@ class WebSource(AbstractSource):
     """Load data from web (http/https)"""
 
     name = "url"
+    short_info = "Web page"
+    long_info = 'Load data form web page pointed by url.'
     params = AbstractSource.params + [
         common.SettingDef("url", "Web page url", required=True),
         common.SettingDef("timeout", "loading timeout", default=30),

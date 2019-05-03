@@ -26,10 +26,11 @@ class FileSource(AbstractSource):
     """Load data from local file"""
 
     name = "file"
+    short_info = "Data from local file"
+    long_info = 'Source check local, text file defined by "Full file patch"' \
+        ' setting'
     params = AbstractSource.params + [
         common.SettingDef("filename", "Full file patch", required=True),
-        common.SettingDef("ignore_missing", "ignore when file is missing",
-                          default=False, required=True),
     ]
 
     def load(self, state: model.SourceState) -> \
