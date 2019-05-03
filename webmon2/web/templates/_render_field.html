@@ -1,6 +1,6 @@
 {% macro render_field(prefix, field) -%}
 	<p>
-		<label>{{ field.description }} </label>
+		<label{% if field.required %} class="field-required"{% endif %}>{{ field.description }}</label>
 		{% if field.type == 'str' %}
 			<input type="text" name="{{ prefix }}-{{ field.name}}" value="{{ field.value or '' }}"
 				{% if field.required %}required="required"{% endif %}

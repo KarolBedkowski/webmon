@@ -11,6 +11,7 @@ article footer {text-align: right}
 input{ height: 1em;}
 input,textarea,select {width: 75%;}
 label {width: 20%; display: inline-block; vertical-align: top;}
+label.field-required:after{content:"*"; font-width: bold; color:red}
 nav a {margin-right: 2em}
 section > header nav {margin-bottom: 2em; border-bottom: 1px solid #ccc;}
 section > footer nav {margin-top: 2em; border-top: 1px solid #ccc;}
