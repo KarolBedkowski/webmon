@@ -7,6 +7,44 @@
 (function() {
 	'use strict';
 
+	function _create_question_link(label, callback) {
+		let element = document.createElement("a");
+		element.href = "#";
+		element.appendChild(document.createTextNode(label));
+		element.onclick = (event) => {
+			event.preventDefault();
+			callback();
+		};
+		return element;
+	}
+
+	function handleConfirm(event) {
+		event.preventDefault();
+		let eventTarget = event.target;
+		let question = eventTarget.dataset.question;
+		let targetParent = eventTarget.parentNode;
+
+		eventTarget.style.display = "none";
+
+		let yesElement = _create_question_link("yes", (event) => {
+			document.location.href = eventTarget.href;
+		});
+
+		let noElement = _create_question_link("no", (event) => {
+			eventTarget.style.display = "";
+			questionElement.remove();
+		});
+
+		let questionElement = document.createElement("span");
+		questionElement.className = "confirm";
+		questionElement.append(document.createTextNode(question));
+		questionElement.append(document.createTextNode(" "));
+		questionElement.append(yesElement);
+		questionElement.append(document.createTextNode(" "));
+		questionElement.append(noElement);
+		targetParent.append(questionElement);
+	}
+
 	function executeEntryAction(url, formData, onDataCallback, onFinishCallback) {
 		fetch(url, {
 			method: "POST",
@@ -71,11 +109,7 @@
 			};
 		});
 		document.querySelectorAll("a[data-req-confirm=yes]").forEach((element) => {
-			element.onclick = (event) => {
-				if (!confirm("Realy?")) {
-					event.preventDefault()
-				}
-			};
+			element.onclick = handleConfirm;
 		});
 	});
 

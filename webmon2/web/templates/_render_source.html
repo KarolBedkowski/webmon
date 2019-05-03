@@ -10,7 +10,7 @@
 				| <a href="{{ url_for('source.source_refresh', source_id=source.id)}}">↺ Refresh</a>
 				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
 				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
-				| <a href="{{ url_for('source.source_delete', source_id=source.id) }}" data-req-confirm="yes">✘ Delete</a>
+				| <span><a href="{{ url_for('source.source_delete', source_id=source.id) }}" data-req-confirm="yes" data-question="Realy delete source?">✘ Delete</a></span>
 			</nav>
 			{% if source.state.status == 'error' %}
 			<p class="error">Error: {{ source.state.error}} at {{ source.state.last_update}} times: {{ source.state.error_counter}}</p>
