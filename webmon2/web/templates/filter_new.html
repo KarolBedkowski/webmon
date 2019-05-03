@@ -13,8 +13,10 @@
 	<p>Available filters:</p>
 	<p>
 		<ul>
-			{% for name in filter_names %}
-			<li><a href="{{ url_for("source.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a></li>
+			{% for name, short_info, long_info in filters_info %}
+			<li><a href="{{ url_for("source.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a><br/>
+				{{ short_info }}
+			</li>
 			{% endfor %}
 		</ul>
 	</p>

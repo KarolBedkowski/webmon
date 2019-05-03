@@ -150,10 +150,10 @@ def source_filters(source_id):
 
 @BP.route("/<int:source_id>/filter/add")
 def source_filter_add(source_id):
-    filter_names = filters.filter_names()
+    filters_info = filters.filters_info()
     return render_template("filter_new.html",
                            source_id=source_id,
-                           filter_names=filter_names)
+                           filters_info=filters_info)
 
 
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=['GET', 'POST'])
@@ -186,7 +186,8 @@ def source_filter_edit(source_id, idx):
     settings = [forms.Field.from_input_params(param, conf)
                 for param in fltr.params]
     return render_template("filter_edit.html", filter=conf,
-                           source=source, settings=settings, errors=errors)
+                           source=source, settings=settings, errors=errors,
+                           fltr=fltr)
 
 
 def _build_filter_conf_from_req(fltr, conf):

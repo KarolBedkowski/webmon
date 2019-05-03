@@ -22,6 +22,8 @@ class History(AbstractFilter):
     """Remove historical visited entries"""
 
     name = "remove_visited"
+    short_info = "Remove element old elements"
+    long_info = "Remove elements already loaded in past by given source"
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:

@@ -21,7 +21,8 @@
 			{% endfor %}
 		<p>
 	{% endif %}
-	<h1>Filter {{ filter['name'] }}</h1>
+	<h1>Filter {{ filter.name }}</h1>
+	<p><blockquote>{{ fltr.long_info }}</blockquote></p>
 	<form method="POST">
 		<p>
 			<fieldset>

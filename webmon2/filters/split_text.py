@@ -43,6 +43,8 @@ class GetElementsByCss(AbstractFilter):
     """Extract elements from html/xml by css selector"""
 
     name = "get-elements-by-css"
+    short_info = "Extract elements by CSS query"
+    long_info = "Search and extract element from content by given CSS query"
     params = [
         common.SettingDef("sel", "selector", required=True),
     ]  # type: ty.List[common.SettingDef]
@@ -67,6 +69,9 @@ class GetElementsByXpath(AbstractFilter):
     """Extract elements from html/xml by xpath selector"""
 
     name = "get-elements-by-xpath"
+    short_info = "Extract elements by xpath"
+    long_info = "Search and extract elements from html/xml content "\
+        "by given xpath"
     params = [
         common.SettingDef("xpath", "selector", required=True),
     ]  # type: ty.List[common.SettingDef]
@@ -80,6 +85,8 @@ class GetElementsById(AbstractFilter):
     """Extract elements from html/xml by element id """
 
     name = "get-elements-by-id"
+    short_info = "Extract elements by given ID"
+    long_info = "Search and extract element from html content by given ID"
     params = [
         common.SettingDef("sel", "selector", required=True),
     ]  # type: ty.List[common.SettingDef]

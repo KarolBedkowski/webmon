@@ -21,6 +21,9 @@ class Join(AbstractFilter):
     """Join all entries into one conten"""
 
     name = "join"
+    short_info = "Join elements"
+    long_info = "Join content from all elements loaded by source to one "\
+        "element"
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:

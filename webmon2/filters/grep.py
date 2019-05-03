@@ -23,6 +23,8 @@ class Grep(AbstractFilter):
     """Strip white spaces from input"""
 
     name = "grep"
+    short_info = "Filter elements by regular expression"
+    long_info = "Select element matching or not matching to given pattern."
     params = [
         common.SettingDef("pattern", "Regular expression", required=True),
         common.SettingDef("invert", "Accept items not matching",

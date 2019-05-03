@@ -27,6 +27,9 @@ class Html2Text(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "html2text"
+    short_info = "Convert html to text"
+    long_info = "Try convert html content do plain text; remove all " \
+        "formatting, images etc."
     params = [
         common.SettingDef("width", "Max line width", default=999999),
     ]  # type: ty.List[common.SettingDef]

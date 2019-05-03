@@ -23,6 +23,8 @@ class AbstractFilter:
     """
 
     name = None  # type: ty.Optional[str]
+    short_info = ""
+    long_info = ""
     params = []  # type: ty.List[common.SettingDef]
 
     def __init__(self, config: dict) -> None:

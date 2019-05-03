@@ -26,6 +26,8 @@ class NDiff(AbstractFilter):
     """Compare text with previous version (in state)."""
 
     name = "ndiff"
+    short_info = "Diff with previous content"
+    long_info = "Compare current and previous content; show changed elements"
     params = [
         common.SettingDef(
             "threshold",

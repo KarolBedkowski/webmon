@@ -23,6 +23,9 @@ class Wrap(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "wrap"
+    short_info = "Wrap long lines"
+    long_info = "Wrap long content lines to given width; also allow limit " \
+        "total number of lines"
     params = [
         common.SettingDef("width", "Max line width", default=76),
         common.SettingDef("max_lines", "Max number of lines",

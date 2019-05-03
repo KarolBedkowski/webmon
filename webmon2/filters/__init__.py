@@ -21,7 +21,8 @@ __all__ = (
     "UnknownFilterException",
     "get_filter",
     "filter_by",
-    "filter_names"
+    "filters_name",
+    "filters_info",
 )
 
 
@@ -77,6 +78,10 @@ def filter_by(filters_conf: [dict], entries: model.Entries,
     return entries
 
 
-def filter_names():
+def filters_name():
     return [name
+            for name, scls in common.get_subclasses_with_name(AbstractFilter)]
+
+def filters_info():
+    return [(name, scls.short_info, scls.long_info)
             for name, scls in common.get_subclasses_with_name(AbstractFilter)]
