@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Access & manage sources
 """
 
 import logging
@@ -23,9 +23,9 @@ _ = ty
 _LOG = logging.getLogger(__file__)
 
 
-def find(db, user_id, group_id=None) -> ty.Iterable[model.Source]:
+def find(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
     cur = db.cursor()
-    user_groups = {g.id: g for g in groups.get_groups(db, user_id)}
+    user_groups = {g.id: g for g in groups.get_all(db, user_id)}
     if group_id is None:
         cur.execute(_GET_SOURCES_SQL, (user_id, ))
     else:
@@ -39,7 +39,7 @@ def find(db, user_id, group_id=None) -> ty.Iterable[model.Source]:
         yield source
 
 
-def get(db, id_, with_state=False, with_group=True):
+def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
     cur = db.cursor()
     cur.execute(_GET_SOURCE_SQL, (id_, ))
     row = cur.fetchone()
@@ -50,12 +50,12 @@ def get(db, id_, with_state=False, with_group=True):
     if with_state:
         source.state = get_state(db, source.id)
     if with_group and source.group_id:
-        source.group = groups.get_group(db, source.group_id)
+        source.group = groups.get(db, source.group_id)
 
     return source
 
 
-def save(db, source: model.Source):
+def save(db, source: model.Source) -> model.Source:
     cur = db.cursor()
     row = dbc.source_to_row(source)
     if source.id is None:
@@ -111,14 +111,14 @@ def move_filter(db, source_id: int, filter_idx: int, direction: str):
         save(db, source)
 
 
-def get_state(db, source_id):
+def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
     cur = db.cursor()
     cur.execute(_GET_STATE_SQL, (source_id, ))
     row = cur.fetchone()
     return dbc.state_from_row(row) if row else None
 
 
-def save_state(db, state):
+def save_state(db, state: model.SourceState) -> model.SourceState:
     cur = db.cursor()
     row = dbc.state_to_row(state)
     cur.execute("delete from source_state where source_id=?",
@@ -128,7 +128,7 @@ def save_state(db, state):
     return state
 
 
-def get_sources_to_fetch(db):
+def get_sources_to_fetch(db) -> ty.List[int]:
     cur = db.cursor()
     ids = [row[0] for row in
            cur.execute(
@@ -138,7 +138,7 @@ def get_sources_to_fetch(db):
     return ids
 
 
-def refresh(db, source_id=None, group_id=None):
+def refresh(db, source_id=None, group_id=None) -> int:
     cur = db.cursor()
     args = {"group_id": group_id, "source_id": source_id}
     sql = ["update source_state "
@@ -157,16 +157,18 @@ def refresh(db, source_id=None, group_id=None):
     return updated
 
 
-def refresh_errors(db):
+def refresh_errors(db, user_id: int) -> int:
     cur = db.cursor()
     cur.execute("update source_state set next_update=datetime('now') "
-                "where status='error'")
+                "where status='error' and source_id in "
+                "(select id from sources where user_id=?",
+                (user_id, ))
     updated = cur.rowcount
     db.commit()
     return updated
 
 
-def mark_read(db, source_id: int, min_id=None, max_id=None, read=True):
+def mark_read(db, source_id: int, min_id=None, max_id=None, read=True) -> int:
     read = 1 if read else 0
     _LOG.info("source_mark_read source_id=%r, max_id=%r, read=%r",
               source_id, max_id, read)

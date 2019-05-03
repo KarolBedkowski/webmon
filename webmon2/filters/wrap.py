@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 

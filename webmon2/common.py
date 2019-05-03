@@ -8,7 +8,6 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import copy
 import logging
 import itertools
 import os.path
@@ -102,11 +101,11 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
 
 def apply_defaults(*confs: ConfDict) -> ConfDict:
     """Create dict from confs."""
-    result = {}
+    result = {}  # type: ConfDict
     for idx, conf in enumerate(confs):
         if conf:
             result.update((key, val) for key, val in conf.items()
-                        if val or idx == 0)
+                          if val or idx == 0)
     return result
 
 
@@ -175,10 +174,10 @@ def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
     tshm = timestampt.tm_hour * 60 + timestampt.tm_min
     for rstart, rstop in parse_hours_range(tsrange):
         if rstart < rstop:
-            if rstart <= tshm and tshm <= rstop:
+            if rstart <= tshm <= rstop:
                 return True
         else:
-            if not (rstop < tshm and rstart > tshm):
+            if not rstop < tshm < rstart:
                 return True
     return False
 

@@ -2,24 +2,26 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Access to entries in db.
 """
 import logging
 import typing as ty
+from datetime import datetime
 
 from webmon2 import model
 from . import _dbcommon as dbc
+from . import sources
 
 _ = ty
 _LOG = logging.getLogger(__file__)
 
 
-def list_starred(db, user_id: int) -> model.Entries:
+def get_starred(db, user_id: int) -> model.Entries:
     assert user_id, 'no user_id'
     cur = db.cursor()
     for row in cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id}):
@@ -30,7 +32,7 @@ def list_starred(db, user_id: int) -> model.Entries:
         yield entry
 
 
-def get_total_count(db, user_id, source_id=None, group_id=None,
+def get_total_count(db, user_id: int, source_id=None, group_id=None,
                     unread=True) -> int:
     cur = db.cursor()
     args = {
@@ -44,8 +46,8 @@ def get_total_count(db, user_id, source_id=None, group_id=None,
     return cur.fetchone()[0]
 
 
-def find(db, user_id, source_id=None, group_id=None, unread=True,
-         offset=None, limit=None):
+def find(db, user_id: int, source_id=None, group_id=None, unread=True,
+         offset=None, limit=None) -> model.Entries:
     cur = db.cursor()
     args = {
         'limit': limit or 25,
@@ -59,7 +61,7 @@ def find(db, user_id, source_id=None, group_id=None, unread=True,
         # for unread there is no pagination
         sql += " limit :limit offset :offset"
     cur.execute(sql, args)
-    user_groups = {}
+    user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
     for row in cur:
         entry = dbc.entry_from_row(row)
         entry.source = dbc.source_from_row(row)
@@ -85,12 +87,11 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
         raise dbc.NotFound()
     entry = dbc.entry_from_row(row)
     if with_source:
-        entry.source = db.get_source(entry.source_id, with_group=with_group)
+        entry.source = sources.get(db, entry.source_id, with_group=with_group)
     return entry
 
 
 def save(db, entry: model.Entry):
-    # TODO: nie uzywane?
     row = dbc.entry_to_row(entry)
     cur = db.cursor()
     if entry.id is None:
@@ -122,7 +123,7 @@ def save_many(db, entries: model.Entries):
     db.commit()
 
 
-def delete_old(db, user_id: int, max_datetime):
+def delete_old(db, user_id: int, max_datetime: datetime):
     cur = db.cursor()
     cur.execute("delete from entries where star_mark=0 and read_mark=0 "
                 "and updated<? and user_id=?", (max_datetime, user_id))
@@ -132,7 +133,7 @@ def delete_old(db, user_id: int, max_datetime):
     db.commit()
 
 
-def mark_star(db, entry_id: int, star=True):
+def mark_star(db, entry_id: int, star=True) -> int:
     star = 1 if star else 0
     _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
     cur = db.cursor()
@@ -146,13 +147,12 @@ def mark_star(db, entry_id: int, star=True):
     return changed
 
 
-def check_oids(db, oids, source_id):
+def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     assert source_id
     cur = db.cursor()
     result = set()
     for idx in range(0, len(oids), 100):
-        part_oids = oids[idx:idx+100]
-        part_oids = ", ".join("'" + oid + "'" for oid in part_oids)
+        part_oids = ", ".join("'" + oid + "'" for oid in oids[idx:idx+100])
         cur.execute(
             "select oid from history_oids where source_id=? and oid in ("
             + part_oids + ")", (source_id, ))
@@ -310,7 +310,8 @@ where id=:id
 """
 
 
-def _get_find_sql(source_id, group_id, unread) -> str:
+def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
+                  unread: bool) -> str:
     if source_id:
         if unread:
             return _GET_UNREAD_ENTRIES_BY_SOURCE_SQL

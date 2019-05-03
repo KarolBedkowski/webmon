@@ -1,6 +1,7 @@
 /*
  * 0000002.sql
- * Copyright (C) 2019  <@K-HP>
+ *
+ * Copyright (c) Karol Będkowski, 2016-2019
  *
  * Distributed under terms of the GPLv3 license.
  */

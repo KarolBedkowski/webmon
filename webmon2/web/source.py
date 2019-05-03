@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -71,7 +71,7 @@ def source_edit(source_id):
     db = get_db()
     source = database.sources.get(db, source_id)
     src = sources.get_source(source, {})
-    user_settings = database.settings.get_settings_map(db, source.user_id)
+    user_settings = database.settings.get_map(db, source.user_id)
     _LOG.debug("user_settings: %r", user_settings)
     source_form = forms.SourceForm.from_model(source, src.params)
     source_form.settings = [
@@ -95,7 +95,7 @@ def source_edit(source_id):
             return redirect(url_for('root.sources'))
     return render_template(
         "source.html",
-        groups=database.groups.get_groups(db, user_id),
+        groups=database.groups.get_all(db, user_id),
         source=source_form,
         errors=errors
     )

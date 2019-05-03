@@ -15,7 +15,7 @@ from . import _dbcommon as dbc
 _LOG = logging.getLogger(__file__)
 
 
-def get_groups(db, user_id: int) -> ty.List[model.SourceGroup]:
+def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     assert user_id
     cur = db.cursor()
     cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
@@ -24,7 +24,7 @@ def get_groups(db, user_id: int) -> ty.List[model.SourceGroup]:
     return groups
 
 
-def get_group(db, id_) -> model.SourceGroup:
+def get(db, id_) -> model.SourceGroup:
     cur = db.cursor()
     cur.execute(
         "select id as source_group_id, name as source_group_name, "
@@ -36,7 +36,7 @@ def get_group(db, id_) -> model.SourceGroup:
     return _source_group_from_row(row)
 
 
-def save_group(db, group: model.SourceGroup):
+def save(db, group: model.SourceGroup):
     cur = db.cursor()
     if group.id is None:
         cur.execute(

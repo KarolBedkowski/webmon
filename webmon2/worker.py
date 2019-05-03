@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019  <@K-HP>
+# Copyright (c) Karol Będkowski, 2016-2019
 #
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Background workers
 """
 
 import queue
@@ -18,7 +18,7 @@ import datetime
 import random
 from prometheus_client import Counter
 
-from . import sources, common, filters, database
+from . import sources, common, filters, database, model
 
 _LOG = logging.getLogger("main")
 _SOURCES_PROCESSED = Counter(
@@ -29,8 +29,7 @@ _SOURCES_PROCESSED_ERRORS = Counter(
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, workers=4):
-        # TODO: param workers
+    def __init__(self, workers=2):
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
         self._workers = workers
@@ -60,7 +59,7 @@ class CheckWorker(threading.Thread):
                         worker.join()
 
                 _LOG.debug("CheckWorker check done")
-                time.sleep(15)
+                time.sleep(60)
 
 
 class FetchWorker(threading.Thread):
@@ -74,10 +73,10 @@ class FetchWorker(threading.Thread):
                 source_id = self._todo_queue.get()
                 try:
                     self._process_source(db, source_id)
-                except:
+                except Exception:  # pylint: disable=broad-except
                     _LOG.exception("process source %d error", source_id)
 
-    def _process_source(self, db, source_id):
+    def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
         _LOG.info("processing source %d", source_id)
         try:
@@ -86,21 +85,21 @@ class FetchWorker(threading.Thread):
             _LOG.error("source %d not found!", source_id)
             return
         try:
-            sys_settings = database.settings.get_settings_map(
+            sys_settings = database.settings.get_map(
                 db, source.user_id)
             _LOG.debug('sys_settings: %r', sys_settings)
             src = sources.get_source(source, sys_settings)
             src.validate()
         except common.ParamError as err:
             _LOG.error("get input for source id=%d error: %s", source_id, err)
-            _save_state_error(db, source, err)
+            _save_state_error(db, source, str(err))
             return
         if not src:
             return
 
         try:
             new_state, entries = src.load(source.state)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("load source id=%d error: %s", source_id, err)
             _save_state_error(db, source, err)
             return
@@ -126,9 +125,9 @@ class FetchWorker(threading.Thread):
 
 
 def _delete_old_entries(db):
-    users = list(database.users.get_users(db))
+    users = list(database.users.get_all(db))
     for user in users:
-        keep_days = database.settings.get_setting_value(
+        keep_days = database.settings.get_value(
             db, 'keep_entries_days', user.id, default=90)
         if not keep_days:
             continue
@@ -137,7 +136,7 @@ def _delete_old_entries(db):
         database.entries.delete_old(db, user.id, max_datetime)
 
 
-def _save_state_error(db, source, err):
+def _save_state_error(db, source: model.Source, err: str):
     _SOURCES_PROCESSED_ERRORS.inc()
     next_check_delta = common.parse_interval(source.interval or '1d')
     # add some random time

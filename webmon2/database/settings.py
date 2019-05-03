@@ -2,12 +2,12 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019  <@K-HP>
+# Copyright (c) Karol Będkowski, 2016-2019
 #
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Access to settings in db
 """
 
 import logging
@@ -20,7 +20,7 @@ from webmon2 import model
 _LOG = logging.getLogger(__file__)
 
 
-def get_settings(db, user_id) -> ty.Iterable[model.Setting]:
+def get_all(db, user_id) -> ty.Iterable[model.Setting]:
     cur = db.cursor()
     if user_id is None:
         cur.execute(
@@ -35,7 +35,7 @@ def get_settings(db, user_id) -> ty.Iterable[model.Setting]:
         yield _setting_from_row(row)
 
 
-def get_setting(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
+def get(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
     cur = db.cursor()
     cur.execute(
         "select s.key, coalesce(us.value, s.value) as value, "
@@ -46,7 +46,7 @@ def get_setting(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
     return _setting_from_row(row) if row else None
 
 
-def save_setting(db, setting: model.Setting):
+def save(db, setting: model.Setting):
     cur = db.cursor()
     cur.execute("delete from user_settings where key=? and user_id=?",
                 (setting.key, setting.user_id))
@@ -56,7 +56,7 @@ def save_setting(db, setting: model.Setting):
     db.commit()
 
 
-def save_settings(db, settings: ty.List[model.Setting]):
+def save_all(db, settings: ty.List[model.Setting]):
     cur = db.cursor()
     rows = [(setting.key, json.dumps(setting.value), setting.user_id)
             for setting in settings]
@@ -69,15 +69,15 @@ def save_settings(db, settings: ty.List[model.Setting]):
     db.commit()
 
 
-def get_setting_value(db, key: str, user_id: int, default=None) \
+def get_value(db, key: str, user_id: int, default=None) \
         -> ty.Any:
-    setting = get_setting(db, key, user_id)
+    setting = get(db, key, user_id)
     return setting.value if setting else default
 
 
-def get_settings_map(db, user_id: int) -> ty.Dict[str, ty.Any]:
+def get_map(db, user_id: int) -> ty.Dict[str, ty.Any]:
     return {setting.key: setting.value
-            for setting in get_settings(db, user_id)}
+            for setting in get_all(db, user_id)}
 
 
 def _setting_from_row(row) -> model.Setting:

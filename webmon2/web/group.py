@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -40,14 +40,14 @@ def refresh_group(group_id):
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
 def group_edit(group_id=0):
     db = get_db()
-    sgroup = database.groups.get_group(db, group_id) if group_id \
+    sgroup = database.groups.get(db, group_id) if group_id \
         else model.SourceGroup(user_id=session['user'])
     form = forms.GroupForm.from_model(sgroup)
 
     if request.method == 'POST':
         form.update_from_request(request.form)
         sgroup = form.update_model(sgroup)
-        database.groups.save_group(db, sgroup)
+        database.groups.save(db, sgroup)
         return redirect(url_for("root.groups"))
 
     return render_template("group.html", group=sgroup)
@@ -59,7 +59,7 @@ def group_sources(group_id: int):
     user_id = session['user']
     return render_template(
         "group_sources.html",
-        group=database.groups.get_group(db, group_id),
+        group=database.groups.get(db, group_id),
         sources=list(database.sources.find(db, user_id, group_id)))
 
 
@@ -69,7 +69,7 @@ def group_sources(group_id: int):
 def group_entries(group_id, mode=None, page=0):
     db = get_db()
     offset = (page or 0) * c.PAGE_LIMIT
-    sgroup = database.groups.get_group(db, group_id)
+    sgroup = database.groups.get(db, group_id)
     user_id = session['user']
     entries = list(database.entries.find(
         db, user_id, group_id=group_id, unread=mode != 'all',

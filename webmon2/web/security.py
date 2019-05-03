@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -29,7 +29,7 @@ def login():
         flogin = request.form['login']
         fpassword = request.form['password']
         db = get_db()
-        user = database.users.get_user(db, login=flogin)
+        user = database.users.get(db, login=flogin)
         if user and user.active and user.verify_password(fpassword):
             session['user'] = user.id
             session['user_admin'] = bool(user.admin)

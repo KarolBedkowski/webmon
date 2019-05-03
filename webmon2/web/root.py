@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -53,7 +53,7 @@ def sources_refresh():
 @BP.route("/sources/refresh/errors")
 def sources_refresh_err():
     db = get_db()
-    updated = database.sources.refresh_errors(db)
+    updated = database.sources.refresh_errors(db, session['user'])
     flash("{} sources with errors mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
@@ -64,7 +64,7 @@ def groups():
     db = get_db()
     user_id = session['user']
     return render_template("groups.html",
-                           groups=database.groups.get_groups(db, user_id))
+                           groups=database.groups.get_all(db, user_id))
 
 
 @BP.route('/metrics')

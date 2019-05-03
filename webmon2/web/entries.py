@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -61,7 +61,7 @@ def entries_all(page):
 def entries_starred():
     db = get_db()
     user_id = session['user']
-    entries = list(database.entries.list_starred(db, user_id))
+    entries = list(database.entries.get_starred(db, user_id))
     return render_template("starred.html", entries=entries)
 
 

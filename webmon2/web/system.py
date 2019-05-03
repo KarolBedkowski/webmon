@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -33,13 +33,13 @@ def sett_index():
 def sett_globals():
     db = get_db()
     user_id = session['user']
-    settings = list(database.settings.get_settings(db, user_id))
+    settings = list(database.settings.get_all(db, user_id))
     if request.method == 'POST':
         for sett in settings:
             if sett.key in request.form:
                 sett.set_value(request.form[sett.key])
             sett.user_id = user_id
-        database.settings.save_settings(db, settings)
+        database.settings.save_all(db, settings)
         flash("Settings saved")
         return redirect(url_for("system.sett_globals"))
 
@@ -57,10 +57,10 @@ def sett_user():
             flash("missing curr_password password")
         else:
             db = get_db()
-            user = database.users.get_user(db, id_=session['user'])
+            user = database.users.get(db, id_=session['user'])
             if user.verify_password(request.form['curr_password']):
                 user.hash_password(request.form['new_password1'])
-                database.users.save_user(db, user)
+                database.users.save(db, user)
                 flash("password changed")
             else:
                 flash("wrong current password")

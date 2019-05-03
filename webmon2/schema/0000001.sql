@@ -1,6 +1,6 @@
 /*
  * 0000001.sql
- * Copyright (C) 2019 Karol Będkowski <Karol Będkowski@kntbk>
+ * Copyright (C) 2019 Karol Będkowski
  *
  * Distributed under terms of the GPLv3 license.
  */

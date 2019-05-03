@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
+# Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -43,7 +43,7 @@ def add_user(args):
     user.hash_password(user_pass_adm[1])
     user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
     with database.DB.get() as db:
-        user = database.users.save_user(db, user)
+        user = database.users.save(db, user)
     if not user:
         print("user already exists")
     else:
@@ -56,12 +56,12 @@ def change_user_pass(args):
         print("wrong arguments for --reset-password; required login:pass")
         return
     with database.DB.get() as db:
-        user = database.users.get_user(db, login=user_pass[0])
+        user = database.users.get(db, login=user_pass[0])
         if not user:
             print("user not found")
             return
         user.hash_password(user_pass[1])
-        user = database.users.save_user(db, user)
+        user = database.users.save(db, user)
         print("password changed")
 
 

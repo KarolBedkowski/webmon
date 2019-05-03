@@ -2,26 +2,26 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright © 2019  <@K-HP>
+# Copyright (c) Karol Będkowski, 2016-2019
 #
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Access & manage users in db
 """
 import typing as ty
 
-from webmon2 import common, model
+from webmon2 import model
 
 
-def get_users(db) -> ty.Iterable[model.User]:
+def get_all(db) -> ty.Iterable[model.User]:
     cur = db.cursor()
     for row in cur.execute(
             "select id, login, email, password, active, admin from users"):
         yield _user_from_row(row)
 
 
-def get_user(db, id_=None, login=None) -> ty.Optional[model.User]:
+def get(db, id_=None, login=None) -> ty.Optional[model.User]:
     cur = db.cursor()
     if id_:
         cur.execute("select id, login, email, password, active, admin "
@@ -38,7 +38,7 @@ def get_user(db, id_=None, login=None) -> ty.Optional[model.User]:
     return user
 
 
-def save_user(db, user: model.User) -> ty.Optional[model.User]:
+def save(db, user: model.User) -> ty.Optional[model.User]:
     cur = db.cursor()
     if user.id:
         cur.execute(
