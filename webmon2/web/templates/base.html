@@ -5,7 +5,9 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>Webmon2 {% block title %}{% endblock %}</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-		 {% include "_css.html" %}
+		<meta name="_app_entry_mark_read_api" value="{{ url_for("entry.entry_mark_read_api") }}" />
+		<meta name="_app_mark_star_api" value="{{ url_for("entry.entry_mark_star_api") }}" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" type="text/css" />
 		{% block styles %}{% endblock %}
 	</head>
 	<body>
@@ -34,80 +36,6 @@
 			</footer>
 		</section>
 	</body>
-	<script type="text/javascript">
-		document.addEventListener("DOMContentLoaded", function() {
-			let mark_read_url = "{{ url_for("entry.entry_mark_read_api") }}";
-			document.querySelectorAll("a[data-action=mark_read]").forEach((element) => {
-				element.onclick = (event) => {
-					event.preventDefault();
-					let formData = new FormData();
-					let article = element.closest('article');
-					formData.append("entry_id", article.dataset["entryId"]);
-					if (article.dataset["state"] == "read") {
-						formData.append("value", "unread");
-					} else {
-						formData.append("value", "read");
-					}
-					element.attributes['href'] = "";
-					fetch(mark_read_url, {
-						method: "POST",
-						body: formData,
-					})
-					.then((resp) => {
-						return resp.text();
-					})
-					.then((data) => {
-						if (data == "read" || data == "unread") {
-							article.dataset["state"] = data;
-						}
-						element.attributes['href'] = "#";
-					})
-					.catch((error) => {
-						window.console.log(error);
-						element.attributes['href'] = "#";
-					});
-				};
-			});
-			let mark_star_url = "{{ url_for("entry.entry_mark_star_api") }}";
-			document.querySelectorAll("a[data-action=mark_star]").forEach((element) => {
-				element.onclick = (event) => {
-					event.preventDefault();
-					let formData = new FormData();
-					let article = element.closest('article');
-					formData.append("entry_id", article.dataset["entryId"]);
-					if (article.dataset["starred"] == "star") {
-						formData.append("value", "unstar");
-					} else {
-						formData.append("value", "star");
-					}
-					element.attributes['href'] = "";
-					fetch(mark_star_url, {
-						method: "POST",
-						body: formData,
-					})
-					.then((resp) => {
-						return resp.text();
-					})
-					.then((data) => {
-						if (data == "star" || data == "unstar") {
-							article.dataset["starred"] = data;
-						}
-						element.attributes['href'] = "#";
-					})
-					.catch((error) => {
-						window.console.log(error);
-						element.attributes['href'] = "#";
-					});
-				};
-			});
-			document.querySelectorAll("a[data-req-confirm=yes]").forEach((element) => {
-				element.onclick = (event) => {
-					if (!confirm("Realy?")) {
-						event.preventDefault()
-					}
-				};
-			});
-		});
-	</script>
+		<script type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </html>

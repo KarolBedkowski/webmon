@@ -62,7 +62,7 @@ setup(
     """,
     package_data={
         'webmon2': ['web/templates/*.html', 'web/templates/**/*.html',
-                    'schema/*.sql']
+                    'schema/*.sql', 'web/static/*']
     },
     zip_safe=False,
 )
