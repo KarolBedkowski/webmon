@@ -34,6 +34,7 @@ def create_app(debug, root):
         SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
         SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
         APPLICATION_ROOT=root,
+        SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
     )
     app.app_context().push()
 
@@ -77,6 +78,9 @@ def create_app(debug, root):
 
     @app.after_request
     def record_request_data(response):
+        if 'Cache-Control' not in response.headers:
+            response.headers['Cache-Control'] = \
+                'no-cache, max-age=0, must-revalidate, no-store'
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).\
             observe(resp_time)
