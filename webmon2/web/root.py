@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
-    Response
+    Response, jsonify
 )
 import prometheus_client
 
@@ -71,3 +71,43 @@ def groups():
 def metrics():
     return Response(prometheus_client.generate_latest(),
                     mimetype='text/plain; version=0.0.4; charset=utf-8')
+
+
+_MANIFEST = None
+
+
+@BP.route('/manifest.json')
+def manifest_json():
+    global _MANIFEST
+    if not _MANIFEST:
+        _MANIFEST = {
+            "name": "Webmon2",
+            "short_name": "Webmon2",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#fff",
+            "description": "Web monitoring application.",
+            "lang": "en-EN",
+            "icons": [{
+                "src": url_for('static', filename='favicon-16.png'),
+                "sizes": "16x16",
+                "type": "image/png"
+            }, {
+                "src": url_for('static', filename='favicon-32.png'),
+                "sizes": "32x32",
+                "type": "image/png"
+            }, {
+                "src": url_for('static', filename='icon-128.png'),
+                "sizes": "128x128",
+                "type": "image/png"
+            }, {
+                "src": url_for('static', filename='icon-192.png'),
+                "sizes": "192x192",
+                "type": "image/png"
+            }, {
+                "src": url_for('static', filename='icon.svg'),
+                "sizes": "192x192",
+                "type": "image/svg+xml"
+            }],
+        }
+    return jsonify(_MANIFEST)
