@@ -6,6 +6,7 @@
 		<meta name="_app_entry_mark_read_api" value="{{ url_for("entry.entry_mark_read_api") }}" />
 		<meta name="_app_mark_star_api" value="{{ url_for("entry.entry_mark_star_api") }}" />
 		<meta name="mobile-web-app-capable" content="yes">
+		<meta name="_app_csrf" value="{{ session['_csrf_token'] }}" />
 		<title>Webmon2 {% block title %}{% endblock %}</title>
 		<link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}" type="text/css" />
 		<link rel="icon" type="image/svg+xml" sizes="any" href="{{ url_for('static', filename='icon.svg') }}">

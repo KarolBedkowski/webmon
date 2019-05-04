@@ -24,6 +24,7 @@
 	<h1>Filter {{ filter.name }}</h1>
 	<p><blockquote>{{ fltr.long_info }}</blockquote></p>
 	<form method="POST">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<p>
 			<fieldset>
 				<legend>Settings</legend>

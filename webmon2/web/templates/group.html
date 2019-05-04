@@ -13,6 +13,7 @@
 
 {% block content %}
 	<form method="POST">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<p>
 			<label for="source-name">Name</label>
 			<input type="text" name="name" id="source-name" required="required" value="{{ group.name or '' }}" />

@@ -22,6 +22,7 @@
 		<p>
 	{% endif %}
 	<form method="POST">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<p>
 			<label for="filter-name">Name</label>
 			<input type="text" name="name" id="filter-name" value="{{ filter.name }}" readonly="readonly" />

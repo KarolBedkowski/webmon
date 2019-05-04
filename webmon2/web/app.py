@@ -13,8 +13,10 @@ Web gui application
 import os
 import logging
 import time
+import random
+import string
 
-from flask import Flask, g, url_for, session, request, redirect
+from flask import Flask, g, url_for, session, request, redirect, abort
 from werkzeug.wsgi import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
@@ -71,6 +73,8 @@ def create_app(debug, root):
     @app.before_request
     def login_required():
         request.req_start_time = time.time()
+        if not _check_csrf_token():
+            return abort(400)
         if session.get('user') is None and \
                 request.path not in('/sec/login', '/metrics'):
             return redirect(url_for('sec.login', back=request.url))
@@ -81,6 +85,8 @@ def create_app(debug, root):
         if 'Cache-Control' not in response.headers:
             response.headers['Cache-Control'] = \
                 'no-cache, max-age=0, must-revalidate, no-store'
+        response.headers['Access-Control-Expose-Headers'] = 'X-CSRF-TOKEN'
+        response.headers['X-CSRF-TOKEN'] = session['_csrf_token']
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).\
             observe(resp_time)
@@ -89,6 +95,26 @@ def create_app(debug, root):
         return response
 
     return app
+
+
+def _generate_csrf_token():
+    chars = string.ascii_letters + string.digits
+    return ''.join(random.SystemRandom().choice(chars) for _ in range(32))
+
+
+def _check_csrf_token():
+    if request.method == 'POST':
+        req_token = request.form.get('_csrf_token')
+        sess_token = session.get('_csrf_token')
+        if req_token != sess_token:
+            _LOG.info("bad csrf token")
+            return False
+        session['_csrf_token'] = _generate_csrf_token()
+        session.updated = True
+    elif '_csrf_token' not in session:
+        session['_csrf_token'] = _generate_csrf_token()
+        session.updated = True
+    return True
 
 
 _REQUEST_COUNT = Counter(

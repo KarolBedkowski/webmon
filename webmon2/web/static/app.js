@@ -46,10 +46,16 @@
 	}
 
 	function executeEntryAction(url, formData, onDataCallback, onFinishCallback) {
+		let csrfToken = getMetaValue("_app_csrf");
+		formData.append("_csrf_token", csrfToken);
 		fetch(url, {
 			method: "POST",
 			body: formData,
 		}).then((resp) => {
+			let csrf = resp.headers.get("X-CSRF-TOKEN");
+			if (csrf) {
+				document.querySelector("meta[name=_app_csrf]").setAttribute("value", csrf);
+			}
 			return resp.text();
 		}).then((data) => {
 			if (onDataCallback) onDataCallback(data);
