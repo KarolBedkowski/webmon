@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
-    Response, jsonify
+    Response, json
 )
 import prometheus_client
 
@@ -80,14 +80,15 @@ _MANIFEST = None
 def manifest_json():
     global _MANIFEST
     if not _MANIFEST:
-        _MANIFEST = {
+        manifest = {
             "name": "Webmon2",
             "short_name": "Webmon2",
             "start_url": ".",
-            "display": "minimal-ui",
+            "display": "browser",
             "background_color": "#fff",
             "description": "Web monitoring application.",
             "lang": "en-EN",
+            "scope": "",
             "icons": [{
                 "src": url_for('static', filename='favicon-16.png'),
                 "sizes": "16x16",
@@ -110,4 +111,5 @@ def manifest_json():
                 "type": "image/svg+xml"
             }],
         }
-    return jsonify(_MANIFEST)
+        _MANIFEST = json.dumps(manifest)
+    return Response(_MANIFEST, mimetype="application/manifest+json")

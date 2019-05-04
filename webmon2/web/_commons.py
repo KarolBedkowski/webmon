@@ -28,5 +28,6 @@ def preprate_entries_list(entries: ty.List[model.Entry], page: int,
         'prev_page': (max(0, page - 1) if page is not None else None),
         'total_entries': total_entries,
         'page': page,
+        'last_page': int(total_entries / PAGE_LIMIT),
     }
     return info

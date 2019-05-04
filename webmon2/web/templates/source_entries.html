@@ -41,6 +41,9 @@
 			{% if more %}
 				<a href="{{ url_for('source.source_entries', source_id=source.id, page=next_page, mode='all') }}">Next page</a>
 			{% endif %}
+			{% if page < last_page %}
+    			<a href="{{ url_for('source.source_entries', source_id=source.id, page=last_page, mode='all') }}">Last page</a>
+			{% endif %}
 		{% endif %}
 	</nav>
 {% endblock %}
