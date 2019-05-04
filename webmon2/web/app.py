@@ -22,6 +22,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 
+from webmon2 import database
+
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,17 +73,22 @@ def create_app(debug, root):
     app.register_blueprint(security.BP)
 
     @app.before_request
-    def login_required():
+    def before_request():
         request.req_start_time = time.time()
         if not _check_csrf_token():
             return abort(400)
-        if session.get('user') is None and \
-                request.path not in('/sec/login', '/metrics'):
+        user_id = session.get('user')
+        path = request.path
+        if path.startswith('/static') or path.startswith('/sec/login') or \
+                path.startswith('/metrics'):
+            return None
+        if user_id is None:
             return redirect(url_for('sec.login', back=request.url))
+        _count_unread(user_id)
         return None
 
     @app.after_request
-    def record_request_data(response):
+    def after_request(response):
         if 'Cache-Control' not in response.headers:
             response.headers['Cache-Control'] = \
                 'no-cache, max-age=0, must-revalidate, no-store'
@@ -115,6 +122,13 @@ def _check_csrf_token():
         session['_csrf_token'] = _generate_csrf_token()
         session.updated = True
     return True
+
+
+def _count_unread(user_id: int):
+    from webmon2.web import get_db
+    db = get_db()
+    unread = database.entries.get_total_count(db, user_id, unread=True)
+    request.entries_unread_count = unread
 
 
 _REQUEST_COUNT = Counter(
