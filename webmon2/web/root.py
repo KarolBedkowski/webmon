@@ -84,7 +84,7 @@ def manifest_json():
             "name": "Webmon2",
             "short_name": "Webmon2",
             "start_url": ".",
-            "display": "standalone",
+            "display": "minimal-ui",
             "background_color": "#fff",
             "description": "Web monitoring application.",
             "lang": "en-EN",
