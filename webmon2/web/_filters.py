@@ -30,7 +30,8 @@ def _format_body_filter(body):
         return value
 #    return publish_parts(
 #        body, writer_name='html', settings=None)['fragment']
-    value = markdown2.markdown(body, extras=["code-friendly"])
+    value = markdown2.markdown(body, extras=["code-friendly", "nofollow",
+                                             "target-blank-links"])
     _BODY_CACHE.set(body_hash, value)
     return value
 

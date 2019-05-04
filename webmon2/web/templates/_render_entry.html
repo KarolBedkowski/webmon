@@ -2,7 +2,7 @@
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<header>
-			<h4><a href="{{ entry.url or url_for("entry.entry", entry_id=entry.id) }}">{{ entry.human_title() }}</a>
+			<h4><a href="{{ entry.url or url_for("entry.entry", entry_id=entry.id) }}" target="_blank">{{ entry.human_title() }}</a>
 				{% if entry.source.group %}<a class="group-tag" href="{{ url_for("group.group_entries", group_id=entry.source.group_id) }}">{{ entry.source.group.name }}</a>{% endif %}
 			</h4>
 			<nav>
