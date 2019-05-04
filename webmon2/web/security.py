@@ -36,7 +36,7 @@ def login():
             session.permanent = True
             session.modified = True
             return redirect(
-                request.form.get('back', url_for('root.index')))
+                request.args.get('back', url_for('root.index')))
         flash("Invalid user and/or password")
 
     return render_template("login.html", )
