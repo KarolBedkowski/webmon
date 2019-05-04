@@ -40,8 +40,20 @@ def get_total_count(db, user_id: int, source_id=None, group_id=None,
         'source_id': source_id,
         "user_id": user_id,
     }
-    sql = _get_find_sql(source_id, group_id, unread)
-    sql = "select count(*) from (" + sql + ")"
+    if source_id:
+        sql = "select count(*) from entries where source_id=:source_id"
+        if unread:
+            sql += " and read_mark=0"
+    elif group_id:
+        sql = ("select count(*) from entries where source_id in "
+               "(select source_id from source_groups sg where sg.id=:group_id)"
+               )
+        if unread:
+            sql += "and read_mark=0"
+    else:
+        sql = "select count(*) from entries where user_id=:user_id"
+        if unread:
+            sql += " and read_mark=0"
     cur.execute(sql, args)
     return cur.fetchone()[0]
 
