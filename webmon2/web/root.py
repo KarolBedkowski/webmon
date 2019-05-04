@@ -83,12 +83,12 @@ def manifest_json():
         manifest = {
             "name": "Webmon2",
             "short_name": "Webmon2",
-            "start_url": ".",
+            "start_url": url_for("root.index"),
             "display": "browser",
             "background_color": "#fff",
             "description": "Web monitoring application.",
             "lang": "en-EN",
-            "scope": "",
+            "scope": url_for("root.index"),
             "icons": [{
                 "src": url_for('static', filename='favicon-16.png'),
                 "sizes": "16x16",
