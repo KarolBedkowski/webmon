@@ -60,7 +60,7 @@ def group_sources(group_id: int):
     return render_template(
         "group_sources.html",
         group=database.groups.get(db, group_id),
-        sources=list(database.sources.find(db, user_id, group_id)))
+        sources=list(database.sources.get_all(db, user_id, group_id)))
 
 
 @BP.route("/group/<int:group_id>/entries")

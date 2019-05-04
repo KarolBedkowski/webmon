@@ -38,13 +38,13 @@ def sources():
     db = get_db()
     user_id = session['user']
     return render_template("sources.html",
-                           sources=database.sources.find(db, user_id))
+                           sources=database.sources.get_all(db, user_id))
 
 
 @BP.route("/sources/refresh")
 def sources_refresh():
     db = get_db()
-    updated = database.sources.refresh(db)
+    updated = database.sources.refresh(db, session['user'])
     flash("{} sources mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))

@@ -14,8 +14,20 @@ from . import _dbcommon as dbc
 
 _LOG = logging.getLogger(__file__)
 
+_GET_SOURCE_GROUPS_SQL = """
+select sg.id, sg.name, sg.user_id,
+    (select count(*)
+        from entries e
+        join sources s on e.source_id = s.id
+        where e.read_mark = 0 and s.group_id = sg.id
+    ) as unread
+from source_groups sg
+where sg.user_id=?
+"""
+
 
 def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
+    """ Get all groups for user with number of unread entries """
     assert user_id
     cur = db.cursor()
     cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
@@ -24,19 +36,26 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     return groups
 
 
-def get(db, id_) -> model.SourceGroup:
+_GET_SQL = """
+select id as source_group_id, name as source_group_name,
+    user_id as source_group_user_id
+from source_groups
+where id=?
+"""
+
+
+def get(db, group_id) -> model.SourceGroup:
+    """ Get one group. """
     cur = db.cursor()
-    cur.execute(
-        "select id as source_group_id, name as source_group_name, "
-        "user_id as source_group_user_id from source_groups where id=?",
-        (id_, ))
+    cur.execute(_GET_SQL, (group_id, ))
     row = cur.fetchone()
     if not row:
         raise dbc.NotFound
     return _source_group_from_row(row)
 
 
-def save(db, group: model.SourceGroup):
+def save(db, group: model.SourceGroup) -> model.SourceGroup:
+    """ Save / update group """
     cur = db.cursor()
     if group.id is None:
         cur.execute(
@@ -50,48 +69,39 @@ def save(db, group: model.SourceGroup):
     return group
 
 
+_GET_NEXT_UNREAD_GROUP_SQL = """
+select group_id
+from sources s join entries e on e.source_id = s.id
+where e.read_mark = 0 and s.user_id=?
+order by e.id limit 1
+"""
+
+
 def get_next_unread_group(db, user_id: int) -> ty.Optional[int]:
     cur = db.cursor()
-    cur.execute(
-        "select group_id "
-        "from sources s join entries e on e.source_id = s.id "
-        "where e.read_mark = 0 and s.user_id=? "
-        "order by e.id limit 1", (user_id, ))
+    cur.execute(_GET_NEXT_UNREAD_GROUP_SQL, (user_id, ))
     row = cur.fetchone()
     return row[0] if row else None
 
 
-def mark_read(db, group_id: int, min_id=None, max_id=None, read=True) -> int:
+_MARK_READ_SQL = """
+update entries
+set read_mark=1
+where source_id in (select id from sources where group_id=:group_id)
+    and id <= :max_id and id >= :min_id and read_mark=0"
+"""
+
+
+def mark_read(db, group_id: int, max_id, min_id=0) -> int:
+    """ Mark entries in given group read. """
     assert group_id, "no group id"
-    read = 1 if read else 0
-    _LOG.info("group_mark_read group_id=%r,max_id=%r, read=%r",
-              group_id, max_id, read)
+    assert max_id
     cur = db.cursor()
-    if max_id:
-        cur.execute(
-            "update entries set read_mark=? where source_id in "
-            "( select id from sources where group_id=?) and id <= ? "
-            " and id >= ?", (read, group_id, max_id, min_id or 0))
-    else:
-        cur.execute(
-            "update entries set read_mark=? where source_id in "
-            "( select id from sources where group_id=?)",
-            (read, group_id))
+    cur.execute(_MARK_READ_SQL, {"group_id": group_id, "min_id": min_id,
+                                 "max_id": max_id})
     changed = cur.rowcount
     db.commit()
     return changed
-
-
-_GET_SOURCE_GROUPS_SQL = """
-select sg.id, sg.name, sg.user_id,
-    (select count(*)
-        from entries e
-        join sources s on e.source_id = s.id
-        where e.read_mark = 0 and s.group_id = sg.id
-    ) as unread
-from source_groups sg
-where sg.user_id=?
-"""
 
 
 def _source_group_from_row(row) -> model.SourceGroup:

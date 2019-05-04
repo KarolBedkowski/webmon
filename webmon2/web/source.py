@@ -71,7 +71,7 @@ def source_edit(source_id):
     db = get_db()
     source = database.sources.get(db, source_id)
     src = sources.get_source(source, {})
-    user_settings = database.settings.get_map(db, source.user_id)
+    user_settings = database.settings.get_dict(db, source.user_id)
     _LOG.debug("user_settings: %r", user_settings)
     source_form = forms.SourceForm.from_model(source, src.params)
     source_form.settings = [

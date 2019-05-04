@@ -85,7 +85,7 @@ class FetchWorker(threading.Thread):
             _LOG.error("source %d not found!", source_id)
             return
         try:
-            sys_settings = database.settings.get_map(
+            sys_settings = database.settings.get_dict(
                 db, source.user_id)
             _LOG.debug('sys_settings: %r', sys_settings)
             if not source.interval:

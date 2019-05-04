@@ -21,221 +21,6 @@ _ = ty
 _LOG = logging.getLogger(__file__)
 
 
-def get_starred(db, user_id: int) -> model.Entries:
-    assert user_id, 'no user_id'
-    cur = db.cursor()
-    for row in cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id}):
-        entry = dbc.entry_from_row(row)
-        entry.source = dbc.source_from_row(row)
-        if entry.source.group_id:
-            entry.source.group = dbc.source_group_from_row(row)
-        yield entry
-
-
-def get_total_count(db, user_id: int, source_id=None, group_id=None,
-                    unread=True) -> int:
-    cur = db.cursor()
-    args = {
-        'group_id': group_id,
-        'source_id': source_id,
-        "user_id": user_id,
-    }
-    if source_id:
-        sql = "select count(*) from entries where source_id=:source_id"
-        if unread:
-            sql += " and read_mark=0"
-    elif group_id:
-        sql = ("select count(*) from entries where source_id in "
-               "(select source_id from source_groups sg where sg.id=:group_id)"
-               )
-        if unread:
-            sql += "and read_mark=0"
-    else:
-        sql = "select count(*) from entries where user_id=:user_id"
-        if unread:
-            sql += " and read_mark=0"
-    cur.execute(sql, args)
-    return cur.fetchone()[0]
-
-
-def find(db, user_id: int, source_id=None, group_id=None, unread=True,
-         offset=None, limit=None) -> model.Entries:
-    cur = db.cursor()
-    args = {
-        'limit': limit or 25,
-        'offset': offset or 0,
-        'group_id': group_id,
-        'source_id': source_id,
-        "user_id": user_id,
-    }
-    sql = _get_find_sql(source_id, group_id, unread)
-    if not unread:
-        # for unread there is no pagination
-        sql += " limit :limit offset :offset"
-    cur.execute(sql, args)
-    user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
-    for row in cur:
-        entry = dbc.entry_from_row(row)
-        entry.source = dbc.source_from_row(row)
-        if entry.source.group_id:
-            group = user_groups.get(entry.source.group_id)
-            if not group:
-                group = user_groups[entry.source.group_id] = \
-                    dbc.source_group_from_row(row)
-            entry.source.group = group
-        _LOG.debug("entry %s", entry)
-        yield entry
-
-
-def get(db, id_=None, oid=None, with_source=False, with_group=False):
-    assert id_ is not None or oid is not None
-    cur = db.cursor()
-    if id_ is not None:
-        cur.execute(_GET_ENTRY_BY_ID_SQL, (id_, ))
-    else:
-        cur.execute(_GET_ENTRY_BY_OID_SQL, (oid, ))
-    row = cur.fetchone()
-    if not row:
-        raise dbc.NotFound()
-    entry = dbc.entry_from_row(row)
-    if with_source:
-        entry.source = sources.get(db, entry.source_id, with_group=with_group)
-    return entry
-
-
-def save(db, entry: model.Entry):
-    row = dbc.entry_to_row(entry)
-    cur = db.cursor()
-    if entry.id is None:
-        cur.execute(_INSERT_ENTRY_SQL, row)
-        entry.id = cur.lastrowid
-    else:
-        cur.execute(_UPDATE_ENTRY_SQL, row)
-    db.commit()
-    return entry
-
-
-def save_many(db, entries: model.Entries, source_id: int):
-    # since sqlite in this version not support upsert, simple check, remve
-    cur = db.cursor()
-    # filter updated entries; should be deleted & inserted
-    oids_to_delete = [(entry.oid, ) for entry in entries
-                      if entry.status == 'updated']
-    _LOG.debug("delete oids: %d", len(oids_to_delete))
-    cur.executemany("delete from entries where oid=?", oids_to_delete)
-    existing_oids = {
-        row[0] for row
-        in cur.execute("select oid from entries where source_id=?",
-                       (source_id, ))}
-    rows = [
-        dbc.entry_to_row(entry)
-        for entry in entries
-        if entry.status == 'updated' or entry.oid not in existing_oids
-    ]
-    _LOG.debug("new entries: %d", len(rows))
-    cur.executemany(_INSERT_ENTRY_SQL, rows)
-    db.commit()
-
-
-def delete_old(db, user_id: int, max_datetime: datetime):
-    cur = db.cursor()
-    cur.execute("delete from entries where star_mark=0 and read_mark=0 "
-                "and updated<? and user_id=?", (max_datetime, user_id))
-    deleted = cur.rowcount
-    _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
-              deleted)
-    db.commit()
-
-
-def mark_star(db, entry_id: int, star=True) -> int:
-    star = 1 if star else 0
-    _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
-    cur = db.cursor()
-    cur.execute(
-        "update entries set star_mark=? where id = ? and star_mark = ?",
-        (star, entry_id, 1-star))
-    changed = cur.rowcount
-    _LOG.debug("total changes: %d, changed: %d", db.total_changes,
-               changed)
-    db.commit()
-    return changed
-
-
-def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
-    assert source_id
-    cur = db.cursor()
-    result = set()
-    for idx in range(0, len(oids), 100):
-        part_oids = ", ".join("'" + oid + "'" for oid in oids[idx:idx+100])
-        cur.execute(
-            "select oid from history_oids where source_id=? and oid in ("
-            + part_oids + ")", (source_id, ))
-        result.update({row[0] for row in cur})
-    new_oids = [oid for oid in oids if oid not in result]
-    cur.executemany(
-        "insert into history_oids(source_id, oid) values (?, ?)",
-        [(source_id, oid) for oid in new_oids])
-    db.commit()
-    return result
-
-
-def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
-              max_id=None, read=True):
-    assert entry_id or (user_id and max_id)
-    read = 1 if read else 0
-    _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
-               "user_id=%r", entry_id, min_id, max_id, read, user_id)
-    cur = db.cursor()
-    if entry_id:
-        cur.execute(
-            "update entries set read_mark=? where id = ? "
-            "and read_mark = ?", (read, entry_id, 1-read))
-    elif max_id:
-        cur.execute(
-            "update entries set read_mark=? where id <= ? and id >= ? "
-            "and user_id=?", (read, max_id, min_id or 0, user_id))
-    changed = cur.rowcount
-    db.commit()
-    return changed
-
-
-_GET_ENTRY_BY_ID_SQL = '''
-select
-    id as entry_id,
-    source_id as entry_source_id,
-    updated as entry_updated,
-    created as entry_created,
-    read_mark as entry_read_mark,
-    star_mark as entry_star_mark,
-    status as entry_status,
-    oid as entry_oid,
-    title as entry_title,
-    url as entry_url,
-    opts as entry_opts,
-    content as entry_content,
-    user_id as entry_user_id
-from entries where id=?
-
-'''
-
-_GET_ENTRY_BY_OID_SQL = '''
-select
-    id as entry_id,
-    source_id as entry_source_id,
-    updated as entry_updated,
-    created as entry_created,
-    read_mark as entry_read_mark,
-    star_mark as entry_star_mark,
-    status as entry_status,
-    oid as entry_oid,
-    title as entry_title,
-    url as entry_url,
-    opts as entry_opts,
-    content as entry_content,
-    user_id as entry_user_id
-where oid=?
-'''
-
 _GET_ENTRIES_SQL_MAIN = '''
 select
     e.id as entry_id,
@@ -291,37 +76,10 @@ where s.group_id=:group_id
 order by e.id
 '''
 
-
 _GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where e.star_mark = 1 and e.user_id=:user_id
 order by e.id
 '''
-
-# _INSERT_ENTRY_SQL = """
-# insert into entries (source_id, updated, created,
-# read_mark, star_mark, status, oid, title, url, content)
-# values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-# ON CONFLICT(oid) DO nothing;
-# """
-
-_INSERT_ENTRY_SQL = """
-insert into entries (source_id, updated, created,
-    read_mark, star_mark, status, oid, title, url, opts, content, user_id)
-values (:source_id, :updated, :created,
-    :read_mark, :star_mark, :status, :oid, :title, :url, :opts, :content,
-    :user_id)
-"""
-
-_CHECK_ENTRY_SQL = """
-select 1 from entries where oid=? and user_id=?
-"""
-
-_UPDATE_ENTRY_SQL = """
-update entries set source_id=:source_id, updated=:updated, created=:created,
-    read_mark=:read_mark, star_mark=:star_mark, status=:status, oid=:oid,
-    title=:title, url=:url, opts=:opts, content=:content
-where id=:id
-"""
 
 
 def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
@@ -337,3 +95,240 @@ def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
     if unread:
         return _GET_UNREAD_ENTRIES_SQL
     return _GET_ENTRIES_SQL
+
+
+def get_starred(db, user_id: int) -> model.Entries:
+    """Get all starred entries for given user """
+    assert user_id, 'no user_id'
+    cur = db.cursor()
+    for row in cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id}):
+        entry = dbc.entry_from_row(row)
+        entry.source = dbc.source_from_row(row)
+        if entry.source.group_id:
+            entry.source.group = dbc.source_group_from_row(row)
+        yield entry
+
+
+def get_total_count(db, user_id: int, source_id=None, group_id=None,
+                    unread=True) -> int:
+    """ Get number of read/all entries for user/source/group """
+    cur = db.cursor()
+    args = {
+        'group_id': group_id,
+        'source_id': source_id,
+        "user_id": user_id,
+    }
+    if source_id:
+        sql = "select count(*) from entries where source_id=:source_id"
+        if unread:
+            sql += " and read_mark=0"
+    elif group_id:
+        sql = ("select count(*) from entries where source_id in "
+               "(select source_id from source_groups sg where sg.id=:group_id)"
+               )
+        if unread:
+            sql += "and read_mark=0"
+    else:
+        sql = "select count(*) from entries where user_id=:user_id"
+        if unread:
+            sql += " and read_mark=0"
+    cur.execute(sql, args)
+    return cur.fetchone()[0]
+
+
+def find(db, user_id: int, source_id=None, group_id=None, unread=True,
+         offset=None, limit=None) -> model.Entries:
+    """ Find entries for user/source/group unread or all.
+        Limit and offset work only for getting all entries.
+    """
+    cur = db.cursor()
+    args = {
+        'limit': limit or 25,
+        'offset': offset or 0,
+        'group_id': group_id,
+        'source_id': source_id,
+        "user_id": user_id,
+    }
+    sql = _get_find_sql(source_id, group_id, unread)
+    if not unread:
+        # for unread there is no pagination
+        sql += " limit :limit offset :offset"
+    cur.execute(sql, args)
+    user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
+    for row in cur:
+        entry = dbc.entry_from_row(row)
+        entry.source = dbc.source_from_row(row)
+        if entry.source.group_id:
+            group = user_groups.get(entry.source.group_id)
+            if not group:
+                group = user_groups[entry.source.group_id] = \
+                    dbc.source_group_from_row(row)
+            entry.source.group = group
+        _LOG.debug("entry %s", entry)
+        yield entry
+
+
+_GET_ENTRY_SQL = '''
+select
+    id as entry_id,
+    source_id as entry_source_id,
+    updated as entry_updated,
+    created as entry_created,
+    read_mark as entry_read_mark,
+    star_mark as entry_star_mark,
+    status as entry_status,
+    oid as entry_oid,
+    title as entry_title,
+    url as entry_url,
+    opts as entry_opts,
+    content as entry_content,
+    user_id as entry_user_id
+from entries
+'''
+
+
+def get(db, id_=None, oid=None, with_source=False, with_group=False):
+    assert id_ is not None or oid is not None
+    cur = db.cursor()
+    if id_ is not None:
+        sql = _GET_ENTRY_SQL + "where id=:id"
+    else:
+        sql = _GET_ENTRY_SQL + "where oid=:oid"
+    cur.execute(sql, {"oid": oid, "id": id_})
+    row = cur.fetchone()
+    if not row:
+        raise dbc.NotFound()
+    entry = dbc.entry_from_row(row)
+    if with_source:
+        entry.source = sources.get(db, entry.source_id, with_group=with_group)
+    return entry
+
+
+_INSERT_ENTRY_SQL = """
+insert into entries (source_id, updated, created,
+    read_mark, star_mark, status, oid, title, url, opts, content, user_id)
+values (:source_id, :updated, :created,
+    :read_mark, :star_mark, :status, :oid, :title, :url, :opts, :content,
+    :user_id)
+"""
+
+_UPDATE_ENTRY_SQL = """
+update entries set source_id=:source_id, updated=:updated, created=:created,
+    read_mark=:read_mark, star_mark=:star_mark, status=:status, oid=:oid,
+    title=:title, url=:url, opts=:opts, content=:content
+where id=:id
+"""
+
+
+def save(db, entry: model.Entry) -> model.Entry:
+    """ Insert or update entry """
+    row = dbc.entry_to_row(entry)
+    cur = db.cursor()
+    if entry.id is None:
+        cur.execute(_INSERT_ENTRY_SQL, row)
+        entry.id = cur.lastrowid
+    else:
+        cur.execute(_UPDATE_ENTRY_SQL, row)
+    db.commit()
+    return entry
+
+
+def save_many(db, entries: model.Entries, source_id: int):
+    """ Insert entries; where entry with given oid already exists - is deleted
+    FIXME: handle more than 100 entries
+    """
+    # since sqlite in this version not support upsert, simple check, remve
+    cur = db.cursor()
+    # filter updated entries; should be deleted & inserted
+    oids_to_delete = [(entry.oid, ) for entry in entries
+                      if entry.status == 'updated']
+    _LOG.debug("delete oids: %d", len(oids_to_delete))
+    cur.executemany("delete from entries where oid=?", oids_to_delete)
+    existing_oids = {
+        row[0] for row
+        in cur.execute("select oid from entries where source_id=?",
+                       (source_id, ))}
+    rows = [
+        dbc.entry_to_row(entry)
+        for entry in entries
+        if entry.status == 'updated' or entry.oid not in existing_oids
+    ]
+    _LOG.debug("new entries: %d", len(rows))
+    cur.executemany(_INSERT_ENTRY_SQL, rows)
+    db.commit()
+
+
+def delete_old(db, user_id: int, max_datetime: datetime):
+    """ Delete old entries for given user """
+    cur = db.cursor()
+    cur.execute("delete from entries where star_mark=0 and read_mark=0 "
+                "and updated<? and user_id=?", (max_datetime, user_id))
+    deleted = cur.rowcount
+    _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
+              deleted)
+    db.commit()
+
+
+def mark_star(db, entry_id: int, star=True) -> int:
+    """ Change star mark for given entry """
+    star = 1 if star else 0
+    _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
+    cur = db.cursor()
+    cur.execute(
+        "update entries set star_mark=? where id = ? and star_mark = ?",
+        (star, entry_id, 1-star))
+    changed = cur.rowcount
+    _LOG.debug("total changes: %d, changed: %d", db.total_changes,
+               changed)
+    db.commit()
+    return changed
+
+
+def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
+    """ Check is given oids already exists in history table.
+        Insert new and return existing oids;
+    """
+    assert source_id
+    cur = db.cursor()
+    result = set()
+    for idx in range(0, len(oids), 100):
+        part_oids = ", ".join("'" + oid + "'" for oid in oids[idx:idx+100])
+        cur.execute(
+            "select oid from history_oids where source_id=? and oid in ("
+            + part_oids + ")", (source_id, ))
+        result.update({row[0] for row in cur})
+    new_oids = [oid for oid in oids if oid not in result]
+    cur.executemany(
+        "insert into history_oids(source_id, oid) values (?, ?)",
+        [(source_id, oid) for oid in new_oids])
+    db.commit()
+    return result
+
+
+def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
+              max_id=None, read=True):
+    """ Change read mark for given entry"""
+    assert entry_id or (user_id and max_id)
+    read = 1 if read else 0
+    _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
+               "user_id=%r", entry_id, min_id, max_id, read, user_id)
+    cur = db.cursor()
+    if entry_id:
+        cur.execute(
+            "update entries set read_mark=? where id = ? "
+            "and read_mark = ?", (read, entry_id, 1-read))
+    elif max_id:
+        cur.execute(
+            "update entries set read_mark=? where id <= ? and id >= ? "
+            "and user_id=?", (read, max_id, min_id or 0, user_id))
+    changed = cur.rowcount
+    db.commit()
+    return changed
+
+
+# _INSERT_ENTRY_SQL = """
+# insert into entries (source_id, updated, created,
+# read_mark, star_mark, status, oid, title, url, content)
+# values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+# ON CONFLICT(oid) DO nothing;
+# """

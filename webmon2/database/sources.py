@@ -22,207 +22,6 @@ from . import groups
 _ = ty
 _LOG = logging.getLogger(__file__)
 
-
-def find(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
-    cur = db.cursor()
-    user_groups = {g.id: g for g in groups.get_all(db, user_id)}
-    if group_id is None:
-        cur.execute(_GET_SOURCES_SQL, (user_id, ))
-    else:
-        cur.execute(_GET_SOURCES_BY_GROUP_SQL, (group_id, user_id))
-    for row in cur:
-        source = dbc.source_from_row(row)
-        source.state = dbc.state_from_row(row)
-        source.unread = row['unread']
-        source.group = user_groups.get(source.group_id) \
-            if source.group_id else None
-        yield source
-
-
-def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
-    cur = db.cursor()
-    cur.execute(_GET_SOURCE_SQL, (id_, ))
-    row = cur.fetchone()
-    if row is None:
-        raise dbc.NotFound()
-
-    source = dbc.source_from_row(row)
-    if with_state:
-        source.state = get_state(db, source.id)
-    if with_group and source.group_id:
-        source.group = groups.get(db, source.group_id)
-
-    return source
-
-
-def save(db, source: model.Source) -> model.Source:
-    cur = db.cursor()
-    row = dbc.source_to_row(source)
-    if source.id is None:
-        cur.execute(_INSERT_SOURCE_SQL, row)
-        source.id = cur.lastrowid
-        state = model.SourceState.new(source.id)
-        save_state(db, state)
-    else:
-        cur.execute(_UPDATE_SOURCE_SQL, row)
-    db.commit()
-    return source
-
-
-def delete(db, source_id: int) -> int:
-    cur = db.cursor()
-    cur.execute("delete from sources where id=?", (source_id, ))
-    updated = cur.rowcount
-    db.commit()
-    return updated
-
-
-def update_filter(db, source_id: int, filter_idx: int,
-                  filter_: ty.Dict[str, ty.Any]):
-    source = get(db, source_id, False, False)
-    if not source.filters:
-        source.filters = [filter_]
-    elif 0 <= filter_idx < len(source.filters):
-        source.filters[filter_idx] = filter_
-    else:
-        source.filters.append(filter_)
-    save(db, source)
-
-
-def delete_filter(db, source_id: int, filter_idx: int):
-    source = get(db, source_id, False, False)
-    if source.filters and filter_idx < len(source.filters):
-        del source.filters[filter_idx]
-        save(db, source)
-
-
-def move_filter(db, source_id: int, filter_idx: int, direction: str):
-    source = get(db, source_id, False, False)
-    if not source.filters or filter_idx >= len(source.filters) \
-            or len(source.filters) == 1:
-        return
-    if direction == 'up' and filter_idx > 0:
-        source.filters[filter_idx - 1], source.filters[filter_idx] = \
-            source.filters[filter_idx], source.filters[filter_idx - 1]
-        save(db, source)
-    elif direction == 'down' and filter_idx < len(source.filters) - 2:
-        source.filters[filter_idx + 1], source.filters[filter_idx] = \
-            source.filters[filter_idx], source.filters[filter_idx + 1]
-        save(db, source)
-
-
-def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
-    cur = db.cursor()
-    cur.execute(_GET_STATE_SQL, (source_id, ))
-    row = cur.fetchone()
-    return dbc.state_from_row(row) if row else None
-
-
-def save_state(db, state: model.SourceState) -> model.SourceState:
-    cur = db.cursor()
-    row = dbc.state_to_row(state)
-    cur.execute("delete from source_state where source_id=?",
-                (state.source_id,))
-    cur.execute(_INSERT_STATE_SQL, row)
-    db.commit()
-    return state
-
-
-def get_sources_to_fetch(db) -> ty.List[int]:
-    cur = db.cursor()
-    ids = [row[0] for row in
-           cur.execute(
-               "select source_id from source_state "
-               "where next_update <= datetime('now', 'localtime')")
-           ]
-    return ids
-
-
-def refresh(db, source_id=None, group_id=None) -> int:
-    cur = db.cursor()
-    args = {"group_id": group_id, "source_id": source_id}
-    sql = ["update source_state "
-           "set next_update=datetime('now', 'localtime') "
-           "where (last_update is null or "
-           "last_update < datetime('now', 'localtime', '-1 minutes'))"]
-    if group_id:
-        sql.append(
-            "and source_id in "
-            "(select id from sources where group_id=:group_id)")
-    elif source_id:
-        sql.append("and source_id=:source_id")
-    cur.execute(" ".join(sql), args)
-    updated = cur.rowcount
-    db.commit()
-    return updated
-
-
-def refresh_errors(db, user_id: int) -> int:
-    cur = db.cursor()
-    cur.execute("update source_state set next_update=datetime('now') "
-                "where status='error' and source_id in "
-                "(select id from sources where user_id=?)",
-                (user_id, ))
-    updated = cur.rowcount
-    db.commit()
-    return updated
-
-
-def mark_read(db, source_id: int, min_id=None, max_id=None, read=True) -> int:
-    read = 1 if read else 0
-    _LOG.info("source_mark_read source_id=%r, max_id=%r, read=%r",
-              source_id, max_id, read)
-    cur = db.cursor()
-    if max_id:
-        cur.execute(
-            "update entries set read_mark=? where source_id = ? "
-            "and id <= ? and read_mark=? and id >= ?",
-            (read, source_id, max_id, 1-read, min_id or 0))
-    else:
-        cur.execute(
-            "update entries set read_mark=? where source_id = ?",
-            (read, source_id))
-    changed = cur.rowcount
-    _LOG.debug("total changes: %d, changed: %d", db.total_changes,
-               changed)
-    db.commit()
-    return changed
-
-
-def get_filter_state(db, source_id: int, filter_name: str) \
-        -> ty.Optional[ty.Dict[str, ty.Any]]:
-    cur = db.cursor()
-    cur.execute('select state from filters_state '
-                'where source_id=? and filter_name=?',
-                (source_id, filter_name))
-    row = cur.fetchone()
-    if not row:
-        return None
-    return json.loads(row[0]) if isinstance(row[0], str) and row[0] \
-        else row[0]
-
-
-def put_filter_state(db, source_id: int, filter_name: str, state):
-    cur = db.cursor()
-    cur.execute('delete from filters_state '
-                'where source_id=? and filter_name=?',
-                (source_id, filter_name))
-    if state is not None:
-        state = json.dumps(state)
-        cur.execute(
-            'insert into filter_name (source_id, filter_name, state) '
-            'values(?, ?, ?)', (source_id, filter_name, state))
-    db.commit()
-
-
-_GET_SOURCE_SQL = """
-select id as source_id, group_id as source_group_id,
-    kind as source_kind, name as source_name, interval as source_interval,
-    settings as source_settings, filters as source_filters,
-    user_id as source_user_id
-from sources where id=?
-"""
-
 _GET_SOURCES_SQL_BASE = """
 select s.id as source_id, s.group_id as source_group_id,
     s.kind as source_kind, s.name as source_name,
@@ -245,12 +44,56 @@ left join source_state ss on ss.source_id = s.id
 """
 
 _GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + """
-where s.user_id=?
+where s.user_id=:user_id
 order by s.name """
 
 _GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL_BASE + """
-where group_id = ? and s.user_id = ?
+where group_id = :group_id and s.user_id = :user_id
 order by s.name """
+
+
+def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
+    """ Get all sources for given user and (optional) in group.
+        Include state and number of unread entries
+    """
+    cur = db.cursor()
+    user_groups = {g.id: g for g in groups.get_all(db, user_id)}
+    args = {"user_id": user_id, "group_id": group_id}
+    sql = _GET_SOURCES_SQL if group_id is None else _GET_SOURCES_BY_GROUP_SQL
+    for row in cur.execute(sql, args):
+        source = dbc.source_from_row(row)
+        source.state = _state_from_row(row)
+        source.unread = row['unread']
+        source.group = user_groups.get(source.group_id) \
+            if source.group_id else None
+        yield source
+
+
+_GET_SOURCE_SQL = """
+select id as source_id, group_id as source_group_id,
+    kind as source_kind, name as source_name, interval as source_interval,
+    settings as source_settings, filters as source_filters,
+    user_id as source_user_id
+from sources where id=?
+"""
+
+
+def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
+    """ Get one source with optionally with state and group info """
+    cur = db.cursor()
+    cur.execute(_GET_SOURCE_SQL, (id_, ))
+    row = cur.fetchone()
+    if row is None:
+        raise dbc.NotFound()
+
+    source = dbc.source_from_row(row)
+    if with_state:
+        source.state = get_state(db, source.id)
+    if with_group and source.group_id:
+        source.group = groups.get(db, source.group_id)
+
+    return source
+
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
@@ -265,6 +108,74 @@ set group_id=:group_id, kind=:kind, name=:name, interval=:interval,
 where id=:id
 """
 
+
+def save(db, source: model.Source) -> model.Source:
+    """ Insert or update source """
+    cur = db.cursor()
+    row = dbc.source_to_row(source)
+    if source.id is None:
+        cur.execute(_INSERT_SOURCE_SQL, row)
+        source.id = cur.lastrowid
+        # create state for new source
+        state = model.SourceState.new(source.id)
+        save_state(db, state)
+    else:
+        cur.execute(_UPDATE_SOURCE_SQL, row)
+    db.commit()
+    return source
+
+
+def delete(db, source_id: int) -> int:
+    """ Delete source """
+    cur = db.cursor()
+    cur.execute("delete from sources where id=?", (source_id, ))
+    updated = cur.rowcount
+    db.commit()
+    return updated
+
+
+def update_filter(db, source_id: int, filter_idx: int,
+                  filter_: ty.Dict[str, ty.Any]):
+    """ Append or update filter in given source """
+    source = get(db, source_id, False, False)
+    if not source.filters:
+        source.filters = [filter_]
+    elif 0 <= filter_idx < len(source.filters):
+        source.filters[filter_idx] = filter_
+    else:
+        source.filters.append(filter_)
+    save(db, source)
+
+
+def delete_filter(db, source_id: int, filter_idx: int):
+    """ Delete filter in source """
+    source = get(db, source_id, False, False)
+    if source.filters and filter_idx < len(source.filters):
+        del source.filters[filter_idx]
+        save(db, source)
+
+
+def move_filter(db, source_id: int, filter_idx: int, direction: str):
+    """ Change position of given filter in source """
+    assert direction in ('up', 'down')
+    source = get(db, source_id, False, False)
+    if not source.filters or filter_idx >= len(source.filters) \
+            or len(source.filters) == 1:
+        return
+    if direction == 'up':
+        if filter_idx <= 0:
+            return
+        source.filters[filter_idx - 1], source.filters[filter_idx] = \
+            source.filters[filter_idx], source.filters[filter_idx - 1]
+        save(db, source)
+    elif direction == 'down':
+        if filter_idx >= len(source.filters) - 2:
+            return
+        source.filters[filter_idx + 1], source.filters[filter_idx] = \
+            source.filters[filter_idx], source.filters[filter_idx + 1]
+        save(db, source)
+
+
 _GET_STATE_SQL = """
 select source_id as source_state_source_id,
     next_update as source_state_next_update,
@@ -278,8 +189,154 @@ select source_id as source_state_source_id,
 from source_state where source_id=?
 """
 
+
+def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
+    """ Get state for given source """
+    cur = db.cursor()
+    cur.execute(_GET_STATE_SQL, (source_id, ))
+    row = cur.fetchone()
+    return _state_from_row(row) if row else None
+
+
 _INSERT_STATE_SQL = """
 insert into source_state(source_id, next_update, last_update, last_error,
     error_counter, success_counter, status, error, state)
-values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+values (:source_id, :next_update, :last_update, :last_error,
+    :error_counter, :success_counter, :status, :error, :state)
 """
+
+
+def save_state(db, state: model.SourceState) -> model.SourceState:
+    """ Save (replace) source state """
+    cur = db.cursor()
+    row = _state_to_row(state)
+    cur.execute("delete from source_state where source_id=?",
+                (state.source_id,))
+    cur.execute(_INSERT_STATE_SQL, row)
+    db.commit()
+    return state
+
+
+def get_sources_to_fetch(db) -> ty.List[int]:
+    """ Find sources with next update state in past """
+    cur = db.cursor()
+    ids = [row[0] for row in
+           cur.execute(
+               "select source_id from source_state "
+               "where next_update <= datetime('now', 'localtime')")
+           ]
+    return ids
+
+
+_REFRESH_SQL = """
+update source_state
+set next_update=datetime('now', 'localtime')
+where (last_update is null
+    or last_update < datetime('now', 'localtime', '-1 minutes'))
+"""
+
+
+def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
+    """ Mark source to refresh; return founded sources """
+    assert user_id or source_id or group_id
+    sql = _REFRESH_SQL
+    if group_id:
+        sql += ("and source_id in "
+                "(select id from sources where group_id=:group_id)")
+    elif source_id:
+        sql += "and source_id=:source_id"
+    else:
+        sql += ("and source_id in "
+                "(select id from sources where user_id=:user_id)")
+    cur = db.cursor()
+    cur.execute(sql, {"group_id": group_id, "source_id": source_id,
+                      "user_id": user_id})
+    updated = cur.rowcount
+    db.commit()
+    return updated
+
+
+_REFRESH_ERRORS_SQL = """
+update source_state
+set next_update=datetime('now')
+where status='error'
+    and source_id in (select id from sources where user_id=?)
+"""
+
+
+def refresh_errors(db, user_id: int) -> int:
+    """ Refresh all sources in error state for given user """
+    cur = db.cursor()
+    cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
+    updated = cur.rowcount
+    db.commit()
+    return updated
+
+
+def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
+    """ Mark source read """
+    cur = db.cursor()
+    cur.execute(
+        "update entries set read_mark=1 where source_id = ? "
+        "and id <= ? and read_mark=0 and id >= ?",
+        (source_id, max_id, min_id))
+    changed = cur.rowcount
+    db.commit()
+    return changed
+
+
+def get_filter_state(db, source_id: int, filter_name: str) \
+        -> ty.Optional[ty.Dict[str, ty.Any]]:
+    """ Get state for given filter in source """
+    cur = db.cursor()
+    cur.execute('select state from filters_state '
+                'where source_id=? and filter_name=?',
+                (source_id, filter_name))
+    row = cur.fetchone()
+    if not row:
+        return None
+    return json.loads(row[0]) if isinstance(row[0], str) and row[0] \
+        else row[0]
+
+
+def put_filter_state(db, source_id: int, filter_name: str, state):
+    """ Save source filter state """
+    cur = db.cursor()
+    cur.execute(
+        'delete from filters_state where source_id=? and filter_name=?',
+        (source_id, filter_name))
+    if state is not None:
+        state = json.dumps(state)
+        cur.execute(
+            'insert into filter_name (source_id, filter_name, state) '
+            'values(?, ?, ?)', (source_id, filter_name, state))
+    db.commit()
+
+
+def _state_to_row(state: model.SourceState) -> ty.Dict[str, ty.Any]:
+    return {
+        "source_id": state.source_id,
+        "next_update": state.next_update,
+        "last_update": state.last_update,
+        "last_error": state.last_error,
+        "error_counter": state.error_counter,
+        "success_counter": state.success_counter,
+        "status": state.status,
+        "error": state.error,
+        "state": json.dumps(state.state),
+    }
+
+
+def _state_from_row(row) -> model.SourceState:
+    state = model.SourceState()
+    state.source_id = row["source_state_source_id"]
+    state.next_update = row["source_state_next_update"]
+    state.last_update = row["source_state_last_update"]
+    state.last_error = row["source_state_last_error"]
+    state.error_counter = row["source_state_error_counter"]
+    state.success_counter = row["source_state_success_counter"]
+    state.status = row["source_state_status"]
+    state.error = row["source_state_error"]
+    row_keys = row.keys()
+    state.state = dbc.get_json_if_exists(row_keys, "source_state_state", row)
+    return state

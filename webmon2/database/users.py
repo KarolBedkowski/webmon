@@ -14,7 +14,12 @@ import typing as ty
 from webmon2 import model
 
 
+class LoginAlreadyExistsError(Exception):
+    pass
+
+
 def get_all(db) -> ty.Iterable[model.User]:
+    """ Get all users """
     cur = db.cursor()
     for row in cur.execute(
             "select id, login, email, password, active, admin from users"):
@@ -22,6 +27,7 @@ def get_all(db) -> ty.Iterable[model.User]:
 
 
 def get(db, id_=None, login=None) -> ty.Optional[model.User]:
+    """ Get user by id or login """
     cur = db.cursor()
     if id_:
         cur.execute("select id, login, email, password, active, admin "
@@ -38,7 +44,8 @@ def get(db, id_=None, login=None) -> ty.Optional[model.User]:
     return user
 
 
-def save(db, user: model.User) -> ty.Optional[model.User]:
+def save(db, user: model.User) -> model.User:
+    """ Insert or update user """
     cur = db.cursor()
     if user.id:
         cur.execute(
@@ -49,14 +56,25 @@ def save(db, user: model.User) -> ty.Optional[model.User]:
     else:
         cur.execute("select 1 from users where login=?", (user.login, ))
         if cur.fetchone():
-            return None
+            raise LoginAlreadyExistsError()
         cur.execute(
             "insert into users (login, email, password, active, admin) "
             "values (:login, :email, :password, :active, :admin)",
             _user_to_row(user))
         user.id = cur.lastrowid
+        _create_new_user_data(cur, user.id)
+
     db.commit()
     return user
+
+
+def _create_new_user_data(cur, user_id: int):
+    cur.execute(
+        "select count(1) from source_groups where user_id=?",
+        (user_id, ))
+    if not cur.fetchone()[0]:
+        cur.execute("insert into source_groups(user_id, name) values (?, ?)",
+                    (user_id, "main"))
 
 
 def _user_from_row(row) -> model.User:

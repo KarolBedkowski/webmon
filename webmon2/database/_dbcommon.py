@@ -96,32 +96,3 @@ def source_to_row(source: model.Source):
         'user_id': source.user_id,
         'id': source.id,
     }
-
-
-def state_from_row(row) -> model.SourceState:
-    state = model.SourceState()
-    state.source_id = row["source_state_source_id"]
-    state.next_update = row["source_state_next_update"]
-    state.last_update = row["source_state_last_update"]
-    state.last_error = row["source_state_last_error"]
-    state.error_counter = row["source_state_error_counter"]
-    state.success_counter = row["source_state_success_counter"]
-    state.status = row["source_state_status"]
-    state.error = row["source_state_error"]
-    row_keys = row.keys()
-    state.state = get_json_if_exists(row_keys, "source_state_state", row)
-    return state
-
-
-def state_to_row(state: model.SourceState):
-    return (
-        state.source_id,
-        state.next_update,
-        state.last_update,
-        state.last_error,
-        state.error_counter,
-        state.success_counter,
-        state.status,
-        state.error,
-        json.dumps(state.state)
-    )
