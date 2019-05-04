@@ -18,7 +18,12 @@
 			{% if source.state.state and source.state.state.get('info') %}
 					<p>source.state.state.get('info')</p>
 			{% endif %}
-			<p>Next update: {{ source.state.next_update }}</p>
+			<p>
+				Last update: {{ source.state.last_update | format_date }}
+				&nbsp;&nbsp;
+				Next: {{ source.state.next_update | format_date }}<br/>
+				Success updates: {{ source.state.success_counter }}
+			</p>
 		</header>
 	</article>
 {%- endmacro %}

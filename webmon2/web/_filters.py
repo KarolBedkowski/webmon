@@ -49,6 +49,13 @@ def _age_filter(date):
     return str(int(diff//86400)) + "d"
 
 
+def _format_date(date):
+    if isinstance(date, datetime.datetime):
+        return date.strftime("%x %X")
+    return date
+
+
 def register(app):
     app.jinja_env.filters['format_body'] = _format_body_filter
     app.jinja_env.filters['age'] = _age_filter
+    app.jinja_env.filters['format_date'] = _format_date
