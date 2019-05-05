@@ -272,6 +272,12 @@ class Entry:
     def get_summary(self):
         return '\n'.join(self.content.split('\n', 21)[:20]) + "\n…"
 
+    def validate(self):
+        if not isinstance(self.updated, datetime.datetime):
+            _LOG.error("wrong entry.updated:  %r (%s)", self.updated, self)
+        if not isinstance(self.created, datetime.datetime):
+            _LOG.error("wrong entry.created:  %r (%s)", self.created, self)
+
 
 Entries = ty.Iterable[Entry]
 

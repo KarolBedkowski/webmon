@@ -122,6 +122,9 @@ class FetchWorker(threading.Thread):
 
         entries = list(entry for entry in entries if entry.calculate_oid())
 
+        for entry in entries:
+            entry.validate()
+
         database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
