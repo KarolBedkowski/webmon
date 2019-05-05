@@ -44,6 +44,10 @@ class FilterError(RuntimeError):
         self.filter = filter_
 
 
+class OperationError(RuntimeError):
+    pass
+
+
 def find_subclass(base_class, name: str):
     """ Find subclass to given `base_class` with given value of
     attribute `name` """

@@ -12,7 +12,7 @@ import random
 import hashlib
 from datetime import datetime
 
-from webmon2 import model
+from webmon2 import model, common
 from . import _dbcommon as dbc
 
 _LOG = logging.getLogger(__file__)
@@ -191,3 +191,43 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
         etag = update_state(db, group_id, last_updated)
         return (last_updated, etag)
     return row[0], row[1]
+
+
+def delete(db, user_id: int, group_id: int):
+    """ Delete group; move existing sources to main (or first) group
+
+    TODO: recalculate state
+    """
+    cur = db.cursor()
+    cur.execute('select count(1) from source_groups where user_id=?',
+                (user_id, ))
+    if not cur.fetchone()[0]:
+        raise common.OperationError("can't delete last group")
+
+    cur.execute("select count(1) from sources where group_id=?", (group_id, ))
+    if cur.fetchone()[0]:
+        # there are sources in group
+        # find main
+        dst_group_id = _find_dst_group(cur, user_id, group_id)
+        cur.execute('update sources set group_id=? where group_id=?',
+                    (dst_group_id, group_id))
+        _LOG.debug("moved %d sources", cur.rowcount)
+
+    cur.execute("delete from source_groups where id=?", (group_id, ))
+
+
+def _find_dst_group(cur, user_id: int, group_id: int):
+    cur.execute(
+        "select id from source_groups where user_id=? and name='main' "
+        "and id != ? order by id limit 1", (user_id, group_id))
+    row = cur.fetchone()
+    if row:
+        return row[0]
+
+    cur.execute(
+        "select id from source_groups where user_id=? "
+        "and id != ? order by id limit 1", (user_id, group_id))
+    row = cur.fetchone()
+    if row:
+        return row[0]
+    raise OperationError("can't find destination group for sources")

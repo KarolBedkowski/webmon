@@ -18,7 +18,7 @@ from flask import (
 )
 
 from webmon2.web import get_db, _commons as c
-from webmon2 import model, database
+from webmon2 import model, database, common
 from . import forms
 
 
@@ -118,3 +118,17 @@ def group_next_unread(group_id):
         return redirect(url_for('group.group_entries', group_id=group_id))
     flash("No more unread groups...")
     return redirect(url_for("root.groups"))
+
+
+@BP.route("/group/<int:group_id>/delete")
+def group_delete(group_id):
+    db = get_db()
+    try:
+        database.groups.delete(db, session['user'], group_id)
+        db.commit()
+        flash("Group deleted")
+    except common.OperationError as err:
+        flash("Can't delete group: " + str(err))
+    if request.args.get("delete_self"):
+        return redirect(url_for("root.groups"))
+    return redirect(request.headers.get('Referer') or url_for("root.groups"))

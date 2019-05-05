@@ -23,6 +23,9 @@
 			<input type="checkbox" name="feed_enabled" id="source-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
 		</p>
 		<button type="submit">Save</button>
+		&nbsp;
+		&nbsp;
+		<span><a href="{{ url_for('group.group_delete', group_id=group.id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">Delete</a></span>
 	</form>
 {% endblock %}
 
