@@ -50,8 +50,10 @@ class NDiff(AbstractFilter):
                curr_state: model.SourceState) -> model.Entries:
         if not entries:
             return
-        entries = list(entries)
-        entry = entries[0]
+        try:
+            entry = next(entries)
+        except StopIteration:
+            return
         if not entry.content:
             return
 
