@@ -14,7 +14,6 @@ import logging
 import typing as ty
 import urllib
 from datetime import datetime
-import hashlib
 
 from flask import (
     Blueprint, url_for, request, abort, Response
@@ -42,20 +41,16 @@ def group(key):
         group = database.groups.get_by_feed(db, key)
     except database.NotFound:
         return abort(404)
-    updated = database.groups.get_last_update(db, group.id)
-    _LOG.debug('updated %r', updated)
-
-    if not updated:
+    updated_etag = database.groups.get_state(db, group.id)
+    _LOG.debug('updated_etag %r', updated_etag)
+    if not updated_etag:
         return Response('Not modified', 304)
+
+    updated, etag = updated_etag
 
     if request.if_modified_since and request.if_modified_since >= updated:
         _LOG.debug('if_modified_since: %s', request.if_modified_since)
         return Response('Not modified', 304)
-
-    csum = hashlib.sha256(key.encode('utf-8'))
-    csum.update(str(updated).encode('ascii'))
-    etag = csum.hexdigest()
-    _LOG.debug('etag: %s', etag)
 
     if request.if_match and request.if_match.contains(etag):
         _LOG.debug('if_matche: %s', request.if_match)

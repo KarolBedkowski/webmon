@@ -65,7 +65,10 @@ where feed=?
 """
 
 
-def get_by_feed(db, feed: str) -> int:
+def get_by_feed(db, feed: str) -> model.SourceGroup:
+    """ Get group by feed """
+    if feed == 'off':
+        raise dbc.NotFound()
     cur = db.cursor()
     cur.execute(_GET_BY_FEED_SQL, (feed, ))
     row = cur.fetchone()
@@ -75,13 +78,15 @@ def get_by_feed(db, feed: str) -> int:
 
 
 def get_last_update(db, group_id: int) -> ty.Optional[datetime]:
+    """ Find last update time for entries in group """
     cur = db.cursor()
     cur.execute(
         "select max(datetime(coalesce(updated, created))) from entries "
         "where source_id in (select id from sources where group_id=?)",
         (group_id, ))
     row = cur.fetchone()
-    return datetime.fromisoformat(row[0]) if row else None
+    _LOG.debug("row: %s", row[0])
+    return datetime.fromisoformat(row[0]) if row and row[0] else None
 
 
 def save(db, group: model.SourceGroup) -> model.SourceGroup:
@@ -121,6 +126,7 @@ order by e.id limit 1
 
 
 def get_next_unread_group(db, user_id: int) -> ty.Optional[int]:
+    """ Find group id with unread entries """
     cur = db.cursor()
     cur.execute(_GET_NEXT_UNREAD_GROUP_SQL, (user_id, ))
     row = cur.fetchone()
@@ -147,18 +153,19 @@ def mark_read(db, group_id: int, max_id, min_id=0) -> int:
     return changed
 
 
-def update_state(db, group_id: int, last_modified: datetime):
+def update_state(db, group_id: int, last_modified: datetime) -> str:
+    """ Save (update or insert) group last modified information  """
     etag_h = hashlib.md5(str(group_id).encode('ascii'))
     etag_h.update(str(last_modified).encode('ascii'))
     etag = etag_h.hexdigest()
 
     cur = db.cursor()
-    cur.execute("select last_modified from source_group_state "
+    cur.execute("select last_modified, etag from source_group_state "
                 "where group_id=?", (group_id, ))
     row = cur.fetchone()
     if row:
         if row[0] > last_modified:
-            return
+            return row[1]
         cur.execute(
             "update source_group_state "
             "set last_modified=?, etag=? "
@@ -168,3 +175,22 @@ def update_state(db, group_id: int, last_modified: datetime):
             "insert into source_group_state (group_id, last_modified, etag)"
             "values (?, ?, ?)", (group_id, last_modified, etag))
     db.commit()
+    return etag
+
+
+def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
+    """ Get group entries last modified information
+        Returns: last modified date and etag
+    """
+    cur = db.cursor()
+    cur.execute(
+        "select last_modified, etag from source_group_state where group_id=?",
+        (group_id, ))
+    row = cur.fetchone()
+    if not row:
+        last_updated = get_last_update(db, group_id)
+        if not last_updated:
+            return None
+        etag = update_state(db, group_id, last_updated)
+        return (last_updated, etag)
+    return row[0], row[1]
