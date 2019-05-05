@@ -47,6 +47,7 @@ class Html2Text(AbstractFilter):
         if entry.url:
             content = _convert_links(content, entry.url)
         entry.content = content
+        entry.set_opt("content-type", "plain")
         yield entry
 
 

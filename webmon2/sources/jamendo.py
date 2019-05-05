@@ -136,6 +136,7 @@ def _jamendo_format_short_list(source: model.Source, results) -> model.Entries:
             " ".join((album['releasedate'], album["name"],
                       _jamendo_album_to_url(album['id'])))
             for album in result.get('albums') or [])
+        entry.set_opt("content-type", "html")
         yield entry
 
 
@@ -147,6 +148,7 @@ def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
             entry.content = " ".join(
                 (album['releasedate'], album["name"],
                  _jamendo_album_to_url(album['id'])))
+            entry.set_opt("content-type", "html")
             yield entry
 
 
@@ -259,6 +261,7 @@ def _jamendo_track_format_short(source: model.Source, results) \
             " ".join((track['releasedate'], track["name"],
                       _jamendo_track_to_url(track['id'])))
             for track in result.get('tracks') or [])
+        entry.set_opt("content-type", "html")
         yield entry
 
 
@@ -275,6 +278,7 @@ def _jamendo_track_format_long(source: model.Source, results) -> model.Entries:
             entry = model.Entry.for_source(source)
             entry.title = source.name
             entry.content = " ".join(res_track)
+            entry.set_opt("content-type", "html")
             yield entry
 
 

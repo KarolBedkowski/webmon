@@ -102,6 +102,8 @@ class RssSource(AbstractSource):
                          else 'new')
         if load_content:
             result.content = _get_content_from_rss_entry(entry)
+            # TODO: detect content (?)
+            entry.set_opt("content-type", "html")
         return result
 
 

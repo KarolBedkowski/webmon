@@ -124,6 +124,7 @@ class GithubInput(AbstractSource, GitHubMixin):
         entry.status = 'new'
         entry.content = content
         entry.created = entry.updated = datetime.now()
+        entry.set_opt("content-type", "html")
         return new_state, [entry]
 
 
@@ -201,6 +202,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         entry.status = 'new'
         entry.content = content
         entry.created = entry.updated = datetime.now()
+        entry.set_opt("content-type", "html")
         return new_state, [entry]
 
 
@@ -278,6 +280,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         entry.status = 'new'
         entry.content = content
         entry.created = entry.updated = datetime.now()
+        entry.set_opt("content-type", "html")
         return new_state, [entry]
 
 

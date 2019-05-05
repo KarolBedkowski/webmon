@@ -67,6 +67,7 @@ class FileSource(AbstractSource):
             entry.title = self._source.name
             entry.url = fname
             entry.content = content
+            entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
             new_state.status = 'updated' if state.last_update else 'new'
             new_state.next_update = datetime.datetime.now() + \

@@ -67,6 +67,7 @@ class NDiff(AbstractFilter):
             entry = entry.clone()
             entry.status = 'new'
             entry.set_opt('preformated', True)
+            entry.set_opt("content-type", "plain")
             yield entry
             return
 
@@ -89,6 +90,7 @@ class NDiff(AbstractFilter):
         entry.status = 'updated'
         entry.content = '\n'.join(res)
         entry.set_opt('preformated', True)
+        entry.set_opt("content-type", "plain")
         entry.set_opt('_ndiff_changed_lines', changed_lines)
         entry.set_opt('_ndiff_old_lines', len(old_lines))
         yield entry

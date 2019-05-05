@@ -75,6 +75,7 @@ class WebSource(AbstractSource):
             entry.title = self._source.name
             entry.url = url
             entry.content = response.text
+            entry.set_opt("content-type", "html")
             new_state = state.new_ok()
             new_state.set_state('etag', response.headers.get('ETag'))
             return new_state, [entry]

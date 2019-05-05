@@ -29,6 +29,8 @@ def _get_elements_by_xpath(entry: model.Entry, expression: str):
     # pylint: disable=no-member
     html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                    strip_cdata=True)
+    if not entry.content:
+        return
     document = etree.parse(io.StringIO(entry.content), html_parser)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
@@ -95,6 +97,8 @@ class GetElementsById(AbstractFilter):
         # pylint: disable=no-member
         html_parser = etree.HTMLParser(encoding='utf-8', recover=True,
                                        strip_cdata=True)
+        if not entry.content:
+            return
         document = etree.parse(io.StringIO(entry.content), html_parser)
         for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
             # pylint: disable=protected-access

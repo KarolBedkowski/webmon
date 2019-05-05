@@ -15,6 +15,11 @@ import logging
 import os.path
 import typing as ty
 
+try:
+    import stackprinter
+    stackprinter.set_excepthook(style='color')
+except ImportError:
+    pass
 
 from . import database, logging_setup, worker, web, cli
 
