@@ -80,11 +80,14 @@ def create_app(debug, root):
         request.req_start_time = time.time()
         if not _check_csrf_token():
             return abort(400)
-        user_id = session.get('user')
         path = request.path
-        if path.startswith('/static') or path.startswith('/sec/login') or \
-                path.startswith('/metrics') or path.startswith('/atom'):
+        g.non_action = (path.startswith('/static')
+                        or path.startswith('/sec/login')
+                        or path.startswith('/metrics')
+                        or path.startswith('/atom'))
+        if g.non_action:
             return None
+        user_id = session.get('user')
         if user_id is None:
             return redirect(url_for('sec.login', back=request.url))
         _count_unread(user_id)
@@ -92,11 +95,12 @@ def create_app(debug, root):
 
     @app.after_request
     def after_request(response):
-        if 'Cache-Control' not in response.headers:
-            response.headers['Cache-Control'] = \
-                'no-cache, max-age=0, must-revalidate, no-store'
-        response.headers['Access-Control-Expose-Headers'] = 'X-CSRF-TOKEN'
-        response.headers['X-CSRF-TOKEN'] = session['_csrf_token']
+        if not g.non_action:
+            if 'Cache-Control' not in response.headers:
+                response.headers['Cache-Control'] = \
+                    'no-cache, max-age=0, must-revalidate, no-store'
+            response.headers['Access-Control-Expose-Headers'] = 'X-CSRF-TOKEN'
+            response.headers['X-CSRF-TOKEN'] = session['_csrf_token']
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).\
             observe(resp_time)
