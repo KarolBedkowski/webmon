@@ -26,7 +26,7 @@ REQUIRES = [
     'prometheus_client',
     'Werkzeug',
     'gevent',
-    "readability-lxml","
+    "readability-lxml",
 ]
 
 
