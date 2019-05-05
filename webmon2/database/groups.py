@@ -8,6 +8,7 @@ Licence: GPLv2+
 """
 import logging
 import typing as ty
+import random
 
 from webmon2 import model
 from . import _dbcommon as dbc
@@ -15,7 +16,7 @@ from . import _dbcommon as dbc
 _LOG = logging.getLogger(__file__)
 
 _GET_SOURCE_GROUPS_SQL = """
-select sg.id, sg.name, sg.user_id,
+select sg.id, sg.name, sg.user_id, sg.feed,
     (select count(*)
         from entries e
         join sources s on e.source_id = s.id
@@ -31,14 +32,14 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     assert user_id
     cur = db.cursor()
     cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
-    groups = [model.SourceGroup(id, name, unread, user_id)
-              for id, name, user_id, unread in cur]
+    groups = [model.SourceGroup(id, name, user_id, feed, unread)
+              for id, name, user_id, feed, unread in cur]
     return groups
 
 
 _GET_SQL = """
 select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id
+    user_id as source_group_user_id, feed as source_group_feed
 from source_groups
 where id=?
 """
@@ -50,23 +51,45 @@ def get(db, group_id) -> model.SourceGroup:
     cur.execute(_GET_SQL, (group_id, ))
     row = cur.fetchone()
     if not row:
-        raise dbc.NotFound
-    return _source_group_from_row(row)
+        raise dbc.NotFound()
+    return dbc.source_group_from_row(row)
+
+
+def find_id_by_feed(db, feed: str) -> int:
+    cur = db.cursor()
+    cur.execute("select id from source_groups where feed=?", (feed, ))
+    row = cur.fetchone()
+    if not row:
+        raise dbc.NotFound()
+    return row[0]
 
 
 def save(db, group: model.SourceGroup) -> model.SourceGroup:
     """ Save / update group """
     cur = db.cursor()
+    if not group.feed:
+        group.feed = _generate_group_feed(cur)
+
     if group.id is None:
         cur.execute(
-            "insert into source_groups (name, user_id) values (?, ?)",
-            (group.name, group.user_id))
+            "insert into source_groups (name, user_id, feed) values (?, ?, ?)",
+            (group.name, group.user_id, group.feed))
         group.id = cur.lastrowid
     else:
-        cur.execute("update source_groups set name=? where id=?",
-                    (group.name, group.id))
+        cur.execute("update source_groups set name=?, feed=? where id=?",
+                    (group.name, group.feed, group.id))
     db.commit()
     return group
+
+
+def _generate_group_feed(cur):
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    while True:
+        feed = ''.join(random.SystemRandom().choice(chars) for _ in range(32))
+
+        cur.execute('select 1 from source_groups where feed=?', (feed, ))
+        if not cur.fetchone():
+            return feed
 
 
 _GET_NEXT_UNREAD_GROUP_SQL = """
@@ -102,9 +125,3 @@ def mark_read(db, group_id: int, max_id, min_id=0) -> int:
     changed = cur.rowcount
     db.commit()
     return changed
-
-
-def _source_group_from_row(row) -> model.SourceGroup:
-    return model.SourceGroup(row["source_group_id"],
-                             row["source_group_name"],
-                             row["source_group_user_id"])

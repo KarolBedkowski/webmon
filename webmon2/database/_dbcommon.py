@@ -82,7 +82,8 @@ def source_from_row(row) -> model.Source:
 def source_group_from_row(row):
     return model.SourceGroup(row["source_group_id"],
                              row["source_group_name"],
-                             row["source_group_user_id"])
+                             row["source_group_user_id"],
+                             row["source_group_feed"])
 
 
 def source_to_row(source: model.Source):

@@ -11,9 +11,11 @@ Template filters
 """
 import datetime
 import logging
+import urllib
 
 import markdown2
 from werkzeug.contrib.cache import SimpleCache
+from flask import request
 
 
 _LOG = logging.getLogger(__file__)
@@ -55,7 +57,12 @@ def _format_date(date):
     return date
 
 
+def _absoute_url(url):
+    return urllib.parse.urljoin(request.url_root, url)
+
+
 def register(app):
     app.jinja_env.filters['format_body'] = _format_body_filter
     app.jinja_env.filters['age'] = _age_filter
     app.jinja_env.filters['format_date'] = _format_date
+    app.jinja_env.filters['absolute_url'] = _absoute_url

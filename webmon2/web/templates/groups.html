@@ -25,6 +25,10 @@
 					| <a href="{{ url_for('group.group_sources', group_id=group.id)}}">Sources</a>
 					| <a href="{{ url_for('group.group_edit', group_id=group.id)}}">✎ Edit</a>
 				</nav>
+				{% if group.feed and group.feed != 'off' %}
+				<p>Feed: <a href="{{ url_for("atom.group", key=group.feed) | absolute_url }}">
+					{{ url_for("atom.group", key=group.feed) | absolute_url }}</p>
+				{% endif %}
 			</header>
 		</article>
 	{% endfor %}

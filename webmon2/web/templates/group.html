@@ -18,6 +18,10 @@
 			<label for="source-name">Name</label>
 			<input type="text" name="name" id="source-name" required="required" value="{{ group.name or '' }}" />
 		</p>
+		<p>
+			<label for="source-feed">Feed enabled</label>
+			<input type="checkbox" name="feed_enabled" id="source-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
+		</p>
 		<button type="submit">Save</button>
 	</form>
 {% endblock %}

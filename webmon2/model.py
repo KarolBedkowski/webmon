@@ -22,10 +22,12 @@ _LOG = logging.getLogger(__name__)
 
 
 class SourceGroup:
-    def __init__(self, id_=None, name=None, unread=None, user_id=None):
+    def __init__(self, id_=None, name=None, user_id=None, feed=None,
+                 unread=None):
         self.id = id_
         self.name = name
         self.user_id = user_id
+        self.feed = feed
 
         self.unread = unread
 
@@ -37,6 +39,7 @@ class SourceGroup:
         sg.id = self.id
         sg.name = self.name
         sg.user_id = self.user_id
+        sg.feed = self.feed
         return sg
 
 

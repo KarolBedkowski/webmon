@@ -124,20 +124,34 @@ class GroupForm:
     def __init__(self):
         self.id = None
         self.name = None
+        self.feed = None
+        self.feed_enabled = None
+
+    def __str__(self):
+        return common.obj2str(self)
 
     @staticmethod
     def from_model(group: model.SourceGroup):
         form = GroupForm()
         form.id = group.id
         form.name = group.name
+        form.feed = group.feed
+        form.feed_enabled = group.feed and group.feed != 'off'
         return form
 
     def update_from_request(self, form):
         self.name = form['name'].strip()
+        self.feed_enabled = form.get('feed_enabled')
+        if self.feed_enabled:
+            if self.feed == 'off':
+                self.feed = None
+        else:
+            self.feed = 'off'
 
     def update_model(self, group: model.SourceGroup):
         group = group.clone()
         group.name = self.name
+        group.feed = self.feed
         return group
 
     def validate(self) -> ty.Dict[str, str]:

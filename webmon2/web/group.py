@@ -42,7 +42,10 @@ def group_edit(group_id=0):
     db = get_db()
     sgroup = database.groups.get(db, group_id) if group_id \
         else model.SourceGroup(user_id=session['user'])
+    _LOG.debug("sgroup: %s", sgroup)
+
     form = forms.GroupForm.from_model(sgroup)
+    _LOG.debug("form: %s", form)
 
     if request.method == 'POST':
         form.update_from_request(request.form)
@@ -50,7 +53,7 @@ def group_edit(group_id=0):
         database.groups.save(db, sgroup)
         return redirect(url_for("root.groups"))
 
-    return render_template("group.html", group=sgroup)
+    return render_template("group.html", group=form)
 
 
 @BP.route('/group/<int:group_id>/sources')

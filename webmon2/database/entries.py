@@ -40,7 +40,8 @@ select
     s.name as source_name, s.interval as source_interval,
     s.user_id as source_user_id,
     sg.id as source_group_id, sg.name as source_group_name,
-    sg.user_id as source_group_user_id
+    sg.user_id as source_group_user_id,
+    sg.feed as source_group_feed
 from entries e
 join sources s on s.id = e.source_id
 left join source_groups sg on sg.id = s.group_id
@@ -79,6 +80,12 @@ order by e.id
 _GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where e.star_mark = 1 and e.user_id=:user_id
 order by e.id
+'''
+
+_GET_ENTRIES_BY_GROUP_FEED_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where s.group_id=:group_id
+order by e.id desc
+limit 100
 '''
 
 
@@ -165,6 +172,21 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
                     dbc.source_group_from_row(row)
             entry.source.group = group
         _LOG.debug("entry %s", entry)
+        yield entry
+
+
+def find_for_feed(db, group_id: int) -> model.Entries:
+    """ Find all entries by group feed.
+    """
+    cur = db.cursor()
+    cur.execute(_GET_ENTRIES_BY_GROUP_FEED_SQL, {'group_id': group_id})
+    group = None  # model.SourceGroup
+    for row in cur:
+        entry = dbc.entry_from_row(row)
+        entry.source = dbc.source_from_row(row)
+        if not group:
+            group = dbc.source_group_from_row(row)
+        entry.source.group = group
         yield entry
 
 

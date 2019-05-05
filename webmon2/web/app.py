@@ -72,6 +72,9 @@ def create_app(debug, root):
     from . import security
     app.register_blueprint(security.BP)
 
+    from . import atom
+    app.register_blueprint(atom.BP)
+
     @app.before_request
     def before_request():
         request.req_start_time = time.time()
@@ -80,7 +83,7 @@ def create_app(debug, root):
         user_id = session.get('user')
         path = request.path
         if path.startswith('/static') or path.startswith('/sec/login') or \
-                path.startswith('/metrics'):
+                path.startswith('/metrics') or path.startswith('/atom'):
             return None
         if user_id is None:
             return redirect(url_for('sec.login', back=request.url))
