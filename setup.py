@@ -25,7 +25,8 @@ REQUIRES = [
     'cssselect',
     'prometheus_client',
     'Werkzeug',
-    'gevent'
+    'gevent',
+    "readability-lxml","
 ]
 
 

@@ -16,6 +16,7 @@ import urllib
 import markdown2
 from werkzeug.contrib.cache import SimpleCache
 from flask import request
+import readability
 
 
 _LOG = logging.getLogger(__file__)
@@ -36,6 +37,13 @@ def _format_body_filter(body):
                                              "target-blank-links"])
     _BODY_CACHE.set(body_hash, value)
     return value
+
+
+def _readable_html(body):
+    if not body:
+        return body
+    doc = readability.Document(body)
+    return doc.get_clean_html()
 
 
 def _age_filter(date):
@@ -66,3 +74,4 @@ def register(app):
     app.jinja_env.filters['age'] = _age_filter
     app.jinja_env.filters['format_date'] = _format_date
     app.jinja_env.filters['absolute_url'] = _absoute_url
+    app.jinja_env.filters['readable_html'] = _readable_html

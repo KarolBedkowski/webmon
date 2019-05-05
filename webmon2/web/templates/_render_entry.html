@@ -13,14 +13,18 @@
 			</nav>
 		</header>
  		{% if entry.is_long_content() and mode == 'summary' %}
-			{% if entry.get_opt('preformated') %}
+			{% if entry.get_opt('content-type') == 'html' %}
+				{{ entry.get_summary()|readable_html|safe }}
+			{% elif entry.get_opt('preformated') %}
 				<pre>{{ entry.get_summary()|safe }}</pre>
 			{% else %}
 				{{ entry.get_summary()|format_body|safe }}
 			{% endif %}
 			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
 		{% elif entry.content %}
-			{% if entry.get_opt('preformated') %}
+			{% if entry.get_opt('content-type') == 'html' %}
+				{{ entry.content|readable_html|safe }}
+			{% elif entry.get_opt('preformated') %}
 				<pre>{{ entry.content|safe }}</pre>
 			{% else %}
 				{{ entry.content|format_body|safe }}
