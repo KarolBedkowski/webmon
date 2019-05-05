@@ -128,10 +128,10 @@ def _jamendo_album_to_url(album_id):
     return 'https://www.jamendo.com/album/{}/'.format(album_id)
 
 
-def _jamendo_format_short_list(source, results) -> model.Entries:
+def _jamendo_format_short_list(source: model.Source, results) -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
-        entry.title = source.title
+        entry.title = source.name
         entry.content = "\n".join(
             " ".join((album['releasedate'], album["name"],
                       _jamendo_album_to_url(album['id'])))
@@ -139,11 +139,11 @@ def _jamendo_format_short_list(source, results) -> model.Entries:
         yield entry
 
 
-def _jamendo_format_long_list(source, results) -> model.Entries:
+def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
     for result in results:
         for album in result.get('albums') or []:
             entry = model.Entry.for_source(source)
-            entry.title = source.title
+            entry.title = source.name
             entry.content = " ".join(
                 (album['releasedate'], album["name"],
                  _jamendo_album_to_url(album['id'])))
@@ -250,10 +250,11 @@ def _jamendo_track_to_url(track_id) -> str:
     return 'https://www.jamendo.com/track/{}/'.format(track_id)
 
 
-def _jamendo_track_format_short(source, results) -> model.Entries:
+def _jamendo_track_format_short(source: model.Source, results) \
+        -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
-        entry.title = source.title
+        entry.title = source.name
         entry.content = "\n".join(
             " ".join((track['releasedate'], track["name"],
                       _jamendo_track_to_url(track['id'])))
@@ -261,7 +262,7 @@ def _jamendo_track_format_short(source, results) -> model.Entries:
         yield entry
 
 
-def _jamendo_track_format_long(source, results) -> model.Entries:
+def _jamendo_track_format_long(source: model.Source, results) -> model.Entries:
     for result in results:
         for track in result.get('tracks') or []:
             res_track = [track['releasedate'], track["name"],
@@ -272,7 +273,7 @@ def _jamendo_track_format_long(source, results) -> model.Entries:
                                  _jamendo_album_to_url(track['album_id']))
 
             entry = model.Entry.for_source(source)
-            entry.title = source.title
+            entry.title = source.name
             entry.content = " ".join(res_track)
             yield entry
 
