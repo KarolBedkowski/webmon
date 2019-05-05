@@ -9,6 +9,7 @@ Licence: GPLv2+
 import logging
 import typing as ty
 import random
+from datetime import datetime
 
 from webmon2 import model
 from . import _dbcommon as dbc
@@ -55,13 +56,31 @@ def get(db, group_id) -> model.SourceGroup:
     return dbc.source_group_from_row(row)
 
 
-def find_id_by_feed(db, feed: str) -> int:
+_GET_BY_FEED_SQL = """
+select id as source_group_id, name as source_group_name,
+    user_id as source_group_user_id, feed as source_group_feed
+from source_groups
+where feed=?
+"""
+
+
+def get_by_feed(db, feed: str) -> int:
     cur = db.cursor()
-    cur.execute("select id from source_groups where feed=?", (feed, ))
+    cur.execute(_GET_BY_FEED_SQL, (feed, ))
     row = cur.fetchone()
     if not row:
         raise dbc.NotFound()
-    return row[0]
+    return dbc.source_group_from_row(row)
+
+
+def get_last_update(db, group_id: int) -> ty.Optional[datetime]:
+    cur = db.cursor()
+    cur.execute(
+        "select max(datetime(coalesce(updated, created))) from entries "
+        "where source_id in (select id from sources where group_id=?)",
+        (group_id, ))
+    row = cur.fetchone()
+    return datetime.fromisoformat(row[0]) if row else None
 
 
 def save(db, group: model.SourceGroup) -> model.SourceGroup:

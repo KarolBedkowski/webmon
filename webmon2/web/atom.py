@@ -13,9 +13,11 @@ Web gui
 import logging
 import typing as ty
 import urllib
+from datetime import datetime
+import hashlib
 
 from flask import (
-    Blueprint, url_for, request, abort
+    Blueprint, url_for, request, abort, Response
 )
 from werkzeug.contrib.atom import AtomFeed
 import markdown2
@@ -37,23 +39,46 @@ def group(key):
         return abort(404)
 
     try:
-        group_id = database.groups.find_id_by_feed(db, key)
+        group = database.groups.get_by_feed(db, key)
     except database.NotFound:
         return abort(404)
+    updated = database.groups.get_last_update(db, group.id)
+    _LOG.debug('updated %r', updated)
 
-    feed = AtomFeed('Recent Articles',
-                    feed_url=request.url, url=request.url_root)
+    if not updated:
+        return Response('Not modified', 304)
 
-    for entry in database.entries.find_for_feed(db, group_id):
+    if request.if_modified_since and request.if_modified_since >= updated:
+        _LOG.debug('if_modified_since: %s', request.if_modified_since)
+        return Response('Not modified', 304)
+
+    csum = hashlib.sha256(key.encode('utf-8'))
+    csum.update(str(updated).encode('ascii'))
+    etag = csum.hexdigest()
+    _LOG.debug('etag: %s', etag)
+
+    if request.if_match and request.if_match.contains(etag):
+        _LOG.debug('if_matche: %s', request.if_match)
+        return Response('Not modified', 304)
+
+    feed = AtomFeed("Webmon2 - " + group.name,
+                    feed_url=request.url, url=request.url_root,
+                    updated=updated)
+
+    for entry in database.entries.find_for_feed(db, group.id):
+        is_long = entry.is_long_content()
         body = markdown2.markdown(
-            entry.get_summary() if entry.is_long_content() else entry.content,
+            entry.get_summary() if is_long else entry.content,
             extras=["code-friendly", "nofollow", "target-blank-links"])
-        _LOG.debug('entry: %s', entry)
         feed.add(entry.title or entry.group.name, body,
                  content_type='html',
                  url=urllib.parse.urljoin(
                      request.url_root,
                      url_for("entry.entry", entry_id=entry.id)),
-                 updated=entry.updated,
+                 updated=entry.updated or entry.created or datetime.now(),
                  published=entry.created)
-    return feed.get_response()
+
+    response = feed.get_response()
+    response.headers['ETag'] = etag
+    response.headers['Last-Modified'] = updated
+    return response
