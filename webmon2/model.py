@@ -16,21 +16,9 @@ import datetime
 import typing as ty
 import logging
 
+from webmon2 import common
+
 _LOG = logging.getLogger(__name__)
-
-
-def _val2str(value):
-    value = str(value)
-    if len(value) > 64:
-        return value[:64] + "..."
-    return value
-
-
-def obj2str(obj):
-    kvs = ", ".join([key + "=" + _val2str(val)
-                     for key, val in obj.__dict__.items()
-                     if key[0] != "_"])
-    return "<" + obj.__class__.__name__ + " " + kvs + ">"
 
 
 class SourceGroup:
@@ -40,6 +28,9 @@ class SourceGroup:
         self.user_id = user_id
 
         self.unread = unread
+
+    def __str__(self):
+        return common.obj2str(self)
 
     def clone(self):
         sg = SourceGroup()
@@ -66,7 +57,7 @@ class Source:
         self.unread = None
 
     def __str__(self):
-        return obj2str(self)
+        return common.obj2str(self)
 
     def clone(self):
         src = Source()
@@ -151,7 +142,7 @@ class SourceState:
         return self.state.get(key, default) if self.state else default
 
     def __str__(self):
-        return obj2str(self)
+        return common.obj2str(self)
 
 
 class Entry:
@@ -173,7 +164,7 @@ class Entry:
         self.source = None
 
     def __str__(self):
-        return obj2str(self)
+        return common.obj2str(self)
 
     def clone(self):
         entry = Entry(source_id=self.source_id)
@@ -249,7 +240,7 @@ class Setting:
             self.value = str(value)
 
     def __str__(self):
-        return obj2str(self)
+        return common.obj2str(self)
 
 
 class User:

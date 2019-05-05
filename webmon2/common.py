@@ -204,3 +204,17 @@ class SettingDef:
         except ValueError:
             return False
         return True
+
+
+def _val2str(value):
+    value = str(value)
+    if len(value) > 64:
+        return value[:64] + "..."
+    return value
+
+
+def obj2str(obj):
+    kvs = ", ".join([key + "=" + _val2str(val)
+                     for key, val in obj.__dict__.items()
+                     if key[0] != "_"])
+    return "<" + obj.__class__.__name__ + " " + kvs + ">"
