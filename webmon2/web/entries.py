@@ -73,6 +73,7 @@ def entries_mark_read():
         db, user_id,
         max_id=int(request.args['max_id']),
         min_id=int(request.args['min_id']))
+    db.commit()
     _LOG.debug("Referer: %r", request.headers.get('Referer'))
     return redirect(request.headers.get('Referer')
                     or url_for("entries.entries_unread"))

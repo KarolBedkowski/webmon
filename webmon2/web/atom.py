@@ -46,6 +46,7 @@ def group(key):
     if not updated_etag:
         return Response('Not modified', 304)
 
+    db.commit()
     updated, etag = updated_etag
 
     if request.if_modified_since and request.if_modified_since >= updated:

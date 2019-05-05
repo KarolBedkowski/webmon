@@ -45,6 +45,7 @@ def sources():
 def sources_refresh():
     db = get_db()
     updated = database.sources.refresh(db, session['user'])
+    db.commit()
     flash("{} sources mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
@@ -54,6 +55,7 @@ def sources_refresh():
 def sources_refresh_err():
     db = get_db()
     updated = database.sources.refresh_errors(db, session['user'])
+    db.commit()
     flash("{} sources with errors mark to refresh".format(updated))
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))

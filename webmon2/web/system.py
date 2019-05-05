@@ -40,6 +40,7 @@ def sett_globals():
                 sett.set_value(request.form[sett.key])
             sett.user_id = user_id
         database.settings.save_all(db, settings)
+        db.commit()
         flash("Settings saved")
         return redirect(url_for("system.sett_globals"))
 
@@ -61,6 +62,7 @@ def sett_user():
             if user.verify_password(request.form['curr_password']):
                 user.hash_password(request.form['new_password1'])
                 database.users.save(db, user)
+                db.commit()
                 flash("password changed")
             else:
                 flash("wrong current password")

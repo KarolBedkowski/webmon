@@ -64,7 +64,6 @@ def save(db, user: model.User) -> model.User:
         user.id = cur.lastrowid
         _create_new_user_data(cur, user.id)
 
-    db.commit()
     return user
 
 

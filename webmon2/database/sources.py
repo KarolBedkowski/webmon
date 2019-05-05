@@ -121,7 +121,6 @@ def save(db, source: model.Source) -> model.Source:
         save_state(db, state)
     else:
         cur.execute(_UPDATE_SOURCE_SQL, row)
-    db.commit()
     return source
 
 
@@ -130,7 +129,6 @@ def delete(db, source_id: int) -> int:
     cur = db.cursor()
     cur.execute("delete from sources where id=?", (source_id, ))
     updated = cur.rowcount
-    db.commit()
     return updated
 
 
@@ -213,7 +211,6 @@ def save_state(db, state: model.SourceState) -> model.SourceState:
     cur.execute("delete from source_state where source_id=?",
                 (state.source_id,))
     cur.execute(_INSERT_STATE_SQL, row)
-    db.commit()
     return state
 
 
@@ -252,7 +249,6 @@ def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
     cur.execute(sql, {"group_id": group_id, "source_id": source_id,
                       "user_id": user_id})
     updated = cur.rowcount
-    db.commit()
     return updated
 
 
@@ -269,7 +265,6 @@ def refresh_errors(db, user_id: int) -> int:
     cur = db.cursor()
     cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
     updated = cur.rowcount
-    db.commit()
     return updated
 
 
@@ -281,7 +276,6 @@ def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
         "and id <= ? and read_mark=0 and id >= ?",
         (source_id, max_id, min_id))
     changed = cur.rowcount
-    db.commit()
     return changed
 
 
@@ -310,7 +304,6 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
         cur.execute(
             'insert into filter_name (source_id, filter_name, state) '
             'values(?, ?, ?)', (source_id, filter_name, state))
-    db.commit()
 
 
 def _state_to_row(state: model.SourceState) -> ty.Dict[str, ty.Any]:

@@ -113,5 +113,6 @@ def migrate(filename):
                 source.filters = inp.get('filters')
                 _LOG.info("new source: %s", source)
                 database.sources.save(db, source)
+        db.commit()
 
     _LOG.info("migration %s finished", filename)

@@ -251,7 +251,6 @@ def save(db, entry: model.Entry) -> model.Entry:
         entry.id = cur.lastrowid
     else:
         cur.execute(_UPDATE_ENTRY_SQL, row)
-    db.commit()
     return entry
 
 
@@ -277,7 +276,6 @@ def save_many(db, entries: model.Entries, source_id: int):
     ]
     _LOG.debug("new entries: %d", len(rows))
     cur.executemany(_INSERT_ENTRY_SQL, rows)
-    db.commit()
 
 
 def delete_old(db, user_id: int, max_datetime: datetime):
@@ -288,7 +286,6 @@ def delete_old(db, user_id: int, max_datetime: datetime):
     deleted = cur.rowcount
     _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
               deleted)
-    db.commit()
 
 
 def mark_star(db, entry_id: int, star=True) -> int:
@@ -302,7 +299,6 @@ def mark_star(db, entry_id: int, star=True) -> int:
     changed = cur.rowcount
     _LOG.debug("total changes: %d, changed: %d", db.total_changes,
                changed)
-    db.commit()
     return changed
 
 
@@ -323,7 +319,6 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     cur.executemany(
         "insert into history_oids(source_id, oid) values (?, ?)",
         [(source_id, oid) for oid in new_oids])
-    db.commit()
     return result
 
 
@@ -344,7 +339,6 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
             "update entries set read_mark=? where id <= ? and id >= ? "
             "and user_id=?", (read, max_id, min_id or 0, user_id))
     changed = cur.rowcount
-    db.commit()
     return changed
 
 

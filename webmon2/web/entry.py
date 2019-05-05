@@ -40,6 +40,7 @@ def entry(entry_id):
 def entry_mark_read(entry_id):
     db = get_db()
     database.entries.mark_read(db, entry_id=entry_id)
+    db.commit()
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
 
@@ -51,6 +52,7 @@ def entry_mark_read_api():
     state = request.form['value']
     updated = database.entries.mark_read(
         db, entry_id=entry_id, read=state == 'read')
+    db.commit()
     return state if updated else ""
 
 
@@ -60,4 +62,5 @@ def entry_mark_star_api():
     entry_id = int(request.form["entry_id"])
     state = request.form['value']
     updated = database.entries.mark_star(db, entry_id, star=state == 'star')
+    db.commit()
     return state if updated else ""

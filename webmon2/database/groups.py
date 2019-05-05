@@ -103,7 +103,6 @@ def save(db, group: model.SourceGroup) -> model.SourceGroup:
     else:
         cur.execute("update source_groups set name=?, feed=? where id=?",
                     (group.name, group.feed, group.id))
-    db.commit()
     return group
 
 
@@ -149,7 +148,6 @@ def mark_read(db, group_id: int, max_id, min_id=0) -> int:
     cur.execute(_MARK_READ_SQL, {"group_id": group_id, "min_id": min_id,
                                  "max_id": max_id})
     changed = cur.rowcount
-    db.commit()
     return changed
 
 
@@ -174,7 +172,6 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
         cur.execute(
             "insert into source_group_state (group_id, last_modified, etag)"
             "values (?, ?, ?)", (group_id, last_modified, etag))
-    db.commit()
     return etag
 
 

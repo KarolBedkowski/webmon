@@ -63,7 +63,6 @@ def save_all(db, settings: ty.List[model.Setting]):
         [(setting.key, setting.user_id) for setting in settings])
     cur.executemany("insert into user_settings (key, value, user_id) "
                     "values (?, ?, ?)", rows)
-    db.commit()
 
 
 def get_value(db, key: str, user_id: int, default=None) \

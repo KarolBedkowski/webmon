@@ -44,6 +44,7 @@ def add_user(args):
     user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
     with database.DB.get() as db:
         user = database.users.save(db, user)
+        db.commit()
     if not user:
         print("user already exists")
     else:
@@ -62,6 +63,7 @@ def change_user_pass(args):
             return
         user.hash_password(user_pass[1])
         user = database.users.save(db, user)
+        db.commit()
         print("password changed")
 
 

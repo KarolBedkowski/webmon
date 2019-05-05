@@ -130,6 +130,7 @@ class FetchWorker(threading.Thread):
         if entries:
             max_updated = max(e.updated for e in entries)
             database.groups.update_state(db, source.group_id, max_updated)
+        db.commit()
 
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))
@@ -145,6 +146,7 @@ def _delete_old_entries(db):
         max_datetime = datetime.datetime.now() - \
             datetime.timedelta(days=keep_days)
         database.entries.delete_old(db, user.id, max_datetime)
+        db.commit()
 
 
 def _save_state_error(db, source: model.Source, err: str):
@@ -152,7 +154,10 @@ def _save_state_error(db, source: model.Source, err: str):
     next_check_delta = common.parse_interval(source.interval or '1d')
     # add some random time
     next_check_delta += random.randint(600, 3600)
+
     new_state = source.state.new_error(str(err))
     new_state.next_update = datetime.datetime.now() + \
         datetime.timedelta(seconds=next_check_delta)
+
     database.sources.save_state(db, new_state)
+    db.commit()

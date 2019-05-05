@@ -30,6 +30,7 @@ BP = Blueprint('source', __name__, url_prefix='/source')
 def source_refresh(source_id):
     db = get_db()
     database.sources.refresh(db, source_id=source_id)
+    db.commit()
     flash("Source mark to refresh")
     return redirect(request.headers.get('Referer')
                     or url_for("root.sources"))
@@ -39,6 +40,7 @@ def source_refresh(source_id):
 def source_delete(source_id):
     db = get_db()
     database.sources.delete(db, source_id)
+    db.commit()
     flash("Source deleted")
     if request.args.get("delete_self"):
         return redirect(url_for("root.sources"))
@@ -60,6 +62,7 @@ def source_new():
             source.name = name
             source.user_id = session['user']
             source = database.sources.save(db, source)
+            db.commit()
             return redirect(url_for("source.source_edit",
                                     source_id=source.id))
     return render_template("source_new.html", kind=kind, name=name,
@@ -88,6 +91,7 @@ def source_edit(source_id):
         errors.update(src.validate_conf(source.settings, user_settings))
         if not errors:
             database.sources.save(db, source)
+            db.commit()
             next_action = request.form.get("next_action")
             if next_action == 'edit_filters':
                 return redirect(url_for("source.source_filters",
@@ -129,6 +133,7 @@ def source_mark_read(source_id):
     db = get_db()
     max_id = int(request.args['max_id'])
     database.sources.mark_read(db, source_id, max_id=max_id)
+    db.commit()
     if request.method == 'POST':
         return "ok"
     return redirect(request.headers.get('Referer')
@@ -205,6 +210,7 @@ def _build_filter_conf_from_req(fltr, conf):
 
 def _save_filter(db, source_id, idx, conf):
     database.sources.update_filter(db, source_id, idx, conf)
+    db.commit()
     flash("Filter saved")
     return redirect(url_for("source.source_filters", source_id=source_id))
 
@@ -213,6 +219,7 @@ def _save_filter(db, source_id, idx, conf):
 def source_filter_move(source_id, idx, move):
     db = get_db()
     database.sources.move_filter(db, source_id, idx, move)
+    db.commit()
     return redirect(url_for("source.source_filters", source_id=source_id))
 
 
@@ -220,4 +227,5 @@ def source_filter_move(source_id, idx, move):
 def source_filter_delete(source_id, idx):
     db = get_db()
     database.sources.delete_filter(db, source_id, idx)
+    db.commit()
     return redirect(url_for("source.source_filters", source_id=source_id))

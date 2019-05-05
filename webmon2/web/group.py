@@ -31,6 +31,7 @@ BP = Blueprint('group', __name__, url_prefix='/group')
 def refresh_group(group_id):
     db = get_db()
     database.sources.refresh(db, group_id=group_id)
+    db.commit()
     flash("Group mark to refresh")
     return redirect(request.headers.get('Referer')
                     or url_for("root.groups"))
@@ -51,6 +52,7 @@ def group_edit(group_id=0):
         form.update_from_request(request.form)
         sgroup = form.update_model(sgroup)
         database.groups.save(db, sgroup)
+        db.commit()
         return redirect(url_for("root.groups"))
 
     return render_template("group.html", group=form)
@@ -94,8 +96,7 @@ def group_mark_read(group_id):
     max_id = request.args.get('max_id')
     max_id = int(max_id) if max_id else max_id
     database.groups.mark_read(db, group_id, max_id=max_id)
-    if request.method == 'POST':
-        return "ok"
+    db.commit()
     if request.args.get('go') == 'next':
         # go to next unread group
         group_id = database.groups.get_next_unread_group(db, session['user'])
