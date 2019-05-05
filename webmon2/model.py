@@ -22,6 +22,14 @@ _LOG = logging.getLogger(__name__)
 
 
 class SourceGroup:
+    __slots__ = (
+        "id",
+        "name",
+        "user_id",
+        "feed",
+        "unread",
+    )
+
     def __init__(self, id_=None, name=None, user_id=None, feed=None,
                  unread=None):
         self.id = id_
@@ -44,6 +52,20 @@ class SourceGroup:
 
 
 class Source:
+    __slots__ = (
+        "id",
+        "group_id",
+        "kind",
+        "name",
+        "interval",
+        "settings",
+        "filters",
+        "user_id",
+        "group",
+        "state",
+        "unread",
+    )
+
     def __init__(self):
         self.id = None
         self.group_id = None
@@ -76,6 +98,18 @@ class Source:
 
 
 class SourceState:
+    __slots__ = (
+        "source_id",
+        "next_update",
+        "last_update",
+        "last_error",
+        "error_counter",
+        "success_counter",
+        "status",
+        "error",
+        "state",
+    )
+
     def __init__(self):
         self.source_id = None
         self.next_update = None
@@ -149,6 +183,23 @@ class SourceState:
 
 
 class Entry:
+    __slots__ = (
+        "id",
+        "source_id",
+        "updated",
+        "created",
+        "read_mark",
+        "star_mark",
+        "status",
+        "oid",
+        "title",
+        "url",
+        "content",
+        "opts",
+        "user_id",
+        "source",
+    )
+
     def __init__(self, id_=None, source_id=None):
         self.id = id_
         self.source_id = source_id
@@ -226,6 +277,14 @@ Entries = ty.Iterable[Entry]
 
 
 class Setting:
+    __slots__ = (
+        "key",
+        "value",
+        "value_type",
+        "description",
+        "user_id",
+    )
+
     def __init__(self, key=None, value=None, value_type=None,
                  description=None, user_id=None):
         self.key = key
@@ -247,6 +306,15 @@ class Setting:
 
 
 class User:
+    __slots__ = (
+        "id",
+        "login",
+        "email",
+        "password",
+        "active",
+        "admin",
+    )
+
     def __init__(self, id_=None, login=None, email=None, password=None,
                  active=None, admin=None):
         self.id = id_

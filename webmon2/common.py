@@ -214,7 +214,12 @@ def _val2str(value):
 
 
 def obj2str(obj):
+    if hasattr(obj, "__dict__"):
+        values = obj.__dict__.items()
+    else:
+        values = ((key, getattr(obj, key))
+                  for key in getattr(obj, "__slots__"))
     kvs = ", ".join([key + "=" + _val2str(val)
-                     for key, val in obj.__dict__.items()
+                     for key, val in values
                      if key[0] != "_"])
     return "<" + obj.__class__.__name__ + " " + kvs + ">"
