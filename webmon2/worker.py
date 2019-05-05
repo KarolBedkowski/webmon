@@ -127,6 +127,10 @@ class FetchWorker(threading.Thread):
 
         database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
+        if entries:
+            max_updated = max(e.updated for e in entries)
+            database.groups.update_state(db, source.group_id, max_updated)
+
         _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
                   source_id, len(entries), str(new_state))
 

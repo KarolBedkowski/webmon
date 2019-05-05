@@ -9,6 +9,7 @@ Licence: GPLv2+
 import logging
 import typing as ty
 import random
+import hashlib
 from datetime import datetime
 
 from webmon2 import model
@@ -144,3 +145,26 @@ def mark_read(db, group_id: int, max_id, min_id=0) -> int:
     changed = cur.rowcount
     db.commit()
     return changed
+
+
+def update_state(db, group_id: int, last_modified: datetime):
+    etag_h = hashlib.md5(str(group_id).encode('ascii'))
+    etag_h.update(str(last_modified).encode('ascii'))
+    etag = etag_h.hexdigest()
+
+    cur = db.cursor()
+    cur.execute("select last_modified from source_group_state "
+                "where group_id=?", (group_id, ))
+    row = cur.fetchone()
+    if row:
+        if row[0] > last_modified:
+            return
+        cur.execute(
+            "update source_group_state "
+            "set last_modified=?, etag=? "
+            "where group_id=?", (last_modified, etag, group_id))
+    else:
+        cur.execute(
+            "insert into source_group_state (group_id, last_modified, etag)"
+            "values (?, ?, ?)", (group_id, last_modified, etag))
+    db.commit()
