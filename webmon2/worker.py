@@ -36,6 +36,7 @@ class CheckWorker(threading.Thread):
 
     def run(self):
         cntr = 0
+        idx = 0;
         with database.DB.get() as db:
             _LOG.info("CheckWorker started; workers: %d", self._workers)
             while True:
@@ -43,17 +44,18 @@ class CheckWorker(threading.Thread):
                     _delete_old_entries(db)
                 cntr = (cntr + 1) % 60
                 _LOG.debug("CheckWorker check start")
-                if self._todo_queue.empty():
-                    ids = database.sources.get_sources_to_fetch(db)
-                    for id_ in ids:
-                        self._todo_queue.put(id_)
+                ids = database.sources.get_sources_to_fetch(db)
+                _LOG.debug("ids: %s", ids)
+                for id_ in ids:
+                    self._todo_queue.put(id_)
 
                 if not self._todo_queue.empty():
                     workers = []
                     for _ in range(self._workers):
-                        worker = FetchWorker(self._todo_queue)
+                        worker = FetchWorker(idx, self._todo_queue)
                         worker.start()
                         workers.append(worker)
+                        idx += 1
 
                     for worker in workers:
                         worker.join()
@@ -63,8 +65,9 @@ class CheckWorker(threading.Thread):
 
 
 class FetchWorker(threading.Thread):
-    def __init__(self, todo_queue):
+    def __init__(self, idx, todo_queue):
         threading.Thread.__init__(self)
+        self._idx = idx
         self._todo_queue = todo_queue
 
     def run(self):
@@ -78,35 +81,22 @@ class FetchWorker(threading.Thread):
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
-        _LOG.info("processing source %d", source_id)
+        _LOG.info("[%d] processing source %d", self._idx, source_id)
         try:
             source = database.sources.get(db, id_=source_id, with_state=True)
         except database.NotFound:
-            _LOG.error("source %d not found!", source_id)
+            _LOG.error("[%d] source %d not found!", self._idx, source_id)
             return
-        try:
-            sys_settings = database.settings.get_dict(
-                db, source.user_id)
-            _LOG.debug('sys_settings: %r', sys_settings)
-            if not source.interval:
-                interval = sys_settings.get('interval') or '1d'
-                _LOG.debug("source %d has no interval; using default: %r",
-                           source.id, interval)
-                source.interval = interval
-            src = sources.get_source(source, sys_settings)
-            src.validate()
-        except common.ParamError as err:
-            _LOG.error("get cource class for source id=%d error: %s",
-                       source_id, err)
-            _save_state_error(db, source, str(err))
-            return
+
+        src = self._get_src(db, source)
         if not src:
             return
 
         try:
             new_state, entries = src.load(source.state)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("load source id=%d error: %s", source_id, err)
+            _LOG.exception("[%d] load source id=%d error: %s",
+                           self._idx, source_id, err)
             _save_state_error(db, source, err)
             return
 
@@ -132,8 +122,29 @@ class FetchWorker(threading.Thread):
             database.groups.update_state(db, source.group_id, max_updated)
         db.commit()
 
-        _LOG.info("processing source %d FINISHED, entries=%d, state=%s",
-                  source_id, len(entries), str(new_state))
+        _LOG.info("[%d] processing source %d FINISHED, entries=%d, state=%s",
+                  self._idx, source_id, len(entries), str(new_state))
+
+    def _get_src(self, db, source):
+        try:
+            sys_settings = database.settings.get_dict(
+                db, source.user_id)
+            _LOG.debug('[%d] sys_settings: %r', self._idx, sys_settings)
+            if not source.interval:
+                interval = sys_settings.get('interval') or '1d'
+                _LOG.debug("[%d] source %d has no interval; using default: %r",
+                           self._idx, source.id, interval)
+                source.interval = interval
+            src = sources.get_source(source, sys_settings)
+            src.validate()
+            return src
+        except common.ParamError as err:
+            _LOG.error("[%d] get source class for source id=%d error: %s",
+                       self._idx, source.id, err)
+            _save_state_error(db, source, str(err))
+        return None
+
+
 
 
 def _delete_old_entries(db):

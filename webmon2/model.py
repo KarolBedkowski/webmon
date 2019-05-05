@@ -12,7 +12,7 @@ Models
 
 import os
 import hashlib
-import datetime
+from datetime import datetime
 import typing as ty
 import logging
 
@@ -43,15 +43,15 @@ class SourceGroup:
         return common.obj2str(self)
 
     def clone(self):
-        sg = SourceGroup()
-        sg.id = self.id
-        sg.name = self.name
-        sg.user_id = self.user_id
-        sg.feed = self.feed
-        return sg
+        sgr = SourceGroup()
+        sgr.id = self.id
+        sgr.name = self.name
+        sgr.user_id = self.user_id
+        sgr.feed = self.feed
+        return sgr
 
 
-class Source:
+class Source:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "id",
         "group_id",
@@ -97,7 +97,7 @@ class Source:
         return src
 
 
-class SourceState:
+class SourceState:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "source_id",
         "next_update",
@@ -125,7 +125,7 @@ class SourceState:
     def new(source_id):
         source = SourceState()
         source.source_id = source_id
-        source.next_update = datetime.datetime.now()
+        source.next_update = datetime.now()
         source.error_counter = 0
         source.success_counter = 0
         source.status = 'new'
@@ -141,7 +141,7 @@ class SourceState:
     def new_ok(self):
         state = SourceState()
         state.source_id = self.source_id
-        state.last_update = datetime.datetime.now()
+        state.last_update = datetime.now()
         state.status = 'ok'
         state.success_counter = self.success_counter + 1
         state.last_error = None
@@ -162,7 +162,7 @@ class SourceState:
     def new_not_modified(self):
         state = SourceState()
         state.source_id = self.source_id
-        state.last_update = datetime.datetime.now()
+        state.last_update = datetime.now()
         state.status = 'not modified'
         state.last_error = None
         state.error = None
@@ -182,7 +182,7 @@ class SourceState:
         return common.obj2str(self)
 
 
-class Entry:
+class Entry:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "id",
         "source_id",
@@ -201,21 +201,21 @@ class Entry:
     )
 
     def __init__(self, id_=None, source_id=None):
-        self.id = id_
-        self.source_id = source_id
-        self.updated = None
-        self.created = None
-        self.read_mark = 0
-        self.star_mark = 0
-        self.status = None
-        self.oid = None
-        self.title = None
-        self.url = None
-        self.content = None
-        self.opts = None
-        self.user_id = None
+        self.id = id_   # type: ty.Optional[int]
+        self.source_id = source_id  # type: ty.Optional[int]
+        self.updated = None  # type: ty.Optional[datetime]
+        self.created = None  # type: ty.Optional[datetime]
+        self.read_mark = 0  # type: int
+        self.star_mark = 0  # type: int
+        self.status = None  # type: ty.Optional[str]
+        self.oid = None     # type: ty.Optional[str]
+        self.title = None   # type: ty.Optional[str]
+        self.url = None     # type: ty.Optional[str]
+        self.content = None  # type: ty.Optional[str]
+        self.opts = None    # type: ty.Optional[ty.Dict[str, ty.Any]]
+        self.user_id = None  # type: ty.Optional[int]
 
-        self.source = None
+        self.source = None  # type: ty.Optional[Source]
 
     def __str__(self):
         return common.obj2str(self)
@@ -273,10 +273,12 @@ class Entry:
         return '\n'.join(self.content.split('\n', 21)[:20]) + "\n…"
 
     def validate(self):
-        if not isinstance(self.updated, datetime.datetime):
+        if not isinstance(self.updated, datetime):
             _LOG.error("wrong entry.updated:  %r (%s)", self.updated, self)
-        if not isinstance(self.created, datetime.datetime):
+        if not isinstance(self.created, datetime):
             _LOG.error("wrong entry.created:  %r (%s)", self.created, self)
+        if not self.title:
+            _LOG.error("missing title %s", self)
 
 
 Entries = ty.Iterable[Entry]
