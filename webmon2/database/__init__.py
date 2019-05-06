@@ -67,11 +67,12 @@ class DB:
         return self._conn.total_changes
 
     @classmethod
-    def initialize(cls, filename: str):
+    def initialize(cls, filename: str, update_schema: bool):
         _LOG.info("initializing database: %s", filename)
         common.create_missing_dir(os.path.dirname(filename))
         db = DB(filename)
-        db.update_schema()
+        if update_schema:
+            db.update_schema()
         db.close()
         cls.INSTANCE = db
         return db

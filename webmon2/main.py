@@ -15,6 +15,8 @@ import logging
 import os.path
 import typing as ty
 
+from werkzeug.serving import is_running_from_reloader
+
 try:
     import stackprinter
     stackprinter.set_excepthook(style='color')
@@ -139,15 +141,17 @@ def main():
     dbfile = os.path.expanduser(args.database_file)
     if args.debug and os.path.isfile('./webmon.db'):
         dbfile = "./webmon.db"
-    database.DB.initialize(dbfile)
+    database.DB.initialize(dbfile,
+                           update_schema=not is_running_from_reloader())
 
     if cli.process_cli(args):
         return
 
-    cworker = worker.CheckWorker(args.workers)
-    cworker.start()
+    if not is_running_from_reloader():
+        cworker = worker.CheckWorker(args.workers)
+        cworker.start()
 
-    web.start_app(args.debug, args.web_app_root)
+    web.start_app(args)
 
 
 if __name__ == "__main__":
