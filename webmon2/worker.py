@@ -18,7 +18,7 @@ import datetime
 import random
 from prometheus_client import Counter
 
-from . import sources, common, filters, database, model
+from . import sources, common, filters, database, model, formatters
 
 _LOG = logging.getLogger("main")
 _SOURCES_PROCESSED = Counter(
@@ -114,6 +114,9 @@ class FetchWorker(threading.Thread):
 
         for entry in entries:
             entry.validate()
+            content_type = entry.get_opt("content-type")
+            entry.content = formatters.body_format(entry.content, content_type)
+            entry.set_opt("content-type", "safe")
 
         database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
@@ -143,8 +146,6 @@ class FetchWorker(threading.Thread):
                        self._idx, source.id, err)
             _save_state_error(db, source, str(err))
         return None
-
-
 
 
 def _delete_old_entries(db):

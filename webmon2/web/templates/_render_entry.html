@@ -15,8 +15,10 @@
  		{% if entry.is_long_content() and mode == 'summary' %}
 			{% if entry.get_opt('content-type') == 'html' %}
 				{{ entry.get_summary()|readable_html|safe }}
-			{% elif entry.get_opt('preformated') %}
-				<pre>{{ entry.get_summary()|safe }}</pre>
+			{% elif entry.get_opt('content-type') == 'preformated' %}
+				<pre>{{ entry.get_summary() }}</pre>
+			{% elif entry.get_opt('content-type') == 'safe' %}
+				{{ entry.get_summary()|safe }}
 			{% else %}
 				{{ entry.get_summary()|format_body|safe }}
 			{% endif %}
@@ -24,8 +26,10 @@
 		{% elif entry.content %}
 			{% if entry.get_opt('content-type') == 'html' %}
 				{{ entry.content|readable_html|safe }}
-			{% elif entry.get_opt('preformated') %}
-				<pre>{{ entry.content|safe }}</pre>
+			{% elif entry.get_opt('content-type') == 'preformated' %}
+				<pre>{{ entry.content }}</pre>
+			{% elif entry.get_opt('content-type') == 'safe' %}
+				{{ entry.content|safe }}
 			{% else %}
 				{{ entry.content|format_body|safe }}
 			{% endif %}
