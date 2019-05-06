@@ -42,8 +42,14 @@ def _format_body_filter(body):
 def _readable_html(body):
     if not body:
         return body
+    if '<body' not in body:
+        return body
     doc = readability.Document(body)
-    return doc.get_clean_html()
+    try:
+        return doc.get_clean_html()
+    except TypeError:
+        _LOG.exception("_readable_html error: %r", body)
+    return body
 
 
 def _age_filter(date):
