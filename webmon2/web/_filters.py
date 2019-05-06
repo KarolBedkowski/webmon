@@ -13,43 +13,11 @@ import datetime
 import logging
 import urllib
 
-import markdown2
-from werkzeug.contrib.cache import SimpleCache
 from flask import request
-import readability
 
+from webmon2 import formatters
 
 _LOG = logging.getLogger(__file__)
-_BODY_CACHE = SimpleCache(threshold=50, default_timeout=300)
-
-
-def _format_body_filter(body):
-    if not body:
-        return body
-    body_hash = hash(body)
-    value = _BODY_CACHE.get(body_hash)
-    if value is not None:
-        _LOG.debug("format_body cache hit")
-        return value
-#    return publish_parts(
-#        body, writer_name='html', settings=None)['fragment']
-    value = markdown2.markdown(body, extras=["code-friendly", "nofollow",
-                                             "target-blank-links"])
-    _BODY_CACHE.set(body_hash, value)
-    return value
-
-
-def _readable_html(body):
-    if not body:
-        return body
-    if '<body' not in body:
-        return body
-    doc = readability.Document(body)
-    try:
-        return doc.get_clean_html()
-    except TypeError:
-        _LOG.exception("_readable_html error: %r", body)
-    return body
 
 
 def _age_filter(date):
@@ -76,8 +44,8 @@ def _absoute_url(url):
 
 
 def register(app):
-    app.jinja_env.filters['format_body'] = _format_body_filter
+    app.jinja_env.filters['format_body'] = formatters.format_markdown
     app.jinja_env.filters['age'] = _age_filter
     app.jinja_env.filters['format_date'] = _format_date
     app.jinja_env.filters['absolute_url'] = _absoute_url
-    app.jinja_env.filters['readable_html'] = _readable_html
+    app.jinja_env.filters['readable_html'] = formatters.format_html
