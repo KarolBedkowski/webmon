@@ -114,6 +114,7 @@ def get_starred(db, user_id: int) -> model.Entries:
         if entry.source.group_id:
             entry.source.group = dbc.source_group_from_row(row)
         yield entry
+    cur.close()
 
 
 def get_total_count(db, user_id: int, source_id=None, group_id=None,
@@ -140,7 +141,9 @@ def get_total_count(db, user_id: int, source_id=None, group_id=None,
         if unread:
             sql += " and read_mark=0"
     cur.execute(sql, args)
-    return cur.fetchone()[0]
+    result = cur.fetchone()[0]
+    cur.close()
+    return result
 
 
 def find(db, user_id: int, source_id=None, group_id=None, unread=True,
@@ -171,8 +174,9 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
                 group = user_groups[entry.source.group_id] = \
                     dbc.source_group_from_row(row)
             entry.source.group = group
-        _LOG.debug("entry %s", entry)
+        # _LOG.debug("entry %s", entry)
         yield entry
+    cur.close()
 
 
 def find_for_feed(db, group_id: int) -> model.Entries:
@@ -188,6 +192,7 @@ def find_for_feed(db, group_id: int) -> model.Entries:
             group = dbc.source_group_from_row(row)
         entry.source.group = group
         yield entry
+    cur.close()
 
 
 _GET_ENTRY_SQL = '''
@@ -218,6 +223,7 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
         sql = _GET_ENTRY_SQL + "where oid=:oid"
     cur.execute(sql, {"oid": oid, "id": id_})
     row = cur.fetchone()
+    cur.close()
     if not row:
         raise dbc.NotFound()
     entry = dbc.entry_from_row(row)
@@ -251,6 +257,7 @@ def save(db, entry: model.Entry) -> model.Entry:
         entry.id = cur.lastrowid
     else:
         cur.execute(_UPDATE_ENTRY_SQL, row)
+    cur.close()
     return entry
 
 
@@ -276,6 +283,7 @@ def save_many(db, entries: model.Entries, source_id: int):
     ]
     _LOG.debug("new entries: %d", len(rows))
     cur.executemany(_INSERT_ENTRY_SQL, rows)
+    cur.close()
 
 
 def delete_old(db, user_id: int, max_datetime: datetime):
@@ -284,6 +292,7 @@ def delete_old(db, user_id: int, max_datetime: datetime):
     cur.execute("delete from entries where star_mark=0 and read_mark=0 "
                 "and updated<? and user_id=?", (max_datetime, user_id))
     deleted = cur.rowcount
+    cur.close()
     _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
               deleted)
 
@@ -297,6 +306,7 @@ def mark_star(db, entry_id: int, star=True) -> int:
         "update entries set star_mark=? where id = ? and star_mark = ?",
         (star, entry_id, 1-star))
     changed = cur.rowcount
+    cur.close()
     _LOG.debug("total changes: %d, changed: %d", db.total_changes,
                changed)
     return changed
@@ -319,6 +329,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     cur.executemany(
         "insert into history_oids(source_id, oid) values (?, ?)",
         [(source_id, oid) for oid in new_oids])
+    cur.close()
     return result
 
 
@@ -339,6 +350,7 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
             "update entries set read_mark=? where id <= ? and id >= ? "
             "and user_id=?", (read, max_id, min_id or 0, user_id))
     changed = cur.rowcount
+    cur.close()
     return changed
 
 

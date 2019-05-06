@@ -36,56 +36,61 @@ class CheckWorker(threading.Thread):
 
     def run(self):
         cntr = 0
-        idx = 0;
-        with database.DB.get() as db:
-            _LOG.info("CheckWorker started; workers: %d", self._workers)
-            while True:
-                if not cntr:
+        idx = 0
+        _LOG.info("CheckWorker started; workers: %d", self._workers)
+        while True:
+            if not cntr:
+                with database.DB.get() as db:
                     _delete_old_entries(db)
-                cntr = (cntr + 1) % 60
-                _LOG.debug("CheckWorker check start")
+            cntr = (cntr + 1) % 60
+            _LOG.debug("CheckWorker check start")
+            with database.DB.get() as db:
                 ids = database.sources.get_sources_to_fetch(db)
-                _LOG.debug("ids: %s", ids)
-                for id_ in ids:
-                    self._todo_queue.put(id_)
+            _LOG.debug("ids: %s", ids)
+            for id_ in ids:
+                self._todo_queue.put(id_)
 
-                if not self._todo_queue.empty():
-                    workers = []
-                    for _ in range(self._workers):
-                        worker = FetchWorker(idx, self._todo_queue)
-                        worker.start()
-                        workers.append(worker)
-                        idx += 1
+            if not self._todo_queue.empty():
+                workers = []
+                for _ in range(min(self._workers, len(ids))):
+                    worker = FetchWorker(str(id(self)) + " " + str(idx),
+                                         self._todo_queue)
+                    worker.start()
+                    workers.append(worker)
+                    idx += 1
 
-                    for worker in workers:
-                        worker.join()
+                for worker in workers:
+                    worker.join()
 
-                _LOG.debug("CheckWorker check done")
-                time.sleep(60)
+            _LOG.debug("CheckWorker check done, %r", cntr)
+            time.sleep(15)
 
 
 class FetchWorker(threading.Thread):
     def __init__(self, idx, todo_queue):
         threading.Thread.__init__(self)
-        self._idx = idx
+        self._idx = idx + " " + str(id(self))
         self._todo_queue = todo_queue
 
     def run(self):
-        with database.DB.get() as db:
-            while not self._todo_queue.empty():
-                source_id = self._todo_queue.get()
+        while not self._todo_queue.empty():
+            source_id = self._todo_queue.get()
+            with database.DB.get() as db:
                 try:
                     self._process_source(db, source_id)
+                    db.commit()
                 except Exception:  # pylint: disable=broad-except
-                    _LOG.exception("process source %d error", source_id)
+                    _LOG.exception("[%s] process source %d error", self._idx,
+                                   source_id)
+                    db.rollback()
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
-        _LOG.info("[%d] processing source %d", self._idx, source_id)
+        _LOG.info("[%s] processing source %d", self._idx, source_id)
         try:
             source = database.sources.get(db, id_=source_id, with_state=True)
         except database.NotFound:
-            _LOG.error("[%d] source %d not found!", self._idx, source_id)
+            _LOG.error("[%s] source %d not found!", self._idx, source_id)
             return
 
         src = self._get_src(db, source)
@@ -95,7 +100,7 @@ class FetchWorker(threading.Thread):
         try:
             new_state, entries = src.load(source.state)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("[%d] load source id=%d error: %s",
+            _LOG.exception("[%s] load source id=%d error: %s",
                            self._idx, source_id, err)
             _save_state_error(db, source, err)
             return
@@ -105,6 +110,8 @@ class FetchWorker(threading.Thread):
             new_state.next_update = last_update + \
                 datetime.timedelta(
                     seconds=common.parse_interval(source.interval))
+
+        db.begin()
 
         if source.filters:
             entries = filters.filter_by(source.filters, entries,
@@ -123,26 +130,25 @@ class FetchWorker(threading.Thread):
         if entries:
             max_updated = max(e.updated for e in entries)
             database.groups.update_state(db, source.group_id, max_updated)
-        db.commit()
 
-        _LOG.info("[%d] processing source %d FINISHED, entries=%d, state=%s",
+        _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
                   self._idx, source_id, len(entries), str(new_state))
 
     def _get_src(self, db, source):
         try:
             sys_settings = database.settings.get_dict(
                 db, source.user_id)
-            _LOG.debug('[%d] sys_settings: %r', self._idx, sys_settings)
+            _LOG.debug('[%s] sys_settings: %r', self._idx, sys_settings)
             if not source.interval:
                 interval = sys_settings.get('interval') or '1d'
-                _LOG.debug("[%d] source %d has no interval; using default: %r",
+                _LOG.debug("[%s] source %d has no interval; using default: %r",
                            self._idx, source.id, interval)
                 source.interval = interval
             src = sources.get_source(source, sys_settings)
             src.validate()
             return src
         except common.ParamError as err:
-            _LOG.error("[%d] get source class for source id=%d error: %s",
+            _LOG.error("[%s] get source class for source id=%d error: %s",
                        self._idx, source.id, err)
             _save_state_error(db, source, str(err))
         return None
@@ -151,6 +157,7 @@ class FetchWorker(threading.Thread):
 def _delete_old_entries(db):
     users = list(database.users.get_all(db))
     for user in users:
+        db.begin()
         keep_days = database.settings.get_value(
             db, 'keep_entries_days', user.id, default=90)
         if not keep_days:
@@ -172,4 +179,3 @@ def _save_state_error(db, source: model.Source, err: str):
         datetime.timedelta(seconds=next_check_delta)
 
     database.sources.save_state(db, new_state)
-    db.commit()

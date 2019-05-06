@@ -34,6 +34,7 @@ def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
     cur = db.cursor()
     for row in cur.execute(_GET_ALL_SQL, (user_id, )):
         yield _setting_from_row(row)
+    cur.close()
 
 
 _GET_SQL = """
@@ -50,6 +51,7 @@ def get(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
     cur = db.cursor()
     cur.execute(_GET_SQL, (user_id, key))
     row = cur.fetchone()
+    cur.close()
     return _setting_from_row(row) if row else None
 
 
@@ -63,6 +65,7 @@ def save_all(db, settings: ty.List[model.Setting]):
         [(setting.key, setting.user_id) for setting in settings])
     cur.executemany("insert into user_settings (key, value, user_id) "
                     "values (?, ?, ?)", rows)
+    cur.close()
 
 
 def get_value(db, key: str, user_id: int, default=None) \

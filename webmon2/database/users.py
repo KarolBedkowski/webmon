@@ -24,6 +24,7 @@ def get_all(db) -> ty.Iterable[model.User]:
     for row in cur.execute(
             "select id, login, email, password, active, admin from users"):
         yield _user_from_row(row)
+    cur.close()
 
 
 def get(db, id_=None, login=None) -> ty.Optional[model.User]:
@@ -36,8 +37,10 @@ def get(db, id_=None, login=None) -> ty.Optional[model.User]:
         cur.execute("select id, login, email, password, active, admin "
                     "from users where login=?", (login, ))
     else:
+        cur.close()
         return None
     row = cur.fetchone()
+    cur.close()
     if not row:
         return None
     user = _user_from_row(row)
@@ -56,6 +59,7 @@ def save(db, user: model.User) -> model.User:
     else:
         cur.execute("select 1 from users where login=?", (user.login, ))
         if cur.fetchone():
+            cur.close()
             raise LoginAlreadyExistsError()
         cur.execute(
             "insert into users (login, email, password, active, admin) "
@@ -64,6 +68,7 @@ def save(db, user: model.User) -> model.User:
         user.id = cur.lastrowid
         _create_new_user_data(cur, user.id)
 
+    cur.close()
     return user
 
 

@@ -36,6 +36,7 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
     groups = [model.SourceGroup(id, name, user_id, feed, unread)
               for id, name, user_id, feed, unread in cur]
+    cur.close()
     return groups
 
 
@@ -52,6 +53,7 @@ def get(db, group_id) -> model.SourceGroup:
     cur = db.cursor()
     cur.execute(_GET_SQL, (group_id, ))
     row = cur.fetchone()
+    cur.close()
     if not row:
         raise dbc.NotFound()
     return dbc.source_group_from_row(row)
@@ -72,6 +74,7 @@ def get_by_feed(db, feed: str) -> model.SourceGroup:
     cur = db.cursor()
     cur.execute(_GET_BY_FEED_SQL, (feed, ))
     row = cur.fetchone()
+    cur.close()
     if not row:
         raise dbc.NotFound()
     return dbc.source_group_from_row(row)
@@ -85,6 +88,7 @@ def get_last_update(db, group_id: int) -> ty.Optional[datetime]:
         "where source_id in (select id from sources where group_id=?)",
         (group_id, ))
     row = cur.fetchone()
+    cur.close()
     _LOG.debug("row: %s", row[0])
     return datetime.fromisoformat(row[0]) if row and row[0] else None
 
@@ -103,6 +107,7 @@ def save(db, group: model.SourceGroup) -> model.SourceGroup:
     else:
         cur.execute("update source_groups set name=?, feed=? where id=?",
                     (group.name, group.feed, group.id))
+    cur.close()
     return group
 
 
@@ -129,6 +134,7 @@ def get_next_unread_group(db, user_id: int) -> ty.Optional[int]:
     cur = db.cursor()
     cur.execute(_GET_NEXT_UNREAD_GROUP_SQL, (user_id, ))
     row = cur.fetchone()
+    cur.close()
     return row[0] if row else None
 
 
@@ -148,6 +154,7 @@ def mark_read(db, group_id: int, max_id, min_id=0) -> int:
     cur.execute(_MARK_READ_SQL, {"group_id": group_id, "min_id": min_id,
                                  "max_id": max_id})
     changed = cur.rowcount
+    cur.close()
     return changed
 
 
@@ -172,6 +179,7 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
         cur.execute(
             "insert into source_group_state (group_id, last_modified, etag)"
             "values (?, ?, ?)", (group_id, last_modified, etag))
+    cur.close()
     return etag
 
 
@@ -184,6 +192,7 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
         "select last_modified, etag from source_group_state where group_id=?",
         (group_id, ))
     row = cur.fetchone()
+    cur.close()
     if not row:
         last_updated = get_last_update(db, group_id)
         if not last_updated:
@@ -214,6 +223,7 @@ def delete(db, user_id: int, group_id: int):
         _LOG.debug("moved %d sources", cur.rowcount)
 
     cur.execute("delete from source_groups where id=?", (group_id, ))
+    cur.close()
 
 
 def _find_dst_group(cur, user_id: int, group_id: int):
@@ -222,12 +232,14 @@ def _find_dst_group(cur, user_id: int, group_id: int):
         "and id != ? order by id limit 1", (user_id, group_id))
     row = cur.fetchone()
     if row:
+        cur.close()
         return row[0]
 
     cur.execute(
         "select id from source_groups where user_id=? "
         "and id != ? order by id limit 1", (user_id, group_id))
     row = cur.fetchone()
+    cur.close()
     if row:
         return row[0]
-    raise OperationError("can't find destination group for sources")
+    raise common.OperationError("can't find destination group for sources")

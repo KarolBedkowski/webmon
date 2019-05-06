@@ -10,6 +10,8 @@
 Access & manage sources
 """
 
+import sqlite3
+import time
 import logging
 import typing as ty
 
@@ -67,6 +69,7 @@ def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
         source.group = user_groups.get(source.group_id) \
             if source.group_id else None
         yield source
+    cur.close()
 
 
 _GET_SOURCE_SQL = """
@@ -83,6 +86,7 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
     cur = db.cursor()
     cur.execute(_GET_SOURCE_SQL, (id_, ))
     row = cur.fetchone()
+    cur.close()
     if row is None:
         raise dbc.NotFound()
 
@@ -121,6 +125,7 @@ def save(db, source: model.Source) -> model.Source:
         save_state(db, state)
     else:
         cur.execute(_UPDATE_SOURCE_SQL, row)
+    cur.close()
     return source
 
 
@@ -129,6 +134,7 @@ def delete(db, source_id: int) -> int:
     cur = db.cursor()
     cur.execute("delete from sources where id=?", (source_id, ))
     updated = cur.rowcount
+    cur.close()
     return updated
 
 
@@ -193,7 +199,9 @@ def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
     cur = db.cursor()
     cur.execute(_GET_STATE_SQL, (source_id, ))
     row = cur.fetchone()
-    return _state_from_row(row) if row else None
+    state = _state_from_row(row) if row else None
+    cur.close()
+    return state
 
 
 _INSERT_STATE_SQL = """
@@ -203,14 +211,43 @@ values (:source_id, :next_update, :last_update, :last_error,
     :error_counter, :success_counter, :status, :error, :state)
 """
 
+_UPDATE_STATE_SQL = """
+update source_state
+set  next_update=:next_update,
+     last_update=:last_update,
+     last_error=:last_error,
+     error_counter=:error_counter,
+     success_counter=:success_counter,
+     status=:status,
+     error=:error,
+     state=:state
+where source_id=:source_id
+"""
+
 
 def save_state(db, state: model.SourceState) -> model.SourceState:
     """ Save (replace) source state """
-    cur = db.cursor()
     row = _state_to_row(state)
-    cur.execute("delete from source_state where source_id=?",
-                (state.source_id,))
-    cur.execute(_INSERT_STATE_SQL, row)
+    while True:
+        cur = None
+        try:
+#            cur = db.cursor()
+#            cur.execute("delete from source_state where source_id=?",
+#                        (state.source_id,))
+#            cur.close()
+            cur = db.cursor()
+            cur.execute(_UPDATE_STATE_SQL, row)
+            _LOG.debug("OK")
+        except sqlite3.OperationalError as err:
+            _LOG.warning(
+                "delete source_state OperationalError, sleeping, %s: %s",
+                state, str(err))
+        else:
+            break
+        finally:
+            if cur:
+                cur.close()
+        time.sleep(1)
     return state
 
 
@@ -222,6 +259,7 @@ def get_sources_to_fetch(db) -> ty.List[int]:
                "select source_id from source_state "
                "where next_update <= datetime('now', 'localtime')")
            ]
+    cur.close()
     return ids
 
 
@@ -249,6 +287,7 @@ def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
     cur.execute(sql, {"group_id": group_id, "source_id": source_id,
                       "user_id": user_id})
     updated = cur.rowcount
+    cur.close()
     return updated
 
 
@@ -265,6 +304,7 @@ def refresh_errors(db, user_id: int) -> int:
     cur = db.cursor()
     cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
     updated = cur.rowcount
+    cur.close()
     return updated
 
 
@@ -276,6 +316,7 @@ def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
         "and id <= ? and read_mark=0 and id >= ?",
         (source_id, max_id, min_id))
     changed = cur.rowcount
+    cur.close()
     return changed
 
 
@@ -287,6 +328,7 @@ def get_filter_state(db, source_id: int, filter_name: str) \
                 'where source_id=? and filter_name=?',
                 (source_id, filter_name))
     row = cur.fetchone()
+    cur.close()
     if not row:
         return None
     return json.loads(row[0]) if isinstance(row[0], str) and row[0] \
@@ -304,6 +346,7 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
         cur.execute(
             'insert into filter_name (source_id, filter_name, state) '
             'values(?, ?, ?)', (source_id, filter_name, state))
+    cur.close()
 
 
 def _state_to_row(state: model.SourceState) -> ty.Dict[str, ty.Any]:

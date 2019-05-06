@@ -39,12 +39,14 @@ class DB:
     def __init__(self, filename: str) -> None:
         super().__init__()
         self._filename = filename
-        self._conn = sqlite3.connect(self._filename, timeout=10,
+        self._conn = sqlite3.connect(self._filename, timeout=30,
                                      isolation_level="EXCLUSIVE",
                                      detect_types=sqlite3.PARSE_DECLTYPES)
         self._conn.row_factory = sqlite3.Row
-        self._conn.executescript("PRAGMA journal_mode=WAL;"
-                                 "PRAGMA foreign_keys = ON;")
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA foreign_keys = ON")
+        self._conn.execute("PRAGMA timeout=30000")
+        self._conn.execute("PRAGMA busy_timeout = 30000")
 
     def clone(self):
         return DB(self._filename)
@@ -55,6 +57,10 @@ class DB:
 
     def cursor(self):
         return self._conn.cursor()
+
+    def begin(self):
+        # return self._conn.execute("begin deferred transaction")
+        pass
 
     def commit(self):
         return self._conn.commit()
@@ -78,6 +84,7 @@ class DB:
         return db
 
     def __enter__(self):
+        _LOG.debug("Enter conn %s", id(self._conn))
         return self
 
     def __exit__(self, type_, value, traceback):
@@ -86,7 +93,8 @@ class DB:
 
     def close(self):
         if self._conn is not None:
-            self._conn.executescript("PRAGMA optimize")
+            _LOG.debug("Closing conn %s", id(self._conn))
+#            self._conn.executescript("PRAGMA optimize")
             self._conn.close()
             self._conn = None
 

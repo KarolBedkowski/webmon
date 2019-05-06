@@ -14,7 +14,6 @@ import os
 import logging
 import time
 import random
-import string
 
 from flask import Flask, g, url_for, session, request, redirect, abort
 from werkzeug.wsgi import DispatcherMiddleware
@@ -22,32 +21,13 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 
-from webmon2 import database
+from webmon2 import database, worker
 
 
 _LOG = logging.getLogger(__name__)
 
 
-def create_app(debug, root):
-    template_folder = os.path.join(os.path.dirname(__file__), 'templates')
-    # create and configure the app
-    app = Flask(__name__, instance_relative_config=True,
-                template_folder=template_folder)
-    app.config.from_mapping(
-        ENV="debug" if debug else 'production',
-        SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
-        SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
-        APPLICATION_ROOT=root,
-        SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
-    )
-    app.app_context().push()
-
-    @app.teardown_appcontext
-    def close_connection(_exception):
-        db = getattr(g, '_database', None)
-        if db is not None:
-            db.close()
-
+def _register_blueprints(app):
     from . import _filters
     _filters.register(app)
 
@@ -74,6 +54,34 @@ def create_app(debug, root):
 
     from . import atom
     app.register_blueprint(atom.BP)
+
+
+def _start_bg_tasks(args):
+    cworker = worker.CheckWorker(args.workers)
+    cworker.start()
+
+
+def create_app(debug, root, args):
+    template_folder = os.path.join(os.path.dirname(__file__), 'templates')
+    # create and configure the app
+    app = Flask(__name__, instance_relative_config=True,
+                template_folder=template_folder)
+    app.config.from_mapping(
+        ENV="debug" if debug else 'production',
+        SECRET_KEY=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc',
+        SECURITY_PASSWORD_SALT=b'rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf',
+        APPLICATION_ROOT=root,
+        SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
+    )
+    app.app_context().push()
+
+    _register_blueprints(app)
+
+    @app.teardown_appcontext
+    def close_connection(_exception):
+        db = getattr(g, '_database', None)
+        if db is not None:
+            db.close()
 
     @app.before_request
     def before_request():
@@ -112,7 +120,7 @@ def create_app(debug, root):
 
 
 def _generate_csrf_token():
-    chars = string.ascii_letters + string.digits
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     return ''.join(random.SystemRandom().choice(chars) for _ in range(32))
 
 
@@ -155,15 +163,16 @@ def simple_not_found(_env, resp):
     return [b'Not found']
 
 
-def start_app(debug, root):
-    app = create_app(debug, root)
+def start_app(args):
+    root = args.web_app_root
+    app = create_app(args.debug, root, args)
 
     if root != '/':
         app.wsgi_app = DispatcherMiddleware(simple_not_found,
                                             {root: app.wsgi_app})
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1,
                             x_host=0, x_port=0, x_prefix=0)
-    if debug:
+    if args.debug:
         app.run(debug=True)
     else:
         http_server = WSGIServer(('', 5000), app)
