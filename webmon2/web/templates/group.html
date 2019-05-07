@@ -25,7 +25,7 @@
 		<button type="submit">Save</button>
 		&nbsp;
 		&nbsp;
-		<span><a href="{{ url_for('group.group_delete', group_id=group.id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">Delete</a></span>
+		<span><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">Delete</a></span>
 	</form>
 {% endblock %}
 

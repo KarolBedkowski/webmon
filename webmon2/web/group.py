@@ -37,7 +37,7 @@ def refresh_group(group_id):
                     or url_for("root.groups"))
 
 
-@BP.route("/group/new")
+@BP.route("/group/new", methods=["GET", "POST"])
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
 def group_edit(group_id=0):
     db = get_db()
@@ -55,7 +55,7 @@ def group_edit(group_id=0):
         db.commit()
         return redirect(url_for("root.groups"))
 
-    return render_template("group.html", group=form)
+    return render_template("group.html", group=form, group_id=group_id)
 
 
 @BP.route('/group/<int:group_id>/sources')
