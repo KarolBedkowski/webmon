@@ -39,6 +39,7 @@ class CheckWorker(threading.Thread):
         idx = 0
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
+            time.sleep(15)
             if not cntr:
                 with database.DB.get() as db:
                     _delete_old_entries(db)
@@ -63,7 +64,6 @@ class CheckWorker(threading.Thread):
                     worker.join()
 
             _LOG.debug("CheckWorker check done, %r", cntr)
-            time.sleep(15)
 
 
 class FetchWorker(threading.Thread):
