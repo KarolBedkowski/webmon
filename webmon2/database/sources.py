@@ -9,13 +9,12 @@
 """
 Access & manage sources
 """
-
+import json
 import sqlite3
 import time
 import logging
 import typing as ty
-
-import json
+import datetime
 
 from webmon2 import model
 from . import _dbcommon as dbc
@@ -46,11 +45,11 @@ left join source_state ss on ss.source_id = s.id
 """
 
 _GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + """
-where s.user_id=:user_id
+where s.user_id=%(user_id)s
 order by s.name """
 
 _GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL_BASE + """
-where group_id = :group_id and s.user_id = :user_id
+where group_id = %(group_id)s and s.user_id = %(user_id)s
 order by s.name """
 
 
@@ -62,7 +61,8 @@ def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
     user_groups = {g.id: g for g in groups.get_all(db, user_id)}
     args = {"user_id": user_id, "group_id": group_id}
     sql = _GET_SOURCES_SQL if group_id is None else _GET_SOURCES_BY_GROUP_SQL
-    for row in cur.execute(sql, args):
+    cur.execute(sql, args)
+    for row in cur:
         source = dbc.source_from_row(row)
         source.state = _state_from_row(row)
         source.unread = row['unread']
@@ -77,7 +77,7 @@ select id as source_id, group_id as source_group_id,
     kind as source_kind, name as source_name, interval as source_interval,
     settings as source_settings, filters as source_filters,
     user_id as source_user_id
-from sources where id=?
+from sources where id=%s
 """
 
 
@@ -102,14 +102,15 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
     user_id, name)
-    values (:group_id, :kind, :interval, :settings, :filters, :user_id, :name)
+    values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s, %(user_id)s, %(name)s)
+returning id
 """
 
 _UPDATE_SOURCE_SQL = """
 update sources
-set group_id=:group_id, kind=:kind, name=:name, interval=:interval,
-    settings=:settings, filters=:filters
-where id=:id
+set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s, interval=%(interval)s,
+    settings=%(settings)s, filters=%(filters)s
+where id=%(id)s
 """
 
 
@@ -119,7 +120,7 @@ def save(db, source: model.Source) -> model.Source:
     row = dbc.source_to_row(source)
     if source.id is None:
         cur.execute(_INSERT_SOURCE_SQL, row)
-        source.id = cur.lastrowid
+        source.id = cur.fetchone()[0]
         # create state for new source
         state = model.SourceState.new(source.id)
         save_state(db, state)
@@ -132,7 +133,7 @@ def save(db, source: model.Source) -> model.Source:
 def delete(db, source_id: int) -> int:
     """ Delete source """
     cur = db.cursor()
-    cur.execute("delete from sources where id=?", (source_id, ))
+    cur.execute("delete from sources where id=%s", (source_id, ))
     updated = cur.rowcount
     cur.close()
     return updated
@@ -190,7 +191,7 @@ select source_id as source_state_source_id,
     status as source_state_status,
     error as source_state_error,
     state as source_state_state
-from source_state where source_id=?
+from source_state where source_id=%s
 """
 
 
@@ -207,21 +208,21 @@ def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
 _INSERT_STATE_SQL = """
 insert into source_state(source_id, next_update, last_update, last_error,
     error_counter, success_counter, status, error, state)
-values (:source_id, :next_update, :last_update, :last_error,
-    :error_counter, :success_counter, :status, :error, :state)
+values (%(source_id)s, %(next_update)s, %(last_update)s, %(last_error)s,
+    %(error_counter)s, %(success_counter)s, %(status)s, %(error)s, %(state)s)
 """
 
 _UPDATE_STATE_SQL = """
 update source_state
-set  next_update=:next_update,
-     last_update=:last_update,
-     last_error=:last_error,
-     error_counter=:error_counter,
-     success_counter=:success_counter,
-     status=:status,
-     error=:error,
-     state=:state
-where source_id=:source_id
+set  next_update=%(next_update)s,
+     last_update=%(last_update)s,
+     last_error=%(last_error)s,
+     error_counter=%(error_counter)s,
+     success_counter=%(success_counter)s,
+     status=%(status)s,
+     error=%(error)s,
+     state=%(state)s
+where source_id=%(source_id)s
 """
 
 
@@ -231,12 +232,12 @@ def save_state(db, state: model.SourceState) -> model.SourceState:
     while True:
         cur = None
         try:
-#            cur = db.cursor()
-#            cur.execute("delete from source_state where source_id=?",
-#                        (state.source_id,))
-#            cur.close()
             cur = db.cursor()
-            cur.execute(_UPDATE_STATE_SQL, row)
+            cur.execute("delete from source_state where source_id=%s",
+                        (state.source_id,))
+            cur.close()
+            cur = db.cursor()
+            cur.execute(_INSERT_STATE_SQL, row)
             _LOG.debug("OK")
         except sqlite3.OperationalError as err:
             _LOG.warning(
@@ -254,20 +255,21 @@ def save_state(db, state: model.SourceState) -> model.SourceState:
 def get_sources_to_fetch(db) -> ty.List[int]:
     """ Find sources with next update state in past """
     cur = db.cursor()
-    ids = [row[0] for row in
-           cur.execute(
-               "select source_id from source_state "
-               "where next_update <= datetime('now', 'localtime')")
-           ]
+    cur.execute(
+        "select source_id from source_state "
+        "where next_update <= %s",
+        (datetime.datetime.now(), ))
+
+    ids = [row[0] for row in cur]
     cur.close()
     return ids
 
 
 _REFRESH_SQL = """
 update source_state
-set next_update=datetime('now', 'localtime')
+set next_update=now()
 where (last_update is null
-    or last_update < datetime('now', 'localtime', '-1 minutes'))
+    or last_update < now() - '-1 minutes'::interval)
 """
 
 
@@ -277,12 +279,12 @@ def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
     sql = _REFRESH_SQL
     if group_id:
         sql += ("and source_id in "
-                "(select id from sources where group_id=:group_id)")
+                "(select id from sources where group_id=%(group_id)s)")
     elif source_id:
-        sql += "and source_id=:source_id"
+        sql += "and source_id=%(source_id)s"
     else:
         sql += ("and source_id in "
-                "(select id from sources where user_id=:user_id)")
+                "(select id from sources where user_id=%(user_id)s)")
     cur = db.cursor()
     cur.execute(sql, {"group_id": group_id, "source_id": source_id,
                       "user_id": user_id})
@@ -293,9 +295,9 @@ def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
 
 _REFRESH_ERRORS_SQL = """
 update source_state
-set next_update=datetime('now')
+set next_update=now()
 where status='error'
-    and source_id in (select id from sources where user_id=?)
+    and source_id in (select id from sources where user_id=%s)
 """
 
 
@@ -312,8 +314,8 @@ def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
     """ Mark source read """
     cur = db.cursor()
     cur.execute(
-        "update entries set read_mark=1 where source_id = ? "
-        "and id <= ? and read_mark=0 and id >= ?",
+        "update entries set read_mark=1 where source_id = %s "
+        "and id <= %s and read_mark=0 and id >= %s",
         (source_id, max_id, min_id))
     changed = cur.rowcount
     cur.close()
@@ -325,7 +327,7 @@ def get_filter_state(db, source_id: int, filter_name: str) \
     """ Get state for given filter in source """
     cur = db.cursor()
     cur.execute('select state from filters_state '
-                'where source_id=? and filter_name=?',
+                'where source_id=%s and filter_name=%s',
                 (source_id, filter_name))
     row = cur.fetchone()
     cur.close()
@@ -339,13 +341,13 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
     """ Save source filter state """
     cur = db.cursor()
     cur.execute(
-        'delete from filters_state where source_id=? and filter_name=?',
+        'delete from filters_state where source_id=%s and filter_name=%s',
         (source_id, filter_name))
     if state is not None:
         state = json.dumps(state)
         cur.execute(
             'insert into filter_name (source_id, filter_name, state) '
-            'values(?, ?, ?)', (source_id, filter_name, state))
+            'values(%s, %s, %s)', (source_id, filter_name, state))
     cur.close()
 
 

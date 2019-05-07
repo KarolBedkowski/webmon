@@ -7,7 +7,7 @@
  */
 
 CREATE TABLE users (
-    id                  integer PRIMARY KEY AUTOINCREMENT,
+    id                  serial PRIMARY KEY,
     login               varchar,
     email               varchar,
     password            varchar,
@@ -22,12 +22,12 @@ CREATE TABLE settings (
     key             varchar PRIMARY KEY,
     value_type      varchar,
     description     varchar,
-    value           json    -- default value
+    value           varchar    -- default value
 );
 
 
 CREATE TABLE source_groups (
-    id      integer PRIMARY KEY autoincrement,
+    id      serial PRIMARY KEY,
     user_id integer REFERENCES users(id),
     name    varchar
 );
@@ -36,14 +36,14 @@ CREATE INDEX source_groups_user_id_idx ON source_groups(user_id);
 
 -- sources configuration
 CREATE TABLE sources (
-    id                  integer PRIMARY KEY autoincrement,
+    id                  serial PRIMARY KEY,
     group_id            integer references source_groups(id) on delete set null,
     user_id             integer REFERENCES users(id),
     kind                varchar not null,   -- source type
     name                varchar not null,   -- source name
     interval            varchar,            -- crone-like expression
-    settings            json,               -- source kind-specific configuration
-    filters             json
+    settings            varchar,               -- source kind-specific configuration
+    filters             varchar
 );
 
 CREATE INDEX sources_group_id_idx ON sources(group_id);
@@ -59,24 +59,24 @@ CREATE TABLE source_state (
     success_counter integer default 0,
     status          varchar,
     error           varchar,
-    state           json
+    state           varchar
 );
 
 CREATE INDEX source_states_next_update_idx ON source_state(next_update);
 
 CREATE TABLE entries (
-    id          integer PRIMARY KEY autoincrement,
+    id          serial PRIMARY KEY,
     source_id   integer not null references sources(id) on delete cascade,
     updated     timestamp,
     created     timestamp,
     read_mark   integer default 0, -- 0=unread, 1=read, 2=read/history
-    star_mark   boolean default 0,
+    star_mark   integer default 0,
     user_id     integer REFERENCES users(id),
     status      varchar,
     oid         varchar(64) unique,        -- entry hash
     title       varchar,
     url         varchar,
-    opts        json,
+    opts        varchar,
     content     text
 );
 
@@ -99,7 +99,7 @@ CREATE TABLE history_oids (
 CREATE TABLE filters_state (
     source_id           integer REFERENCES sources(id) ON DELETE CASCADE,
     filter_name         varchar NOT NULL,
-    state               json,
+    state               varchar,
     PRIMARY KEY(source_id, filter_name)
 );
 
@@ -108,7 +108,7 @@ CREATE INDEX filters_state_source_id_idx ON filters_state(source_id);
 CREATE TABLE user_settings (
     key                 varchar REFERENCES settings(key) ON DELETE CASCADE,
     user_id             integer REFERENCES users(id) ON DELETE CASCADE,
-    value               json,
+    value               varchar,
     PRIMARY KEY(key, user_id)
 );
 

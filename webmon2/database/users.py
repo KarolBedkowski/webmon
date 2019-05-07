@@ -20,31 +20,29 @@ class LoginAlreadyExistsError(Exception):
 
 def get_all(db) -> ty.Iterable[model.User]:
     """ Get all users """
-    cur = db.cursor()
-    for row in cur.execute(
-            "select id, login, email, password, active, admin from users"):
-        yield _user_from_row(row)
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(
+            "select id, login, email, password, active, admin from users")
+        for row in cur:
+            yield _user_from_row(row)
 
 
 def get(db, id_=None, login=None) -> ty.Optional[model.User]:
     """ Get user by id or login """
-    cur = db.cursor()
-    if id_:
-        cur.execute("select id, login, email, password, active, admin "
-                    "from users where id=?", (id_, ))
-    elif login:
-        cur.execute("select id, login, email, password, active, admin "
-                    "from users where login=?", (login, ))
-    else:
-        cur.close()
-        return None
-    row = cur.fetchone()
-    cur.close()
-    if not row:
-        return None
-    user = _user_from_row(row)
-    return user
+    with db.cursor() as cur:
+        if id_:
+            cur.execute("select id, login, email, password, active, admin "
+                        "from users where id=%s", (id_, ))
+        elif login:
+            cur.execute("select id, login, email, password, active, admin "
+                        "from users where login=%s", (login, ))
+        else:
+            return None
+        row = cur.fetchone()
+        if not row:
+            return None
+        user = _user_from_row(row)
+        return user
 
 
 def save(db, user: model.User) -> model.User:
@@ -52,20 +50,21 @@ def save(db, user: model.User) -> model.User:
     cur = db.cursor()
     if user.id:
         cur.execute(
-            "update users set login=:login, email=:email, "
-            "password=:password, active=:active, admin=admin "
-            "where id=:id",
+            "update users set login=%(login), email=%(email)s, "
+            "password=%(password)s, active=%(active)s, admin=%(admin)s "
+            "where id=%(id)s",
             _user_to_row(user))
     else:
-        cur.execute("select 1 from users where login=?", (user.login, ))
+        cur.execute("select 1 from users where login=%s", (user.login, ))
         if cur.fetchone():
             cur.close()
             raise LoginAlreadyExistsError()
         cur.execute(
             "insert into users (login, email, password, active, admin) "
-            "values (:login, :email, :password, :active, :admin)",
+            "values (%(login)s, %(email)s, %(password)s, %(active)s, "
+            "%(admin)s) returning id",
             _user_to_row(user))
-        user.id = cur.lastrowid
+        user.id = cur.fetchone()[0]
         _create_new_user_data(cur, user.id)
 
     cur.close()
@@ -74,10 +73,10 @@ def save(db, user: model.User) -> model.User:
 
 def _create_new_user_data(cur, user_id: int):
     cur.execute(
-        "select count(1) from source_groups where user_id=?",
+        "select count(1) from source_groups where user_id=%s",
         (user_id, ))
     if not cur.fetchone()[0]:
-        cur.execute("insert into source_groups(user_id, name) values (?, ?)",
+        cur.execute("insert into source_groups(user_id, name) values (%s, %s)",
                     (user_id, "main"))
 
 

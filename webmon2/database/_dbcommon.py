@@ -25,6 +25,10 @@ def get_json_if_exists(row_keys, key, row, default=None):
     if key not in row_keys:
         return default
     value = row[key]
+    if value is None:
+        return default
+    if not isinstance(value, str):
+        return value
     return json.loads(value) if value else default
 
 

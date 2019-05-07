@@ -137,6 +137,8 @@ def _jamendo_format_short_list(source: model.Source, results) -> model.Entries:
                       _jamendo_album_to_url(album['id'])))
             for album in result.get('albums') or [])
         entry.set_opt("content-type", "html")
+        entry.updated = entry.created = _get_release_date_from_list(
+            result.get('albums'))
         yield entry
 
 
@@ -149,6 +151,7 @@ def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
                 (album['releasedate'], album["name"],
                  _jamendo_album_to_url(album['id'])))
             entry.set_opt("content-type", "plain")
+            entry.updated = entry.created = _get_release_date(result)
             yield entry
 
 
@@ -262,6 +265,8 @@ def _jamendo_track_format_short(source: model.Source, results) \
                       _jamendo_track_to_url(track['id'])))
             for track in result.get('tracks') or [])
         entry.set_opt("content-type", "plain")
+        entry.updated = entry.created = _get_release_date_from_list(
+            result.get('tracks'))
         yield entry
 
 
@@ -278,8 +283,24 @@ def _jamendo_track_format_long(source: model.Source, results) -> model.Entries:
             entry = model.Entry.for_source(source)
             entry.title = source.name
             entry.content = " ".join(res_track)
+            entry.updated = entry.created = _get_release_date(track)
             entry.set_opt("content-type", "plain")
             yield entry
+
+
+def _get_release_date(data) -> datetime.date:
+    try:
+        return datetime.datetime.fromisoformat(data['releasedate'])
+    except ValueError:
+        _LOG.debug("wrong releasedate in %s", data)
+        return datetime.date.today()
+    except KeyError:
+        _LOG.debug("missing releasedate in %s", data)
+        return datetime.date.today()
+
+
+def _get_release_date_from_list(content) -> datetime.date:
+    return max(_get_release_date(entry) for entry in content)
 
 
 class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

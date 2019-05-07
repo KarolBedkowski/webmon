@@ -64,9 +64,10 @@ class RssSource(AbstractSource):
             return _fail_error(state, doc, status)
 
         entries = doc.get('entries')
-        entries = [entry for entry in entries
-                   if time.mktime(entry.updated_parsed)
-                   > state.last_update.timestamp()]
+        if state.last_update:
+            entries = [entry for entry in entries
+                       if time.mktime(entry.updated_parsed)
+                       > state.last_update.timestamp()]
         if status == 304 or not entries:
             new_state = state.new_not_modified()
             new_state.set_state('etag', doc.get('etag'))

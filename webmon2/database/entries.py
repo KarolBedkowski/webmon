@@ -48,42 +48,42 @@ left join source_groups sg on sg.id = s.group_id
 '''
 
 _GET_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where e.user_id=:user_id
+where e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and e.user_id=:user_id
+where read_mark = 0 and e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and e.source_id=:source_id
+where read_mark = 0 and e.source_id=%(source_id)s
 order by e.id
 '''
 
 _GET_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where e.source_id=:source_id
+where e.source_id=%(source_id)s
 order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and s.group_id=:group_id
+where read_mark = 0 and s.group_id=%(group_id)s
 order by e.id
 '''
 
 _GET_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where s.group_id=:group_id
+where s.group_id=%(group_id)s
 order by e.id
 '''
 
 _GET_STARRED_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where e.star_mark = 1 and e.user_id=:user_id
+where e.star_mark = 1 and e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_ENTRIES_BY_GROUP_FEED_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where s.group_id=:group_id
+where s.group_id=%(group_id)s
 order by e.id desc
 limit 100
 '''
@@ -108,7 +108,8 @@ def get_starred(db, user_id: int) -> model.Entries:
     """Get all starred entries for given user """
     assert user_id, 'no user_id'
     cur = db.cursor()
-    for row in cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id}):
+    cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id})
+    for row in cur:
         entry = dbc.entry_from_row(row)
         entry.source = dbc.source_from_row(row)
         if entry.source.group_id:
@@ -120,30 +121,29 @@ def get_starred(db, user_id: int) -> model.Entries:
 def get_total_count(db, user_id: int, source_id=None, group_id=None,
                     unread=True) -> int:
     """ Get number of read/all entries for user/source/group """
-    cur = db.cursor()
-    args = {
-        'group_id': group_id,
-        'source_id': source_id,
-        "user_id": user_id,
-    }
-    if source_id:
-        sql = "select count(*) from entries where source_id=:source_id"
-        if unread:
-            sql += " and read_mark=0"
-    elif group_id:
-        sql = ("select count(*) from entries where source_id in "
-               "(select source_id from source_groups sg where sg.id=:group_id)"
-               )
-        if unread:
-            sql += "and read_mark=0"
-    else:
-        sql = "select count(*) from entries where user_id=:user_id"
-        if unread:
-            sql += " and read_mark=0"
-    cur.execute(sql, args)
-    result = cur.fetchone()[0]
-    cur.close()
-    return result
+    with db.cursor() as cur:
+        args = {
+            'group_id': group_id,
+            'source_id': source_id,
+            "user_id": user_id,
+        }
+        if source_id:
+            sql = "select count(*) from entries where source_id=%(source_id)s"
+            if unread:
+                sql += " and read_mark=0"
+        elif group_id:
+            sql = ("select count(*) from entries where source_id in "
+                "(select source_id from source_groups sg where sg.id=%(group_id)s)"
+                )
+            if unread:
+                sql += "and read_mark=0"
+        else:
+            sql = "select count(*) from entries where user_id=%(user_id)s"
+            if unread:
+                sql += " and read_mark=0"
+        cur.execute(sql, args)
+        result = cur.fetchone()[0]
+        return result
 
 
 def find(db, user_id: int, source_id=None, group_id=None, unread=True,
@@ -151,32 +151,31 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
     """ Find entries for user/source/group unread or all.
         Limit and offset work only for getting all entries.
     """
-    cur = db.cursor()
-    args = {
-        'limit': limit or 25,
-        'offset': offset or 0,
-        'group_id': group_id,
-        'source_id': source_id,
-        "user_id": user_id,
-    }
-    sql = _get_find_sql(source_id, group_id, unread)
-    if not unread:
-        # for unread there is no pagination
-        sql += " limit :limit offset :offset"
-    cur.execute(sql, args)
-    user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
-    for row in cur:
-        entry = dbc.entry_from_row(row)
-        entry.source = dbc.source_from_row(row)
-        if entry.source.group_id:
-            group = user_groups.get(entry.source.group_id)
-            if not group:
-                group = user_groups[entry.source.group_id] = \
-                    dbc.source_group_from_row(row)
-            entry.source.group = group
-        # _LOG.debug("entry %s", entry)
-        yield entry
-    cur.close()
+    with db.cursor() as cur:
+        args = {
+            'limit': limit or 25,
+            'offset': offset or 0,
+            'group_id': group_id,
+            'source_id': source_id,
+            "user_id": user_id,
+        }
+        sql = _get_find_sql(source_id, group_id, unread)
+        if not unread:
+            # for unread there is no pagination
+            sql += " limit %(limit)s offset %(offset)s"
+        cur.execute(sql, args)
+        user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
+        for row in cur:
+            entry = dbc.entry_from_row(row)
+            entry.source = dbc.source_from_row(row)
+            if entry.source.group_id:
+                group = user_groups.get(entry.source.group_id)
+                if not group:
+                    group = user_groups[entry.source.group_id] = \
+                        dbc.source_group_from_row(row)
+                entry.source.group = group
+            # _LOG.debug("entry %s", entry)
+            yield entry
 
 
 def find_for_feed(db, group_id: int) -> model.Entries:
@@ -218,9 +217,9 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
     assert id_ is not None or oid is not None
     cur = db.cursor()
     if id_ is not None:
-        sql = _GET_ENTRY_SQL + "where id=:id"
+        sql = _GET_ENTRY_SQL + "where id=%(id)s"
     else:
-        sql = _GET_ENTRY_SQL + "where oid=:oid"
+        sql = _GET_ENTRY_SQL + "where oid=%(oid)s"
     cur.execute(sql, {"oid": oid, "id": id_})
     row = cur.fetchone()
     cur.close()
@@ -235,16 +234,17 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
 _INSERT_ENTRY_SQL = """
 insert into entries (source_id, updated, created,
     read_mark, star_mark, status, oid, title, url, opts, content, user_id)
-values (:source_id, :updated, :created,
-    :read_mark, :star_mark, :status, :oid, :title, :url, :opts, :content,
-    :user_id)
+values (%(source_id)s, %(updated)s, %(created)s,
+    %(read_mark)s, %(star_mark)s, %(status)s, %(oid)s, %(title)s, %(url)s, %(opts)s, %(content)s,
+    %(user_id)s)
+returning id
 """
 
 _UPDATE_ENTRY_SQL = """
-update entries set source_id=:source_id, updated=:updated, created=:created,
-    read_mark=:read_mark, star_mark=:star_mark, status=:status, oid=:oid,
-    title=:title, url=:url, opts=:opts, content=:content
-where id=:id
+update entries set source_id=%(source_id)s, updated=%(updated)s, created=%(created)s,
+    read_mark=%(read_mark)s, star_mark=%(star_mark)s, status=%(status)s, oid=%(oid)s,
+    title=%(title)s, url=%(url)s, opts=%(opts)s, content=%(content)s
+where id=%(id)s
 """
 
 
@@ -254,7 +254,7 @@ def save(db, entry: model.Entry) -> model.Entry:
     cur = db.cursor()
     if entry.id is None:
         cur.execute(_INSERT_ENTRY_SQL, row)
-        entry.id = cur.lastrowid
+        entry.id = cur.fetchone()[0]
     else:
         cur.execute(_UPDATE_ENTRY_SQL, row)
     cur.close()
@@ -271,11 +271,11 @@ def save_many(db, entries: model.Entries, source_id: int):
     oids_to_delete = [(entry.oid, ) for entry in entries
                       if entry.status == 'updated']
     _LOG.debug("delete oids: %d", len(oids_to_delete))
-    cur.executemany("delete from entries where oid=?", oids_to_delete)
-    existing_oids = {
-        row[0] for row
-        in cur.execute("select oid from entries where source_id=?",
-                       (source_id, ))}
+    cur.executemany("delete from entries where oid=%s", oids_to_delete)
+    _LOG.debug("deleted %d", cur.rowcount)
+    cur.execute("select oid from entries where source_id=%s", (source_id, ))
+    existing_oids = {row[0] for row in cur}
+    _LOG.debug("existing %d", len(existing_oids))
     rows = [
         dbc.entry_to_row(entry)
         for entry in entries
@@ -290,7 +290,7 @@ def delete_old(db, user_id: int, max_datetime: datetime):
     """ Delete old entries for given user """
     cur = db.cursor()
     cur.execute("delete from entries where star_mark=0 and read_mark=0 "
-                "and updated<? and user_id=?", (max_datetime, user_id))
+                "and updated<%s and user_id= %s", (max_datetime, user_id))
     deleted = cur.rowcount
     cur.close()
     _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id,
@@ -303,12 +303,11 @@ def mark_star(db, entry_id: int, star=True) -> int:
     _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
     cur = db.cursor()
     cur.execute(
-        "update entries set star_mark=? where id = ? and star_mark = ?",
+        "update entries set star_mark= %s where id = %s and star_mark = %s",
         (star, entry_id, 1-star))
     changed = cur.rowcount
     cur.close()
-    _LOG.debug("total changes: %d, changed: %d", db.total_changes,
-               changed)
+    _LOG.debug("changed: %d", changed)
     return changed
 
 
@@ -322,12 +321,12 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     for idx in range(0, len(oids), 100):
         part_oids = ", ".join("'" + oid + "'" for oid in oids[idx:idx+100])
         cur.execute(
-            "select oid from history_oids where source_id=? and oid in ("
+            "select oid from history_oids where source_id= %s and oid in ("
             + part_oids + ")", (source_id, ))
         result.update({row[0] for row in cur})
     new_oids = [oid for oid in oids if oid not in result]
     cur.executemany(
-        "insert into history_oids(source_id, oid) values (?, ?)",
+        "insert into history_oids(source_id, oid) values (%s, %s)",
         [(source_id, oid) for oid in new_oids])
     cur.close()
     return result
@@ -343,12 +342,12 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
     cur = db.cursor()
     if entry_id:
         cur.execute(
-            "update entries set read_mark=? where id = ? "
-            "and read_mark = ?", (read, entry_id, 1-read))
+            "update entries set read_mark= %s where id = %s "
+            "and read_mark = %s", (read, entry_id, 1-read))
     elif max_id:
         cur.execute(
-            "update entries set read_mark=? where id <= ? and id >= ? "
-            "and user_id=?", (read, max_id, min_id or 0, user_id))
+            "update entries set read_mark= %s where id <= %s and id >= %s "
+            "and user_id= %s", (read, max_id, min_id or 0, user_id))
     changed = cur.rowcount
     cur.close()
     return changed
@@ -357,6 +356,6 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
 # _INSERT_ENTRY_SQL = """
 # insert into entries (source_id, updated, created,
 # read_mark, star_mark, status, oid, title, url, content)
-# values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+# values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 # ON CONFLICT(oid) DO nothing;
 # """

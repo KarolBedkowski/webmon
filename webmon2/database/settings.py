@@ -24,7 +24,7 @@ _GET_ALL_SQL = """
 select s.key, coalesce(us.value, s.value) as value,
     s.value_type, s.description, us.user_id
 from settings s
-left join user_settings us on us.key = s.key and us.user_id=?
+left join user_settings us on us.key = s.key and us.user_id=%s
 """
 
 
@@ -32,7 +32,8 @@ def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
     """ Get all settings for given user. """
     assert user_id
     cur = db.cursor()
-    for row in cur.execute(_GET_ALL_SQL, (user_id, )):
+    cur.execute(_GET_ALL_SQL, (user_id, ))
+    for row in cur:
         yield _setting_from_row(row)
     cur.close()
 
@@ -41,8 +42,8 @@ _GET_SQL = """
 select s.key, coalesce(us.value, s.value) as value,
     s.value_type, s.description, us.user_id
 from settings s
-left join user_settings us on us.key = s.key and us.user_id=?
-where s.key=?
+left join user_settings us on us.key = s.key and us.user_id=%s
+where s.key=%s
 """
 
 
@@ -61,10 +62,10 @@ def save_all(db, settings: ty.List[model.Setting]):
     rows = [(setting.key, json.dumps(setting.value), setting.user_id)
             for setting in settings]
     cur.executemany(
-        "delete from user_settings where key=? and user_id=?",
+        "delete from user_settings where key=%s and user_id=%s",
         [(setting.key, setting.user_id) for setting in settings])
     cur.executemany("insert into user_settings (key, value, user_id) "
-                    "values (?, ?, ?)", rows)
+                    "values (%s, %s, %s)", rows)
     cur.close()
 
 

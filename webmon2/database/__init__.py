@@ -7,9 +7,11 @@ Copyright (c) Karol Będkowski, 2016-2019
 This file is part of webmon.
 Licence: GPLv2+
 """
+import sys
 import logging
 import os.path
-import sqlite3
+import psycopg2
+from psycopg2 import pool, extras, extensions
 import typing as ty
 
 from webmon2 import common
@@ -31,35 +33,34 @@ __all__ = (
 _ = ty
 _LOG = logging.getLogger("db")
 
+psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
+#psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
+psycopg2.extras.register_default_json(globally=True)
+
 
 class DB:
 
     INSTANCE = None
+    POOL = None
 
     def __init__(self, filename: str) -> None:
         super().__init__()
         self._filename = filename
-        self._conn = sqlite3.connect(self._filename, timeout=30,
-                                     isolation_level="EXCLUSIVE",
-                                     detect_types=sqlite3.PARSE_DECLTYPES)
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA foreign_keys = ON")
-        self._conn.execute("PRAGMA timeout=30000")
-        self._conn.execute("PRAGMA busy_timeout = 30000")
+        self._conn = self.POOL.getconn()
+        self._conn.initialize(_LOG)
+        _LOG.debug("conn: %s", self._conn)
 
     def clone(self):
         return DB(self._filename)
 
     @classmethod
     def get(cls):
-        return cls.INSTANCE.clone()
+        return DB(None)
 
     def cursor(self):
-        return self._conn.cursor()
+        return self._conn.cursor(cursor_factory=extras.DictCursor)
 
     def begin(self):
-        # return self._conn.execute("begin deferred transaction")
         pass
 
     def commit(self):
@@ -68,23 +69,22 @@ class DB:
     def rollback(self):
         return self._conn.rollback()
 
-    @property
-    def total_changes(self) -> int:
-        return self._conn.total_changes
-
     @classmethod
     def initialize(cls, filename: str, update_schema: bool):
         _LOG.info("initializing database: %s", filename)
-        common.create_missing_dir(os.path.dirname(filename))
-        db = DB(filename)
-        if update_schema:
-            db.update_schema()
-        db.close()
-        cls.INSTANCE = db
-        return db
+        conn_str = "postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2"
+        conn_str = extensions.parse_dsn(conn_str)
+        cls.POOL = pool.ThreadedConnectionPool(
+            1, 20,
+            connection_factory=extras.LoggingConnection, **conn_str)
+        # common.create_missing_dir(os.path.dirname(filename))
+        with DB(filename) as db:
+            db.check()
+            if update_schema:
+                db.update_schema()
 
     def __enter__(self):
-        _LOG.debug("Enter conn %s", id(self._conn))
+        _LOG.debug("Enter conn %s", self._conn)
         return self
 
     def __exit__(self, type_, value, traceback):
@@ -93,16 +93,24 @@ class DB:
 
     def close(self):
         if self._conn is not None:
-            _LOG.debug("Closing conn %s", id(self._conn))
+            _LOG.debug("Closing conn %s", self._conn)
 #            self._conn.executescript("PRAGMA optimize")
-            self._conn.close()
+            self.POOL.putconn(self._conn)
+            #self._conn.close()
             self._conn = None
 
+    def check(self):
+        with self.cursor() as cur:
+            cur.execute('select now()')
+            _LOG.debug("res: %s", cur.fetchone())
+        self.rollback()
+
     def update_schema(self):
+        self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
-        schama_files = os.path.join(os.path.dirname(__file__), '..', 'schema')
-        for fname in sorted(os.listdir(schama_files)):
+        schema_files = os.path.join(os.path.dirname(__file__), '..', 'schema')
+        for fname in sorted(os.listdir(schema_files)):
             if not fname.endswith('.sql'):
                 continue
             try:
@@ -114,25 +122,27 @@ class DB:
                 _LOG.warning("skipping schema update file %s", fname)
                 continue
             _LOG.info("apply update: %s", fname)
-            fpath = os.path.join(schama_files, fname)
+            fpath = os.path.join(schema_files, fname)
             try:
-                with open(fpath, 'r') as update_file:
-                    self._conn.executescript(update_file.read())
-                self._conn.execute(
-                    'insert into schema_version(version) values(?)',
-                    (version, ))
+                with self._conn.cursor() as cur:
+                    with open(fpath) as update_file:
+                        cur.execute(update_file.read())
+                    cur.execute(
+                        'insert into schema_version(version) values(%s)',
+                        (version, ))
                 self._conn.commit()
             except Exception as err:
                 self._conn.rollback()
-                _LOG.error("schema update error: %s", err)
+                _LOG.exception("schema update error: %s", err)
+                sys.exit(-1)
 
     def _get_schema_version(self):
-        try:
-            cur = self._conn.cursor()
-            cur.execute('select max(version) from schema_version')
-            row = cur.fetchone()
-            if row:
-                return row[0] or 0
-        except sqlite3.OperationalError:
-            _LOG.info("no schema version")
-        return 0
+        with self.cursor() as cur:
+            try:
+                cur.execute('select max(version) from schema_version')
+                row = cur.fetchone()
+                if row:
+                    return row[0] or 0
+            except psycopg2.ProgrammingError:
+                _LOG.info("no schema version")
+            return 0

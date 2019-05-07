@@ -98,19 +98,28 @@ _MIGR_FUNCS = {
 def migrate(filename):
     _LOG.info("migration %s start", filename)
     with database.DB.get() as db:
+        users = list(database.users.get_all(db))
+        if not users:
+            _LOG.error("error migrating - no users")
+            return
+        user_id = users[0].id
+        group_id = database.groups.get_all(db, user_id)[0].id
+
         for inp in _load_sources(filename):
             _LOG.info("migrating %r", inp)
             mfunc = _MIGR_FUNCS.get(inp.get('kind', 'url'))
             if mfunc:
                 try:
                     source = mfunc(inp)
-                except Exception as err:
+                except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("error migrating %r: %s", inp, err)
                     continue
                 if not source:
                     _LOG.error("wrong source: %s", source)
                     continue
                 source.filters = inp.get('filters')
+                source.group_id = group_id
+                source.user_id = user_id
                 _LOG.info("new source: %s", source)
                 database.sources.save(db, source)
         db.commit()

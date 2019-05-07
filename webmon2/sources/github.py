@@ -179,9 +179,10 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         else:
             tags = list(repository.iter_tags(max_items, etag=etag))
 
-        tags = [tag for tag in tags if not tag.last_modified or
-                tag.last_modified > state.last_update.replace(
-                    tzinfo=timezone.utc)]
+        if state.last_update:
+            tags = [tag for tag in tags if not tag.last_modified or
+                    tag.last_modified > state.last_update.replace(
+                        tzinfo=timezone.utc)]
         if not tags:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
@@ -249,11 +250,12 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         else:
             releases = list(repository.iter_releases(max_items, etag=etag))
 
-        releases = [
-            release for release in releases
-            if release.created_at > state.last_update.replace(
-                tzinfo=timezone.utc)
-        ]
+        if state.last_update:
+            releases = [
+                release for release in releases
+                if release.created_at > state.last_update.replace(
+                    tzinfo=timezone.utc)
+            ]
 
         if not releases:
             new_state = state.new_not_modified()

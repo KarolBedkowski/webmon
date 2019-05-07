@@ -40,30 +40,29 @@ class CheckWorker(threading.Thread):
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15)
-            if not cntr:
-                with database.DB.get() as db:
-                    _delete_old_entries(db)
-            cntr = (cntr + 1) % 60
-            _LOG.debug("CheckWorker check start")
             with database.DB.get() as db:
+                if not cntr:
+                    _delete_old_entries(db)
+                cntr = (cntr + 1) % 60
+                _LOG.debug("CheckWorker check start")
                 ids = database.sources.get_sources_to_fetch(db)
-            _LOG.debug("ids: %s", ids)
-            for id_ in ids:
-                self._todo_queue.put(id_)
+                _LOG.debug("ids: %s", ids)
+                for id_ in ids:
+                    self._todo_queue.put(id_)
 
-            if not self._todo_queue.empty():
-                workers = []
-                for _ in range(min(self._workers, len(ids))):
-                    worker = FetchWorker(str(id(self)) + " " + str(idx),
-                                         self._todo_queue)
-                    worker.start()
-                    workers.append(worker)
-                    idx += 1
+                if not self._todo_queue.empty():
+                    workers = []
+                    for _ in range(min(self._workers, len(ids))):
+                        worker = FetchWorker(str(id(self)) + " " + str(idx),
+                                            self._todo_queue)
+                        worker.start()
+                        workers.append(worker)
+                        idx += 1
 
-                for worker in workers:
-                    worker.join()
+                    for worker in workers:
+                        worker.join()
 
-            _LOG.debug("CheckWorker check done, %r", cntr)
+                _LOG.debug("CheckWorker check done, %r", cntr)
 
 
 class FetchWorker(threading.Thread):
@@ -117,14 +116,7 @@ class FetchWorker(threading.Thread):
             entries = filters.filter_by(source.filters, entries,
                                         source.state, new_state)
 
-        entries = list(entry for entry in entries if entry.calculate_oid())
-
-        for entry in entries:
-            entry.validate()
-            content_type = entry.get_opt("content-type")
-            entry.content = formatters.body_format(entry.content, content_type)
-            entry.set_opt("content-type", "safe")
-
+        entries = list(self._final_filter_entries(entries))
         database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
         if entries:
@@ -133,6 +125,20 @@ class FetchWorker(threading.Thread):
 
         _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
                   self._idx, source_id, len(entries), str(new_state))
+
+    def _final_filter_entries(self, entries):
+        entries_oids = set()
+        for entry in entries:
+            entry.calculate_oid()
+            if entry.oid in entries_oids:
+                _LOG.debug("doubled entry %s", entry)
+                continue
+            entry.validate()
+            content_type = entry.get_opt("content-type")
+            entry.content = formatters.body_format(entry.content, content_type)
+            entry.set_opt("content-type", "safe")
+            entries_oids.add(entry.oid)
+            yield entry
 
     def _get_src(self, db, source):
         try:
