@@ -103,7 +103,7 @@ def create_app(debug, root, args):
 
     @app.after_request
     def after_request(response):
-        if not g.non_action:
+        if hasattr(g, 'non_action') and not g.non_action:
             if 'Cache-Control' not in response.headers:
                 response.headers['Cache-Control'] = \
                     'no-cache, max-age=0, must-revalidate, no-store'
