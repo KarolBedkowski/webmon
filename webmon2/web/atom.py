@@ -62,9 +62,8 @@ def group(key):
                     updated=updated)
 
     for entry in database.entries.find_for_feed(db, group.id):
-        is_long = entry.is_long_content()
         body = markdown2.markdown(
-            entry.get_summary() if is_long else entry.content,
+            entry.content,
             extras=["code-friendly", "nofollow", "target-blank-links"])
         feed.add(entry.title or entry.group.name, body,
                  content_type='html',
