@@ -10,8 +10,6 @@
 Access & manage sources
 """
 import json
-import sqlite3
-import time
 import logging
 import typing as ty
 import datetime
@@ -57,19 +55,19 @@ def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
     """ Get all sources for given user and (optional) in group.
         Include state and number of unread entries
     """
-    cur = db.cursor()
-    user_groups = {g.id: g for g in groups.get_all(db, user_id)}
-    args = {"user_id": user_id, "group_id": group_id}
-    sql = _GET_SOURCES_SQL if group_id is None else _GET_SOURCES_BY_GROUP_SQL
-    cur.execute(sql, args)
-    for row in cur:
-        source = dbc.source_from_row(row)
-        source.state = _state_from_row(row)
-        source.unread = row['unread']
-        source.group = user_groups.get(source.group_id) \
-            if source.group_id else None
-        yield source
-    cur.close()
+    with db.cursor() as cur:
+        user_groups = {g.id: g for g in groups.get_all(db, user_id)}
+        args = {"user_id": user_id, "group_id": group_id}
+        sql = _GET_SOURCES_SQL if group_id is None \
+            else _GET_SOURCES_BY_GROUP_SQL
+        cur.execute(sql, args)
+        for row in cur:
+            source = dbc.source_from_row(row)
+            source.state = _state_from_row(row)
+            source.unread = row['unread']
+            source.group = user_groups.get(source.group_id) \
+                if source.group_id else None
+            yield source
 
 
 _GET_SOURCE_SQL = """
@@ -83,10 +81,10 @@ from sources where id=%s
 
 def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
     """ Get one source with optionally with state and group info """
-    cur = db.cursor()
-    cur.execute(_GET_SOURCE_SQL, (id_, ))
-    row = cur.fetchone()
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(_GET_SOURCE_SQL, (id_, ))
+        row = cur.fetchone()
+
     if row is None:
         raise dbc.NotFound()
 
@@ -102,41 +100,40 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
     user_id, name)
-    values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s, %(user_id)s, %(name)s)
+    values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s,
+        %(user_id)s, %(name)s)
 returning id
 """
 
 _UPDATE_SOURCE_SQL = """
 update sources
-set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s, interval=%(interval)s,
-    settings=%(settings)s, filters=%(filters)s
+set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s,
+    interval=%(interval)s, settings=%(settings)s, filters=%(filters)s
 where id=%(id)s
 """
 
 
 def save(db, source: model.Source) -> model.Source:
     """ Insert or update source """
-    cur = db.cursor()
     row = dbc.source_to_row(source)
-    if source.id is None:
-        cur.execute(_INSERT_SOURCE_SQL, row)
-        source.id = cur.fetchone()[0]
-        # create state for new source
-        state = model.SourceState.new(source.id)
-        save_state(db, state)
-    else:
-        cur.execute(_UPDATE_SOURCE_SQL, row)
-    cur.close()
+    with db.cursor() as cur:
+        if source.id is None:
+            cur.execute(_INSERT_SOURCE_SQL, row)
+            source.id = cur.fetchone()[0]
+            # create state for new source
+            state = model.SourceState.new(source.id)
+            save_state(db, state)
+        else:
+            cur.execute(_UPDATE_SOURCE_SQL, row)
     return source
 
 
 def delete(db, source_id: int) -> int:
     """ Delete source """
-    cur = db.cursor()
-    cur.execute("delete from sources where id=%s", (source_id, ))
-    updated = cur.rowcount
-    cur.close()
-    return updated
+    with db.cursor() as cur:
+        cur.execute("delete from sources where id=%s", (source_id, ))
+        updated = cur.rowcount
+        return updated
 
 
 def update_filter(db, source_id: int, filter_idx: int,
@@ -229,40 +226,22 @@ where source_id=%(source_id)s
 def save_state(db, state: model.SourceState) -> model.SourceState:
     """ Save (replace) source state """
     row = _state_to_row(state)
-    while True:
-        cur = None
-        try:
-            cur = db.cursor()
-            cur.execute("delete from source_state where source_id=%s",
-                        (state.source_id,))
-            cur.close()
-            cur = db.cursor()
-            cur.execute(_INSERT_STATE_SQL, row)
-            _LOG.debug("OK")
-        except sqlite3.OperationalError as err:
-            _LOG.warning(
-                "delete source_state OperationalError, sleeping, %s: %s",
-                state, str(err))
-        else:
-            break
-        finally:
-            if cur:
-                cur.close()
-        time.sleep(1)
+    with db.cursor() as cur:
+        cur.execute("delete from source_state where source_id=%s",
+                    (state.source_id,))
+        cur.execute(_INSERT_STATE_SQL, row)
     return state
 
 
 def get_sources_to_fetch(db) -> ty.List[int]:
     """ Find sources with next update state in past """
-    cur = db.cursor()
-    cur.execute(
-        "select source_id from source_state "
-        "where next_update <= %s",
-        (datetime.datetime.now(), ))
+    with db.cursor() as cur:
+        cur.execute(
+            "select source_id from source_state where next_update <= %s",
+            (datetime.datetime.now(), ))
 
-    ids = [row[0] for row in cur]
-    cur.close()
-    return ids
+        ids = [row[0] for row in cur]
+        return ids
 
 
 _REFRESH_SQL = """
@@ -303,34 +282,31 @@ where status='error'
 
 def refresh_errors(db, user_id: int) -> int:
     """ Refresh all sources in error state for given user """
-    cur = db.cursor()
-    cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
-    updated = cur.rowcount
-    cur.close()
-    return updated
+    with db.cursor() as cur:
+        cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
+        updated = cur.rowcount
+        return updated
 
 
 def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
     """ Mark source read """
-    cur = db.cursor()
-    cur.execute(
-        "update entries set read_mark=1 where source_id = %s "
-        "and id <= %s and read_mark=0 and id >= %s",
-        (source_id, max_id, min_id))
-    changed = cur.rowcount
-    cur.close()
-    return changed
+    with db.cursor() as cur:
+        cur.execute(
+            "update entries set read_mark=1 where source_id = %s "
+            "and id <= %s and read_mark=0 and id >= %s",
+            (source_id, max_id, min_id))
+        changed = cur.rowcount
+        return changed
 
 
 def get_filter_state(db, source_id: int, filter_name: str) \
         -> ty.Optional[ty.Dict[str, ty.Any]]:
     """ Get state for given filter in source """
-    cur = db.cursor()
-    cur.execute('select state from filters_state '
-                'where source_id=%s and filter_name=%s',
-                (source_id, filter_name))
-    row = cur.fetchone()
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute('select state from filters_state '
+                    'where source_id=%s and filter_name=%s',
+                    (source_id, filter_name))
+        row = cur.fetchone()
     if not row:
         return None
     return json.loads(row[0]) if isinstance(row[0], str) and row[0] \
@@ -339,16 +315,16 @@ def get_filter_state(db, source_id: int, filter_name: str) \
 
 def put_filter_state(db, source_id: int, filter_name: str, state):
     """ Save source filter state """
-    cur = db.cursor()
-    cur.execute(
-        'delete from filters_state where source_id=%s and filter_name=%s',
-        (source_id, filter_name))
-    if state is not None:
-        state = json.dumps(state)
+    with db.cursor() as cur:
         cur.execute(
-            'insert into filter_name (source_id, filter_name, state) '
-            'values(%s, %s, %s)', (source_id, filter_name, state))
-    cur.close()
+            'delete from filters_state '
+            'where source_id=%s and filter_name=%s',
+            (source_id, filter_name))
+        if state is not None:
+            state = json.dumps(state)
+            cur.execute(
+                'insert into filter_name (source_id, filter_name, state) '
+                'values(%s, %s, %s)', (source_id, filter_name, state))
 
 
 def _state_to_row(state: model.SourceState) -> ty.Dict[str, ty.Any]:

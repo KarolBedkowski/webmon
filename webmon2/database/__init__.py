@@ -10,11 +10,11 @@ Licence: GPLv2+
 import sys
 import logging
 import os.path
-import psycopg2
-from psycopg2 import pool, extras, extensions
 import typing as ty
 
-from webmon2 import common
+import psycopg2
+from psycopg2 import pool, extras, extensions
+
 from . import settings, users, groups, entries, sources
 from ._dbcommon import NotFound
 
@@ -34,7 +34,6 @@ _ = ty
 _LOG = logging.getLogger("db")
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
-#psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extras.register_default_json(globally=True)
 
 
@@ -94,16 +93,14 @@ class DB:
     def close(self):
         if self._conn is not None:
             _LOG.debug("Closing conn %s", self._conn)
-#            self._conn.executescript("PRAGMA optimize")
             self.POOL.putconn(self._conn)
-            #self._conn.close()
             self._conn = None
 
     def check(self):
         with self.cursor() as cur:
             cur.execute('select now()')
             _LOG.debug("res: %s", cur.fetchone())
-        self.rollback()
+            self.rollback()
 
     def update_schema(self):
         self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
@@ -131,7 +128,7 @@ class DB:
                         'insert into schema_version(version) values(%s)',
                         (version, ))
                 self._conn.commit()
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
                 _LOG.exception("schema update error: %s", err)
                 sys.exit(-1)

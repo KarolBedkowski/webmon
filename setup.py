@@ -27,6 +27,7 @@ REQUIRES = [
     'Werkzeug',
     'gevent',
     "readability-lxml",
+    "psycopg2",
 ]
 
 

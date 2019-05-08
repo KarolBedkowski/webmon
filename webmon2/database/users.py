@@ -50,7 +50,7 @@ def save(db, user: model.User) -> model.User:
     cur = db.cursor()
     if user.id:
         cur.execute(
-            "update users set login=%(login), email=%(email)s, "
+            "update users set login=%(login)s, email=%(email)s, "
             "password=%(password)s, active=%(active)s, admin=%(admin)s "
             "where id=%(id)s",
             _user_to_row(user))
@@ -76,8 +76,9 @@ def _create_new_user_data(cur, user_id: int):
         "select count(1) from source_groups where user_id=%s",
         (user_id, ))
     if not cur.fetchone()[0]:
-        cur.execute("insert into source_groups(user_id, name) values (%s, %s)",
-                    (user_id, "main"))
+        cur.execute(
+            "insert into source_groups(user_id, name) values (%s, %s)",
+            (user_id, "main"))
 
 
 def _user_from_row(row) -> model.User:
