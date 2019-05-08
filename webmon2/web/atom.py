@@ -19,10 +19,10 @@ from flask import (
     Blueprint, url_for, request, abort, Response
 )
 from werkzeug.contrib.atom import AtomFeed
-import markdown2
 
 from webmon2.web import get_db
 from webmon2 import database
+from webmon2 import formatters
 
 
 _ = ty
@@ -62,14 +62,14 @@ def group(key):
                     updated=updated)
 
     for entry in database.entries.find_for_feed(db, group.id):
-        body = markdown2.markdown(
-            entry.content,
-            extras=["code-friendly", "nofollow", "target-blank-links"])
+        content_type = entry.get_opt('content-type')
+        body = formatters.body_format(entry.content, content_type)
+        atom_content_type = 'text' if entry.get_opt('preformated') else 'html'
+        url = urllib.parse.urljoin(request.url_root,
+                                   url_for("entry.entry", entry_id=entry.id))
+
         feed.add(entry.title or entry.group.name, body,
-                 content_type='html',
-                 url=urllib.parse.urljoin(
-                     request.url_root,
-                     url_for("entry.entry", entry_id=entry.id)),
+                 content_type=atom_content_type, url=url,
                  updated=entry.updated or entry.created or datetime.now(),
                  published=entry.created)
 
