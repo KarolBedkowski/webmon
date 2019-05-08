@@ -42,19 +42,15 @@ class DB:
     INSTANCE = None
     POOL = None
 
-    def __init__(self, filename: str) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._filename = filename
-        self._conn = self.POOL.getconn()
+        self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         _LOG.debug("conn: %s", self._conn)
 
-    def clone(self):
-        return DB(self._filename)
-
     @classmethod
     def get(cls):
-        return DB(None)
+        return DB()
 
     def cursor(self):
         return self._conn.cursor(cursor_factory=extras.DictCursor)
@@ -69,15 +65,14 @@ class DB:
         return self._conn.rollback()
 
     @classmethod
-    def initialize(cls, filename: str, update_schema: bool):
-        _LOG.info("initializing database: %s", filename)
-        conn_str = "postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2"
+    def initialize(cls, conn_str: str, update_schema: bool):
+        _LOG.info("initializing database")
         conn_str = extensions.parse_dsn(conn_str)
         cls.POOL = pool.ThreadedConnectionPool(
             1, 20,
             connection_factory=extras.LoggingConnection, **conn_str)
         # common.create_missing_dir(os.path.dirname(filename))
-        with DB(filename) as db:
+        with DB() as db:
             db.check()
             if update_schema:
                 db.update_schema()

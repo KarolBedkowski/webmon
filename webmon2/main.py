@@ -49,9 +49,10 @@ def _parse_options():
     parser.add_argument("--abilities", action="store_true",
                         help="show available filters/sources"
                         "comparators")
-    parser.add_argument('--database-file',
-                        default=_DEFAULT_DB_FILE,
-                        help='path to cache directory')
+    parser.add_argument('--database',
+                        default="postgresql://webmon2:webmon2@"
+                        "127.0.0.1:5432/webmon2",
+                        help='database connection string')
     parser.add_argument("--migrate",
                         help="migrate sources from file",
                         dest="migrate_filename")
@@ -138,10 +139,7 @@ def main():
         cli.show_abilities()
         return
 
-    dbfile = os.path.expanduser(args.database_file)
-    if args.debug and os.path.isfile('./webmon.db'):
-        dbfile = "./webmon.db"
-    database.DB.initialize(dbfile,
+    database.DB.initialize(args.database,
                            update_schema=not is_running_from_reloader())
 
     if cli.process_cli(args):
