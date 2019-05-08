@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+  <h1>{% block title %}Settings{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<h2>Data</h2>
+	<h3>Export</h3>
+	<p><a href="{{ url_for('system.sett_data_export') }}">Download sources and groups</a></p>
+
+	<h3>Import</h3>
+	<form action="{{ url_for('system.sett_data_import') }}" method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+		<p>
+			<label>File: </label>
+			<input type="file" name="file" />
+		</p>
+		<p>
+			<button type="submit">Import</button>
+		</p>
+	</form>
+{% endblock %}
+
+  </body>
+</html>

@@ -57,6 +57,22 @@ def get(db, group_id) -> model.SourceGroup:
         return dbc.source_group_from_row(row)
 
 
+_FIND_SQL = """
+select id as source_group_id, name as source_group_name,
+    user_id as source_group_user_id, feed as source_group_feed
+from source_groups
+where name=%s and user_id=%s
+"""
+
+
+def find(db, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
+    """ Get one group. """
+    with db.cursor() as cur:
+        cur.execute(_FIND_SQL, (name, user_id))
+        row = cur.fetchone()
+        return dbc.source_group_from_row(row) if row else None
+
+
 _GET_BY_FEED_SQL = """
 select id as source_group_id, name as source_group_name,
     user_id as source_group_user_id, feed as source_group_feed

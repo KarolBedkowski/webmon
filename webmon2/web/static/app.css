@@ -11,6 +11,7 @@ article footer {text-align: right}
 input{ height: 1em;}
 input,textarea,select {width: 75%}
 input[type=checkbox] {width: auto}
+input[type=file] {height: auto}
 label {width: 20%; display: inline-block; vertical-align: top;}
 label.field-required:after{content:"*"; font-width: bold; color:red}
 nav a {margin-right: 2em}

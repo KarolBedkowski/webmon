@@ -13,11 +13,12 @@ Web gui
 import logging
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash, session
+    Blueprint, render_template, redirect, url_for, request, flash, session,
+    make_response
 )
 
 from webmon2.web import get_db
-from webmon2 import database
+from webmon2 import database, imp_exp
 
 
 _LOG = logging.getLogger(__name__)
@@ -67,3 +68,41 @@ def sett_user():
             else:
                 flash("wrong current password")
     return render_template("system/user.html")
+
+
+@BP.route('/settings/data')
+def sett_data():
+    return render_template("system/data.html")
+
+
+@BP.route('/settings/data/export')
+def sett_data_export():
+    db = get_db()
+    user_id = session['user']
+    content = imp_exp.dump_export(db, user_id)
+    headers = {"Content-Disposition": "attachment; filename=dump.json"}
+    return make_response((content, headers))
+
+
+@BP.route('/settings/data/import', methods=["POST"])
+def sett_data_import():
+    if 'file' not in request.files:
+        flash('No file to import')
+        return redirect(url_for("system.sett_data"))
+
+    file = request.files['file']
+    data = file.read()
+    if not data:
+        flash('No file to import')
+        return redirect(url_for("system.sett_data"))
+
+    db = get_db()
+    user_id = session['user']
+    try:
+        imp_exp.dump_import(db, user_id, data)
+        db.commit()
+        flash("import completed")
+    except Exception as err:  # pylint: disable=broad-except
+        flash("Error importing file: " + str(err))
+        _LOG.exception("import file error")
+    return redirect(url_for("system.sett_data"))
