@@ -168,7 +168,6 @@ class JamendoTracksSource(AbstractSource):
         common.SettingDef("artist", "artist name"),
         common.SettingDef("jamendo_client_id", "jamendo client id",
                           required=True, global_param=True),
-        common.SettingDef("short_list", "show compact list", default=True),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) -> \
@@ -216,11 +215,7 @@ class JamendoTracksSource(AbstractSource):
             response.close()
             return state.new_error(res['headers']['error_message']), []
 
-        if conf.get('short_list'):
-            entries = _jamendo_track_format_short(self._source, res['results'])
-        else:
-            entries = _jamendo_track_format_long(self._source, res['results'])
-
+        entries = _jamendo_track_format(self._source, res['results'])
         response.close()
         new_state = state.new_ok()
         return new_state, list(entries)
@@ -255,7 +250,7 @@ def _jamendo_track_to_url(track_id) -> str:
     return 'https://www.jamendo.com/track/{}/'.format(track_id)
 
 
-def _jamendo_track_format_short(source: model.Source, results) \
+def _jamendo_track_format(source: model.Source, results) \
         -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
@@ -268,24 +263,6 @@ def _jamendo_track_format_short(source: model.Source, results) \
         entry.updated = entry.created = _get_release_date_from_list(
             result.get('tracks'))
         yield entry
-
-
-def _jamendo_track_format_long(source: model.Source, results) -> model.Entries:
-    for result in results:
-        for track in result.get('tracks') or []:
-            res_track = [track['releasedate'], track["name"],
-                         _jamendo_track_to_url(track['id'])]
-            album = track.get('album_id')
-            if album:
-                res_track.append(" (" + track['album_name'] +
-                                 _jamendo_album_to_url(track['album_id']))
-
-            entry = model.Entry.for_source(source)
-            entry.title = source.name
-            entry.content = " ".join(res_track)
-            entry.updated = entry.created = _get_release_date(track)
-            entry.set_opt("content-type", "plain")
-            yield entry
 
 
 def _get_release_date(data) -> datetime.date:
