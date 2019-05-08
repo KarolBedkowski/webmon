@@ -36,7 +36,6 @@ class CheckWorker(threading.Thread):
 
     def run(self):
         cntr = 0
-        idx = 0
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15)
@@ -44,25 +43,24 @@ class CheckWorker(threading.Thread):
                 if not cntr:
                     _delete_old_entries(db)
                 cntr = (cntr + 1) % 60
+
                 _LOG.debug("CheckWorker check start")
                 ids = database.sources.get_sources_to_fetch(db)
-                _LOG.debug("ids: %s", ids)
                 for id_ in ids:
                     self._todo_queue.put(id_)
 
                 if not self._todo_queue.empty():
-                    workers = []
-                    for _ in range(min(self._workers, len(ids))):
-                        worker = FetchWorker(str(id(self)) + " " + str(idx),
-                                            self._todo_queue)
-                        worker.start()
-                        workers.append(worker)
-                        idx += 1
-
+                    workers = [self._start_worker(idx) for idx
+                               in range(min(self._workers, len(ids)))]
                     for worker in workers:
                         worker.join()
 
                 _LOG.debug("CheckWorker check done, %r", cntr)
+
+    def _start_worker(self, idx):
+        worker = FetchWorker(str(id(self)) + " " + str(idx), self._todo_queue)
+        worker.start()
+        return worker
 
 
 class FetchWorker(threading.Thread):
@@ -117,10 +115,10 @@ class FetchWorker(threading.Thread):
                                         source.state, new_state)
 
         entries = list(self._final_filter_entries(entries))
-        database.entries.save_many(db, entries, source_id)
         database.sources.save_state(db, new_state)
         if entries:
             max_updated = max(e.updated for e in entries)
+            database.entries.save_many(db, entries, source_id)
             database.groups.update_state(db, source.group_id, max_updated)
 
         _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
