@@ -44,8 +44,8 @@ def _absoute_url(url):
 
 
 def register(app):
-    app.jinja_env.filters['format_body'] = formatters.format_markdown
+    app.jinja_env.filters['format_markdown'] = formatters.format_markdown
     app.jinja_env.filters['age'] = _age_filter
     app.jinja_env.filters['format_date'] = _format_date
     app.jinja_env.filters['absolute_url'] = _absoute_url
-    app.jinja_env.filters['readable_html'] = formatters.format_html
+    app.jinja_env.filters['format_html'] = formatters.format_html

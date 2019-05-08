@@ -14,24 +14,24 @@
 		</header>
  		{% if entry.is_long_content() and mode == 'summary' %}
 			{% if entry.get_opt('content-type') == 'html' %}
-				{{ entry.get_summary()|readable_html|safe }}
+				{{ entry.get_summary()|safe }}
 			{% elif entry.get_opt('content-type') == 'preformated' %}
 				<pre>{{ entry.get_summary() }}</pre>
 			{% elif entry.get_opt('content-type') == 'safe' %}
 				{{ entry.get_summary()|safe }}
 			{% else %}
-				{{ entry.get_summary()|format_body|safe }}
+				{{ entry.get_summary()|format_markdown|safe }}
 			{% endif %}
 			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
 		{% elif entry.content %}
 			{% if entry.get_opt('content-type') == 'html' %}
-				{{ entry.content|readable_html|safe }}
+				{{ entry.content|safe }}
 			{% elif entry.get_opt('content-type') == 'preformated' %}
 				<pre>{{ entry.content }}</pre>
 			{% elif entry.get_opt('content-type') == 'safe' %}
 				{{ entry.content|safe }}
 			{% else %}
-				{{ entry.content|format_body|safe }}
+				{{ entry.content|format_markdown|safe }}
 			{% endif %}
 		{% endif %}
 	</article>

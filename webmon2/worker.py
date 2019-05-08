@@ -133,10 +133,11 @@ class FetchWorker(threading.Thread):
             if entry.oid in entries_oids:
                 _LOG.debug("doubled entry %s", entry)
                 continue
+
             entry.validate()
             content_type = entry.get_opt("content-type")
-            entry.content = formatters.body_format(entry.content, content_type)
-            entry.set_opt("content-type", "safe")
+            entry.content = formatters.sanitize_content(
+                entry.content, content_type)
             entries_oids.add(entry.oid)
             yield entry
 
