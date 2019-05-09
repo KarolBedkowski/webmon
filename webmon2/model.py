@@ -242,9 +242,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return entry
 
     def calculate_oid(self):
-        csum = hashlib.sha1()
-        for val in (self.source_id, self.title, self.url, self.content):
-            csum.update(str(val).encode("utf-8"))
+        data = "".join(map(
+            str, (self.source_id, self.title, self.url, self.content)))
+        csum = hashlib.sha1(data.encode('utf-8'))
         self.oid = csum.hexdigest()
         return self.oid
 
