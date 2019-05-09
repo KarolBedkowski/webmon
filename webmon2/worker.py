@@ -29,10 +29,11 @@ _SOURCES_PROCESSED_ERRORS = Counter(
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, workers=2):
+    def __init__(self, workers=2, debug=False):
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
         self._workers = workers
+        self.debug = debug
 
     def run(self):
         cntr = 0
@@ -55,7 +56,9 @@ class CheckWorker(threading.Thread):
                     for worker in workers:
                         worker.join()
 
-                _LOG.debug("CheckWorker check done, %r", cntr)
+            _LOG.debug("CheckWorker check done, %r", cntr)
+            if not self.debug:
+                time.sleep(45)
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(id(self)) + " " + str(idx), self._todo_queue)

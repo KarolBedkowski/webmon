@@ -146,7 +146,7 @@ def main():
         return
 
     if not is_running_from_reloader():
-        cworker = worker.CheckWorker(args.workers)
+        cworker = worker.CheckWorker(args.workers, debug=args.debug)
         cworker.start()
 
     web.start_app(args)
