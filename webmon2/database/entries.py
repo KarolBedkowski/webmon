@@ -131,9 +131,8 @@ def get_total_count(db, user_id: int, source_id=None, group_id=None,
             sql += " and read_mark=0"
     elif group_id:
         sql = ("select count(*) from entries where source_id in "
-                "(select source_id from source_groups "
-                "sg where sg.id=%(group_id)s)"
-            )
+               "(select source_id from source_groups "
+               "sg where sg.id=%(group_id)s)")
         if unread:
             sql += "and read_mark=0"
     else:
@@ -310,7 +309,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """
     assert source_id
     with db.cursor() as cur:
-        result = set()
+        result = set()  # type: ty.Set[str]
         for idx in range(0, len(oids), 100):
             part_oids = tuple(oids[idx:idx+100])
             cur.execute(
