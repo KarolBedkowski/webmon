@@ -32,8 +32,7 @@ def source_refresh(source_id):
     database.sources.refresh(db, source_id=source_id)
     db.commit()
     flash("Source mark to refresh")
-    return redirect(request.headers.get('Referer')
-                    or url_for("root.sources"))
+    return redirect(request.args.get('back') or url_for("root.sources"))
 
 
 @BP.route("/<int:source_id>/delete")
@@ -42,10 +41,7 @@ def source_delete(source_id):
     database.sources.delete(db, source_id)
     db.commit()
     flash("Source deleted")
-    if request.args.get("delete_self"):
-        return redirect(url_for("root.sources"))
-    return redirect(request.headers.get('Referer')
-                    or url_for("root.sources"))
+    return redirect(request.args.get('back') or url_for("root.sources"))
 
 
 @BP.route("/new", methods=['POST', 'GET'])

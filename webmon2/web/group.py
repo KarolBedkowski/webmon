@@ -53,7 +53,7 @@ def group_edit(group_id=0):
         sgroup = form.update_model(sgroup)
         database.groups.save(db, sgroup)
         db.commit()
-        return redirect(url_for("root.groups"))
+        return redirect(request.args.get('back') or url_for("root.groups"))
 
     return render_template("group.html", group=form, group_id=group_id)
 
@@ -104,8 +104,7 @@ def group_mark_read(group_id):
         if group_id:
             return redirect(url_for('group.group_entries',
                                     group_id=group_id))
-    return redirect(request.headers.get('Referer')
-                    or url_for("root.groups"))
+    return redirect(request.args.get('back') or url_for("root.groups"))
 
 
 @BP.route("/group/<int:group_id>/next_unread")

@@ -60,6 +60,9 @@
 			&nbsp;
 			&nbsp;
 			<span><a href="{{ url_for('source.source_delete', source_id=source.id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete source?">Delete</a></span>
+			{% if request.args.get('back') %}
+			&nbsp;&nbsp;<a href="{{ request.args['back'] }}">Back</a>
+			{% endif %}
 		</p>
 	</form>
 {% endblock %}

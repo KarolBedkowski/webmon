@@ -10,8 +10,8 @@
 		{% if max_id %}
 		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}">Mark read</a>
 		{% endif %}
-		<a href="{{ url_for('source.source_refresh', source_id=source.id) }}">Refresh</a>
-		<a href="{{ url_for('source.source_edit', source_id=source.id) }}">Edit</a>
+		<a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">Refresh</a>
+		<a href="{{ url_for('source.source_edit', source_id=source.id, back=request.url) }}">Edit</a>
 		{% if showed == 'all' %}
 		<a href="{{ url_for('source.source_entries', source_id=source.id) }}">Show unread only</a>
 		{% else %}

@@ -20,10 +20,10 @@
 					{% if group.unread %}({{ group.unread }}){% endif %}
 				</h4>
 				<nav>
-					<a href="{{ url_for('group.refresh_group', group_id=group.id)}}">↺ Refresh</a>
-					| <a href="{{ url_for('group.group_mark_read', group_id=group.id)}}">✔︎ Mark read</a>
-					| <a href="{{ url_for('group.group_sources', group_id=group.id)}}">Sources</a>
-					| <a href="{{ url_for('group.group_edit', group_id=group.id)}}">✎ Edit</a>
+					<a href="{{ url_for('group.refresh_group', group_id=group.id, back=request.url )}}">↺ Refresh</a>
+					| <a href="{{ url_for('group.group_mark_read', group_id=group.id, back=request.url )}}">✔︎ Mark read</a>
+					| <a href="{{ url_for('group.group_sources', group_id=group.id, back=request.url )}}">Sources</a>
+					| <a href="{{ url_for('group.group_edit', group_id=group.id, back=request.url )}}">✎ Edit</a>
 				</nav>
 				{% if group.feed and group.feed != 'off' %}
 				<p>Feed: <a href="{{ url_for("atom.group", key=group.feed) | absolute_url }}">
