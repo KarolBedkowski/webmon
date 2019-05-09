@@ -281,8 +281,14 @@ def delete_old(db, user_id: int, max_datetime: datetime):
     with db.cursor() as cur:
         cur.execute("delete from entries where star_mark=0 and read_mark=0 "
                     "and updated<%s and user_id=%s", (max_datetime, user_id))
-        deleted = cur.rowcount
-    _LOG.info("delete_old_entries; user: %d, deleted: %d", user_id, deleted)
+        deleted_entries = cur.rowcount
+        cur.execute("delete from history_oids where source_id in "
+                    "(select id from sources where user_id=%s) "
+                    "and created<%s",
+                    (user_id, max_datetime))
+        deleted_oids = cur.rowcount
+        _LOG.info("delete_old: user: %d, entries: %d, oids: %d",
+                  user_id, deleted_entries, deleted_oids)
 
 
 def mark_star(db, entry_id: int, star=True) -> int:
