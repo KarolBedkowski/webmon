@@ -66,12 +66,14 @@ def get_filter(conf) -> AbstractFilter:
 
 def filter_by(filters_conf: [dict], entries: model.Entries,
               prev_state: model.SourceState,
-              curr_state: model.SourceState) \
+              curr_state: model.SourceState,
+              db) \
               -> (model.Entries, model.SourceState):
     """ Apply filters by configuration to entries list. """
 
     for filter_conf in filters_conf:
         fltr = get_filter(filter_conf)
+        fltr.db = db
         fltr.validate()
         entries = fltr.filter(entries, prev_state, curr_state)
 

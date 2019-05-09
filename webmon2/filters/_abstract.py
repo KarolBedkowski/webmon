@@ -29,6 +29,7 @@ class AbstractFilter:
 
     def __init__(self, config: dict) -> None:
         super().__init__()
+        self.db = None
         self._conf = common.apply_defaults(
             {param.name: param.default for param in self.params},
             config)  # type: ty.Dict[str, ty.Any]

@@ -112,7 +112,7 @@ class FetchWorker(threading.Thread):
 
         if source.filters:
             entries = filters.filter_by(source.filters, entries,
-                                        source.state, new_state)
+                                        source.state, new_state, db)
 
         entries = list(self._final_filter_entries(entries))
         database.sources.save_state(db, new_state)
