@@ -87,7 +87,7 @@ class NDiff(AbstractFilter):
                 db, curr_state.source_id, self.name, filter_state)
 
         entry = entry.clone()
-        entry.status = 'updated'
+        entry.status = 'new'
         entry.content = '\n'.join(res)
         entry.set_opt("content-type", "preformated")
         entry.set_opt('_ndiff_changed_lines', changed_lines)

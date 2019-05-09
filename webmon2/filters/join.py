@@ -33,6 +33,7 @@ class Join(AbstractFilter):
             return
         for entry in entries:
             first_entry.content = first_entry.content + "\n\n" + entry.content
+            first_entry.status = 'new'
         yield first_entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:

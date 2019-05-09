@@ -132,6 +132,7 @@ def _jamendo_format_short_list(source: model.Source, results) -> model.Entries:
     for result in results:
         entry = model.Entry.for_source(source)
         entry.title = source.name
+        entry.status = 'new'
         entry.content = "\n".join(
             " ".join((album['releasedate'], album["name"],
                       _jamendo_album_to_url(album['id'])))
@@ -146,6 +147,7 @@ def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
     for result in results:
         for album in result.get('albums') or []:
             entry = model.Entry.for_source(source)
+            entry.status = 'new'
             entry.title = source.name
             entry.content = " ".join(
                 (album['releasedate'], album["name"],
@@ -255,6 +257,7 @@ def _jamendo_track_format(source: model.Source, results) \
     for result in results:
         entry = model.Entry.for_source(source)
         entry.title = source.name
+        entry.status = 'new'
         entry.content = "\n".join(
             " ".join((track['releasedate'], track["name"],
                       _jamendo_track_to_url(track['id'])))

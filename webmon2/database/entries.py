@@ -230,12 +230,13 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
 
 
 _INSERT_ENTRY_SQL = """
-insert into entries (source_id, updated, created,
+INSERT INTO entries (source_id, updated, created,
     read_mark, star_mark, status, oid, title, url, opts, content, user_id)
-values (%(source_id)s, %(updated)s, %(created)s,
+VALUES (%(source_id)s, %(updated)s, %(created)s,
     %(read_mark)s, %(star_mark)s, %(status)s, %(oid)s, %(title)s, %(url)s,
     %(opts)s, %(content)s, %(user_id)s)
-returning id
+ON CONFLICT (oid) DO NOTHING
+RETURNING id
 """
 
 _UPDATE_ENTRY_SQL = """
@@ -261,22 +262,17 @@ def save(db, entry: model.Entry) -> model.Entry:
 
 def save_many(db, entries: model.Entries, source_id: int):
     """ Insert entries; where entry with given oid already exists - is deleted
-    FIXME: handle more than 100 entries
+        TODO: save star_mark for updated
     """
-    # since sqlite in this version not support upsert, simple check, remve
     with db.cursor() as cur:
         # filter updated entries; should be deleted & inserted
         oids_to_delete = [(entry.oid, ) for entry in entries
                           if entry.status == 'updated']
-        cur.executemany("delete from entries where oid=%s", oids_to_delete)
-        cur.execute("select oid from entries where source_id=%s",
-                    (source_id, ))
-        existing_oids = {row[0] for row in cur}
-        rows = [
-            dbc.entry_to_row(entry)
-            for entry in entries
-            if entry.status == 'updated' or entry.oid not in existing_oids
-        ]
+        if oids_to_delete:
+            cur.executemany("delete from entries where oid=%s",
+                            oids_to_delete)
+        _LOG.debug("to del %d, deleted: %d", len(oids_to_delete), cur.rowcount)
+        rows = map(dbc.entry_to_row, entries)
         cur.executemany(_INSERT_ENTRY_SQL, rows)
 
 
@@ -304,24 +300,25 @@ def mark_star(db, entry_id: int, star=True) -> int:
 
 def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """ Check is given oids already exists in history table.
-        Insert new and return existing oids;
+        Insert new and its oids;
     """
     assert source_id
-    result = set()
     with db.cursor() as cur:
+        result = set()
         for idx in range(0, len(oids), 100):
-            part_oids = ", ".join("'" + oid + "'"
-                                  for oid in oids[idx:idx+100])
+            part_oids = tuple(oids[idx:idx+100])
             cur.execute(
                 "select oid from history_oids "
-                "where source_id=%s and oid in (" + part_oids + ")",
-                (source_id, ))
-            result.update({row[0] for row in cur})
+                "where source_id=%s and oid in %s",
+                (source_id, part_oids))
+            result.update(row[0] for row in cur)
         new_oids = [oid for oid in oids if oid not in result]
+        _LOG.debug("check_oids: check=%r, found=%d new=%d",
+                   len(oids), len(result), len(new_oids))
         cur.executemany(
             "insert into history_oids(source_id, oid) values (%s, %s)",
             [(source_id, oid) for oid in new_oids])
-    return result
+    return new_oids
 
 
 def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
@@ -343,11 +340,3 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
                 (read, max_id, min_id or 0, user_id))
         changed = cur.rowcount
     return changed
-
-
-# _INSERT_ENTRY_SQL = """
-# insert into entries (source_id, updated, created,
-# read_mark, star_mark, status, oid, title, url, content)
-# values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-# ON CONFLICT(oid) DO nothing;
-# """
