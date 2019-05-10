@@ -79,7 +79,7 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
             raise ValueError("invalid interval '%s'" % instr)
         return int(instr)
 
-    instr = instr.lower()
+    instr = instr.lower().strip()
     mplt = 1
     if instr.endswith("m"):
         mplt = 60

@@ -95,7 +95,8 @@ def _prepare_headers(state):
     if state.last_update:
         headers['If-Modified-Since'] = email.utils.formatdate(
             state.last_update.timestamp())
-    etag = state.state.get('etag') if state.state else None
-    if etag:
-        headers['If-None-Match'] = etag
+    if state.state:
+        etag = state.state.get('etag')
+        if etag:
+            headers['If-None-Match'] = etag
     return headers

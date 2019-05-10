@@ -75,7 +75,7 @@ class NDiff(AbstractFilter):
         new_lines = entry.content.split('\n')
         res = list(difflib.ndiff(old_lines, new_lines))
 
-        changed_lines = sum(1 for line in res if line and line[0] != ' ')
+        changed_lines = len(1 for line in res if line and line[0] != ' ')
         if not _check_changes(changed_lines, len(old_lines),
                               self._conf.get("threshold"),
                               self._conf.get("min_changed")):
