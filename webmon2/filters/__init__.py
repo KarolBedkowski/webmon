@@ -35,6 +35,7 @@ def _load_filters():
     from . import join
     from . import sort
     from . import wrap
+    from . import split_re
     try:
         from . import split_text
     except ImportError as err:
