@@ -9,12 +9,12 @@
 """
 Jamendo input.
 """
-import json
 import ssl
 import time
 import datetime
 import typing as ty
 import logging
+import urllib.parse
 
 import requests
 from urllib3 import poolmanager
@@ -28,7 +28,80 @@ _LOG = logging.getLogger(__file__)
 _JAMENDO_MAX_AGE = 90  # 90 days
 
 
-class JamendoAlbumsSource(AbstractSource):
+class JamendoMixin:
+
+    def _get_last_update(self, state):
+        last_update = datetime.datetime.now() - \
+            datetime.timedelta(days=_JAMENDO_MAX_AGE)
+        if state.last_update and state.last_update > last_update:
+            last_update = state.last_update
+        return last_update
+
+    def _make_request(self, url):
+        _LOG.debug("make request: %s", url)
+        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
+                                 "Gecko/20100101 Firefox/45.0"}
+        with requests.Session() as sess:
+            try:
+                sess.mount("https://", ForceTLSV1Adapter())
+                response = sess.request(url=url, method='GET', headers=headers)
+                response.raise_for_status()
+            except requests.exceptions.ReadTimeout:
+                return 500, 'timeout'
+            except Exception as err:  # pylint: disable=broad-except
+                return 500, str(err)
+
+            if response.status_code == 304:
+                return 304, None
+
+            if response.status_code != 200:
+                msg = f"Response code: {response.status_code}"
+                if response.text:
+                    msg += "\n" + response.text
+                return 500, msg
+
+            res = response.json()
+            try:
+                if res['headers']['status'] != 'success':
+                    return 500, res['headers']['error_message']
+            except KeyError:
+                return 500, 'wrong answer'
+
+            if not res['results']:
+                return 304, None
+
+            return 200, res
+
+
+def _build_request_url(url, **params):
+    return url + '&'.join(
+        key + "=" + urllib.parse.quote_plus(str(val))
+        for key, val in params.items() if val)
+
+
+def _jamendo_track_to_url(track_id) -> str:
+    if not track_id:
+        return ''
+    return f'https://www.jamendo.com/track/{track_id}/'
+
+
+def _jamendo_album_to_url(album_id):
+    if not album_id:
+        return ''
+    return f'https://www.jamendo.com/album/{album_id}/'
+
+
+def _create_entry(source: model.Source, content: str, date) -> model.Entry:
+    entry = model.Entry.for_source(source)
+    entry.title = source.name
+    entry.status = 'new'
+    entry.content = content
+    entry.set_opt("content-type", "plain")
+    entry.updated = entry.created = date
+    return entry
+
+
+class JamendoAlbumsSource(AbstractSource, JamendoMixin):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
@@ -41,58 +114,32 @@ class JamendoAlbumsSource(AbstractSource):
         common.SettingDef("artist", "artist name"),
         common.SettingDef("jamendo_client_id", "jamendo client id",
                           required=True, global_param=True),
-        common.SettingDef("short_list", "show compact list", default=True),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) -> \
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return one part - page content. """
         conf = self._conf
-        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
-                                 "Gecko/20100101 Firefox/45.0"}
-        if not (conf.get("artist_id") or conf.get("artist")):
-            raise common.ParamError(
-                "missing parameter 'artist' or 'artist_id'")
+        last_update = self._get_last_update(state)
+        url = _build_request_url(
+            'https://api.jamendo.com/v3.0/artists/albums?',
+            client_id=conf['jamendo_client_id'],
+            format="json",
+            order="album_releasedate_desc",
+            name=conf.get('artist'),
+            artist_id=conf.get("artist_id"),
+            album_datebetween=last_update.strftime("%Y-%m-%d") + "_" +
+            time.strftime("%Y-%m-%d")
+        )
 
-        last_update = datetime.datetime.now() - \
-            datetime.timedelta(days=_JAMENDO_MAX_AGE)
-        if state.last_update and state.last_update > last_update:
-            last_update = state.last_update
-
-        url = _jamendo_build_service_url(conf, last_update)
-        _LOG.debug("JamendoAlbumsSource: loading url: %s", url)
-        try:
-            sess = requests.Session()
-            sess.mount("https://", ForceTLSV1Adapter())
-            response = sess.request(url=url, method='GET', headers=headers)
-            response.raise_for_status()
-        except requests.exceptions.ReadTimeout:
-            return state.new_error("timeout"), []
-        except Exception as err:  # pylint: disable=broad-except
-            return state.new_error(str(err)), []
-
-        if response.status_code == 304:
-            response.close()
+        status, res = self._make_request(url)
+        if status == 304:
             return state.new_not_modified(), []
+        if status != 200:
+            return state.new_error(res), []
 
-        if response.status_code != 200:
-            msg = "Response code: %d" % response.status_code
-            if response.text:
-                msg += "\n" + response.text
-            response.close()
-            return state.new_error(msg), []
+        result = _jamendo_format_long_list(self._source, res['results'])
 
-        res = json.loads(response.text)
-        if res['headers']['status'] != 'success':
-            response.close()
-            return state.new_error(res['headers']['error_message']), []
-
-        if conf.get('short_list'):
-            result = _jamendo_format_short_list(self._source, res['results'])
-        else:
-            result = _jamendo_format_long_list(self._source, res['results'])
-
-        response.close()
         _LOG.debug("JamendoAlbumsSource: load done")
         new_state = state.new_ok()
         return new_state, list(result)
@@ -101,63 +148,25 @@ class JamendoAlbumsSource(AbstractSource):
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
         """ Validate input configuration."""
         yield from super(JamendoAlbumsSource, cls).validate_conf(*confs)
-        artist_id = [conf['artist_id'] for conf in confs
-                     if conf.get('artist_id')]
-        artist = [conf['artist'] for conf in confs if conf.get('artist')]
+        artist_id = any(conf.get('artist_id') for conf in confs)
+        artist = any(conf.get('artist') for conf in confs)
         if not artist_id and not artist:
             yield ('artist_id', "artist name or id is required")
-
-
-def _jamendo_build_service_url(conf: ty.Dict[str, ty.Any],
-                               last_update: datetime.datetime) -> str:
-    last_update_str = last_update.strftime("%Y-%m-%d")
-    today = time.strftime("%Y-%m-%d")
-    artist = (("name=" + conf["artist"]) if conf.get('artist')
-              else ("id=" + str(conf["artist_id"])))
-    url = 'https://api.jamendo.com/v3.0/artists/albums?'
-    url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
-                     "format=json&order=album_releasedate_desc",
-                     artist,
-                     "album_datebetween=" + last_update_str + "_" + today))
-    return url
-
-
-def _jamendo_album_to_url(album_id):
-    if not album_id:
-        return ''
-    return 'https://www.jamendo.com/album/{}/'.format(album_id)
-
-
-def _jamendo_format_short_list(source: model.Source, results) -> model.Entries:
-    for result in results:
-        entry = model.Entry.for_source(source)
-        entry.title = source.name
-        entry.status = 'new'
-        entry.content = "\n".join(
-            " ".join((album['releasedate'], album["name"],
-                      _jamendo_album_to_url(album['id'])))
-            for album in result.get('albums') or [])
-        entry.set_opt("content-type", "html")
-        entry.updated = entry.created = _get_release_date_from_list(
-            result.get('albums'))
-        yield entry
 
 
 def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
     for result in results:
         for album in result.get('albums') or []:
-            entry = model.Entry.for_source(source)
-            entry.status = 'new'
-            entry.title = source.name
-            entry.content = " ".join(
-                (album['releasedate'], album["name"],
-                 _jamendo_album_to_url(album['id'])))
-            entry.set_opt("content-type", "plain")
-            entry.updated = entry.created = _get_release_date(result)
-            yield entry
+            yield _create_entry(
+                source,
+                " ".join(
+                    (album['releasedate'], album["name"],
+                     _jamendo_album_to_url(album['id']))),
+                _get_release_date(result)
+            )
 
 
-class JamendoTracksSource(AbstractSource):
+class JamendoTracksSource(AbstractSource, JamendoMixin):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"
@@ -176,49 +185,25 @@ class JamendoTracksSource(AbstractSource):
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return one part - page content. """
         conf = self._conf
-        headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
-                                 "Gecko/20100101 Firefox/45.0"}
-        if not (conf.get("artist_id") or conf.get("artist")):
-            raise common.ParamError(
-                "missing parameter 'artist' or 'artist_id'")
+        last_update = self._get_last_update(state)
+        url = _build_request_url(
+            'https://api.jamendo.com/v3.0/artists/tracks?',
+            client_id=conf['jamendo_client_id'],
+            format="json",
+            order="track_releasedate_desc",
+            name=conf.get('artist'),
+            artist_id=conf.get("artist_id"),
+            album_datebetween=last_update.strftime("%Y-%m-%d") + "_" +
+            time.strftime("%Y-%m-%d")
+        )
 
-        last_update = datetime.datetime.now() - \
-            datetime.timedelta(days=_JAMENDO_MAX_AGE)
-        if state.last_update and state.last_update > last_update:
-            last_update = state.last_update
-
-        url = _jamendo_build_url_tracks(conf, last_update)
-
-        _LOG.debug("JamendoTracksSource: loading url: %s", url)
-        try:
-            sess = requests.Session()
-            sess.mount("https://", ForceTLSV1Adapter())
-            response = sess.request(url=url, method='GET', headers=headers)
-            response.raise_for_status()
-        except requests.exceptions.ReadTimeout:
-            return state.new_error("timeout"), []
-        except Exception as err:  # pylint: disable=broad-except
-            return state.new_error(str(err)), []
-
-        if response.status_code == 304:
-            response.close()
+        status, res = self._make_request(url)
+        if status == 304:
             return state.new_not_modified(), []
-
-        if response.status_code != 200:
-            msg = "Response code: %d" % response.status_code
-            if response.text:
-                msg += "\n" + response.text
-            response.close()
-            return state.new_error(msg), []
-
-        res = json.loads(response.text)
-
-        if res['headers']['status'] != 'success':
-            response.close()
-            return state.new_error(res['headers']['error_message']), []
+        if status != 200:
+            return state.new_error(res), []
 
         entries = _jamendo_track_format(self._source, res['results'])
-        response.close()
         new_state = state.new_ok()
         return new_state, list(entries)
 
@@ -226,61 +211,36 @@ class JamendoTracksSource(AbstractSource):
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
         """ Validate input configuration."""
         yield from super(JamendoTracksSource, cls).validate_conf(*confs)
-        artist_id = [conf['artist_id'] for conf in confs
-                     if conf.get('artist_id')]
-        artist = [conf['artist'] for conf in confs if conf.get('artist')]
+        artist_id = any(conf.get('artist_id') for conf in confs)
+        artist = any(conf.get('artist') for conf in confs)
         if not artist_id and not artist:
             yield ('artist_id', "artist name or id is required")
-
-
-def _jamendo_build_url_tracks(conf, last_update) -> str:
-    last_update = last_update.strftime("%Y-%m-%d")
-    today = time.strftime("%Y-%m-%d")
-    artist = (("name=" + conf["artist"]) if conf.get('artist')
-              else ("id=" + str(conf["artist_id"])))
-    url = 'https://api.jamendo.com/v3.0/artists/tracks?'
-    url += '&'.join(("client_id=" + conf.get('jamendo_client_id', ''),
-                     "format=json&order=track_releasedate_desc",
-                     artist,
-                     "album_datebetween=" + last_update + "_" + today))
-    return url
-
-
-def _jamendo_track_to_url(track_id) -> str:
-    if not track_id:
-        return ''
-    return 'https://www.jamendo.com/track/{}/'.format(track_id)
 
 
 def _jamendo_track_format(source: model.Source, results) \
         -> model.Entries:
     for result in results:
-        entry = model.Entry.for_source(source)
-        entry.title = source.name
-        entry.status = 'new'
-        entry.content = "\n".join(
-            " ".join((track['releasedate'], track["name"],
-                      _jamendo_track_to_url(track['id'])))
-            for track in result.get('tracks') or [])
-        entry.set_opt("content-type", "plain")
-        entry.updated = entry.created = _get_release_date_from_list(
-            result.get('tracks'))
-        yield entry
+        tracks = result.get('tracks')
+        if tracks:
+            yield _create_entry(
+                source,
+                "\n".join(
+                    " ".join((track['releasedate'], track["name"],
+                              _jamendo_track_to_url(track['id'])))
+                    for track in tracks),
+                max(_get_release_date(trc) for trc in tracks)
+            )
 
 
-def _get_release_date(data) -> datetime.date:
+def _get_release_date(data) -> datetime.datetime:
     try:
         return datetime.datetime.fromisoformat(data['releasedate'])
     except ValueError:
         _LOG.debug("wrong releasedate in %s", data)
-        return datetime.date.today()
+        return datetime.datetime.now()
     except KeyError:
         _LOG.debug("missing releasedate in %s", data)
-        return datetime.date.today()
-
-
-def _get_release_date_from_list(content) -> datetime.date:
-    return max(_get_release_date(entry) for entry in content)
+        return datetime.datetime.now()
 
 
 class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
