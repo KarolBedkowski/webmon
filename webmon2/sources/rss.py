@@ -25,6 +25,10 @@ _LOG = logging.getLogger(__file__)
 _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
+feedparser.PARSE_MICROFORMATS = 0
+feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
+                        "Gecko/20100101 Firefox/45.0"
+
 
 class RssSource(AbstractSource):
     """ Load data from rss
@@ -52,9 +56,6 @@ class RssSource(AbstractSource):
 
     def _load(self, state: model.SourceState):
         # pylint: disable=too-many-locals
-        feedparser.PARSE_MICROFORMATS = 0
-        feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
-                                "Gecko/20100101 Firefox/45.0"
         doc = feedparser.parse(
             self._conf['url'],
             etag=state.get_state('etag'),
@@ -99,10 +100,13 @@ class RssSource(AbstractSource):
         result.title = _get_val(entry, 'title')
         result.updated = _get_val(entry, 'updated_parsed')
         result.created = _get_val(entry, 'published_parsed')
-        result.status = ('updated' if result.updated > result.created
-                         else 'new')
+        result.status = 'updated' if result.updated > result.created else 'new'
         if load_content:
-            result.content = _get_content_from_rss_entry(entry)
+            content = entry.get('summary')
+            if not content:
+                content = entry['content'][0].value if 'content' in entry \
+                    else entry.get('value')
+            result.content = content
             # TODO: detect content (?)
             entry.set_opt("content-type", "html")
         return result
@@ -110,19 +114,11 @@ class RssSource(AbstractSource):
 
 def _fail_error(state, doc, status):
     _LOG.error("load document error %s: %s", status, doc)
-    summary = "Loading page error: %s" % status
+    summary = f"Loading page error: {status}"
     feed = doc.get('feed')
     if feed:
         summary = feed.get('summary') or summary
     return state.new_error(summary), []
-
-
-def _get_content_from_rss_entry(entry):
-    content = entry.get('summary')
-    if not content:
-        content = entry['content'][0].value if 'content' in entry \
-            else entry.get('value')
-    return content
 
 
 def _get_val(entry, key):
