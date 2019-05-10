@@ -61,6 +61,18 @@ class GitHubMixin:
         return repository
 
 
+def _build_entry(source: model.Source, repository, content: str) \
+        -> model.Entry:
+    entry = model.Entry.for_source(source)
+    entry.url = repository.html_url
+    entry.title = source.name
+    entry.status = 'new'
+    entry.content = content
+    entry.created = entry.updated = datetime.now()
+    entry.set_opt("content-type", "plain")
+    return entry
+
+
 class GithubInput(AbstractSource, GitHubMixin):
     """Load last commits from github."""
 
@@ -96,8 +108,8 @@ class GithubInput(AbstractSource, GitHubMixin):
         if hasattr(repository, "commits"):
             commits = list(repository.commits(since=data_since))
         else:
-            commits = list(repository.iter_commits(
-                since=data_since, etag=etag))
+            commits = list(repository.iter_commits(since=data_since,
+                                                   etag=etag))
 
         if not commits:
             new_state = state.new_not_modified()
@@ -117,31 +129,24 @@ class GithubInput(AbstractSource, GitHubMixin):
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-
-        entry = model.Entry.for_source(self._source)
-        entry.url = repository.html_url
-        entry.title = self._source.name
-        entry.status = 'new'
-        entry.content = content
-        entry.created = entry.updated = datetime.now()
-        entry.set_opt("content-type", "plain")
+        entry = _build_entry(self._source, repository, content)
         return new_state, [entry]
 
 
 def _format_gh_commit_short(commit, _full_message: bool) -> str:
-    return (commit.commit.committer['date'] + " " +
-            commit.commit.message.strip().split("\n", 1)[0].rstrip())
+    cmt = commit.commit
+    return (cmt.committer['date'] + " " +
+            cmt.message.strip().split("\n", 1)[0].rstrip())
 
 
 def _format_gh_commit_long(commit, full_message: bool) -> str:
     cmt = commit.commit
-    result = [cmt.committer['date'],
-              "\n\n    Author: ", cmt.author['name'], "\n'n"]
-    msg = cmt.message.strip()
+    result = [cmt.committer['date'], "\n    Author: " + cmt.author['name']]
+    msg = cmt.message.strip().split('\n')
     if not full_message:
-        msg = msg.split("\n", 1)[0].strip()
-    result.extend("   " + line + "\n" for line in msg.split("\n"))
-    return "".join(result)
+        msg = msg[:1]
+    result.extend("   " + line for line in msg)
+    return "\n".join(result)
 
 
 class GithubTagsSource(AbstractSource, GitHubMixin):
@@ -196,14 +201,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-
-        entry = model.Entry.for_source(self._source)
-        entry.url = repository.html_url
-        entry.title = self._source.name
-        entry.status = 'new'
-        entry.content = content
-        entry.created = entry.updated = datetime.now()
-        entry.set_opt("content-type", "plain")
+        entry = _build_entry(self._source, repository, content)
         return new_state, [entry]
 
 
@@ -229,8 +227,6 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
                           global_param=True),
         common.SettingDef("max_items", "Maximal number of tags to load",
                           value_type=int),
-        common.SettingDef("full_message", "show commits whole commit body",
-                          default=False),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
@@ -262,48 +258,29 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             new_state.set_state('etag', repository.etag)
             return new_state, []
 
-        short_list = self._conf.get("short_list")
-        full_message = bool(self._conf.get("full_message") and not short_list)
         try:
-            form_fun = _format_gh_release_short if short_list else \
-                _format_gh_release_long
-            content = '\n\n'.join(form_fun(release, full_message)
-                                  for release in releases)
+            entries = [
+                _build_gh_release_entry(self._source, repository, release)
+                for release in releases
+            ]
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("github load error %s", err)
             return state.new_error(str(err)), []
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-
-        entry = model.Entry.for_source(self._source)
-        entry.url = repository.html_url
-        entry.title = self._source.name
-        entry.status = 'new'
-        entry.content = content
-        entry.created = entry.updated = datetime.now()
-        entry.set_opt("content-type", "plain")
-        return new_state, [entry]
+        return new_state, entries
 
 
-def _format_gh_release_short(release, _full_message) -> str:
-    res = [release.name, release.tag_name,
-           release.created_at.strftime("%x %X")]
-    if release.html_url:
-        res.append(release.html_url)
-    if release.body:
-        res.append(release.body().strip().split('\n', 1)[0].rstrip())
-    return " ".join(map(str, filter(None, res)))
-
-
-def _format_gh_release_long(release, full_message: bool) -> str:
+def _build_gh_release_entry(source: model.Source, repository, release) \
+        -> model.Entry:
     res = [release.name, release.tag_name,
            '\n\n    Date: ', release.created_at.strftime("%x %X")]
     if release.html_url:
-        res.append('\n\n    ')
-        res.append(release.html_url)
-    if release.body and full_message:
+        res.extend(('\n\n    ', release.html_url))
+    if release.body:
         res.append('\n\n')
         res.extend('   ' + line.strip()
                    for line in release.body.strip().split('\n'))
-    return " ".join(map(str, filter(None, res)))
+    content = " ".join(map(str, filter(None, res)))
+    return _build_entry(source, repository, content)
