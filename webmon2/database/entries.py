@@ -58,22 +58,22 @@ order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and e.source_id=%(source_id)s
+where read_mark = 0 and e.source_id=%(source_id)s and e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_ENTRIES_BY_SOURCE_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where e.source_id=%(source_id)s
+where e.source_id=%(source_id)s and e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_UNREAD_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where read_mark = 0 and s.group_id=%(group_id)s
+where read_mark = 0 and s.group_id=%(group_id)s and e.user_id=%(user_id)s
 order by e.id
 '''
 
 _GET_ENTRIES_BY_GROUP_SQL = _GET_ENTRIES_SQL_MAIN + '''
-where s.group_id=%(group_id)s
+where s.group_id=%(group_id)s and e.user_id=%(user_id)s
 order by e.id
 '''
 
@@ -126,13 +126,14 @@ def get_total_count(db, user_id: int, source_id=None, group_id=None,
         "user_id": user_id,
     }
     if source_id:
-        sql = "select count(*) from entries where source_id=%(source_id)s"
+        sql = "select count(*) from entries where source_id=%(source_id)s "\
+            "and user_id=%(user_id)s"
         if unread:
             sql += " and read_mark=0"
     elif group_id:
         sql = ("select count(*) from entries where source_id in "
-               "(select id from sources s "
-               "where s.group_id=%(group_id)s)")
+               "(select id from sources s where s.group_id=%(group_id)s) "
+               "and user_id=%(user_id)s")
         if unread:
             sql += "and read_mark=0"
     else:
@@ -290,14 +291,15 @@ def delete_old(db, user_id: int, max_datetime: datetime):
                   user_id, deleted_entries, deleted_oids)
 
 
-def mark_star(db, entry_id: int, star=True) -> int:
+def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
     """ Change star mark for given entry """
     star = 1 if star else 0
     _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
     with db.cursor() as cur:
         cur.execute(
-            "update entries set star_mark=%s where id=%s and star_mark=%s",
-            (star, entry_id, 1-star))
+            "update entries set star_mark=%s where id=%s and star_mark=%s "
+            "and user_id=%s",
+            (star, entry_id, 1-star, user_id))
         changed = cur.rowcount
     _LOG.debug("changed: %d", changed)
     return changed
@@ -326,10 +328,10 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     return new_oids
 
 
-def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
+def mark_read(db, user_id: int, entry_id=None, min_id=None,
               max_id=None, read=True):
     """ Change read mark for given entry"""
-    assert entry_id or (user_id and max_id)
+    assert (entry_id or max_id) and user_id
     read = 1 if read else 0
     _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
                "user_id=%r", entry_id, min_id, max_id, read, user_id)
@@ -337,7 +339,8 @@ def mark_read(db, user_id: int = None, entry_id=None, min_id=None,
         if entry_id:
             cur.execute(
                 "update entries set read_mark=%s where id=%s "
-                "and read_mark=%s", (read, entry_id, 1-read))
+                "and read_mark=%s and user_id=%s",
+                (read, entry_id, 1-read, user_id))
         elif max_id:
             cur.execute(
                 "update entries set read_mark=%s "

@@ -153,17 +153,18 @@ _MARK_READ_SQL = """
 update entries
 set read_mark=1
 where source_id in (select id from sources where group_id=%(group_id)s)
-    and id <= %(max_id)s and id >= %(min_id)s and read_mark=0"
+    and id<=%(max_id)s and id>=%(min_id)s and read_mark=0
+    and user_id=%(user_id)s
 """
 
 
-def mark_read(db, group_id: int, max_id, min_id=0) -> int:
+def mark_read(db, user_id: int, group_id: int, max_id, min_id=0) -> int:
     """ Mark entries in given group read. """
     assert group_id, "no group id"
     assert max_id
     with db.cursor() as cur:
         cur.execute(_MARK_READ_SQL, {"group_id": group_id, "min_id": min_id,
-                                     "max_id": max_id})
+                                     "max_id": max_id, "user_id": user_id})
         changed = cur.rowcount
         return changed
 
@@ -218,12 +219,12 @@ def delete(db, user_id: int, group_id: int):
     TODO: recalculate state
     """
     with db.cursor() as cur:
-        cur.execute('select count(1) from source_groups where user_id= %s',
+        cur.execute('select count(1) from source_groups where user_id=%s',
                     (user_id, ))
         if not cur.fetchone()[0]:
             raise common.OperationError("can't delete last group")
 
-        cur.execute("select count(1) from sources where group_id= %s",
+        cur.execute("select count(1) from sources where group_id=%s",
                     (group_id, ))
         if cur.fetchone()[0]:
             # there are sources in group

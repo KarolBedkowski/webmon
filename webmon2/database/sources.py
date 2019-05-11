@@ -149,18 +149,23 @@ def update_filter(db, source_id: int, filter_idx: int,
     save(db, source)
 
 
-def delete_filter(db, source_id: int, filter_idx: int):
+def delete_filter(db, user_id: int, source_id: int, filter_idx: int):
     """ Delete filter in source """
     source = get(db, source_id, False, False)
+    if not source or source.user_id != user_id:
+        return
     if source.filters and filter_idx < len(source.filters):
         del source.filters[filter_idx]
         save(db, source)
 
 
-def move_filter(db, source_id: int, filter_idx: int, direction: str):
+def move_filter(db, user_id: int, source_id: int, filter_idx: int,
+                direction: str):
     """ Change position of given filter in source """
     assert direction in ('up', 'down')
     source = get(db, source_id, False, False)
+    if not source or source.user_id != user_id:
+        return
     if not source.filters or filter_idx >= len(source.filters) \
             or len(source.filters) == 1:
         return
@@ -247,12 +252,12 @@ def get_sources_to_fetch(db) -> ty.List[int]:
 _REFRESH_SQL = """
 update source_state
 set next_update=now()
-where (last_update is null
-    or last_update < now() - '-1 minutes'::interval)
+where (last_update is null or last_update < now() - '-1 minutes'::interval)
+    and source_id in (select id from sources where user_id=%(user_id)s)
 """
 
 
-def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
+def refresh(db, user_id, source_id=None, group_id=None) -> int:
     """ Mark source to refresh; return founded sources """
     assert user_id or source_id or group_id
     sql = _REFRESH_SQL
@@ -261,9 +266,6 @@ def refresh(db, user_id=None, source_id=None, group_id=None) -> int:
                 "(select id from sources where group_id=%(group_id)s)")
     elif source_id:
         sql += "and source_id=%(source_id)s"
-    else:
-        sql += ("and source_id in "
-                "(select id from sources where user_id=%(user_id)s)")
     cur = db.cursor()
     cur.execute(sql, {"group_id": group_id, "source_id": source_id,
                       "user_id": user_id})
@@ -288,13 +290,14 @@ def refresh_errors(db, user_id: int) -> int:
         return updated
 
 
-def mark_read(db, source_id: int, max_id: int, min_id=0) -> int:
+def mark_read(db, user_id: int, source_id: int, max_id: int, min_id=0) -> int:
     """ Mark source read """
     with db.cursor() as cur:
         cur.execute(
-            "update entries set read_mark=1 where source_id = %s "
-            "and id <= %s and read_mark=0 and id >= %s",
-            (source_id, max_id, min_id))
+            "update entries set read_mark=1 where source_id=%s "
+            "and id<=%s and read_mark=0 and id>=%s "
+            "and user_id=%s",
+            (source_id, max_id, min_id, user_id))
         changed = cur.rowcount
         return changed
 

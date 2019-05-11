@@ -14,7 +14,8 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash, session
+    Blueprint, render_template, redirect, url_for, request, flash, session,
+    abort
 )
 
 from webmon2.web import get_db, _commons as c
@@ -30,7 +31,8 @@ BP = Blueprint('group', __name__, url_prefix='/group')
 @BP.route("/group/<int:group_id>/refresh")
 def refresh_group(group_id):
     db = get_db()
-    database.sources.refresh(db, group_id=group_id)
+    user_id = session['user']
+    database.sources.refresh(db, user_id, group_id=group_id)
     db.commit()
     flash("Group mark to refresh")
     return redirect(request.headers.get('Referer')
@@ -41,8 +43,13 @@ def refresh_group(group_id):
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
 def group_edit(group_id=0):
     db = get_db()
-    sgroup = database.groups.get(db, group_id) if group_id \
-        else model.SourceGroup(user_id=session['user'])
+    user_id = session['user']
+    if group_id:
+        sgroup = database.groups.get(db, group_id)
+        if not sgroup or sgroup.user_id != user_id:
+            return abort(404)
+    else:
+        sgroup = model.SourceGroup(user_id=user_id)
     _LOG.debug("sgroup: %s", sgroup)
 
     form = forms.GroupForm.from_model(sgroup)
@@ -62,9 +69,12 @@ def group_edit(group_id=0):
 def group_sources(group_id: int):
     db = get_db()
     user_id = session['user']
+    group = database.groups.get(db, group_id)
+    if group.user_id != user_id:
+        return abort(404)
     return render_template(
         "group_sources.html",
-        group=database.groups.get(db, group_id),
+        group=group,
         sources=list(database.sources.get_all(db, user_id, group_id)))
 
 
@@ -76,6 +86,8 @@ def group_entries(group_id, mode=None, page=0):
     offset = (page or 0) * c.PAGE_LIMIT
     sgroup = database.groups.get(db, group_id)
     user_id = session['user']
+    if sgroup.user_id != user_id:
+        return abort(404)
     entries = list(database.entries.find(
         db, user_id, group_id=group_id, unread=mode != 'all',
         limit=c.PAGE_LIMIT, offset=offset))
@@ -95,11 +107,12 @@ def group_mark_read(group_id):
     db = get_db()
     max_id = request.args.get('max_id')
     max_id = int(max_id) if max_id else max_id
-    database.groups.mark_read(db, group_id, max_id=max_id)
+    user_id = session['user']
+    database.groups.mark_read(db, user_id, group_id, max_id=max_id)
     db.commit()
     if request.args.get('go') == 'next':
         # go to next unread group
-        group_id = database.groups.get_next_unread_group(db, session['user'])
+        group_id = database.groups.get_next_unread_group(db, user_id)
         _LOG.info("next group: %r", group_id)
         if group_id:
             return redirect(url_for('group.group_entries',
@@ -122,8 +135,12 @@ def group_next_unread(group_id):
 @BP.route("/group/<int:group_id>/delete")
 def group_delete(group_id):
     db = get_db()
+    user_id = session['user']
     try:
-        database.groups.delete(db, session['user'], group_id)
+        group_ = database.groups.get(db, group_id)
+        if not group_ or group_.user_id != user_id:
+            return abort(404)
+        database.groups.delete(db, user_id, group_id)
         db.commit()
         flash("Group deleted")
     except common.OperationError as err:

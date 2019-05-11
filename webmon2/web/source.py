@@ -14,7 +14,8 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, flash, session
+    Blueprint, render_template, redirect, url_for, request, flash, session,
+    abort
 )
 
 from webmon2.web import get_db, _commons as c
@@ -29,7 +30,8 @@ BP = Blueprint('source', __name__, url_prefix='/source')
 @BP.route("/<int:source_id>/refresh")
 def source_refresh(source_id):
     db = get_db()
-    database.sources.refresh(db, source_id=source_id)
+    user_id = session['user']
+    database.sources.refresh(db, user_id, source_id=source_id)
     db.commit()
     flash("Source mark to refresh")
     return redirect(request.args.get('back') or url_for("root.sources"))
@@ -38,6 +40,10 @@ def source_refresh(source_id):
 @BP.route("/<int:source_id>/delete")
 def source_delete(source_id):
     db = get_db()
+    user_id = session['user']
+    source = database.sources.get(db, source_id)
+    if not source or source.user_id != user_id:
+        return abort(404)
     database.sources.delete(db, source_id)
     db.commit()
     flash("Source deleted")
@@ -68,7 +74,10 @@ def source_new():
 @BP.route("/<int:source_id>/edit", methods=['POST', 'GET'])
 def source_edit(source_id):
     db = get_db()
+    user_id = session['user']
     source = database.sources.get(db, source_id)
+    if not source or source.user_id != user_id:
+        return abort(404)
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
     _LOG.debug("user_settings: %r", user_settings)
@@ -128,7 +137,8 @@ def source_entries(source_id, mode='unread', page=0):
 def source_mark_read(source_id):
     db = get_db()
     max_id = int(request.args['max_id'])
-    database.sources.mark_read(db, source_id, max_id=max_id)
+    user_id = session['user']
+    database.sources.mark_read(db, user_id, source_id, max_id=max_id)
     db.commit()
     if request.method == 'POST':
         return "ok"
@@ -139,7 +149,10 @@ def source_mark_read(source_id):
 @BP.route("/<int:source_id>/filters")
 def source_filters(source_id):
     db = get_db()
+    user_id = session['user']
     source = database.sources.get(db, source_id)
+    if not source or source.user_id != user_id:
+        return abort(404)
     filter_fields = [
         forms.Filter(fltr['name'])
         for fltr in source.filters or []
@@ -161,6 +174,9 @@ def source_filter_add(source_id):
 def source_filter_edit(source_id, idx):
     db = get_db()
     source = database.sources.get(db, source_id)
+    user_id = session['user']
+    if not source or source.user_id != user_id:
+        return abort(404)
     idx = int(idx)
     is_new = idx < 0 or idx >= len(source.filters or [])
     if is_new:  # new filter
@@ -214,7 +230,8 @@ def _save_filter(db, source_id, idx, conf):
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")
 def source_filter_move(source_id, idx, move):
     db = get_db()
-    database.sources.move_filter(db, source_id, idx, move)
+    user_id = session['user']
+    database.sources.move_filter(db, user_id, source_id, idx, move)
     db.commit()
     return redirect(url_for("source.source_filters", source_id=source_id))
 
@@ -222,6 +239,7 @@ def source_filter_move(source_id, idx, move):
 @BP.route("/<int:source_id>/filter/<int:idx>/delete")
 def source_filter_delete(source_id, idx):
     db = get_db()
-    database.sources.delete_filter(db, source_id, idx)
+    user_id = session['user']
+    database.sources.delete_filter(db, user_id, source_id, idx)
     db.commit()
     return redirect(url_for("source.source_filters", source_id=source_id))
