@@ -131,8 +131,8 @@ def get_total_count(db, user_id: int, source_id=None, group_id=None,
             sql += " and read_mark=0"
     elif group_id:
         sql = ("select count(*) from entries where source_id in "
-               "(select source_id from source_groups "
-               "sg where sg.id=%(group_id)s)")
+               "(select id from sources s "
+               "where s.group_id=%(group_id)s)")
         if unread:
             sql += "and read_mark=0"
     else:
