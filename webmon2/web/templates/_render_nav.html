@@ -1,0 +1,17 @@
+{% macro render_entres_nav(page, last_page, url_prev, url_next, url_first, url_last) -%}
+	<div style="display:flex;" class="page-nav">
+		{% if last_page > 0 and page > 0 %}
+			<a href="{{ url_first }}" style="align-self:flex-start">⇤ First page</a>
+		{% endif %}
+		{% if page > 1 %}
+			<a href="{{ url_prev }}" style="align-self:flex-start">← Prev page</a>
+		{% endif %}
+		<span style="flex-grow:1; text-align: center;">Page {{ page + 1 }} / {{ last_page + 1}}</span>
+		{% if page < last_page - 1 %}
+			<a href="{{ url_next }}" style="align-self:flex-end">Next page →</a>
+		{% endif %}
+		{% if last_page > 0 and page < last_page %}
+			<a href="{{ url_last }}" style="align-self:flex-end">Last page ⇥</a>
+		{% endif %}
+	</div>
+{%- endmacro %}
