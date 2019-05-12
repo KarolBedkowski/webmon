@@ -21,7 +21,7 @@ import typing as ty
 
 import html2text as h2t
 
-from webmon2 import database, common
+from webmon2 import database, common, formatters
 
 
 _LOG = logging.getLogger(__file__)
@@ -83,16 +83,16 @@ def _process_group(db, user_id: int, group_id: int, last_send) \
 
 
 def _render_entry_plain(entry):
-    title = entry.source.name + ": " + entry.title
+    title = entry.source.name + ": " + entry.title + " " + \
+        entry.updated.strftime("%x %X")
     yield title
     yield '\n'
     yield '-' * len(title)
-    yield '\n\n['
-    yield entry.updated.strftime("%x %X")
+    yield '\n\n'
     if entry.url:
-        yield ' '
+        yield '['
         yield entry.url
-    yield ']\n\n'
+        yield ']\n\n'
     content_type = entry.get_opt('content-type')
     if content_type == 'html':
         conv = h2t.HTML2Text(bodywidth=74)
@@ -103,15 +103,31 @@ def _render_entry_plain(entry):
     yield '\n\n\n'
 
 
+def _prepare_msg(conf, content):
+    body_plain = _encrypt(conf, content) if conf.get('mail_encrypt') \
+        else content
+
+    if not conf.get('mail_html'):
+        return email.mime.text.MIMEText(body_plain, 'plain', 'utf-8')
+
+    msg = email.mime.multipart.MIMEMultipart('alternative')
+    msg.attach(email.mime.text.MIMEText(body_plain, 'plain', 'utf-8'))
+
+    html = formatters.format_markdown(content)
+    if conf.get('mail_encrypt'):
+        html = _encrypt(conf, html)
+    msg.attach(email.mime.text.MIMEText(html, 'html', 'utf-8'))
+    return msg
+
+
 def _send_mail(conf, content):
     _LOG.debug("send mail: %r", conf)
-    msg = email.mime.text.MIMEText(content, 'plain', 'utf-8')
-    msg['Subject'] = conf["mail_subject"]
-    msg['From'] = conf["mail_from"]
-    msg['To'] = conf["mail_to"]
-    msg['Date'] = email.utils.formatdate()
-    smtp = None
     try:
+        msg = _prepare_msg(conf, content)
+        msg['Subject'] = conf["mail_subject"]
+        msg['From'] = conf["mail_from"]
+        msg['To'] = conf["mail_to"]
+        msg['Date'] = email.utils.formatdate()
         smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") \
             else smtplib.SMTP()
         host, port = conf["smtp_host"], conf["smtp_port"]
