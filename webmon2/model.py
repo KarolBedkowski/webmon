@@ -306,6 +306,8 @@ class Setting:
             self.value = int(value)
         elif self.value_type == 'float':
             self.value = float(value)
+        elif self.value_type == 'bool':
+            self.value = value.lower() in ('true', 'yes')
         else:
             self.value = str(value)
 
