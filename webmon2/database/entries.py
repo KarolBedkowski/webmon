@@ -159,7 +159,7 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
         "user_id": user_id,
     }
     sql = _get_find_sql(source_id, group_id, unread)
-    if not unread:
+    if not unread and limit:
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
     with db.cursor() as cur:
@@ -325,7 +325,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
         cur.executemany(
             "insert into history_oids(source_id, oid) values (%s, %s)",
             [(source_id, oid) for oid in new_oids])
-    return new_oids
+    return set(new_oids)
 
 
 def mark_read(db, user_id: int, entry_id=None, min_id=None,
