@@ -72,7 +72,9 @@ def _process_group(db, user_id: int, group_id: int, last_send) \
     group_name = fentry.source.group.name \
         if fentry.source and fentry.source.group \
         else fentry.title
+    group_name += f" [{len(entries)}]"
     yield group_name
+    yield '\n'
     yield '-' * len(group_name)
     yield '\n\n'
     for entry in entries:
@@ -81,16 +83,16 @@ def _process_group(db, user_id: int, group_id: int, last_send) \
 
 
 def _render_entry_plain(entry):
-    yield entry.title
-    yield '-' * len(entry.title)
-    yield '\n\n'
-    yield entry.source.name
-    yield ' '
-    yield str(entry.updated)
+    title = entry.source.name + ": " + entry.title
+    yield title
+    yield '\n'
+    yield '-' * len(title)
+    yield '\n\n['
+    yield entry.updated.strftime("%x %X")
     if entry.url:
         yield ' '
         yield entry.url
-    yield '\n\n'
+    yield ']\n\n'
     content_type = entry.get_opt('content-type')
     if content_type == 'html':
         conv = h2t.HTML2Text(bodywidth=74)
