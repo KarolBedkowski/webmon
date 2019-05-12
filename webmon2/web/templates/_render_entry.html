@@ -1,8 +1,17 @@
-{% macro render_entry(entry, mode) -%}
+{% macro render_entry(entry, mode, onlist) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<header>
-			<h4><a href="{{ entry.url or url_for("entry.entry", entry_id=entry.id) }}" target="_blank">{{ entry.human_title() }}</a>
+			<h4>
+				{% if onlist %}
+					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}" target="_blank">{{ entry.human_title() }}</a>
+				{% else %}
+					{% if entry.url %}
+						<a href="{{ entry.url }}" target="_blank">{{ entry.human_title() }}</a>
+					{% else %}
+						{{ entry.human_title() }}
+					{% endif %}
+				{% endif %}
 				{% if entry.source.group %}<a class="group-tag" href="{{ url_for("group.group_entries", group_id=entry.source.group_id) }}">{{ entry.source.group.name }}</a>{% endif %}
 			</h4>
 			<nav>
@@ -10,6 +19,9 @@
 				| &#9716; <time>{{ entry.updated|age }}</time>
 				| <a href="#" data-action="mark_read"></a>
 				| <a href="#" data-action="mark_star"></a>
+				{% if entry.url %}
+					| <a href="{{ entry.url }}">Original content</a>
+				{% endif %}
 			</nav>
 		</header>
  		{% if entry.is_long_content() and mode == 'summary' %}

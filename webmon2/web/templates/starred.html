@@ -10,7 +10,7 @@
 
 {% block content %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary') }}
+		{{ re.render_entry(entry, 'summary', True) }}
 	{% endfor %}
 {% endblock %}
   </body>
