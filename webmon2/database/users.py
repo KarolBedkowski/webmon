@@ -10,8 +10,12 @@
 Access & manage users in db
 """
 import typing as ty
+import logging
 
 from webmon2 import model
+
+
+_LOG = logging.getLogger(__file__)
 
 
 class LoginAlreadyExistsError(Exception):
@@ -101,3 +105,26 @@ def _user_to_row(user: model.User):
         'active': user.active,
         'admin': user.admin
     }
+
+
+def get_state(db, user_id: int, key: str, default=None, conv=None):
+    with db.cursor() as cur:
+        cur.execute(
+            "select value from users_state where user_id=%s and key=%s",
+            (user_id, key))
+        row = cur.fetchone()
+        if not row:
+            return default
+        value = row[0]
+        _LOG.debug("value: %r, %r", value, conv)
+        return conv(value) if conv else value
+
+
+def set_state(db, user_id: int, key: str, value):
+    with db.cursor() as cur:
+        cur.execute(
+            "insert into users_state (user_id, key, value) "
+            "values (%s, %s, %s) "
+            "ON CONFLICT ON CONSTRAINT users_state_pkey "
+            "DO UPDATE SET value=EXCLUDED.value",
+            (user_id, key, value))

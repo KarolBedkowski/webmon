@@ -18,7 +18,7 @@ import datetime
 import random
 from prometheus_client import Counter
 
-from . import sources, common, filters, database, model, formatters
+from . import sources, common, filters, database, model, formatters, mailer
 
 _LOG = logging.getLogger("main")
 _SOURCES_PROCESSED = Counter(
@@ -56,7 +56,9 @@ class CheckWorker(threading.Thread):
                     for worker in workers:
                         worker.join()
 
-            _LOG.debug("CheckWorker check done, %r", cntr)
+                _LOG.debug("CheckWorker check done, %r", cntr)
+                _send_mails(db)
+
             if not self.debug:
                 time.sleep(45)
 
@@ -174,6 +176,21 @@ def _delete_old_entries(db):
             datetime.timedelta(days=keep_days)
         database.entries.delete_old(db, user.id, max_datetime)
         db.commit()
+
+
+def _send_mails(db):
+    _LOG.debug("_send_mails start")
+    users = list(database.users.get_all(db))
+    for user in users:
+        db.begin()
+        try:
+            mailer.process(db, user.id)
+        except:
+            _LOG.exception("send mail error")
+            db.rollback()
+        else:
+            db.commit()
+    _LOG.debug("_send_mails end")
 
 
 def _save_state_error(db, source: model.Source, err: str):
