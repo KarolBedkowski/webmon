@@ -44,30 +44,34 @@ def process(db, user_id):
             _LOG.debug("still waiting for send mail")
             return
 
-    content = ''.join(_process_groups(db, user_id, last_send))
+    content = ''.join(_process_groups(db, conf, user_id, last_send))
 #    _LOG.debug("content: %s", content)
-    if content:
-        if conf.get('mail_encrypt'):
-            content = _encrypt(conf, content)
-        if not _send_mail(conf, content):
-            return
+    if content and not _send_mail(conf, content):
+        return
 
     database.users.set_state(db, user_id, 'mail_last_send',
                              datetime.now().timestamp())
 
 
-def _process_groups(db, user_id: int, last_send):
+def _process_groups(db, conf, user_id: int, last_send):
     for group in database.groups.get_all(db, user_id):
-        yield from _process_group(db, user_id, group.id, last_send)
+        yield from _process_group(db, conf, user_id, group.id, last_send)
 
 
-def _process_group(db, user_id: int, group_id: int, last_send) \
+def _process_group(db, conf, user_id: int, group_id: int, last_send) \
         -> ty.Iterator[str]:
     entries = list(database.entries.find(db, user_id, group_id=group_id))
     if last_send:
         entries = [entry for entry in entries if entry.updated > last_send]
     if not entries:
         return
+
+    if conf.get('mail_mark_read'):
+        min_id = min(entry.id for entry in entries)
+        max_id = max(entry.id for entry in entries)
+        database.groups.mark_read(db, user_id, group_id, min_id=min_id,
+                                  max_id=max_id)
+
     fentry = entries[0]
     group_name = fentry.source.group.name \
         if fentry.source and fentry.source.group \
