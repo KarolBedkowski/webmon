@@ -35,20 +35,22 @@ def sett_globals():
     db = get_db()
     user_id = session['user']
     settings = list(database.settings.get_all(db, user_id))
-    fields = [forms.Field.from_setting(sett, 'sett-') for sett in settings]
+    form = forms.FieldsForm(
+        [forms.Field.from_setting(sett, 'sett-') for sett in settings]
+    )
     if request.method == 'POST':
-        for sett in settings:
-            field = [field for field in fields if sett.key == field.name][0]
-            field.update_from_request(request.form)
-            sett.value = field.value
-            sett.user_id = user_id
-        database.settings.save_all(db, settings)
-        db.commit()
-        flash("Settings saved")
-        return redirect(url_for("system.sett_globals"))
+        if form.update_from_request(request.form):
+            values = form.values_map()
+            for sett in settings:
+                sett.value = values[sett.key]
+                sett.user_id = user_id
+            database.settings.save_all(db, settings)
+            db.commit()
+            flash("Settings saved")
+            return redirect(url_for("system.sett_globals"))
+        flash("There are errors in form")
 
-    return render_template("system/globals.html", settings=settings,
-                           fields=fields)
+    return render_template("system/globals.html", form=form)
 
 
 @BP.route('/settings/user', methods=["POST", "GET"])

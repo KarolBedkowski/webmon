@@ -81,7 +81,7 @@ def source_edit(source_id):
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
     _LOG.debug("user_settings: %r", user_settings)
-    source_form = forms.SourceForm.from_model(source, src.params)
+    source_form = forms.SourceForm.from_model(source)
     source_form.settings = [
         forms.Field.from_input_params(param, source.settings, 'sett-',
                                       user_settings.get(param.name))

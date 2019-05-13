@@ -4,7 +4,8 @@
 		{% if field.type == 'str' %}
 			<input type="text" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
 				{% if field.required %}required="required"{% endif %}
-				placeholder="Default: {{ field.default_value }}"/>
+				{% if field.default_value %}placeholder="Default: {{ field.default_value }}"{% endif %}
+			/>
 		{% elif field.type == 'number' %}
 			<input type="number" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
 				{% if field.required %}required="required"{% endif %} />
@@ -17,6 +18,9 @@
 				<option value="{{ value }}">{{ description }}</option>
 				{% endfor %}
 			</select>
+		{% endif %}
+		{% if field.error %}
+			<span class="error">{{ field.error }}</span>
 		{% endif %}
 	</p>
 {%- endmacro %}

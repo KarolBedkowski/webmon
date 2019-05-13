@@ -19,7 +19,11 @@ _ = ty
 _LOG = logging.getLogger(__name__)
 
 
-class Field:
+class InvalidValue(RuntimeError):
+    pass
+
+
+class Field:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         # internal (system) field name
         self.name = None  # type: str
@@ -32,11 +36,13 @@ class Field:
         self.required = False  # type: bool
         self.options = None  # type: ty.Optional[ty.Tuple(ty.Any, str)]
         # field value class
-        self._type = None
+        self.type_class = None
         # field name used in form
-        self.fieldname = None
+        self.fieldname = None  # type: str
         # default value
         self.default_value = None
+        # error messge
+        self.error = None  # type: ty.Optional[str]
 
     def __str__(self):
         return common.obj2str(self)
@@ -58,7 +64,7 @@ class Field:
         field.options = [(val, val) for val in param.options or []]
         field.value = values.get(field.name, param.default) \
             if values else None
-        field._type = param.type
+        field.type_class = param.type
         field.fieldname = prefix + param.name
         field.default_value = sett_value
         return field
@@ -70,13 +76,13 @@ class Field:
         field.description = setting.description
         if setting.value_type == 'int':
             field.type = 'number'
-            field._type = int
+            field.type_class = int
         if setting.value_type == 'bool':
             field.type = 'checkbox'
-            field._type = bool
+            field.type_class = bool
         else:
             field.type = 'str'
-            field._type = str
+            field.type_class = str
         field.value = setting.value
         field.fieldname = prefix + setting.key
         field.default_value = ''
@@ -89,12 +95,12 @@ class Field:
             return
         if form_value is None:
             return
-        if self._type:
-            form_value = self._type(form_value)
+        if self.type_class:
+            form_value = self.type_class(form_value)
         self.value = form_value
 
 
-class SourceForm:
+class SourceForm:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         self.id = None
         self.group_id = None
@@ -124,7 +130,7 @@ class SourceForm:
         return result
 
     @staticmethod
-    def from_model(source: model.Source, inp_params: list):
+    def from_model(source: model.Source):
         src = SourceForm()
         src.id = source.id
         src.group_id = source.id
@@ -194,7 +200,26 @@ class GroupForm:
         return result
 
 
-class Filter:
+class Filter:  # pylint: disable=too-few-public-methods
     def __init__(self, name=None):
         self.name = name
         self.parametes = []
+
+
+class FieldsForm:
+    def __init__(self, fields=None):
+        self.fields = fields or []  # type: ty.List[Field]
+
+    def update_from_request(self, request_form) -> bool:
+        """ Update fields from request; return True if no errors"""
+        no_errors = True
+        for field in self.fields:
+            try:
+                field.update_from_request(request_form)
+            except Exception as err:  # pylint: disable=broad-except
+                field.error = str(err)
+                no_errors = False
+        return no_errors
+
+    def values_map(self) -> ty.Dict[str, ty.Any]:
+        return {field.name: field.value for field in self.fields}

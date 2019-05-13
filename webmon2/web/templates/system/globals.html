@@ -14,7 +14,7 @@
 	<h2>Default and global settings</h2>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		{% for field in fields %}
+		{% for field in form.fields %}
 			{{ rf.render_field(field) }}
 		{% endfor %}
 		<button type="submit">Save</button>
