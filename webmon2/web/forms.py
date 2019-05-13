@@ -21,15 +21,25 @@ _LOG = logging.getLogger(__name__)
 
 class Field:
     def __init__(self):
+        # internal (system) field name
         self.name = None  # type: str
+        # field description
         self.description = None  # type: str
+        # field type name
         self.type = None  # type: str
+        # field value
         self.value = None
         self.required = False  # type: bool
         self.options = None  # type: ty.Optional[ty.Tuple(ty.Any, str)]
+        # field value class
         self._type = None
+        # field name used in form
         self.fieldname = None
-        self.setting_value = False
+        # default value
+        self.default_value = None
+
+    def __str__(self):
+        return common.obj2str(self)
 
     @staticmethod
     def from_input_params(param, values=None, prefix='', sett_value=None):
@@ -49,7 +59,8 @@ class Field:
             if values else None
         field._type = param.type
         field.fieldname = prefix + param.name
-        field.setting_value = sett_value
+        field.default_value = sett_value
+        return field
         return field
 
     def update_from_request(self, form):
