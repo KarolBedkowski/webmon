@@ -94,7 +94,7 @@ class DB:
     def check(self):
         with self.cursor() as cur:
             cur.execute('select now()')
-            _LOG.debug("res: %s", cur.fetchone())
+            _LOG.debug("check: %s", cur.fetchone())
             self.rollback()
 
     def update_schema(self):
