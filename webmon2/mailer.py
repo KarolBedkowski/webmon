@@ -94,9 +94,8 @@ def _render_entry_plain(entry):
     yield '-' * len(title)
     yield '\n\n'
     if entry.url:
-        yield '['
         yield entry.url
-        yield ']\n\n'
+        yield '\n\n'
     content_type = entry.get_opt('content-type')
     if content_type == 'html':
         conv = h2t.HTML2Text(bodywidth=74)
