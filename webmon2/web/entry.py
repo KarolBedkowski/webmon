@@ -36,6 +36,7 @@ def entry(entry_id):
     if not entry_.read_mark:
         database.entries.mark_read(db, user_id, entry_id=entry_id)
         entry_.read_mark = 1
+        db.commit()
     return render_template("entry.html", entry=entry_)
 
 
