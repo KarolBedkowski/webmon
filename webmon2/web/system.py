@@ -17,7 +17,7 @@ from flask import (
     make_response
 )
 
-from webmon2.web import get_db
+from webmon2.web import get_db, forms
 from webmon2 import database, imp_exp
 
 
@@ -35,17 +35,20 @@ def sett_globals():
     db = get_db()
     user_id = session['user']
     settings = list(database.settings.get_all(db, user_id))
+    fields = [forms.Field.from_setting(sett, 'sett-') for sett in settings]
     if request.method == 'POST':
         for sett in settings:
-            if sett.key in request.form:
-                sett.set_value(request.form[sett.key])
+            field = [field for field in fields if sett.key == field.name][0]
+            field.update_from_request(request.form)
+            sett.value = field.value
             sett.user_id = user_id
         database.settings.save_all(db, settings)
         db.commit()
         flash("Settings saved")
         return redirect(url_for("system.sett_globals"))
 
-    return render_template("system/globals.html", settings=settings)
+    return render_template("system/globals.html", settings=settings,
+                           fields=fields)
 
 
 @BP.route('/settings/user', methods=["POST", "GET"])

@@ -50,7 +50,8 @@ class Field:
             field.type = 'select'
         elif param.type == int:
             field.type = 'number'
-        # TODO: bool, float
+        elif param.type == bool:
+            field.type = 'checkbox'
         else:
             field.type = 'str'
         field.required = param.required and not sett_value
@@ -61,10 +62,31 @@ class Field:
         field.fieldname = prefix + param.name
         field.default_value = sett_value
         return field
+
+    @staticmethod
+    def from_setting(setting: model.Setting, prefix):
+        field = Field()
+        field.name = setting.key
+        field.description = setting.description
+        if setting.value_type == 'int':
+            field.type = 'number'
+            field._type = int
+        if setting.value_type == 'bool':
+            field.type = 'checkbox'
+            field._type = bool
+        else:
+            field.type = 'str'
+            field._type = str
+        field.value = setting.value
+        field.fieldname = prefix + setting.key
+        field.default_value = ''
         return field
 
     def update_from_request(self, form):
         form_value = form.get(self.fieldname)
+        if self.type == 'checkbox':
+            self.value = bool(form_value)
+            return
         if form_value is None:
             return
         if self._type:
