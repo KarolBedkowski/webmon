@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% block header %}
+	<h1>{% block title %}Entry{% endblock %}</h1>
+
+	<nav>
+		{% if prev_entry %}
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
+		{% endif %}
+		{% if next_entry %}
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">Next →</a>
+		{% endif %}
+	</nav>
+{% endblock %}
+
+{% block content %}
+	{{ re.render_entry(entry, 'content', False) }}
+{% endblock %}
+
+{% block footer %}
+	<nav>
+		{% if prev_entry %}
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
+		{% endif %}
+		{% if next_entry %}
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">Next →</a>
+		{% endif %}
+	</nav>
+{% endblock footer %}
+  </body>
+</html>

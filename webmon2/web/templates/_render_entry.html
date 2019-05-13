@@ -1,10 +1,14 @@
-{% macro render_entry(entry, mode, onlist) -%}
+{% macro render_entry(entry, mode, onlist, openlink=None) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<header>
 			<h4>
 				{% if onlist %}
+					{% if openlink %}
+					<a href="{{ openlink }}" target="_blank">{{ entry.human_title() }}</a>
+					{% else %}
 					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}" target="_blank">{{ entry.human_title() }}</a>
+					{% endif %}
 				{% else %}
 					{% if entry.url %}
 						<a href="{{ entry.url }}" target="_blank">{{ entry.human_title() }}</a>

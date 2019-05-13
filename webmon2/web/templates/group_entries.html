@@ -34,7 +34,7 @@
 		<p>No entries...</p>
 	{% endif %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary', True) }}
+		{{ re.render_entry(entry, 'summary', True, url_for("group.group_entry", group_id=group.id, mode=showed, entry_id=entry.id)) }}
 	{% endfor %}
 {% endblock %}
 

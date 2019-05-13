@@ -254,3 +254,41 @@ def _find_dst_group(db, user_id: int, group_id: int):
         if row:
             return row[0]
         raise common.OperationError("can't find destination group for sources")
+
+
+def find_next_entry_id(db, group_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e join sources s on s.id = e.source_id "
+                "where e.id > %s and e.read_mark=0 and s.group_id=%s",
+                (entry_id, group_id))
+        else:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e join sources s on s.id = e.source_id "
+                "where e.id > %s and s.group_id=%s",
+                (entry_id, group_id))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def find_prev_entry_id(db, group_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e join sources s on s.id = e.source_id "
+                "where e.id < %s and e.read_mark=0 and s.group_id=%s",
+                (entry_id, group_id))
+        else:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e join sources s on s.id = e.source_id "
+                "where e.id < %s and s.group_id=%s",
+                (entry_id, group_id))
+        row = cur.fetchone()
+        return row[0] if row else None

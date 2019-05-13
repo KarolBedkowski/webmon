@@ -148,3 +148,26 @@ def group_delete(group_id):
     if request.args.get("delete_self"):
         return redirect(url_for("root.groups"))
     return redirect(request.headers.get('Referer') or url_for("root.groups"))
+
+
+@BP.route("/group/<int:group_id>/entry/<mode>/<int:entry_id>")
+def group_entry(group_id, mode, entry_id):
+    db = get_db()
+    user_id = session['user']
+    entry = database.entries.get(db, entry_id, with_source=True,
+                                 with_group=True)
+    if user_id != entry.user_id or group_id != entry.source.group_id:
+        return abort(404)
+    if not entry.read_mark:
+        database.entries.mark_read(db, user_id, entry_id=entry_id)
+        entry.read_mark = 1
+        db.commit()
+    unread = mode != 'all'
+    next_entry = database.groups.find_next_entry_id(
+        db, group_id, entry.id, unread)
+    prev_entry = database.groups.find_prev_entry_id(
+        db, group_id, entry.id, unread)
+    return render_template("group_entry.html", entry=entry,
+                           group_id=group_id, next_entry=next_entry,
+                           prev_entry=prev_entry,
+                           mode=mode)
