@@ -4,6 +4,9 @@ a:hover{color: #00f; text-decoration:underline}
 h1,h2,h3{color: #333;margin: 1em 0 0 0}
 h4{color: #333;margin: 0}
 pre{background: #eee;padding: 1em;}
+.row {display:flex; margin-top: 1em;justify-content:space-between}
+.left {align-self:flex-start}
+.right {align-self:flex-end}
 article header nav {font-size: 80%;margin: 0}
 article header nav a {font-size: 80%;margin: 0}
 article {border: 1px solid #ccc;margin: 0.5em; padding: 0.2em 0.5em;}
@@ -15,7 +18,7 @@ input[type=file] {height: auto}
 label {width: 35%; display: inline-block; vertical-align: top;}
 label.field-required:after{content:"*"; font-width: bold; color:red}
 nav a {margin: 0 1em}
-section > header nav {margin-bottom: 2em; border-bottom: 1px solid #ccc;}
+section > header nav {margin-bottom: 2em; border-bottom: 1px solid #ccc}
 section > footer nav {margin-top: 2em; border-top: 1px solid #ccc;}
 .flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;border-radius: 5px;}
 .flash:focus {display: none;}
@@ -28,4 +31,3 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 article[data-starred=star] {border-color: red; border-width: 2px;}
 .group-tag{background-color: #ff9;border: 1px solid black; font-size: 70%; padding: 0.2em 0.5em;margin-left:1em; float: right;border-radius: 4px;}
 span.confirm{color: red; font-weight: bold;}
-div.page-nav {margin: 1em 0}

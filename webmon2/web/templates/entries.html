@@ -5,19 +5,7 @@
 <html>
   <body>
 
-{% block header %}
-	<h1>{% block title %}Entries{% endblock %} ({{ total_entries }})</h1>
-	<nav>
-		<div>
-		{% if max_id %}
-		<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id) }}">✔︎ Mark visible read</a>
-		{% endif %}
-		{% if showed == 'all' %}
-		<a href="{{ url_for('entries.entries_unread') }}">⊙ Show unread only</a>
-		{% else %}
-		<a href="{{ url_for('entries.entries_all') }}">⊛ Show all</a>
-		{% endif %}
-		</div>
+{% macro nav_bar() %}
 		{% if showed == 'all' %}
 		{{ rn.render_entres_nav(page, last_page,
 			url_for('entries.entries_all', page=prev_page),
@@ -26,6 +14,23 @@
 			url_for('entries.entries_all', page=last_page)
 		) }}
 		{% endif %}
+{% endmacro %}
+
+
+{% block header %}
+	<h1>{% block title %}Entries{% endblock %} ({{ total_entries }})</h1>
+	<nav>
+		<div>
+			{% if max_id %}
+			<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id) }}">✔︎ Mark visible read</a>
+			{% endif %}
+			{% if showed == 'all' %}
+			<a href="{{ url_for('entries.entries_unread') }}">⊙ Show unread only</a>
+			{% else %}
+			<a href="{{ url_for('entries.entries_all') }}">⊛ Show all</a>
+			{% endif %}
+		</div>
+		{{ nav_bar() }}
 	</nav>
 {% endblock %}
 
@@ -40,17 +45,7 @@
 
 {% block footer %}
 	<nav>
-		<p>
-		{% if max_id %}
-			<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id) }}">✔︎ Mark visible read</a>
-		{% endif %}
-		</p>
-		{% if showed == 'all' %}
-		{{ rn.render_entres_nav(page, last_page, url_for('entries.entries_all', page=prev_page),
-			url_for('entries.entries_all', page=next_page), url_for('entries.entries_all', page=0),
-			url_for('entries.entries_all', page=last_page)
-		) }}
-		{% endif %}
+		{{ nav_bar() }}
 	</nav>
 {% endblock footer %}
   </body>

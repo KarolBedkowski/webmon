@@ -4,17 +4,24 @@
 <html>
   <body>
 
-{% block header %}
-	<h1>{% block title %}Entry{% endblock %}</h1>
-
-	<nav>
+{% macro nav_bar() %}
+	<nav class="row">
 		{% if prev_entry %}
-			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}" class="left">← Prev</a>
+		{% else %}
+			&nbsp;
 		{% endif %}
 		{% if next_entry %}
-			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">Next →</a>
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}" class="right">Next →</a>
+		{% else %}
+			<a href="{{ url_for('group.group_next_unread', group_id=group_id) }}" class="right">→ Go to next unread group</a>
 		{% endif %}
 	</nav>
+{% endmacro %}
+
+{% block header %}
+	<h1><a href="{{ url_for("group.group_entries", group_id=group_id, mode=mode) }}">{% block title %}{{ group.name}}{% endblock %}</a></h1>
+	{{ nav_bar() }}
 {% endblock %}
 
 {% block content %}
@@ -22,14 +29,7 @@
 {% endblock %}
 
 {% block footer %}
-	<nav>
-		{% if prev_entry %}
-			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
-		{% endif %}
-		{% if next_entry %}
-			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">Next →</a>
-		{% endif %}
-	</nav>
+	{{ nav_bar() }}
 {% endblock footer %}
   </body>
 </html>

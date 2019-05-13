@@ -154,6 +154,9 @@ def group_delete(group_id):
 def group_entry(group_id, mode, entry_id):
     db = get_db()
     user_id = session['user']
+    group = database.groups.get(db, group_id)
+    if not group or group.user_id != user_id:
+        return abort(404)
     entry = database.entries.get(db, entry_id, with_source=True,
                                  with_group=True)
     if user_id != entry.user_id or group_id != entry.source.group_id:
@@ -170,4 +173,4 @@ def group_entry(group_id, mode, entry_id):
     return render_template("group_entry.html", entry=entry,
                            group_id=group_id, next_entry=next_entry,
                            prev_entry=prev_entry,
-                           mode=mode)
+                           mode=mode, group=group)

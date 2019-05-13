@@ -9,7 +9,7 @@
 				&#9716; <time>{{ source.state.last_update|age }}</time>
 				| <a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
 				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
-				| <a href="{{ url_for('source.source_edit', source_id=source.id, back=request.url) }}">✎ Edit</a>
+				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
 				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Realy delete source?">✘ Delete</a></span>
 			</nav>
 			{% if source.state.status == 'error' %}

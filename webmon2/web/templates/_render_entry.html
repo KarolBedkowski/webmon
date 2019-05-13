@@ -5,13 +5,13 @@
 			<h4>
 				{% if onlist %}
 					{% if openlink %}
-					<a href="{{ openlink }}" target="_blank">{{ entry.human_title() }}</a>
+					<a href="{{ openlink }}">{{ entry.human_title() }}</a>
 					{% else %}
-					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}" target="_blank">{{ entry.human_title() }}</a>
+					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}">{{ entry.human_title() }}</a>
 					{% endif %}
 				{% else %}
 					{% if entry.url %}
-						<a href="{{ entry.url }}" target="_blank">{{ entry.human_title() }}</a>
+						<a href="{{ entry.url }}">{{ entry.human_title() }}</a>
 					{% else %}
 						{{ entry.human_title() }}
 					{% endif %}
@@ -20,7 +20,7 @@
 			</h4>
 			<nav>
 				<a href="{{ url_for('source.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
-				| &#9716; <time>{{ entry.updated|age }}</time>
+				| &#9716;<time>{{ entry.updated|age }}</time>
 				| <a href="#" data-action="mark_read"></a>
 				| <a href="#" data-action="mark_star"></a>
 				{% if entry.url %}
