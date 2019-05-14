@@ -77,7 +77,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         if setting.value_type == 'int':
             field.type = 'number'
             field.type_class = int
-        if setting.value_type == 'bool':
+        elif setting.value_type == 'bool':
             field.type = 'checkbox'
             field.type_class = bool
         else:
