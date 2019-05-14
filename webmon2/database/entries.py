@@ -348,3 +348,41 @@ def mark_read(db, user_id: int, entry_id=None, min_id=None,
                 (read, max_id, min_id or 0, user_id))
         changed = cur.rowcount
     return changed
+
+
+def find_next_entry_id(db, user_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e "
+                "where e.id > %s and e.read_mark=0 and e.user_id=%s",
+                (entry_id, user_id))
+        else:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e  "
+                "where e.id > %s and e.user_id=%s",
+                (entry_id, user_id))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def find_prev_entry_id(db, user_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e "
+                "where e.id < %s and e.read_mark=0 and e.user_id=%s",
+                (entry_id, user_id))
+        else:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e "
+                "where e.id < %s and e.user_id=%s",
+                (entry_id, user_id))
+        row = cur.fetchone()
+        return row[0] if row else None

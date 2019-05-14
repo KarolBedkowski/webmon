@@ -31,13 +31,21 @@ def entry(entry_id):
     user_id = session['user']
     entry_ = database.entries.get(db, entry_id, with_source=True,
                                   with_group=True)
+    unread = entry_.read_mark != 1
     if user_id != entry_.user_id:
         return abort(404)
     if not entry_.read_mark:
         database.entries.mark_read(db, user_id, entry_id=entry_id)
         entry_.read_mark = 1
         db.commit()
-    return render_template("entry.html", entry=entry_)
+
+    next_entry = database.entries.find_next_entry_id(
+        db, user_id, entry_.id, unread)
+    prev_entry = database.entries.find_prev_entry_id(
+        db, user_id, entry_.id, unread)
+
+    return render_template("entry.html", entry=entry_,
+                           next_entry=next_entry, prev_entry=prev_entry)
 
 
 # @BP.route("/<int:entry_id>/mark/read")
