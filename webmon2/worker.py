@@ -165,17 +165,20 @@ class FetchWorker(threading.Thread):
 
 
 def _delete_old_entries(db):
-    users = list(database.users.get_all(db))
-    for user in users:
-        db.begin()
-        keep_days = database.settings.get_value(
-            db, 'keep_entries_days', user.id, default=90)
-        if not keep_days:
-            continue
-        max_datetime = datetime.datetime.now() - \
-            datetime.timedelta(days=keep_days)
-        database.entries.delete_old(db, user.id, max_datetime)
-        db.commit()
+    try:
+        users = list(database.users.get_all(db))
+        for user in users:
+            db.begin()
+            keep_days = database.settings.get_value(
+                db, 'keep_entries_days', user.id, default=90)
+            if not keep_days:
+                continue
+            max_datetime = datetime.datetime.now() - \
+                datetime.timedelta(days=keep_days)
+            database.entries.delete_old(db, user.id, max_datetime)
+            db.commit()
+    except Exception as err:  # pylint: disable=broad-except
+        _LOG.exception("delete old error: %s", err)
 
 
 def _send_mails(db):
@@ -185,7 +188,7 @@ def _send_mails(db):
         db.begin()
         try:
             mailer.process(db, user.id)
-        except:
+        except Exception:  # pylint: disable=broad-except
             _LOG.exception("send mail error")
             db.rollback()
         else:
