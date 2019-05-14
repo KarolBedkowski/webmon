@@ -127,10 +127,12 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
             format="json",
             order="album_releasedate_desc",
             name=conf.get('artist'),
-            artist_id=conf.get("artist_id"),
+            id=conf.get("artist_id"),
             album_datebetween=last_update.strftime("%Y-%m-%d") + "_" +
             time.strftime("%Y-%m-%d")
         )
+
+        _LOG.debug("load url=%s", url)
 
         status, res = self._make_request(url)
         if status == 304:
@@ -162,7 +164,7 @@ def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
                 " ".join(
                     (album['releasedate'], album["name"],
                      _jamendo_album_to_url(album['id']))),
-                _get_release_date(result)
+                _get_release_date(album)
             )
 
 
@@ -192,7 +194,7 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
             format="json",
             order="track_releasedate_desc",
             name=conf.get('artist'),
-            artist_id=conf.get("artist_id"),
+            id=conf.get("artist_id"),
             album_datebetween=last_update.strftime("%Y-%m-%d") + "_" +
             time.strftime("%Y-%m-%d")
         )
