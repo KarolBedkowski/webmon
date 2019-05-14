@@ -79,7 +79,7 @@ def _process_group(db, conf, user_id: int, group_id: int, last_send) \
     group_name += f" [{len(entries)}]"
     yield group_name
     yield '\n'
-    yield '-' * len(group_name)
+    yield '=' * len(group_name)
     yield '\n\n'
     for entry in entries:
         yield from _render_entry_plain(entry)
