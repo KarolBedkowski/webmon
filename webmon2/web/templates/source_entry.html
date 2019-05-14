@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+{% macro nav_bar() %}
+	<nav class="row">
+		{% if prev_entry %}
+			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=prev_entry) }}" class="left">← Prev</a>
+		{% else %}
+			&nbsp;
+		{% endif %}
+		{% if next_entry %}
+			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=next_entry) }}" class="right">Next →</a>
+		{% else %}
+			<a href="{{ url_for('source.source_next_unread', source_id=source_id) }}" class="right">→ Go to next unread source</a>
+		{% endif %}
+	</nav>
+{% endmacro %}
+
+{% block header %}
+	<h1><a href="{{ url_for("source.source_entries", source_id=source_id, mode=mode) }}">{% block title %}{{ source.name}}{% endblock %}</a></h1>
+	{{ nav_bar() }}
+{% endblock %}
+
+{% block content %}
+	{{ re.render_entry(entry, 'content', False) }}
+{% endblock %}
+
+{% block footer %}
+	{{ nav_bar() }}
+{% endblock footer %}
+  </body>
+</html>

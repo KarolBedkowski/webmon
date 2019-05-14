@@ -357,3 +357,52 @@ def _state_from_row(row) -> model.SourceState:
     row_keys = row.keys()
     state.state = dbc.get_json_if_exists(row_keys, "source_state_state", row)
     return state
+
+
+def find_next_entry_id(db, source_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e "
+                "where e.id > %s and e.read_mark=0 and e.source_id=%s",
+                (entry_id, source_id))
+        else:
+            cur.execute(
+                "select min(e.id) "
+                "from entries e  "
+                "where e.id > %s and e.source_id=%s",
+                (entry_id, source_id))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def find_prev_entry_id(db, source_id: int, entry_id: int, unread=True) \
+        -> ty.Optional[int]:
+    with db.cursor() as cur:
+        if unread:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e "
+                "where e.id < %s and e.read_mark=0 and e.source_id=%s",
+                (entry_id, source_id))
+        else:
+            cur.execute(
+                "select max(e.id) "
+                "from entries e "
+                "where e.id < %s and e.source_id=%s",
+                (entry_id, source_id))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def find_next_unread(db, user_id: int) -> ty.Optional[int]:
+    with db.cursor() as cur:
+        cur.execute(
+            "select e.source_id "
+            "from entries e "
+            "where e.user_id = %s and e.read_mark=0",
+            (user_id, ))
+        row = cur.fetchone()
+        return row[0] if row else None

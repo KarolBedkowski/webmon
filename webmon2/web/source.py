@@ -243,3 +243,40 @@ def source_filter_delete(source_id, idx):
     database.sources.delete_filter(db, user_id, source_id, idx)
     db.commit()
     return redirect(url_for("source.source_filters", source_id=source_id))
+
+
+@BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
+def source_entry(source_id, mode, entry_id):
+    db = get_db()
+    user_id = session['user']
+    src = database.sources.get(db, source_id)
+    if not src or src.user_id != user_id:
+        return abort(404)
+    entry = database.entries.get(db, entry_id, with_source=True,
+                                 with_group=True)
+    if user_id != entry.user_id or source_id != entry.source_id:
+        return abort(404)
+    if not entry.read_mark:
+        database.entries.mark_read(db, user_id, entry_id=entry_id)
+        entry.read_mark = 1
+        db.commit()
+    unread = mode != 'all'
+    next_entry = database.sources.find_next_entry_id(
+        db, source_id, entry.id, unread)
+    prev_entry = database.sources.find_prev_entry_id(
+        db, source_id, entry.id, unread)
+    return render_template("source_entry.html", entry=entry,
+                           source_id=source_id, next_entry=next_entry,
+                           prev_entry=prev_entry,
+                           mode=mode, source=src)
+
+
+@BP.route("/source/<int:source_id>/next_unread")
+def source_next_unread(source_id):
+    db = get_db()
+    source_id = database.sources.find_next_unread(db, session['user'])
+    _LOG.info("next sources: %r", source_id)
+    if source_id:
+        return redirect(url_for('source.source_entries', source_id=source_id))
+    flash("No more unread sources...")
+    return redirect(url_for("root.sources"))
