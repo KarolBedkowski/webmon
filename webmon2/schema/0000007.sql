@@ -7,6 +7,6 @@
 
 INSERT INTO settings (key, value, value_type, description)
 VALUES
-  ('mail_mark_read', 'true',    'bool', 'mark reported entries read')
+  ('mail_mark_read', 'true',    'bool', 'Mark reported entries read')
 ;
 -- vim:et

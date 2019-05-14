@@ -7,11 +7,11 @@
 
 INSERT INTO settings (key, value, value_type, description)
 VALUES
-  ('mail_enabled',  'false',    'bool', 'enable mail reports'),
-  ('mail_interval', '"1h"',     'str',  'send mail interval'),
-  ('mail_to',       '',         'str',  'email recipient'),
-  ('mail_from',     '',         'str',  'email sender'),
-  ('mail_subject',  '"WebMail Report"', 'str', 'email subject'),
+  ('mail_enabled',  'false',    'bool', 'Enable mail reports'),
+  ('mail_interval', '"1h"',     'str',  'Send mail interval'),
+  ('mail_to',       '',         'str',  'Email recipient'),
+  ('mail_from',     '',         'str',  'Email sender'),
+  ('mail_subject',  '"WebMail Report"', 'str', 'Email subject'),
   ('smtp_host',     '',         'str',  'SMTP server address'),
   ('smtp_port',     '',         'int',  'SMTP server port'),
   ('smtp_login',    '',         'str',  'SMTP user login'),
