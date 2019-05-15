@@ -141,11 +141,12 @@ def _format_gh_commit_short(commit, _full_message: bool) -> str:
 
 def _format_gh_commit_long(commit, full_message: bool) -> str:
     cmt = commit.commit
-    result = [cmt.committer['date'], "\n    Author: " + cmt.author['name']]
+    result = ['### ' + cmt.committer['date'],
+              "Author: " + cmt.author['name']]
     msg = cmt.message.strip().split('\n')
     if not full_message:
         msg = msg[:1]
-    result.extend("   " + line for line in msg)
+    result.extend(msg)
     return "\n".join(result)
 
 
@@ -274,13 +275,13 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
 def _build_gh_release_entry(source: model.Source, repository, release) \
         -> model.Entry:
-    res = [release.name, release.tag_name,
-           '\n\n    Date: ', release.created_at.strftime("%x %X")]
+    res = ['### ', release.name, ' ', release.tag_name,
+           '\n\nDate: ', release.created_at.strftime("%x %X")]
     if release.html_url:
-        res.extend(('\n\n    ', release.html_url))
+        res.extend(('\n', release.html_url))
     if release.body:
-        res.append('\n\n')
-        res.extend('   ' + line.strip()
+        res.append('\n')
+        res.extend(line.strip() + "\n"
                    for line in release.body.strip().split('\n'))
-    content = " ".join(map(str, filter(None, res)))
+    content = "".join(map(str, res))
     return _build_entry(source, repository, content)

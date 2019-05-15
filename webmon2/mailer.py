@@ -87,15 +87,20 @@ def _process_group(db, conf, user_id: int, group_id: int, last_send) \
 
 
 def _render_entry_plain(entry):
-    title = entry.source.name + ": " + entry.title + " " + \
-        entry.updated.strftime("%x %X")
-    yield title
+    yield entry.source.name
     yield '\n'
-    yield '-' * len(title)
+    yield '-' * len(entry.source.name)
     yield '\n\n'
+    title = "### " + entry.title + " " + entry.updated.strftime("%x %X")
     if entry.url:
+        yield '['
+        yield title
+        yield ']('
         yield entry.url
-        yield '\n\n'
+        yield ')'
+    else:
+        yield title
+    yield '\n\n'
     content_type = entry.get_opt('content-type')
     if content_type == 'html':
         conv = h2t.HTML2Text(bodywidth=74)
