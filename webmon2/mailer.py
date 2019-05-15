@@ -91,7 +91,8 @@ def _render_entry_plain(entry):
     yield '\n'
     yield '-' * len(entry.source.name)
     yield '\n\n'
-    title = "### " + entry.title + " " + entry.updated.strftime("%x %X")
+    title = entry.title + " " + entry.updated.strftime("%x %X")
+    yield '### '
     if entry.url:
         yield '['
         yield title
