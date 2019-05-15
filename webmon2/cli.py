@@ -23,8 +23,10 @@ def _show_abilities_cls(title, base_cls):
         if hasattr(cls, "params") and cls.params:
             print("    Parameters:")
             for param in cls.params:
-                print("     - {:<15s}\t{:<20s}\tdef={!r:<10}\treq={!r}".format(
-                    *param))
+                print(
+                    "     - {:<15s}\t{:<20s}\tdefault={!r:<10}\t{}"
+                    .format(param.name, param.description, param.default,
+                            "Required" if param.required else ""))
     print()
 
 
