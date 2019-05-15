@@ -64,7 +64,9 @@ def _parse_options():
                         help="change user password; arguments in form "
                         "<login>:<password>",
                         dest="change_user_pass")
-    parser.add_argument("--web-app-root", default="/")
+    parser.add_argument("--web-app-root",
+                        help="root for url patch (for reverse proxy)",
+                        default="/")
     parser.add_argument("--workers", type=int, default=2,
                         help="number of background workers")
     return parser.parse_args()
