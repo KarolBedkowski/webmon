@@ -29,6 +29,7 @@
 			</nav>
 		</header>
  		{% if entry.is_long_content() and mode == 'summary' %}
+			<section>
 			{% if entry.get_opt('content-type') == 'html' %}
 				{{ entry.get_summary()|safe }}
 			{% elif entry.get_opt('content-type') == 'preformated' %}
@@ -38,8 +39,10 @@
 			{% else %}
 				{{ entry.get_summary()|format_markdown|safe }}
 			{% endif %}
+			</section>
 			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
 		{% elif entry.content %}
+			<section>
 			{% if entry.get_opt('content-type') == 'html' %}
 				{{ entry.content|safe }}
 			{% elif entry.get_opt('content-type') == 'preformated' %}
@@ -49,6 +52,7 @@
 			{% else %}
 				{{ entry.content|format_markdown|safe }}
 			{% endif %}
+			</section>
 		{% endif %}
 	</article>
 {%- endmacro %}
