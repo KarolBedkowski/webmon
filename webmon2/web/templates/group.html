@@ -23,14 +23,18 @@
 			<input type="checkbox" name="feed_enabled" id="source-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
 		</p>
 		<p>
-		<button type="submit">Save</button>
-		&nbsp;
-		&nbsp;
-		<span><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">Delete</a></span>
-		{% if request.args.get('back') %}
-			&nbsp;&nbsp;<a href="{{ request.args['back'] }}" >Back</a>
-		{% endif %}
+			<button type="submit">Save</button>
+			{% if request.args.get('back') %}
+				<a href="{{ request.args['back'] }}" >Back</a>
+			{% else %}
+				<a href="#" data-action="hist-back">Back</a>
+			{% endif %}
 		</p>
+		{% if group.id %}
+			<p>
+				<span><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">⚠ Delete</a></span>
+			</p>
+		{% endif %}
 	</form>
 {% endblock %}
 

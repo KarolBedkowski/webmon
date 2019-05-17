@@ -117,6 +117,12 @@
 		document.querySelectorAll("a[data-req-confirm=yes]").forEach((element) => {
 			element.onclick = handleConfirm;
 		});
+
+		document.querySelectorAll("a[data-action=hist-back]").forEach((element) => {
+			element.onclick = (event) => {
+				event.preventDefault();
+				window.history.back();
+		}});
 	});
 
 })();
