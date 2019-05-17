@@ -35,8 +35,7 @@ def refresh_group(group_id):
     database.sources.refresh(db, user_id, group_id=group_id)
     db.commit()
     flash("Group mark to refresh")
-    return redirect(request.headers.get('Referer')
-                    or url_for("root.groups"))
+    return redirect(request.headers.get('Referer') or url_for("root.groups"))
 
 
 @BP.route("/group/new", methods=["GET", "POST"])

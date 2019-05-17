@@ -48,15 +48,6 @@ def entry(entry_id):
                            next_entry=next_entry, prev_entry=prev_entry)
 
 
-# @BP.route("/<int:entry_id>/mark/read")
-# def entry_mark_read(entry_id):
-#     db = get_db()
-#     database.entries.mark_read(db, entry_id=entry_id)
-#     db.commit()
-#     return redirect(request.headers.get('Referer')
-#                     or url_for("root.sources"))
-
-
 @BP.route('/mark/read', methods=["POST"])
 def entry_mark_read_api():
     db = get_db()

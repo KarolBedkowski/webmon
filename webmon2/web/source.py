@@ -142,8 +142,7 @@ def source_mark_read(source_id):
     db.commit()
     if request.method == 'POST':
         return "ok"
-    return redirect(request.headers.get('Referer')
-                    or url_for("entries.unread"))
+    return redirect(url_for("root.sources"))
 
 
 @BP.route("/<int:source_id>/filters")
