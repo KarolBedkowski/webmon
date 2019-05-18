@@ -79,3 +79,8 @@ class AbstractSource:
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
+
+    @classmethod
+    def from_opml(cls, opml_node: ty.Dict[str, ty.Any]) \
+            -> ty.Optional[model.Source]:
+        raise NotImplementedError()

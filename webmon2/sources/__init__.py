@@ -11,6 +11,7 @@ Data sources
 """
 
 import logging
+import typing as ty
 
 from webmon2 import model, common
 
@@ -59,8 +60,8 @@ def get_source(source: model.Source, sys_settings):
     raise UnknownInputException()
 
 
-def get_source_class(source: model.Source):
-    scls = common.find_subclass(AbstractSource, source.kind)
+def get_source_class(kind: str) -> ty.Optional[AbstractSource]:
+    scls = common.find_subclass(AbstractSource, kind)
     return scls
 
 

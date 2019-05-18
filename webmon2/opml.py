@@ -26,31 +26,28 @@ class InvalidFile(RuntimeError):
     pass
 
 
-def load_opml(filename):
-    root = etree.parse(filename).getroot()
+def load_opml(content: bytes):
+    root = etree.XML(content)
     if root.tag != 'opml':
-        raise InvalidFile('file is not opml')
+        raise InvalidFile('content is not opml')
     body = root.find('body')
-    data = sorted(_load(body))
+    data = sorted(_load(body), key=lambda x: x[0])
     return itertools.groupby(data, lambda x: x[0])
 
 
-def load_data(filename: str, user_id: int):
-    with database.DB.get() as db:
-        for group_name, items in load_opml(filename):
-            group = database.groups.find(db, user_id, group_name)
-            if not group:
-                group = model.SourceGroup(name=group_name, user_id=user_id)
-                group = database.groups.save(db, group)
-            group_id = group.id
-            for item_title, item_url in items:
-                source = model.Source()
-                source.kind = 'rss'
-                source.name = item_title
-                source.group_id = group_id
-                source.settings = {'url': item_url}
-                source.user_id = user_id
-                source = database.sources.save(db, source)
+def load_data(db, content: bytes, user_id: int):
+    for group_name, items in load_opml(content):
+        group = database.groups.find(db, user_id, group_name)
+        if not group:
+            group = model.SourceGroup(name=group_name, user_id=user_id)
+            group = database.groups.save(db, group)
+            _LOG.debug("import opml - new group: %s", group)
+        group_id = group.id
+        for _, source in items:
+            source.group_id = group_id
+            source.user_id = user_id
+            source = database.sources.save(db, source)
+            _LOG.debug("import opml - new source: %s", source)
 
 
 def dump_data(db, user_id: int):
@@ -73,7 +70,7 @@ def dump_data(db, user_id: int):
 
 
 def _dump_source(source):
-    scls = sources.get_source_class(source)
+    scls = sources.get_source_class(source.kind)
     if scls:
         try:
             data = scls.to_opml(source)
@@ -87,13 +84,17 @@ def _dump_source(source):
 def _load(node, group=None):
     for snode in node.findall('outline'):
         ntype = snode.attrib.get('type')
-        if ntype == 'rss':
-            xmlUrl = snode.attrib.get('xmlUrl')
-            if xmlUrl:
-                title = snode.attrib.get('title') \
-                    or snode.attrib.get('text') \
-                    or xmlUrl
-                yield (group, title, xmlUrl)
+        if ntype:
+            scls = sources.get_source_class(ntype)
+            if scls:
+                try:
+                    source = scls.from_opml(snode.attrib)
+                    if source:
+                        yield (group, source)
+                except NotImplementedError:
+                    pass
+                except ValueError as err:
+                    _LOG.info("import error %s for %s", err, snode.attrib)
             continue
         ntitle = snode.attrib.get('title')
         if ntitle:

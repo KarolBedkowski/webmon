@@ -125,6 +125,21 @@ class RssSource(AbstractSource):
             'xmlUrl': source.settings['url'],
         }
 
+    @classmethod
+    def from_opml(cls, opml_node: ty.Dict[str, ty.Any]) \
+            -> ty.Optional[model.Source]:
+        url = opml_node['xmlUrl']
+        if not url:
+            raise ValueError('missing xmlUrl')
+        name = opml_node.get('text') or opml_node['title']
+        if not name:
+            raise ValueError('missing text/title')
+        return model.Source(
+            kind='rss',
+            name=name,
+            settings={'url': url}
+        )
+
 
 def _fail_error(state, doc, status):
     _LOG.error("load document error %s: %s", status, doc)
@@ -137,6 +152,8 @@ def _fail_error(state, doc, status):
 
 def _get_val(entry, key):
     val = entry.get(key)
+    if val is None:
+        return None
     if isinstance(val, time.struct_time):
         return datetime.datetime.fromtimestamp(time.mktime(val))
     return str(val).strip()

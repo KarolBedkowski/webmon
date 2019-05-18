@@ -120,3 +120,27 @@ def sett_data_import():
         flash("Error importing file: " + str(err))
         _LOG.exception("import file error")
     return redirect(url_for("system.sett_data"))
+
+
+@BP.route('/settings/data/import/opml', methods=["POST"])
+def sett_data_import_opml():
+    if 'file' not in request.files:
+        flash('No file to import')
+        return redirect(url_for("system.sett_data"))
+
+    file = request.files['file']
+    data = file.read()
+    if not data:
+        flash('No file to import')
+        return redirect(url_for("system.sett_data"))
+
+    db = get_db()
+    user_id = session['user']
+    try:
+        opml.load_data(db, data, user_id)
+        db.commit()
+        flash("import completed")
+    except Exception as err:  # pylint: disable=broad-except
+        flash("Error importing file: " + str(err))
+        _LOG.exception("import file error")
+    return redirect(url_for("system.sett_data"))

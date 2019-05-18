@@ -106,6 +106,21 @@ class WebSource(AbstractSource):
             'htmlUrl': source.settings['url'],
         }
 
+    @classmethod
+    def from_opml(cls, opml_node: ty.Dict[str, ty.Any]) \
+            -> ty.Optional[model.Source]:
+        url = opml_node.get('htmlUrl') or opml_node['xmlUrl']
+        if not url:
+            raise ValueError('missing xmlUrl')
+        name = opml_node.get('text') or opml_node['title']
+        if not name:
+            raise ValueError('missing text/title')
+        return model.Source(
+            kind='rss',
+            name=name,
+            settings={'url': url}
+        )
+
 
 def _prepare_headers(state):
     headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "

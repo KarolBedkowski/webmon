@@ -17,7 +17,20 @@
 	<p><a href="{{ url_for('system.sett_data_export_opml') }}">Download OPML file</a></p>
 
 	<h3>Import</h3>
+	<h4>Import Webmon2 dump</h4>
 	<form action="{{ url_for('system.sett_data_import') }}" method="POST" enctype="multipart/form-data">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+		<p>
+			<label>File: </label>
+			<input type="file" name="file" />
+		</p>
+		<p>
+			<button type="submit">Import</button>
+		</p>
+	</form>
+
+	<h4>Import OPML</h4>
+	<form action="{{ url_for('system.sett_data_import_opml') }}" method="POST" enctype="multipart/form-data">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<p>
 			<label>File: </label>
