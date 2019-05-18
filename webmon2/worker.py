@@ -107,11 +107,12 @@ class FetchWorker(threading.Thread):
             _save_state_error(db, source, err)
             return
 
-        if new_state.next_update is None:
-            last_update = source.state.last_update or datetime.datetime.now()
-            new_state.next_update = last_update + \
-                datetime.timedelta(
-                    seconds=common.parse_interval(source.interval))
+        last_update = source.state.last_update or datetime.datetime.now()
+        next_update = last_update + datetime.timedelta(
+            seconds=common.parse_interval(source.interval))
+        if new_state.next_update is None \
+                or new_state.next_update < next_update:
+            new_state.next_update = next_update
 
         db.begin()
 
@@ -129,7 +130,7 @@ class FetchWorker(threading.Thread):
         _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
                   self._idx, source_id, len(entries), str(new_state))
 
-    def _final_filter_entries(self, entries):
+    def _final_filter_entries(self, entries):  # pylint: disable=no-self-use
         entries_oids = set()
         for entry in entries:
             entry.calculate_oid()

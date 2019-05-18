@@ -157,6 +157,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.status = 'error'
         state.success_counter = self.success_counter
         state.error_counter = self.error_counter + 1
+        state.last_error = datetime.now()
         return state
 
     def new_not_modified(self):

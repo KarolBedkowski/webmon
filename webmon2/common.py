@@ -14,6 +14,8 @@ import os.path
 import pathlib
 import time
 import typing as ty
+import datetime
+import email.utils
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
@@ -227,3 +229,15 @@ def obj2str(obj):
                      for key, val in values
                      if key[0] != "_"])
     return "<" + obj.__class__.__name__ + " " + kvs + ">"
+
+
+def parse_http_date(date: str) -> ty.Optional[datetime.datetime]:
+    if not date:
+        return None
+    try:
+        parsed_date = email.utils.parsedate(date)
+        if parsed_date:
+            return datetime.datetime(*parsed_date[:6])
+    except TypeError:
+        pass
+    return None
