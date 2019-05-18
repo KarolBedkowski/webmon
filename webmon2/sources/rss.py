@@ -99,11 +99,12 @@ class RssSource(AbstractSource):
         return entries
 
     def _load_entry(self, entry, load_content):
+        now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
         result.url = _get_val(entry, 'link')
         result.title = _get_val(entry, 'title')
-        result.updated = _get_val(entry, 'updated_parsed')
-        result.created = _get_val(entry, 'published_parsed')
+        result.updated = _get_val(entry, 'updated_parsed') or now
+        result.created = _get_val(entry, 'published_parsed') or now
         result.status = 'updated' if result.updated > result.created else 'new'
         if load_content:
             content = entry.get('summary')
