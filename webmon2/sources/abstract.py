@@ -75,3 +75,7 @@ class AbstractSource:
     @classmethod
     def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()

@@ -115,6 +115,15 @@ class RssSource(AbstractSource):
             entry.set_opt("content-type", "html")
         return result
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        return {
+            'text': source.name,
+            'title': source.name,
+            'type': 'rss',
+            'xmlUrl': source.settings['url'],
+        }
+
 
 def _fail_error(state, doc, status):
     _LOG.error("load document error %s: %s", status, doc)

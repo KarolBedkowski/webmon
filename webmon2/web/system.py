@@ -18,7 +18,7 @@ from flask import (
 )
 
 from webmon2.web import get_db, forms
-from webmon2 import database, imp_exp
+from webmon2 import database, imp_exp, opml
 
 
 _LOG = logging.getLogger(__name__)
@@ -86,6 +86,15 @@ def sett_data_export():
     user_id = session['user']
     content = imp_exp.dump_export(db, user_id)
     headers = {"Content-Disposition": "attachment; filename=dump.json"}
+    return make_response((content, headers))
+
+
+@BP.route('/settings/data/export/opml')
+def sett_data_export_opml():
+    db = get_db()
+    user_id = session['user']
+    content = opml.dump_data(db, user_id)
+    headers = {"Content-Disposition": "attachment; filename=dump.opml"}
     return make_response((content, headers))
 
 

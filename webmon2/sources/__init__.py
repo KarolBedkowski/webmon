@@ -59,6 +59,11 @@ def get_source(source: model.Source, sys_settings):
     raise UnknownInputException()
 
 
+def get_source_class(source: model.Source):
+    scls = common.find_subclass(AbstractSource, source.kind)
+    return scls
+
+
 def sources_name():
     return [name
             for name, scls in common.get_subclasses_with_name(AbstractSource)]

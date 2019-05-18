@@ -96,6 +96,16 @@ class WebSource(AbstractSource):
             if response:
                 response.close()
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        return {
+            'text': source.name,
+            'title': source.name,
+            'type': 'web',
+            'xmlUrl': source.settings['url'],
+            'htmlUrl': source.settings['url'],
+        }
+
 
 def _prepare_headers(state):
     headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
