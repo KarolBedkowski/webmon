@@ -75,7 +75,7 @@ def source_new():
 def source_edit(source_id):
     db = get_db()
     user_id = session['user']
-    source = database.sources.get(db, source_id)
+    source = database.sources.get(db, source_id, with_state=True)
     if not source or source.user_id != user_id:
         return abort(404)
     src = sources.get_source(source, {})
@@ -106,9 +106,10 @@ def source_edit(source_id):
     return render_template(
         "source.html",
         groups=database.groups.get_all(db, user_id),
-        source=source_form,
+        form=source_form,
         errors=errors,
-        source_def=src,
+        source_cls=src,
+        source=source,
     )
 
 
