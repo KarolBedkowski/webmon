@@ -33,7 +33,7 @@ class ParamError(RuntimeError):
 class InputError(RuntimeError):
     """Exception raised on command error"""
 
-    def __init__(self, input_=None, *args, **kwds):
+    def __init__(self, input_, *args, **kwds):
         super().__init__(*args, **kwds)
         self.input = input_
 
@@ -41,7 +41,7 @@ class InputError(RuntimeError):
 class FilterError(RuntimeError):
     """Exception raised on command error"""
 
-    def __init__(self, filter_=None, *args, **kwds):
+    def __init__(self, filter_, *args, **kwds):
         super().__init__(*args, **kwds)
         self.filter = filter_
 
@@ -187,7 +187,9 @@ def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
     return False
 
 
-class SettingDef:
+class SettingDef:  # pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-many-arguments
     def __init__(self, name, description, default=None, required=False,
                  options=None, value_type=None, global_param=False):
         self.name = name
@@ -231,7 +233,7 @@ def obj2str(obj):
     return "<" + obj.__class__.__name__ + " " + kvs + ">"
 
 
-def parse_http_date(date: str) -> ty.Optional[datetime.datetime]:
+def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
     if not date:
         return None
     try:
