@@ -30,14 +30,13 @@ class SourceGroup:
         "unread",
     )
 
-    def __init__(self, id_=None, name=None, user_id=None, feed=None,
-                 unread=None):
-        self.id = id_
-        self.name = name
-        self.user_id = user_id
-        self.feed = feed
+    def __init__(self, **args):
+        self.id = args.get('id')
+        self.name = args.get('name')
+        self.user_id = args.get('user_id')
+        self.feed = args.get('feed', '')
 
-        self.unread = unread
+        self.unread = args.get('unread')
 
     def __str__(self):
         return common.obj2str(self)
@@ -66,15 +65,15 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "unread",
     )
 
-    def __init__(self):
-        self.id = None
-        self.group_id = None
-        self.kind = None
-        self.name = None
-        self.interval = None
-        self.settings = None
-        self.filters = None
-        self.user_id = None
+    def __init__(self, **args):
+        self.id = args.get('id')
+        self.group_id = args.get('group_id')
+        self.kind = args.get('kind')
+        self.name = args.get('name')
+        self.interval = args.get('interval')
+        self.settings = args.get('settings')
+        self.filters = args.get('filters')
+        self.user_id = args.get('user_id')
 
         self.group = None
         self.state = None
@@ -110,16 +109,16 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "state",
     )
 
-    def __init__(self):
-        self.source_id = None
-        self.next_update = None
-        self.last_update = None
-        self.last_error = None
-        self.error_counter = None
-        self.success_counter = None
-        self.status = None
-        self.error = None
-        self.state = None
+    def __init__(self, **args):
+        self.source_id = args.get('source_id')
+        self.next_update = args.get('next_update')
+        self.last_update = args.get('last_update')
+        self.last_error = args.get('last_error')
+        self.error_counter = args.get('error_counter')
+        self.success_counter = args.get('success_counter')
+        self.status = args.get('status')
+        self.error = args.get('error')
+        self.state = args.get('state')
 
     @staticmethod
     def new(source_id):
@@ -326,14 +325,13 @@ class User:
         "admin",
     )
 
-    def __init__(self, id_=None, login=None, email=None, password=None,
-                 active=None, admin=None):
-        self.id = id_
-        self.login = login
-        self.email = email
-        self.password = password
-        self.active = active
-        self.admin = admin
+    def __init__(self, **args):
+        self.id = args.get('id')
+        self.login = args.get('login')
+        self.email = args.get('email')
+        self.password = args.get('password')
+        self.active = args.get('active')
+        self.admin = args.get('admin')
 
     def hash_password(self, password):
         salt = os.urandom(16)

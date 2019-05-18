@@ -34,7 +34,8 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     assert user_id
     with db.cursor() as cur:
         cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
-        groups = [model.SourceGroup(id, name, user_id, feed, unread)
+        groups = [model.SourceGroup(id=id, name=name, user_id=user_id,
+                                    feed=feed, unread=unread)
                   for id, name, user_id, feed, unread in cur]
         return groups
 

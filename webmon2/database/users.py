@@ -87,7 +87,7 @@ def _create_new_user_data(cur, user_id: int):
 
 def _user_from_row(row) -> model.User:
     return model.User(
-        id_=row['id'],
+        id=row['id'],
         login=row['login'],
         email=row['email'],
         password=row['password'],
