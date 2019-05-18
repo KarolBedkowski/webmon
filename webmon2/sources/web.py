@@ -80,9 +80,12 @@ class WebSource(AbstractSource):
             new_state.set_state('etag', response.headers.get('ETag'))
             new_state.set_state('last-modified',
                                 response.headers.get('last-modified'))
+
             expires = common.parse_http_date(response.headers.get('expires'))
             if expires:
                 new_state.next_update = expires
+                new_state.set_state('expires', str(expires))
+
             return new_state, [entry]
         except requests.exceptions.ReadTimeout:
             return state.new_error("timeout"), []

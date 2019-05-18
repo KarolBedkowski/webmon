@@ -79,6 +79,7 @@ class RssSource(AbstractSource):
         expires = common.parse_http_date(doc.headers.get('expires'))
         if expires:
             new_state.next_update = expires
+            new_state.set_state('expires', str(expires))
 
         if status == 301:  # permanent redirects
             new_state.set_state("info", 'Permanently redirects: ' + doc.href)
