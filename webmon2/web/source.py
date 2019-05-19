@@ -154,6 +154,7 @@ def source_filters(source_id):
     source = database.sources.get(db, source_id)
     if not source or source.user_id != user_id:
         return abort(404)
+    _LOG.debug("source.filters: %s", source.filters)
     filter_fields = [
         forms.Filter(fltr['name'])
         for fltr in source.filters or []
@@ -195,18 +196,19 @@ def source_filter_edit(source_id, idx):
         return _save_filter(db, source_id, idx, conf)
 
     errors = {}
+    form = forms.FieldsForm(
+        [forms.Field.from_input_params(param, conf, prefix='sett-')
+         for param in fltr.params])
+
     if request.method == 'POST':
-        conf = _build_filter_conf_from_req(fltr, conf)
+        form.update_from_request(request.form)
+        conf.update(form.values_map())
         errors = dict(fltr.validate_conf(conf))
         if not errors:
-            flash("Source filter saved")
             return _save_filter(db, source_id, idx, conf)
 
-    settings = [forms.Field.from_input_params(param, conf)
-                for param in fltr.params]
-    return render_template("filter_edit.html", filter=conf,
-                           source=source, settings=settings, errors=errors,
-                           fltr=fltr)
+    return render_template("filter_edit.html", filter=conf, source=source,
+                           form=form, errors=errors, fltr=fltr)
 
 
 def _build_filter_conf_from_req(fltr, conf):

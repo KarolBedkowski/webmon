@@ -28,8 +28,8 @@
 		<p>
 			<fieldset>
 				<legend>Settings</legend>
-				{% for sett in settings %}
-					{{ rf.render_field(sett) }}
+				{% for field in form.fields %}
+					{{ rf.render_field(field) }}
 				{% endfor %}
 			</fieldset>
 		</p>
