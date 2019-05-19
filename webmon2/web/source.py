@@ -50,37 +50,26 @@ def source_delete(source_id):
     return redirect(request.args.get('back') or url_for("root.sources"))
 
 
-@BP.route("/new", methods=['POST', 'GET'])
+@BP.route("/new")
 def source_new():
-    kind = None
-    name = ''
-    if request.method == 'POST':
-        kind = request.form['kind']
-        name = request.form['name']
-        if kind and name:
-            db = get_db()
-            source = model.Source()
-            source.kind = kind
-            source.name = name
-            source.user_id = session['user']
-            source = database.sources.save(db, source)
-            db.commit()
-            return redirect(url_for("source.source_edit",
-                                    source_id=source.id))
-    return render_template("source_new.html", kind=kind, name=name,
-                           sources=sources.sources_info())
+    return render_template("source_new.html", sources=sources.sources_info())
 
 
 @BP.route("/<int:source_id>/edit", methods=['POST', 'GET'])
-def source_edit(source_id):
+@BP.route("/new/<kind>", methods=["POST", "GET"])
+def source_edit(source_id=None, kind=None):
     db = get_db()
     user_id = session['user']
-    source = database.sources.get(db, source_id, with_state=True)
-    if not source or source.user_id != user_id:
-        return abort(404)
+    if source_id:
+        source = database.sources.get(db, source_id, with_state=True)
+        if not source or source.user_id != user_id:
+            return abort(404)
+    elif kind:
+        source = model.Source(kind=kind, user_id=user_id, name='')
+    else:
+        return abort(400)
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
-    _LOG.debug("user_settings: %r", user_settings)
     source_form = forms.SourceForm.from_model(source)
     source_form.settings = [
         forms.Field.from_input_params(param, source.settings, 'sett-',
@@ -95,13 +84,15 @@ def source_edit(source_id):
         source = source_form.update_model(source)
         errors.update(src.validate_conf(source.settings, user_settings))
         if not errors:
-            database.sources.save(db, source)
+            if source.status == 0:
+                source.status = 1
+            source = database.sources.save(db, source)
             db.commit()
+            flash("Source saved")
             next_action = request.form.get("next_action")
             if next_action == 'edit_filters':
                 return redirect(url_for("source.source_filters",
                                         source_id=source.id))
-            flash("Source saved")
             return redirect(url_for('root.sources'))
 
     return render_template(

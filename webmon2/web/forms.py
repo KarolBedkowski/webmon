@@ -116,6 +116,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         self.model_settings = None
         self.settings = None
         self.filters = None
+        self.status = None
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -137,20 +138,22 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def from_model(source: model.Source):
-        src = SourceForm()
-        src.id = source.id
-        src.group_id = source.id
-        src.kind = source.kind
-        src.name = source.name
-        src.interval = source.interval or ''
-        src.filters = source.filters
-        return src
+        form = SourceForm()
+        form.id = source.id
+        form.group_id = source.id
+        form.kind = source.kind
+        form.name = source.name
+        form.interval = source.interval or ''
+        form.filters = source.filters
+        form.status = source.status
+        return form
 
     def update_from_request(self, form):
         group_id = form['group_id'].strip()
         self.group_id = int(group_id) if group_id else None
         self.name = form['name'].strip()
         self.interval = form['interval'].strip()
+        self.status = int(form.get('status', 0))
         for sett in self.settings or []:
             sett.update_from_request(form)
 
@@ -162,6 +165,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.filters = self.filters
         src.settings = {field.name: field.value
                         for field in self.settings or []}
+        src.status = self.status
         return src
 
 

@@ -66,6 +66,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "group",
         "state",
         "unread",
+        "status",
     )
 
     def __init__(self, **args):
@@ -77,6 +78,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.settings = args.get('settings')
         self.filters = args.get('filters')
         self.user_id = args.get('user_id')
+        self.status = args.get('status')
 
         self.group = None
         self.state = None
@@ -96,6 +98,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         src.settings = self.settings
         src.filters = self.filters
         src.user_id = self.user_id
+        src.status = self.status
         return src
 
 

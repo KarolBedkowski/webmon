@@ -27,6 +27,7 @@ select s.id as source_id, s.group_id as source_group_id,
     s.interval as source_interval, s.settings as source_settings,
     s.filters as source_filters,
     s.user_id as source_user_id,
+    s.status as source_status,
     ss.source_id as source_state_source_id,
     ss.next_update as source_state_next_update,
     ss.last_update as source_state_last_update,
@@ -74,7 +75,8 @@ _GET_SOURCE_SQL = """
 select id as source_id, group_id as source_group_id,
     kind as source_kind, name as source_name, interval as source_interval,
     settings as source_settings, filters as source_filters,
-    user_id as source_user_id
+    user_id as source_user_id,
+    status as source_status
 from sources where id=%s
 """
 
@@ -99,16 +101,17 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
-    user_id, name)
+    user_id, name, status)
     values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s,
-        %(user_id)s, %(name)s)
+        %(user_id)s, %(name)s, %(status)s)
 returning id
 """
 
 _UPDATE_SOURCE_SQL = """
 update sources
 set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s,
-    interval=%(interval)s, settings=%(settings)s, filters=%(filters)s
+    interval=%(interval)s, settings=%(settings)s, filters=%(filters)s,
+    status=%(status)s
 where id=%(id)s
 """
 
@@ -238,13 +241,19 @@ def save_state(db, state: model.SourceState) -> model.SourceState:
     return state
 
 
+_GET_SOURCES_TO_FETCH_SQL = """
+    select ss.source_id
+    from source_state  ss
+    join sources s on s.id = ss.source_id
+    where ss.next_update <= %s
+        and s.status = 1
+"""
+
+
 def get_sources_to_fetch(db) -> ty.List[int]:
     """ Find sources with next update state in past """
     with db.cursor() as cur:
-        cur.execute(
-            "select source_id from source_state where next_update <= %s",
-            (datetime.datetime.now(), ))
-
+        cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(), ))
         ids = [row[0] for row in cur]
         return ids
 
@@ -253,7 +262,11 @@ _REFRESH_SQL = """
 update source_state
 set next_update=now()
 where (last_update is null or last_update < now() - '-1 minutes'::interval)
-    and source_id in (select id from sources where user_id=%(user_id)s)
+    and source_id in (
+        select id from sources
+        where user_id=%(user_id)s
+            and status=1
+    )
 """
 
 
@@ -278,7 +291,9 @@ _REFRESH_ERRORS_SQL = """
 update source_state
 set next_update=now()
 where status='error'
-    and source_id in (select id from sources where user_id=%s)
+    and source_id in (
+        select id from sources where user_id=%s and status=1
+    )
 """
 
 

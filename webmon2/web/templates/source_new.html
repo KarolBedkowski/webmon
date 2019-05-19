@@ -12,21 +12,14 @@
 {% endblock %}
 
 {% block content %}
-	<form method="POST">
-		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		<p>
-			<label for="source-kind">Kind</label>
-			<select name="kind" id="source-group" required="required" value="{{ kind }}">
-				{% for name, short_info, _ in sources %}
-				<option value="{{ name }}">{{ short_info }}</option>
-				{% endfor %}
-			</select>
-		</p>
-		<p>
-			<label for="source-name">Name</label>
-			<input type="text" name="name" id="source-name" required="required" value="{{ name }}" />
-		</p>
-		<button type="submit">Next</button>
+	<p>
+		<h4>Source type</h4>
+		<ul>
+		{% for name, short_info, long_info in sources %}
+		<li><a href="{{ url_for("source.source_edit", kind=name) }}">{{ short_info }}</a><br/>
+				{{ long_info }}</li>
+		{% endfor %}
+		</ul>
 		<a href="#" data-action="hist-back">Back</a>
 	</form>
 {% endblock %}

@@ -28,6 +28,7 @@ section > footer nav {margin-top: 2em; border-top: 1px solid #ccc;}
 .flash-error:before{content:"⚠ "}
 .flash:focus {display: none;}
 .error{width: 75%; background-color: #fee; padding: 1em;margin: 0 auto;}
+.warn{width: 75%; background-color: #ffa; padding: 1em;margin: 0 auto;}
 .field-error{color: red; font-weight: bold; margin: 0 1em}
 article[data-state=read] {border-style: dashed}
 article[data-state=read] a[data-action=mark_read]:before{content: "✘ Unread";}

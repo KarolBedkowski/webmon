@@ -24,3 +24,15 @@
 		{% endif %}
 	</p>
 {%- endmacro %}
+
+{% macro render_select(name, id, values, current_value) -%}
+	<select name="{{ name }}" id="{{ id }}">
+		{% for value, label in values %}
+		<option value="{{ value }}" {% if value == current_value %} selected="selected"{% endif %}>{{ label }}</option>
+		{% endfor %}
+	</select>
+{%- endmacro %}
+
+{% macro render_option(value, label, current_value) -%}
+	<option value="{{ value }}" {% if value == current_value %} selected="selected"{% endif %}>{{ label }}</option>
+{%- endmacro %}

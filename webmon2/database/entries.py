@@ -39,6 +39,7 @@ select
     s.id as source_id, s.group_id as source_group_id, s.kind as source_kind,
     s.name as source_name, s.interval as source_interval,
     s.user_id as source_user_id,
+    s.status as source_status,
     sg.id as source_group_id, sg.name as source_group_name,
     sg.user_id as source_group_user_id,
     sg.feed as source_group_feed

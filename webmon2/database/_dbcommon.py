@@ -79,6 +79,7 @@ def source_from_row(row) -> model.Source:
     row_keys = row.keys()
     source.settings = get_json_if_exists(row_keys, "source_settings", row)
     source.filters = get_json_if_exists(row_keys, "source_filters", row)
+    source.status = row['source_status']
     source.user_id = row['source_user_id']
     return source
 
@@ -101,5 +102,6 @@ def source_to_row(source: model.Source):
         'settings': json.dumps(source.settings) if source.settings else None,
         'filters': json.dumps(source.filters) if source.filters else None,
         'user_id': source.user_id,
+        'status': source.status,
         'id': source.id,
     }

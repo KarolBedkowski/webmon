@@ -33,6 +33,15 @@
 				<label for="source-name" class="field-required">Name</label>
 				<input type="text" name="name" id="source-name" value="{{ form.name }}" required="required" />
 			</p>
+			{% if form.status != 0 %}
+			<p>
+				<label for="source-status">Status</label>
+				<select name="status" id="source-status">
+					{{ rf.render_option(1, "Active",  form.status) }}
+					{{ rf.render_option(2, "Disabled",  form.status) }}
+				</select>
+			</p>
+			{% endif %}
 			<p>
 				<label for="source-group">Group</label>
 				<select name="group_id" id="source-group" value="{{ form.group_id }}">
@@ -65,9 +74,11 @@
 					<a href="#" data-action="hist-back">Back</a>
 				{% endif %}
 			</p>
+			{% if form.id %}
 			<p>
 				<span><a href="{{ url_for('source.source_delete', source_id=form.id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete source?">⚠ Delete</a></span>
 			</p>
+			{% endif %}
 		</form>
 	</section>
 	<section>
