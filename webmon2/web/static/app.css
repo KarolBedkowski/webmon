@@ -38,3 +38,5 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 article[data-starred=star] {border-color: red; border-width: 2px;}
 .group-tag{background-color: #ff9;border: 1px solid black; font-size: 70%; padding: 0.2em 0.5em;margin-left:1em; float: right;border-radius: 4px;}
 span.confirm{color: red; font-weight: bold;}
+.choice li { display: block; padding: 0.5em 0}
+.choice li > a { font-weight: bold}
