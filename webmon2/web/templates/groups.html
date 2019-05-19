@@ -22,7 +22,7 @@
 				<nav>
 					<a href="{{ url_for('group.refresh_group', group_id=group.id, back=request.url )}}">↺ Refresh</a>
 					| <a href="{{ url_for('group.group_mark_read', group_id=group.id, back=request.url )}}">✔︎ Mark read</a>
-					| <a href="{{ url_for('group.group_sources', group_id=group.id, back=request.url )}}">Sources</a>
+					| <a href="{{ url_for('group.group_sources', group_id=group.id, back=request.url )}}">Sources ({{ group.sources_count }})</a>
 					| <a href="{{ url_for('group.group_edit', group_id=group.id, back=request.url )}}">✎ Edit</a>
 				</nav>
 				{% if group.feed and group.feed != 'off' %}

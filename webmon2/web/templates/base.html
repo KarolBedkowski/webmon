@@ -30,8 +30,8 @@
 			</nav>
 		</header>
 		<section id="flashes">
-			{% for message in get_flashed_messages() %}
-			<div class="flash" tabindex="999">{{ message }}</div>
+			{% for category, message in get_flashed_messages(with_categories=True) %}
+			<div class="flash flash-{{ category}}" tabindex="999">{{ message }}</div>
 			{% endfor %}
 		</section>
 		<section class="content">

@@ -101,6 +101,7 @@ def source_edit(source_id):
             if next_action == 'edit_filters':
                 return redirect(url_for("source.source_filters",
                                         source_id=source.id))
+            flash("Source saved")
             return redirect(url_for('root.sources'))
 
     return render_template(
@@ -198,6 +199,7 @@ def source_filter_edit(source_id, idx):
         conf = _build_filter_conf_from_req(fltr, conf)
         errors = dict(fltr.validate_conf(conf))
         if not errors:
+            flash("Source filter saved")
             return _save_filter(db, source_id, idx, conf)
 
     settings = [forms.Field.from_input_params(param, conf)

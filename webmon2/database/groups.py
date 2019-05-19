@@ -23,9 +23,12 @@ select sg.id, sg.name, sg.user_id, sg.feed,
         from entries e
         join sources s on e.source_id = s.id
         where e.read_mark = 0 and s.group_id = sg.id
-    ) as unread
+    ) as unread,
+    (select count(*) from sources s where s.group_id = sg.id)
+        as sources_count
 from source_groups sg
 where sg.user_id= %s
+order by sg.name
 """
 
 
@@ -34,9 +37,11 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     assert user_id
     with db.cursor() as cur:
         cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id, ))
-        groups = [model.SourceGroup(id=id, name=name, user_id=user_id,
-                                    feed=feed, unread=unread)
-                  for id, name, user_id, feed, unread in cur]
+        groups = [
+            model.SourceGroup(
+                id=id, name=name, user_id=user_id, feed=feed,
+                unread=unread, sources_count=sources_count)
+            for id, name, user_id, feed, unread, sources_count in cur]
         return groups
 
 

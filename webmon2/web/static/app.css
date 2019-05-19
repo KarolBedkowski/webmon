@@ -20,9 +20,12 @@ label.field-required:after{content:"*"; font-width: bold; color:red}
 nav a {margin: 0 1em}
 section > header nav {margin-bottom: 2em; border-bottom: 1px solid #ccc}
 section > footer nav {margin-top: 2em; border-top: 1px solid #ccc;}
-.flash{width: 75%; background-color: #eef; padding: 1em;margin: 0 auto;border-radius: 5px;}
+.flash{width: 75%; padding: 1em;margin: 1em auto;border-radius: 5px;}
+.flash-message{background-color: #eef;}
+.flash-error{background-color: #fee;}
 .flash:focus {display: none;}
 .error{width: 75%; background-color: #fee; padding: 1em;margin: 0 auto;}
+.field-error{color: red; font-weight: bold; margin: 0 1em}
 article[data-state=read] {border-style: dashed}
 article[data-state=read] a[data-action=mark_read]:before{content: "✔︎ Read";}
 article[data-state=unread] a[data-action=mark_read]:before{content: "✘ Unread";}

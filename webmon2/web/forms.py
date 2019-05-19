@@ -94,7 +94,13 @@ class Field:  # pylint: disable=too-many-instance-attributes
             self.value = bool(form_value)
             return
         if form_value is None:
+            if self.required:
+                raise ValueError("missing value")
             return
+        if self.type == 'number':
+            if form_value == '':
+                self.value = None
+                return
         if self.type_class:
             form_value = self.type_class(form_value)
         self.value = form_value

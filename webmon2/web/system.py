@@ -48,7 +48,7 @@ def sett_globals():
             db.commit()
             flash("Settings saved")
             return redirect(url_for("system.sett_globals"))
-        flash("There are errors in form")
+        flash("There are errors in form", 'error')
 
     return render_template("system/globals.html", form=form)
 
@@ -57,11 +57,11 @@ def sett_globals():
 def sett_user():
     if request.method == 'POST':
         if request.form['new_password1'] != request.form['new_password2']:
-            flash("passwords not match")
+            flash("New passwords not match", 'error')
         elif not request.form['new_password1']:
-            flash("missing new password")
+            flash("Missing new password", 'error')
         elif not request.form['curr_password']:
-            flash("missing curr_password password")
+            flash("Missing curr_password password", 'error')
         else:
             db = get_db()
             user = database.users.get(db, id_=session['user'])
@@ -69,9 +69,9 @@ def sett_user():
                 user.hash_password(request.form['new_password1'])
                 database.users.save(db, user)
                 db.commit()
-                flash("password changed")
+                flash("Password changed")
             else:
-                flash("wrong current password")
+                flash("Wrong current password", 'error')
     return render_template("system/user.html")
 
 
@@ -107,7 +107,7 @@ def sett_data_import():
     file = request.files['file']
     data = file.read()
     if not data:
-        flash('No file to import')
+        flash('No file to import', 'error')
         return redirect(url_for("system.sett_data"))
 
     db = get_db()
@@ -115,9 +115,9 @@ def sett_data_import():
     try:
         imp_exp.dump_import(db, user_id, data)
         db.commit()
-        flash("import completed")
+        flash("Import completed")
     except Exception as err:  # pylint: disable=broad-except
-        flash("Error importing file: " + str(err))
+        flash("Error importing file: " + str(err), 'error')
         _LOG.exception("import file error")
     return redirect(url_for("system.sett_data"))
 
@@ -131,7 +131,7 @@ def sett_data_import_opml():
     file = request.files['file']
     data = file.read()
     if not data:
-        flash('No file to import')
+        flash('No file to import', 'error')
         return redirect(url_for("system.sett_data"))
 
     db = get_db()
@@ -139,8 +139,8 @@ def sett_data_import_opml():
     try:
         opml.load_data(db, data, user_id)
         db.commit()
-        flash("import completed")
+        flash("Import completed")
     except Exception as err:  # pylint: disable=broad-except
-        flash("Error importing file: " + str(err))
+        flash("Error importing file: " + str(err), 'error')
         _LOG.exception("import file error")
     return redirect(url_for("system.sett_data"))

@@ -28,6 +28,7 @@ class SourceGroup:
         "user_id",
         "feed",
         "unread",
+        "sources_count"
     )
 
     def __init__(self, **args):
@@ -37,6 +38,7 @@ class SourceGroup:
         self.feed = args.get('feed', '')
 
         self.unread = args.get('unread')
+        self.sources_count = args.get('sources_count')
 
     def __str__(self):
         return common.obj2str(self)
@@ -47,6 +49,7 @@ class SourceGroup:
         sgr.name = self.name
         sgr.user_id = self.user_id
         sgr.feed = self.feed
+        sgr.sources_count = self.sources_count
         return sgr
 
 

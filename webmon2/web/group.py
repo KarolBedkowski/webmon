@@ -49,19 +49,21 @@ def group_edit(group_id=0):
             return abort(404)
     else:
         sgroup = model.SourceGroup(user_id=user_id)
-    _LOG.debug("sgroup: %s", sgroup)
 
     form = forms.GroupForm.from_model(sgroup)
-    _LOG.debug("form: %s", form)
-
+    errors = {}
     if request.method == 'POST':
         form.update_from_request(request.form)
-        sgroup = form.update_model(sgroup)
-        database.groups.save(db, sgroup)
-        db.commit()
-        return redirect(request.args.get('back') or url_for("root.groups"))
+        errors = form.validate()
+        if not errors:
+            sgroup = form.update_model(sgroup)
+            database.groups.save(db, sgroup)
+            db.commit()
+            flash("Group saved")
+            return redirect(request.args.get('back') or url_for("root.groups"))
 
-    return render_template("group.html", group=form, group_id=group_id)
+    return render_template("group.html", group=form, group_id=group_id,
+                           errors=errors)
 
 
 @BP.route('/group/<int:group_id>/sources')
@@ -143,7 +145,7 @@ def group_delete(group_id):
         db.commit()
         flash("Group deleted")
     except common.OperationError as err:
-        flash("Can't delete group: " + str(err))
+        flash("Can't delete group: " + str(err), 'error')
     if request.args.get("delete_self"):
         return redirect(url_for("root.groups"))
     return redirect(request.headers.get('Referer') or url_for("root.groups"))
