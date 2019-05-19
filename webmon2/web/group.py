@@ -118,6 +118,7 @@ def group_mark_read(group_id):
         if group_id:
             return redirect(url_for('group.group_entries',
                                     group_id=group_id))
+        flash("No more unread groups...")
     return redirect(request.args.get('back') or url_for("root.groups"))
 
 

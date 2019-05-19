@@ -35,7 +35,7 @@
 		<p><a href="{{ url_for('source.source_next_unread', source_id=source.id) }}" class="right">→ Go to next unread source</a></p>
 	{% endif %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary', True, url_for("source.source_entry", source_id=source.id, mode=showed, entry_id=entry.id)) }}
+		{{ re.render_entry(entry, 'summary', True, url_for("source.source_entry", source_id=source.id, mode=(showed or 'unread'), entry_id=entry.id)) }}
 	{% endfor %}
 {% endblock %}
 
