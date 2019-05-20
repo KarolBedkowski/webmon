@@ -22,7 +22,7 @@
 				{% endif %}
 			{% endif %}
 			{% if source.state.state and source.state.state.get('info') %}
-					<p>source.state.state.get('info')</p>
+				<p>{{ source.state.state.get('info') }}</p>
 			{% endif %}
 			<p>
 				Last update: {{ source.state.last_update | format_date }}
