@@ -265,6 +265,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def human_title(self):
         if self.title:
             return self.title
+        if not self.content:
+            return '<no title>'
         if len(self.content) > 50:
             return self.content[:50] + '…'
         return self.content
