@@ -5,6 +5,17 @@
 <html>
   <body>
 
+{% macro nav_bar() %}
+	{% if total_entries %}
+		{{ rn.render_entres_nav(page, last_page,
+			url_for('group.group_entries', group_id=group.id, mode=showed, page=prev_page),
+			url_for('group.group_entries', group_id=group.id, mode=showed, page=next_page),
+			url_for('group.group_entries', group_id=group.id, mode=showed, page=0),
+			url_for('group.group_entries', group_id=group.id, mode=showed, page=last_page),
+		) }}
+	{% endif %}
+{% endmacro %}
+
 {% block header %}
 	<h1>{% block title %}Entries in {{ group.name}}{% endblock %} ({{ total_entries }})</h1>
 	<nav>
@@ -18,14 +29,7 @@
 		{% else %}
 		<a href="{{ url_for('group.group_entries', group_id=group.id, mode='all') }}">⊛ Show all</a>
 		{% endif %}
-		{% if showed == 'all' %}
-			{{ rn.render_entres_nav(page, last_page,
-				url_for('group.group_entries', group_id=group.id, mode='all', page=prev_page),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=next_page),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=0),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=last_page),
-			) }}
-		{% endif %}
+		{{ nav_bar() }}
 	</nav>
 {% endblock %}
 
@@ -41,14 +45,7 @@
 
 {% block footer %}
 	<nav>
-		{% if showed == 'all' %}
-			{{ rn.render_entres_nav(page, last_page,
-				url_for('group.group_entries', group_id=group.id, mode='all', page=prev_page),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=next_page),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=0),
-				url_for('group.group_entries', group_id=group.id, mode='all', page=last_page),
-			) }}
-		{% endif %}
+		{{ nav_bar() }}
 		{% if max_id %}
 		<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id) }}">✔  Mark visible read</a>
 		<a href="{{ url_for('group.group_mark_read', group_id=group.id, max_id=max_id, go='next') }}">➥ Mark all read and go to next group</a>
