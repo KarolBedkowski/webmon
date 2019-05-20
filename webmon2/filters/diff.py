@@ -51,19 +51,23 @@ class NDiff(AbstractFilter):
         if not entries:
             return
         try:
-            entry = next(entries)
+            entry = next(entries)  # type: model.Entry
         except StopIteration:
             return
         if not entry.content:
             return
 
-        filter_state = None
-        with database.DB.get() as db:
-            filter_state = database.sources.get_filter_state(
-                db, curr_state.source_id, self.name)
+        filter_state = database.sources.get_filter_state(
+            self.db, curr_state.source_id, self.name)
         prev_content = filter_state.get('content') if filter_state else None
 
+        # save current state
+        filter_state = {'content': entry.content}
+        database.sources.put_filter_state(
+            self.db, curr_state.source_id, self.name, filter_state)
+
         if not prev_content:
+            _LOG.debug("no prev_content")
             entry = entry.clone()
             entry.status = 'new'
             entry.set_opt('preformated', True)
@@ -75,16 +79,12 @@ class NDiff(AbstractFilter):
         new_lines = entry.content.split('\n')
         res = list(difflib.ndiff(old_lines, new_lines))
 
-        changed_lines = len(1 for line in res if line and line[0] != ' ')
+        changed_lines = sum(1 for line in res if line[0] != ' ')
         if not _check_changes(changed_lines, len(old_lines),
                               self._conf.get("threshold"),
                               self._conf.get("min_changed")):
+            _LOG.debug("no changes")
             return
-
-        filter_state = {'content': entry.content}
-        with database.DB.get() as db:
-            database.sources.put_filter_state(
-                db, curr_state.source_id, self.name, filter_state)
 
         entry = entry.clone()
         entry.status = 'new'
