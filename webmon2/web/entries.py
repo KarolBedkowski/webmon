@@ -28,45 +28,35 @@ BP = Blueprint('entries', __name__, url_prefix='/entries')
 
 @BP.route('/')
 def index():
-    return redirect(url_for("entries.entries_unread"))
+    return redirect(url_for("entries.entries", mode='unread'))
 
 
-@BP.route('/unread')
-def entries_unread():
-    db = get_db()
-    user_id = session['user']
-    entries = list(database.entries.find(db, user_id, unread=True))
-    min_id = min(entry.id for entry in entries) if entries else None
-    max_id = max(entry.id for entry in entries) if entries else None
-    return render_template("entries.html", showed='unread',
-                           total_entries=len(entries),
-                           min_id=min_id, max_id=max_id,
-                           entries=entries)
-
-
-@BP.route('/all/', defaults={'page': 0})
-@BP.route('/all/<int:page>')
-def entries_all(page):
+@BP.route('/<mode>/', defaults={'page': 0})
+@BP.route('/<mode>/<int:page>')
+def entries(mode, page):
+    assert mode in ('unread', 'all')
     db = get_db()
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
+    unread = mode == 'unread'
     user_id = session['user']
-    total_entries = database.entries.get_total_count(db, user_id, unread=False)
-    entries = list(database.entries.find(
-        db, user_id, limit=limit, offset=offset, unread=False))
-    data = c.preprate_entries_list(entries, page, total_entries)
-    return render_template("entries.html", showed='all', **data)
+    total_entries = database.entries.get_total_count(db, user_id,
+                                                     unread=unread)
+    entries_ = list(database.entries.find(
+        db, user_id, limit=limit, offset=offset, unread=unread))
+    data = c.preprate_entries_list(entries_, page, total_entries)
+    return render_template("entries.html", showed=mode, **data)
 
 
 @BP.route('/starred')
 def entries_starred():
     db = get_db()
     user_id = session['user']
-    entries = list(database.entries.get_starred(db, user_id))
-    return render_template("starred.html", entries=entries)
+    entries_ = list(database.entries.get_starred(db, user_id))
+    return render_template("starred.html", entries=entries_)
 
 
-@BP.route('/mark/read')
-def entries_mark_read():
+@BP.route('/<mode>/mark/read')
+def entries_mark_read(mode):
     db = get_db()
     user_id = session['user']
     database.entries.mark_read(
@@ -74,4 +64,4 @@ def entries_mark_read():
         max_id=int(request.args['max_id']),
         min_id=int(request.args['min_id']))
     db.commit()
-    return redirect(url_for("entries.entries_unread"))
+    return redirect(url_for("entries.entries", mode=mode))

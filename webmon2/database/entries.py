@@ -160,7 +160,7 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
         "user_id": user_id,
     }
     sql = _get_find_sql(source_id, group_id, unread)
-    if not unread and limit:
+    if limit:
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
     with db.cursor() as cur:

@@ -30,7 +30,7 @@ BP = Blueprint('root', __name__, url_prefix='/')
 
 @BP.route('/')
 def index():
-    return redirect(url_for("entries.entries_unread"))
+    return redirect(url_for("entries.entries", mode='unread'))
 
 
 @BP.route('/sources')

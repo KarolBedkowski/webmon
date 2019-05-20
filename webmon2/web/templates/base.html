@@ -21,7 +21,7 @@
 		<header id="main-header">
 			<nav>
 				<a href="{{ url_for("root.index") }}"><img src="{{ url_for('static', filename="icon.svg") }}" width="32" heifht="32" /></a>
-				<a href="{{ url_for("entries.entries_unread") }}">{% if request.entries_unread_count %}<b>Entries ({{ request.entries_unread_count }})</b>{% else %}Entries{% endif %}</a>
+				<a href="{{ url_for("entries.entries", mode='unread') }}">{% if request.entries_unread_count %}<b>Entries ({{ request.entries_unread_count }})</b>{% else %}Entries{% endif %}</a>
 				<a href="{{ url_for("entries.entries_starred") }}">Starred</a>
 				<a href="{{ url_for("root.sources") }}">Sources</a>
 				<a href="{{ url_for("root.groups") }}">Groups</a>
