@@ -6,12 +6,14 @@
   <body>
 
 {% macro nav_bar() %}
+	{% if total_entries %}
 		{{ rn.render_entres_nav(page, last_page,
 			url_for('entries.entries', mode=showed, page=prev_page),
 			url_for('entries.entries', mode=showed, page=next_page),
 			url_for('entries.entries', mode=showed, page=0),
 			url_for('entries.entries', mode=showed, page=last_page)
 		) }}
+	{% endif %}
 {% endmacro %}
 
 
