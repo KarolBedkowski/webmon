@@ -15,7 +15,7 @@ from datetime import datetime
 from webmon2 import model, common
 from . import _dbcommon as dbc
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 _GET_SOURCE_GROUPS_SQL = """
 select sg.id, sg.name, sg.user_id, sg.feed,

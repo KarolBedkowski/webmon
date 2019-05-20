@@ -20,7 +20,7 @@ from webmon2 import common, model
 from .abstract import AbstractSource
 
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 _GITHUB_MAX_AGE = 90  # 90 days
 _ = ty
 

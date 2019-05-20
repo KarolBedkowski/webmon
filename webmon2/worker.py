@@ -20,7 +20,7 @@ from prometheus_client import Counter
 
 from . import sources, common, filters, database, model, formatters, mailer
 
-_LOG = logging.getLogger("main")
+_LOG = logging.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
     "webmon2_sources_processed", "Sources processed count")
 _SOURCES_PROCESSED_ERRORS = Counter(
@@ -63,7 +63,7 @@ class CheckWorker(threading.Thread):
                 time.sleep(45)
 
     def _start_worker(self, idx):
-        worker = FetchWorker(str(id(self)) + " " + str(idx), self._todo_queue)
+        worker = FetchWorker(str(idx), self._todo_queue)
         worker.start()
         return worker
 
@@ -71,7 +71,7 @@ class CheckWorker(threading.Thread):
 class FetchWorker(threading.Thread):
     def __init__(self, idx, todo_queue):
         threading.Thread.__init__(self)
-        self._idx = idx + " " + str(id(self))
+        self._idx = idx + ":" + str(id(self))
         self._todo_queue = todo_queue
 
     def run(self):

@@ -17,7 +17,7 @@ from flask import request
 
 from webmon2 import formatters
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 def _age_filter(date):

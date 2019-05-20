@@ -46,7 +46,7 @@ class DB:
         super().__init__()
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
-        _LOG.debug("conn: %s", self._conn)
+        # _LOG.debug("conn: %s", self._conn)
 
     @classmethod
     def get(cls):
@@ -78,7 +78,7 @@ class DB:
                 db.update_schema()
 
     def __enter__(self):
-        _LOG.debug("Enter conn %s", self._conn)
+        # _LOG.debug("Enter conn %s", self._conn)
         return self
 
     def __exit__(self, type_, value, traceback):
@@ -87,7 +87,7 @@ class DB:
 
     def close(self):
         if self._conn is not None:
-            _LOG.debug("Closing conn %s", self._conn)
+            # _LOG.debug("Closing conn %s", self._conn)
             self.POOL.putconn(self._conn)
             self._conn = None
 

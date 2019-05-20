@@ -15,7 +15,7 @@ import logging
 
 from webmon2 import database, model
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 def dump_object(obj, attrs=None) -> dict:

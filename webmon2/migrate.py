@@ -17,7 +17,7 @@ import yaml
 
 from . import model, database
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:

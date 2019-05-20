@@ -19,7 +19,7 @@ from . import _dbcommon as dbc
 from . import groups
 
 _ = ty
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 _GET_SOURCES_SQL_BASE = """
 select s.id as source_id, s.group_id as source_group_id,

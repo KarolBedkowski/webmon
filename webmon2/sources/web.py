@@ -22,7 +22,7 @@ from .abstract import AbstractSource
 
 
 _ = ty
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 class WebSource(AbstractSource):

@@ -22,7 +22,7 @@ from webmon2 import common, model
 from .abstract import AbstractSource
 
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 

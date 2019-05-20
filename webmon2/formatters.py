@@ -16,7 +16,7 @@ import markdown2
 import readability
 from werkzeug.contrib.cache import SimpleCache
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 _BODY_CACHE = SimpleCache(threshold=50, default_timeout=300)
 
 

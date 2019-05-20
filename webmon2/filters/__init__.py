@@ -16,7 +16,7 @@ from webmon2 import common, model
 from ._abstract import AbstractFilter
 
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 __all__ = (
     "UnknownFilterException",
     "get_filter",

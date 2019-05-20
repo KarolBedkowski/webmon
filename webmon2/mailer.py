@@ -24,7 +24,7 @@ import html2text as h2t
 from webmon2 import database, common, formatters
 
 
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 def process(db, user_id):

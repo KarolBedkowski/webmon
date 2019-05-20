@@ -18,7 +18,7 @@ from . import _dbcommon as dbc
 from . import sources
 
 _ = ty
-_LOG = logging.getLogger(__file__)
+_LOG = logging.getLogger(__name__)
 
 
 _GET_ENTRIES_SQL_MAIN = '''
