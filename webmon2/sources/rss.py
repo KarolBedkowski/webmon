@@ -51,7 +51,10 @@ class RssSource(AbstractSource):
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Return rss items as one or many parts; each part is on article. """
-        new_state, entries = self._load(state)
+        try:
+            new_state, entries = self._load(state)
+        except Exception as err:
+            new_state, entries = state.new_error(str(err)), []
         if new_state.status != 'error':
             new_state.next_update = datetime.datetime.now() + \
                 datetime.timedelta(
@@ -181,5 +184,8 @@ def _get_val(entry, key):
     if val is None:
         return None
     if isinstance(val, time.struct_time):
-        return datetime.datetime.fromtimestamp(time.mktime(val))
+        try:
+            return datetime.datetime.fromtimestamp(time.mktime(val))
+        except ValueError:
+            return None
     return str(val).strip()
