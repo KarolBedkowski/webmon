@@ -149,7 +149,7 @@ class FetchWorker(threading.Thread):
         try:
             sys_settings = database.settings.get_dict(
                 db, source.user_id)
-            _LOG.debug('[%s] sys_settings: %r', self._idx, sys_settings)
+            # _LOG.debug('[%s] sys_settings: %r', self._idx, sys_settings)
             if not source.interval:
                 interval = sys_settings.get('interval') or '1d'
                 _LOG.debug("[%s] source %d has no interval; using default: %r",

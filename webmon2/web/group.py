@@ -32,9 +32,9 @@ BP = Blueprint('group', __name__, url_prefix='/group')
 def refresh_group(group_id):
     db = get_db()
     user_id = session['user']
-    database.sources.refresh(db, user_id, group_id=group_id)
+    marked = database.sources.refresh(db, user_id, group_id=group_id)
     db.commit()
-    flash("Group mark to refresh")
+    flash(f"{marked} sources in group marked to refresh")
     return redirect(request.headers.get('Referer') or url_for("root.groups"))
 
 

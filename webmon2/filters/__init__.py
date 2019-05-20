@@ -10,6 +10,7 @@
 Filters
 """
 import logging
+import typing as ty
 
 from webmon2 import common, model
 
@@ -49,7 +50,7 @@ class UnknownFilterException(Exception):
     pass
 
 
-def get_filter(conf) -> AbstractFilter:
+def get_filter(conf) -> ty.Optional[AbstractFilter]:
     """ Get filter object by configuration """
     name = conf.get("name")
     if not name:
@@ -69,7 +70,7 @@ def filter_by(filters_conf: [dict], entries: model.Entries,
               prev_state: model.SourceState,
               curr_state: model.SourceState,
               db) \
-              -> (model.Entries, model.SourceState):
+              -> ty.Tuple[model.Entries, model.SourceState]:
     """ Apply filters by configuration to entries list. """
 
     for filter_conf in filters_conf:
@@ -81,10 +82,11 @@ def filter_by(filters_conf: [dict], entries: model.Entries,
     return entries
 
 
-def filters_name():
+def filters_name() -> ty.List[str]:
     return [name
             for name, scls in common.get_subclasses_with_name(AbstractFilter)]
 
-def filters_info():
+
+def filters_info() -> ty.List[ty.Tuple[str, str, str]]:
     return [(name, scls.short_info, scls.long_info)
             for name, scls in common.get_subclasses_with_name(AbstractFilter)]

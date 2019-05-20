@@ -53,7 +53,7 @@ class RssSource(AbstractSource):
         """ Return rss items as one or many parts; each part is on article. """
         try:
             new_state, entries = self._load(state)
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             new_state, entries = state.new_error(str(err)), []
         if new_state.status != 'error':
             new_state.next_update = datetime.datetime.now() + \
@@ -61,7 +61,8 @@ class RssSource(AbstractSource):
                     seconds=common.parse_interval(self._source.interval))
         return new_state, entries
 
-    def _load(self, state: model.SourceState):
+    def _load(self, state: model.SourceState) \
+            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
             self._conf['url'],
@@ -100,13 +101,16 @@ class RssSource(AbstractSource):
 
         return new_state, items
 
-    def _limit_items(self, entries):
+    def _limit_items(self, entries: ty.List[model.Entry]) \
+            -> ty.List[model.Entry]:
         max_items = self._conf.get("max_items")
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
         return entries
 
-    def _load_entry(self, entry, load_content, load_article):
+    def _load_entry(self, entry, load_content: bool, load_article: bool) \
+            -> model.Entry:
+        _LOG.info("entry=%s", type(entry))
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
         result.url = _get_val(entry, 'link')
@@ -138,7 +142,7 @@ class RssSource(AbstractSource):
                 response.raise_for_status()
                 if response.status_code == 200:
                     entry.content = response.text
-                    result.set_opt("content-type", "html")
+                    entry.set_opt("content-type", "html")
                 else:
                     entry.content = "Loading article error: " + response.text
         except Exception as err:  # pylint: disable=broad-except
@@ -170,7 +174,8 @@ class RssSource(AbstractSource):
         )
 
 
-def _fail_error(state, doc, status):
+def _fail_error(state: model.SourceState, doc, status: int) \
+            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
     _LOG.error("load document error %s: %s", status, doc)
     summary = f"Loading page error: {status}"
     feed = doc.get('feed')
@@ -179,7 +184,7 @@ def _fail_error(state, doc, status):
     return state.new_error(summary), []
 
 
-def _get_val(entry, key):
+def _get_val(entry, key: str):
     val = entry.get(key)
     if val is None:
         return None
