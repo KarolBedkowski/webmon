@@ -33,8 +33,11 @@
 				{% endfor %}
 			</fieldset>
 		</p>
-		<p>
-			<button type="submit">Save</button>
+		<p class="row">
+			<span class="right">
+				<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
+				<button type="submit">Save</button>
+			</span>
 		</p>
 	</form>
 {% endblock %}

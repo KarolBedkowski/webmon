@@ -30,19 +30,19 @@
 			<label for="source-feed">Feed enabled</label>
 			<input type="checkbox" name="feed_enabled" id="source-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
 		</p>
-		<p>
-			<button type="submit">Save</button>
-			{% if request.args.get('back') %}
-				<a href="{{ request.args['back'] }}" >Back</a>
-			{% else %}
-				<a href="#" data-action="hist-back">Back</a>
+		<p class="row">
+			{% if group.id %}
+				<span class="left"><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">⚠ Delete</a></span>
 			{% endif %}
+			<span class="right">
+				{% if request.args.get('back') %}
+					<a href="{{ request.args['back'] }}" >Back</a>
+				{% else %}
+					<a href="#" data-action="hist-back">Back</a>
+				{% endif %}
+				<button type="submit">Save</button>
+			</span>
 		</p>
-		{% if group.id %}
-			<p>
-				<span><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">⚠ Delete</a></span>
-			</p>
-		{% endif %}
 	</form>
 {% endblock %}
 

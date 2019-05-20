@@ -7,8 +7,8 @@ article[data-state=read] h4>a {color: #335}
 article[data-state=unread] h4>a {color: #33c}
 pre{background: #eee;padding: 1em;}
 .row {display:flex; margin-top: 1em;justify-content:space-between}
-.left {align-self:flex-start}
-.right {align-self:flex-end}
+.left {align-self:flex-start;margin-right:auto}
+.right {align-self:flex-end;margin-left:auto}
 article header nav {font-size: 90%;margin: 0}
 article header nav a {font-size: 90%;margin: 0}
 article {border: 1px solid #ccc;margin: 0.5em; padding: 0.2em 0.5em;}

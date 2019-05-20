@@ -17,7 +17,9 @@
 		{% for field in form.fields %}
 			{{ rf.render_field(field) }}
 		{% endfor %}
-		<button type="submit">Save</button>
+		<p class="row">
+			<button class="right" type="submit">Save</button>
+		</p>
 	</form>
 {% endblock %}
 
