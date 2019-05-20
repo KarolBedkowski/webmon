@@ -341,7 +341,7 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
         if state is not None:
             state = json.dumps(state)
             cur.execute(
-                'insert into filter_name (source_id, filter_name, state) '
+                'insert into filters_state (source_id, filter_name, state) '
                 'values(%s, %s, %s)', (source_id, filter_name, state))
 
 
