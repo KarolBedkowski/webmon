@@ -15,6 +15,7 @@ import time
 import datetime
 
 import feedparser
+import requests
 
 from webmon2 import common, model
 
@@ -25,9 +26,11 @@ _LOG = logging.getLogger(__file__)
 _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
+_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) Gecko/20100101 Firefox/45.0"
+
+
 feedparser.PARSE_MICROFORMATS = 0
-feedparser.USER_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) " \
-                        "Gecko/20100101 Firefox/45.0"
+feedparser.USER_AGENT = _AGENT
 
 
 class RssSource(AbstractSource):
@@ -42,6 +45,7 @@ class RssSource(AbstractSource):
                           value_type=int),
         common.SettingDef("load_content", "Load content of entries",
                           default=False),
+        common.SettingDef("load_article", "Load article", default=False),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
@@ -86,8 +90,9 @@ class RssSource(AbstractSource):
         elif status == 302:
             new_state.set_state('info', 'Temporary redirects: ' + doc.href)
 
+        load_article = self._conf['load_article']
         load_content = self._conf['load_content']
-        items = [self._load_entry(entry, load_content)
+        items = [self._load_entry(entry, load_content, load_article)
                  for entry in self._limit_items(entries)]
 
         return new_state, items
@@ -98,7 +103,7 @@ class RssSource(AbstractSource):
             entries = entries[:max_items]
         return entries
 
-    def _load_entry(self, entry, load_content):
+    def _load_entry(self, entry, load_content, load_article):
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
         result.url = _get_val(entry, 'link')
@@ -106,7 +111,9 @@ class RssSource(AbstractSource):
         result.updated = _get_val(entry, 'updated_parsed') or now
         result.created = _get_val(entry, 'published_parsed') or now
         result.status = 'updated' if result.updated > result.created else 'new'
-        if load_content:
+        if load_article:
+            result = self._load_article(result)
+        elif load_content:
             content = entry.get('summary')
             if not content:
                 content = entry['content'][0].value if 'content' in entry \
@@ -115,6 +122,25 @@ class RssSource(AbstractSource):
             # TODO: detect content (?)
             result.set_opt("content-type", "html")
         return result
+
+    # pylint: disable=no-self-use
+    def _load_article(self, entry: model.Entry) -> model.Entry:
+        if not entry.url:
+            return entry
+        try:
+            response = requests.request(
+                url=entry.url, method='GET', headers={"User-agent": _AGENT},
+                allow_redirects=True)
+            if response:
+                response.raise_for_status()
+                if response.status_code == 200:
+                    entry.content = response.text
+                    result.set_opt("content-type", "html")
+                else:
+                    entry.content = "Loading article error: " + response.text
+        except Exception as err:  # pylint: disable=broad-except
+            entry.content = "Loading article error: " + str(err)
+        return entry
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
