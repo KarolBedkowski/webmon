@@ -113,7 +113,7 @@ class RssSource(AbstractSource):
                     else entry.get('value')
             result.content = content
             # TODO: detect content (?)
-            entry.set_opt("content-type", "html")
+            result.set_opt("content-type", "html")
         return result
 
     @classmethod
