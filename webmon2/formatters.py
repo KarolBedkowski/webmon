@@ -50,6 +50,13 @@ def format_html(body: str) -> str:
         return content
     except TypeError:
         _LOG.exception("_readable_html error: %r", body)
+    try:
+        content = doc.summary(html_partial=True)
+        _BODY_CACHE.set(body_hash, content)
+        return content
+    except TypeError:
+        _LOG.exception("_readable_html error: %r", body)
+
     return body
 
 
