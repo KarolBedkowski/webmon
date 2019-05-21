@@ -152,6 +152,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.last_error = None
         state.error = None
         state.error_counter = 0
+        state.state = self.state.copy() if self.state else None
         return state
 
     def new_error(self, error: str):
@@ -163,6 +164,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter = self.success_counter
         state.error_counter = self.error_counter + 1
         state.last_error = datetime.now()
+        state.state = self.state.copy() if self.state else None
         return state
 
     def new_not_modified(self):
@@ -174,12 +176,14 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error = None
         state.error_counter = 0
         state.success_counter = self.success_counter + 1
+        state.state = self.state.copy() if self.state else None
         return state
 
     def set_state(self, key, value):
         if self.state is None:
-            self.state = {}
-        self.state[key] = value
+            self.state = {key: value}
+        else:
+            self.state[key] = value
 
     def get_state(self, key, default=None):
         return self.state.get(key, default) if self.state else default

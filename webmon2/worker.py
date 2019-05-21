@@ -121,11 +121,14 @@ class FetchWorker(threading.Thread):
                                         source.state, new_state, db)
 
         entries = list(self._final_filter_entries(entries))
-        database.sources.save_state(db, new_state)
         if entries:
+            max_date = max(entry.updated for entry in entries)
+            new_state.set_state("last_entry_date", str(max_date))
             max_updated = max(e.updated for e in entries)
             database.entries.save_many(db, entries, source_id)
             database.groups.update_state(db, source.group_id, max_updated)
+
+        database.sources.save_state(db, new_state)
 
         _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
                   self._idx, source_id, len(entries), str(new_state))
