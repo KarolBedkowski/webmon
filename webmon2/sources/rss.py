@@ -54,6 +54,7 @@ class RssSource(AbstractSource):
         try:
             new_state, entries = self._load(state)
         except Exception as err:  # pylint: disable=broad-except
+            _LOG.exception("load error: %s", err)
             new_state, entries = state.new_error(str(err)), []
         if new_state.status != 'error':
             new_state.next_update = datetime.datetime.now() + \
@@ -74,9 +75,8 @@ class RssSource(AbstractSource):
 
         entries = doc.get('entries')
         if state.last_update:
-            entries = [entry for entry in entries
-                       if time.mktime(entry.updated_parsed)
-                       > state.last_update.timestamp()]
+            entries = list(_filter_entries_updated(
+                entries, state.last_update.timestamp()))
         if status == 304 or not entries:
             new_state = state.new_not_modified()
             new_state.set_state('etag', doc.get('etag'))
@@ -108,9 +108,9 @@ class RssSource(AbstractSource):
             entries = entries[:max_items]
         return entries
 
-    def _load_entry(self, entry, load_content: bool, load_article: bool) \
+    def _load_entry(self, entry: feedparser.FeedParserDict,
+                    load_content: bool, load_article: bool) \
             -> model.Entry:
-        _LOG.info("entry=%s", type(entry))
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
         result.url = _get_val(entry, 'link')
@@ -194,3 +194,18 @@ def _get_val(entry, key: str):
         except ValueError:
             return None
     return str(val).strip()
+
+
+def _filter_entries_updated(entries, timestamp):
+    now = time.localtime(time.time())
+    for entry in entries:
+        updated_parsed = entry.get('updated_parsed')
+        if not updated_parsed:
+            entry['updated_parsed'] = now
+            yield entry
+        try:
+            if time.mktime(updated_parsed) > timestamp:
+                yield entry
+        except (ValueError, TypeError):
+            entry['updated_parsed'] = now
+            yield entry
