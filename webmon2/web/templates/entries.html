@@ -47,7 +47,9 @@
 	<nav>
 		{{ nav_bar() }}
 		{% if max_id %}
-		<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id, mode=showed) }}">✔︎ Mark visible read</a>
+		<p class="row">
+			<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id, mode=showed) }}" class="right">✔︎ Mark visible read</a>
+		</p>
 		{% endif %}
 	</nav>
 {% endblock footer %}

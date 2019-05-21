@@ -18,11 +18,16 @@
 				<p class="warn">Disabled</p>
 			{% else %}
 				{% if source.state.status == 'error' %}
-				<p class="error">Error: {{ source.state.error}} at {{ source.state.last_update}} times: {{ source.state.error_counter}}</p>
+				<p class="error">Error: {{ source.state.error}}</br>at {{ source.state.last_update | format_date }}<br/>times: {{ source.state.error_counter}}</p>
 				{% endif %}
 			{% endif %}
-			{% if source.state.state and source.state.state.get('info') %}
-				<p>{{ source.state.state.get('info') }}</p>
+			{% if source.state.state %}
+				{% if source.state.state.get('info') %}
+					<p>{{ source.state.state.get('info') }}</p>
+				{% endif %}
+				{% if source.state.state.get('last entry date') %}
+					<p>Last entry: {{ source.state.state.get('last entry date') }}</p>
+				{% endif %}
 			{% endif %}
 			<p>
 				Last update: {{ source.state.last_update | format_date }}

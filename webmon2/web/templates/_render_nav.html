@@ -8,7 +8,9 @@
 				<a href="{{ url_prev }}">← Prev page</a>
 			{% endif %}
 		</span>
-		<span>Page {{ page + 1 }} / {{ last_page + 1}}</span>
+		{% if last_page > 1 %}
+			<span>Page {{ page + 1 }} / {{ last_page + 1}}</span>
+		{% endif %}
 		<span class="right">
 			{% if page < last_page - 1 %}
 				<a href="{{ url_next }}">Next page →</a>

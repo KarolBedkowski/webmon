@@ -47,7 +47,13 @@
 	<nav>
 		{{ nav_bar() }}
 		{% if max_id %}
-		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}">✔ Mark read</a>
+			<p class="row">
+				{% if page == last_page %}
+					<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, go='next') }}" class="right">➥ Mark read and go to next group</a>
+				{% else %}
+					<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" class="right">✔ Mark read</a>
+				{% endif %}
+			</p>
 		{% endif %}
 	</nav>
 {% endblock %}
