@@ -133,8 +133,12 @@ def source_mark_read(source_id):
     user_id = session['user']
     database.sources.mark_read(db, user_id, source_id, max_id=max_id)
     db.commit()
-    if request.method == 'POST':
-        return "ok"
+    if request.args.get('go') == 'next':
+        source_id = database.sources.find_next_unread(db, user_id)
+        if source_id:
+            return redirect(url_for('source.source_entries',
+                                    source_id=source_id))
+        flash("No more unread sources...")
     return redirect(url_for("root.sources"))
 
 
@@ -270,7 +274,6 @@ def source_entry(source_id, mode, entry_id):
 def source_next_unread(source_id):
     db = get_db()
     source_id = database.sources.find_next_unread(db, session['user'])
-    _LOG.info("next sources: %r", source_id)
     if source_id:
         return redirect(url_for('source.source_entries', source_id=source_id))
     flash("No more unread sources...")

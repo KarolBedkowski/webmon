@@ -82,7 +82,7 @@ def group_sources(group_id: int):
 @BP.route("/group/<int:group_id>/entries")
 @BP.route("/group/<int:group_id>/entries/<mode>")
 @BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
-def group_entries(group_id, mode=None, page=0):
+def group_entries(group_id, mode='unread', page=0):
     db = get_db()
     offset = (page or 0) * c.PAGE_LIMIT
     sgroup = database.groups.get(db, group_id)
@@ -119,7 +119,10 @@ def group_mark_read(group_id):
             return redirect(url_for('group.group_entries',
                                     group_id=group_id))
         flash("No more unread groups...")
-    return redirect(request.args.get('back') or url_for("root.groups"))
+        return redirect(url_for("root.groups"))
+    return redirect(request.args.get('back')
+                    or url_for("group.group_entries", group_id=group_id,
+                               mode='unread'))
 
 
 @BP.route("/group/<int:group_id>/next_unread")
