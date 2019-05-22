@@ -88,7 +88,7 @@ class FetchWorker(threading.Thread):
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
-        _LOG.info("[%s] processing source %d", self._idx, source_id)
+        _LOG.debug("[%s] processing source %d", self._idx, source_id)
         try:
             source = database.sources.get(db, id_=source_id, with_state=True)
         except database.NotFound:
@@ -130,8 +130,8 @@ class FetchWorker(threading.Thread):
 
         database.sources.save_state(db, new_state)
 
-        _LOG.info("[%s] processing source %d FINISHED, entries=%d, state=%s",
-                  self._idx, source_id, len(entries), str(new_state))
+        _LOG.debug("[%s] processing source %d FINISHED, entries=%d, state=%s",
+                   self._idx, source_id, len(entries), str(new_state))
 
     def _final_filter_entries(self, entries):  # pylint: disable=no-self-use
         entries_oids = set()
