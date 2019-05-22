@@ -84,32 +84,37 @@ def group_sources(group_id: int):
 @BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
 def group_entries(group_id, mode='unread', page=0):
     db = get_db()
-    offset = (page or 0) * c.PAGE_LIMIT
     sgroup = database.groups.get(db, group_id)
     user_id = session['user']
+
     if sgroup.user_id != user_id:
         return abort(404)
+
+    offset = (page or 0) * c.PAGE_LIMIT
+    mode = 'all' if mode == 'all' else 'unread'
+    unread = mode != 'all'
+
     entries = list(database.entries.find(
-        db, user_id, group_id=group_id, unread=mode != 'all',
+        db, user_id, group_id=group_id, unread=unread,
         limit=c.PAGE_LIMIT, offset=offset))
+
     total_entries = database.entries.get_total_count(
-        db, session['user'], unread=False, group_id=group_id) \
-        if mode == 'all' else len(entries)
+        db, user_id, unread=unread, group_id=group_id)
+
     data = c.preprate_entries_list(entries, page, total_entries)
-    return render_template(
-        "group_entries.html",
-        group=sgroup,
-        showed='all' if mode == 'all' else None,
-        **data)
+
+    return render_template("group_entries.html", group=sgroup,
+                           showed=mode, **data)
 
 
 @BP.route("/group/<int:group_id>/mark/read")
 def group_mark_read(group_id):
     db = get_db()
-    max_id = request.args.get('max_id')
-    max_id = int(max_id) if max_id else max_id
+    max_id = int(request.args.get('max_id'))
+    min_id = int(request.args.get('min_id', 0))
     user_id = session['user']
-    database.groups.mark_read(db, user_id, group_id, max_id=max_id)
+    database.groups.mark_read(db, user_id, group_id, min_id=min_id,
+                              max_id=max_id)
     db.commit()
     if request.args.get('go') == 'next':
         # go to next unread group
@@ -120,9 +125,12 @@ def group_mark_read(group_id):
                                     group_id=group_id))
         flash("No more unread groups...")
         return redirect(url_for("root.groups"))
+
     return redirect(request.args.get('back')
-                    or url_for("group.group_entries", group_id=group_id,
-                               mode='unread'))
+                    or url_for("group.group_entries",
+                               group_id=group_id,
+                               page=request.args.get('page'),
+                               mode=request.args.get('mode')))
 
 
 @BP.route("/group/<int:group_id>/next_unread")

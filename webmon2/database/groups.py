@@ -159,8 +159,8 @@ _MARK_READ_SQL = """
 update entries
 set read_mark=1
 where source_id in (select id from sources where group_id=%(group_id)s)
-    and id<=%(max_id)s and id>=%(min_id)s and read_mark=0
-    and user_id=%(user_id)s
+    and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
+    and read_mark=0 and user_id=%(user_id)s
 """
 
 

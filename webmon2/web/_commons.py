@@ -9,6 +9,7 @@
 """
 Common gui api functions
 """
+import math
 import typing as ty
 
 from webmon2 import model
@@ -18,6 +19,7 @@ PAGE_LIMIT = 25
 
 def preprate_entries_list(entries: ty.List[model.Entry], page: int,
                           total_entries: int) -> ty.Dict[str, ty.Any]:
+    last_page = math.ceil(total_entries / PAGE_LIMIT) - 1
     info = {
         'min_id': min(entry.id for entry in entries) if entries else None,
         'max_id': max(entry.id for entry in entries) if entries else None,
@@ -27,7 +29,7 @@ def preprate_entries_list(entries: ty.List[model.Entry], page: int,
                       if page is not None else None),
         'prev_page': (max(0, page - 1) if page is not None else None),
         'total_entries': total_entries,
-        'page': page,
-        'last_page': int(total_entries / PAGE_LIMIT),
+        'page': min(page, last_page),
+        'last_page': last_page,
     }
     return info

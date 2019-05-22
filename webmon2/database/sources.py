@@ -305,14 +305,22 @@ def refresh_errors(db, user_id: int) -> int:
         return updated
 
 
+_MARK_READ_SQL = """
+update entries
+set read_mark=1
+where source_id=%(source_id)s
+    and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
+    and read_mark=0 and user_id=%(user_id)s
+"""
+
+
 def mark_read(db, user_id: int, source_id: int, max_id: int, min_id=0) -> int:
     """ Mark source read """
     with db.cursor() as cur:
         cur.execute(
-            "update entries set read_mark=1 where source_id=%s "
-            "and id<=%s and read_mark=0 and id>=%s "
-            "and user_id=%s",
-            (source_id, max_id, min_id, user_id))
+            _MARK_READ_SQL,
+            {'source_id': source_id, 'max_id': max_id, 'min_id': min_id,
+             'user_id': user_id})
         changed = cur.rowcount
         return changed
 

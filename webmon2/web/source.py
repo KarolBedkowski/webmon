@@ -110,28 +110,36 @@ def source_edit(source_id=None, kind=None):
 @BP.route("/<int:source_id>/entries/<mode>/<int:page>")
 def source_entries(source_id, mode='unread', page=0):
     db = get_db()
-    offset = (page or 0) * c.PAGE_LIMIT
     user_id = session['user']
+    source = database.sources.get(db, source_id, with_group=True)
+    if source.user_id != user_id:
+        return abort(404)
+
+    offset = (page or 0) * c.PAGE_LIMIT
+    mode = 'all' if mode == 'all' else 'unread'
+    unread = mode == 'unread'
+
     entries = list(database.entries.find(
-        db, user_id, source_id=source_id, unread=mode == 'unread',
+        db, user_id, source_id=source_id, unread=unread,
         limit=c.PAGE_LIMIT, offset=offset))
+
     total_entries = database.entries.get_total_count(
-        db, user_id, unread=False, source_id=source_id) \
-        if mode == 'all' else len(entries)
+        db, user_id, unread=unread, source_id=source_id)
+
     data = c.preprate_entries_list(entries, page, total_entries)
-    return render_template(
-        "source_entries.html",
-        source=database.sources.get(db, source_id, with_group=True),
-        showed='all' if mode == 'all' else 'unread',
-        **data)
+
+    return render_template("source_entries.html", source=source,
+                           showed=mode, **data)
 
 
 @BP.route("/<int:source_id>/mark/read")
 def source_mark_read(source_id):
     db = get_db()
+    min_id = int(request.args.get('min_id', 0))
     max_id = int(request.args['max_id'])
     user_id = session['user']
-    database.sources.mark_read(db, user_id, source_id, max_id=max_id)
+    database.sources.mark_read(db, user_id, source_id, max_id=max_id,
+                               min_id=min_id)
     db.commit()
     if request.args.get('go') == 'next':
         source_id = database.sources.find_next_unread(db, user_id)
@@ -139,6 +147,13 @@ def source_mark_read(source_id):
             return redirect(url_for('source.source_entries',
                                     source_id=source_id))
         flash("No more unread sources...")
+
+    if min_id:
+        return redirect(
+            url_for('source.source_entries',
+                    source_id=source_id,
+                    page=request.args.get('page'),
+                    mode=request.args.get('mode')))
     return redirect(url_for("root.sources"))
 
 
