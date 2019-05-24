@@ -168,19 +168,19 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
-        user_sources = {}
+        user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = dbc.entry_from_row(row)
-            source = user_sources.get(entry.source_id)
-            if not source:
-                source = user_sources[entry.source_id] = \
+            source_id = entry.source_id
+            entry.source = user_sources.get(source_id)
+            if not entry.source:
+                entry.source = user_sources[source_id] = \
                     dbc.source_from_row(row)
-                group = user_groups.get(entry.source.group_id)
-                if not group:
-                    group = user_groups[entry.source.group_id] = \
+                group_id = entry.source.group_id
+                entry.source.group = user_groups.get(group_id)
+                if not entry.source.group:
+                    entry.source.group = user_groups[group_id] = \
                         dbc.source_group_from_row(row)
-                    source.group = group
-            entry.source = source
             yield entry
 
 
