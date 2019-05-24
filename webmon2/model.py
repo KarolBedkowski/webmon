@@ -15,6 +15,7 @@ import hashlib
 from datetime import datetime
 import typing as ty
 import logging
+import json
 
 from webmon2 import common
 
@@ -54,6 +55,16 @@ class SourceGroup:
         sgr.mail_report = self.mail_report
         sgr.sources_count = self.sources_count
         return sgr
+
+    @classmethod
+    def from_row(cls, row):
+        return SourceGroup(
+            id=row["source_group__id"],
+            name=row["source_group__name"],
+            user_id=row["source_group__user_id"],
+            feed=row["source_group__feed"],
+            mail_report=row["source_group__mail_report"],
+        )
 
 
 class Source:  # pylint: disable=too-many-instance-attributes
@@ -106,6 +117,40 @@ class Source:  # pylint: disable=too-many-instance-attributes
         src.status = self.status
         src.mail_report = self.mail_report
         return src
+
+    @classmethod
+    def from_row(cls, row):
+        source = Source()
+        source.id = row["source__id"]
+        source.group_id = row["source__group_id"]
+        source.kind = row["source__kind"]
+        source.name = row["source__name"]
+        source.interval = row["source__interval"]
+        row_keys = row.keys()
+        source.settings = common.get_json_if_exists(
+            row_keys, "source__settings", row)
+        source.filters = common.get_json_if_exists(
+            row_keys, "source__filters", row)
+        source.status = row['source__status']
+        source.user_id = row['source__user_id']
+        source.mail_report = row['source__mail_report']
+        return source
+
+    def to_row(self) -> ty.Dict[str, ty.Any]:
+        return {
+            'source__group_id': self.group_id,
+            'source__kind': self.kind,
+            'source__name': self.name,
+            'source__interval': self.interval,
+            'source__settings': (json.dumps(self.settings)
+                                 if self.settings else None),
+            'source__filters': (json.dumps(self.filters)
+                                if self.filters else None),
+            'source__user_id': self.user_id,
+            'source__status': self.status,
+            'source__id': self.id,
+            'source__mail_report': self.mail_report,
+        }
 
 
 class SourceState:  # pylint: disable=too-many-instance-attributes
@@ -196,6 +241,35 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self):
         return common.obj2str(self)
+
+    def to_row(self) -> ty.Dict[str, ty.Any]:
+        return {
+            "source_state__source_id": self.source_id,
+            "source_state__next_update": self.next_update,
+            "source_state__last_update": self.last_update,
+            "source_state__last_error": self.last_error,
+            "source_state__error_counter": self.error_counter,
+            "source_state__success_counter": self.success_counter,
+            "source_state__status": self.status,
+            "source_state__error": self.error,
+            "source_state__state": json.dumps(self.state),
+        }
+
+    @classmethod
+    def from_row(cls, row):
+        state = SourceState()
+        state.source_id = row["source_state__source_id"]
+        state.next_update = row["source_state__next_update"]
+        state.last_update = row["source_state__last_update"]
+        state.last_error = row["source_state__last_error"]
+        state.error_counter = row["source_state__error_counter"]
+        state.success_counter = row["source_state__success_counter"]
+        state.status = row["source_state__status"]
+        state.error = row["source_state__error"]
+        row_keys = row.keys()
+        state.state = common.get_json_if_exists(
+            row_keys, "source_state__state", row)
+        return state
 
 
 class Entry:  # pylint: disable=too-many-instance-attributes
@@ -298,6 +372,42 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if not self.title:
             _LOG.error("missing title %s", self)
 
+    def to_row(self) -> ty.Dict[str, ty.Any]:
+        return {
+            'entry__source_id': self.source_id,
+            'entry__updated': self.updated,
+            'entry__created': self.created,
+            'entry__read_mark': self.read_mark,
+            'entry__star_mark': self.star_mark,
+            'entry__status': self.status,
+            'entry__oid': self.oid,
+            'entry__title': self.title,
+            'entry__url': self.url,
+            'entry__opts': json.dumps(self.opts),
+            'entry__content': self.content,
+            'entry__id': self.id,
+            'entry__user_id': self.user_id,
+        }
+
+    @classmethod
+    def from_row(cls, row):
+        entry = Entry(row["entry__id"])
+        entry.source_id = row["entry__source_id"]
+        entry.updated = row["entry__updated"]
+        entry.created = row["entry__created"]
+        entry.read_mark = row["entry__read_mark"]
+        entry.star_mark = row["entry__star_mark"]
+        entry.status = row["entry__status"]
+        entry.oid = row["entry__oid"]
+        entry.title = row["entry__title"]
+        entry.url = row["entry__url"]
+        row_keys = row.keys()
+        entry.opts = common.get_json_if_exists(row_keys, "entry__opts", row)
+        if "entry__content" in row_keys:
+            entry.content = row["entry__content"]
+        entry.user_id = row['entry__user_id']
+        return entry
+
 
 Entries = ty.Iterable[Entry]
 
@@ -332,6 +442,28 @@ class Setting:
     def __str__(self):
         return common.obj2str(self)
 
+    @classmethod
+    def from_row(cls, row):
+        value = row['setting__value']
+        if value and isinstance(value, str):
+            value = json.loads(value)
+        return Setting(
+            key=row['setting__key'],
+            value=value,
+            value_type=row['setting__value_type'],
+            description=row['setting__description'],
+            user_id=row['setting__user_id']
+        )
+
+    def to_row(self) -> ty.Dict[str, ty.Any]:
+        return {
+            'setting__key': self.key,
+            'setting__value': json.dumps(self.value),
+            'setting__value_type': self.value_type,
+            'setting__description': self.description,
+            'setting__user_id': self.user_id,
+        }
+
 
 class User:
     __slots__ = (
@@ -363,3 +495,24 @@ class User:
         phash = hashlib.scrypt(
             password.encode('utf-8'), salt=salt, n=16, r=16, p=2)
         return passw == phash
+
+    @classmethod
+    def from_row(cls, row):
+        return User(
+            id=row['user__id'],
+            login=row['user__login'],
+            email=row['user__email'],
+            password=row['user__password'],
+            active=row['user__active'],
+            admin=row['user__admin']
+        )
+
+    def to_row(self):
+        return {
+            'user__id': self.id,
+            'user__login': self.login,
+            'user__email': self.email,
+            'user__password': self.password,
+            'user__active': self.active,
+            'user__admin': self.admin
+        }

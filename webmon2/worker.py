@@ -125,7 +125,7 @@ class FetchWorker(threading.Thread):
             max_date = max(entry.updated for entry in entries)
             new_state.set_state("last_entry_date", str(max_date))
             max_updated = max(e.updated for e in entries)
-            database.entries.save_many(db, entries, source_id)
+            database.entries.save_many(db, entries)
             database.groups.update_state(db, source.group_id, max_updated)
 
         database.sources.save_state(db, new_state)
@@ -160,6 +160,7 @@ class FetchWorker(threading.Thread):
                 source.interval = interval
             src = sources.get_source(source, sys_settings)
             src.validate()
+            src.db = db
             return src
         except common.ParamError as err:
             _LOG.error("[%s] get source class for source id=%d error: %s",

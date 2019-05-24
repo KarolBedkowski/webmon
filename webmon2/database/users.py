@@ -22,52 +22,79 @@ class LoginAlreadyExistsError(Exception):
     pass
 
 
+_GET_ALL_SQL = """
+select id as user__id, login as user__login, email as user__email,
+    password as user__password, active as user__admin, admin as user__admin,
+    active as user__active
+from users
+"""
+
+
 def get_all(db) -> ty.Iterable[model.User]:
     """ Get all users """
     with db.cursor() as cur:
-        cur.execute(
-            "select id, login, email, password, active, admin from users")
+        cur.execute(_GET_ALL_SQL)
         for row in cur:
-            yield _user_from_row(row)
+            yield model.User.from_row(row)
+
+
+_GET_BY_ID_SQL = """
+select id as user__id, login as user__login, email as user__email,
+    password as user__password, active as user__admin, admin as user__admin,
+    active as user__active
+from users
+where id=%s
+"""
+
+_GET_BY_LOGIN_SQL = """
+select id as user__id, login as user__login, email as user__email,
+    password as user__password, active as user__admin, admin as user__admin,
+    active as user__active
+from users
+where login=%s
+"""
 
 
 def get(db, id_=None, login=None) -> ty.Optional[model.User]:
     """ Get user by id or login """
     with db.cursor() as cur:
         if id_:
-            cur.execute("select id, login, email, password, active, admin "
-                        "from users where id=%s", (id_, ))
+            cur.execute(_GET_BY_ID_SQL, (id_, ))
         elif login:
-            cur.execute("select id, login, email, password, active, admin "
-                        "from users where login=%s", (login, ))
+            cur.execute(_GET_BY_LOGIN_SQL, (login, ))
         else:
             return None
         row = cur.fetchone()
         if not row:
             return None
-        user = _user_from_row(row)
+        user = model.User.from_row(row)
         return user
+
+
+_UPDATE_USER_SQL = """
+update users set login=%(user__login)s, email=%(user__email)s,
+password=%(user__password)s, active=%(user__active)s, admin=%(user__admin)s
+where id=%(user__id)s
+"""
+_INSERT_USER_SQL = """
+insert into users (login, email, password, active, admin)
+values (%(user__login)s, %(user__email)s, %(user__password)s, %(user__active)s,
+    %(user__admin)s)
+returning id
+"""
 
 
 def save(db, user: model.User) -> model.User:
     """ Insert or update user """
     cur = db.cursor()
     if user.id:
-        cur.execute(
-            "update users set login=%(login)s, email=%(email)s, "
-            "password=%(password)s, active=%(active)s, admin=%(admin)s "
-            "where id=%(id)s",
-            _user_to_row(user))
+        cur.execute(_UPDATE_USER_SQL, user.to_row())
     else:
         cur.execute("select 1 from users where login=%s", (user.login, ))
         if cur.fetchone():
             cur.close()
             raise LoginAlreadyExistsError()
-        cur.execute(
-            "insert into users (login, email, password, active, admin) "
-            "values (%(login)s, %(email)s, %(password)s, %(active)s, "
-            "%(admin)s) returning id",
-            _user_to_row(user))
+        cur.execute(_INSERT_USER_SQL, user.to_row())
         user.id = cur.fetchone()[0]
         _create_new_user_data(cur, user.id)
 
@@ -85,28 +112,6 @@ def _create_new_user_data(cur, user_id: int):
             (user_id, "main"))
 
 
-def _user_from_row(row) -> model.User:
-    return model.User(
-        id=row['id'],
-        login=row['login'],
-        email=row['email'],
-        password=row['password'],
-        active=row['active'],
-        admin=row['admin']
-    )
-
-
-def _user_to_row(user: model.User):
-    return {
-        'id': user.id,
-        'login': user.login,
-        'email': user.email,
-        'password': user.password,
-        'active': user.active,
-        'admin': user.admin
-    }
-
-
 def get_state(db, user_id: int, key: str, default=None, conv=None):
     with db.cursor() as cur:
         cur.execute(
@@ -120,11 +125,14 @@ def get_state(db, user_id: int, key: str, default=None, conv=None):
         return conv(value) if conv else value
 
 
+_SET_STATE_SQL = """
+INSERT INTO users_state (user_id, key, value)
+VALUES (%s, %s, %s)
+ON CONFLICT ON CONSTRAINT users_state_pkey
+DO UPDATE SET value=EXCLUDED.value
+"""
+
+
 def set_state(db, user_id: int, key: str, value):
     with db.cursor() as cur:
-        cur.execute(
-            "insert into users_state (user_id, key, value) "
-            "values (%s, %s, %s) "
-            "ON CONFLICT ON CONSTRAINT users_state_pkey "
-            "DO UPDATE SET value=EXCLUDED.value",
-            (user_id, key, value))
+        cur.execute(_SET_STATE_SQL, (user_id, key, value))

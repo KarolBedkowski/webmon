@@ -22,22 +22,22 @@ _ = ty
 _LOG = logging.getLogger(__name__)
 
 _GET_SOURCES_SQL_BASE = """
-select s.id as source_id, s.group_id as source_group_id,
-    s.kind as source_kind, s.name as source_name,
-    s.interval as source_interval, s.settings as source_settings,
-    s.filters as source_filters,
-    s.user_id as source_user_id,
-    s.status as source_status,
-    s.mail_report as source_mail_report,
-    ss.source_id as source_state_source_id,
-    ss.next_update as source_state_next_update,
-    ss.last_update as source_state_last_update,
-    ss.last_error as source_state_last_error,
-    ss.error_counter as source_state_error_counter,
-    ss.success_counter as source_state_success_counter,
-    ss.status as source_state_status,
-    ss.error as source_state_error,
-    ss.state as source_state_state,
+select s.id as source__id, s.group_id as source__group_id,
+    s.kind as source__kind, s.name as source__name,
+    s.interval as source__interval, s.settings as source__settings,
+    s.filters as source__filters,
+    s.user_id as source__user_id,
+    s.status as source__status,
+    s.mail_report as source__mail_report,
+    ss.source_id as source_state__source_id,
+    ss.next_update as source_state__next_update,
+    ss.last_update as source_state__last_update,
+    ss.last_error as source_state__last_error,
+    ss.error_counter as source_state__error_counter,
+    ss.success_counter as source_state__success_counter,
+    ss.status as source_state__status,
+    ss.error as source_state__error,
+    ss.state as source_state__state,
     (select count(*)
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
@@ -64,8 +64,8 @@ def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
             else _GET_SOURCES_BY_GROUP_SQL
         cur.execute(sql, args)
         for row in cur:
-            source = dbc.source_from_row(row)
-            source.state = _state_from_row(row)
+            source = model.Source.from_row(row)
+            source.state = model.SourceState.from_row(row)
             source.unread = row['unread']
             source.group = user_groups.get(source.group_id) \
                 if source.group_id else None
@@ -73,12 +73,11 @@ def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
 
 
 _GET_SOURCE_SQL = """
-select id as source_id, group_id as source_group_id,
-    kind as source_kind, name as source_name, interval as source_interval,
-    settings as source_settings, filters as source_filters,
-    user_id as source_user_id,
-    status as source_status,
-    mail_report as source_mail_report
+select id as source__id, group_id as source__group_id,
+    kind as source__kind, name as source__name, interval as source__interval,
+    settings as source__settings, filters as source__filters,
+    user_id as source__user_id, status as source__status,
+    mail_report as source__mail_report
 from sources where id=%s
 """
 
@@ -92,7 +91,7 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
     if row is None:
         raise dbc.NotFound()
 
-    source = dbc.source_from_row(row)
+    source = model.Source.from_row(row)
     if with_state:
         source.state = get_state(db, source.id)
     if with_group and source.group_id:
@@ -104,23 +103,25 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
     user_id, name, status, mail_report)
-    values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s,
-        %(user_id)s, %(name)s, %(status)s, %(mail_report)s)
+    values (%(source__group_id)s, %(source__kind)s, %(source__interval)s,
+        %(source__settings)s, %(source__filters)s, %(source__user_id)s,
+        %(source__name)s, %(source__status)s, %(source__mail_report)s)
 returning id
 """
 
 _UPDATE_SOURCE_SQL = """
 update sources
-set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s,
-    interval=%(interval)s, settings=%(settings)s, filters=%(filters)s,
-    status=%(status)s, mail_report=%(mail_report)s
-where id=%(id)s
+set group_id=%(source__group_id)s, kind=%(source__kind)s,
+    name=%(source__name)s, interval=%(source__interval)s,
+    settings=%(source__settings)s, filters=%(source__filters)s,
+    status=%(source__status)s, mail_report=%(source__mail_report)s
+where id=%(source__id)s
 """
 
 
 def save(db, source: model.Source) -> model.Source:
     """ Insert or update source """
-    row = dbc.source_to_row(source)
+    row = source.to_row()
     with db.cursor() as cur:
         if source.id is None:
             cur.execute(_INSERT_SOURCE_SQL, row)
@@ -189,15 +190,15 @@ def move_filter(db, user_id: int, source_id: int, filter_idx: int,
 
 
 _GET_STATE_SQL = """
-select source_id as source_state_source_id,
-    next_update as source_state_next_update,
-    last_update as source_state_last_update,
-    last_error as source_state_last_error,
-    error_counter as source_state_error_counter,
-    success_counter as source_state_success_counter,
-    status as source_state_status,
-    error as source_state_error,
-    state as source_state_state
+select source_id as source_state__source_id,
+    next_update as source_state__next_update,
+    last_update as source_state__last_update,
+    last_error as source_state__last_error,
+    error_counter as source_state__error_counter,
+    success_counter as source_state__success_counter,
+    status as source_state__status,
+    error as source_state__error,
+    state as source_state__state
 from source_state where source_id=%s
 """
 
@@ -207,7 +208,7 @@ def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
     cur = db.cursor()
     cur.execute(_GET_STATE_SQL, (source_id, ))
     row = cur.fetchone()
-    state = _state_from_row(row) if row else None
+    state = model.SourceState.from_row(row) if row else None
     cur.close()
     return state
 
@@ -215,27 +216,29 @@ def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
 _INSERT_STATE_SQL = """
 insert into source_state(source_id, next_update, last_update, last_error,
     error_counter, success_counter, status, error, state)
-values (%(source_id)s, %(next_update)s, %(last_update)s, %(last_error)s,
-    %(error_counter)s, %(success_counter)s, %(status)s, %(error)s, %(state)s)
+values (%(source_state__source_id)s, %(source_state__next_update)s,
+    %(source_state__last_update)s, %(source_state__last_error)s,
+    %(source_state__error_counter)s, %(source_state__success_counter)s,
+    %(source_state__status)s, %(source_state__error)s, %(source_state__state)s)
 """
 
 _UPDATE_STATE_SQL = """
 update source_state
-set  next_update=%(next_update)s,
-     last_update=%(last_update)s,
-     last_error=%(last_error)s,
-     error_counter=%(error_counter)s,
-     success_counter=%(success_counter)s,
-     status=%(status)s,
-     error=%(error)s,
-     state=%(state)s
-where source_id=%(source_id)s
+set  next_update=%(source_state__next_update)s,
+     last_update=%(source_state__last_update)s,
+     last_error=%(source_state__last_error)s,
+     error_counter=%(source_state__error_counter)s,
+     success_counter=%(source_state__success_counter)s,
+     status=%(source_state__status)s,
+     error=%(source_state__error)s,
+     state=%(source_state__state)s
+where source_id=%(source_state__source_id)s
 """
 
 
 def save_state(db, state: model.SourceState) -> model.SourceState:
     """ Save (replace) source state """
-    row = _state_to_row(state)
+    row = model.SourceState.to_row(state)
     with db.cursor() as cur:
         cur.execute("delete from source_state where source_id=%s",
                     (state.source_id,))
@@ -353,35 +356,6 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
             cur.execute(
                 'insert into filters_state (source_id, filter_name, state) '
                 'values(%s, %s, %s)', (source_id, filter_name, state))
-
-
-def _state_to_row(state: model.SourceState) -> ty.Dict[str, ty.Any]:
-    return {
-        "source_id": state.source_id,
-        "next_update": state.next_update,
-        "last_update": state.last_update,
-        "last_error": state.last_error,
-        "error_counter": state.error_counter,
-        "success_counter": state.success_counter,
-        "status": state.status,
-        "error": state.error,
-        "state": json.dumps(state.state),
-    }
-
-
-def _state_from_row(row) -> model.SourceState:
-    state = model.SourceState()
-    state.source_id = row["source_state_source_id"]
-    state.next_update = row["source_state_next_update"]
-    state.last_update = row["source_state_last_update"]
-    state.last_error = row["source_state_last_error"]
-    state.error_counter = row["source_state_error_counter"]
-    state.success_counter = row["source_state_success_counter"]
-    state.status = row["source_state_status"]
-    state.error = row["source_state_error"]
-    row_keys = row.keys()
-    state.state = dbc.get_json_if_exists(row_keys, "source_state_state", row)
-    return state
 
 
 def find_next_entry_id(db, source_id: int, entry_id: int, unread=True) \

@@ -23,28 +23,32 @@ _LOG = logging.getLogger(__name__)
 
 _GET_ENTRIES_SQL_MAIN = '''
 select
-    e.id as entry_id,
-    e.source_id as entry_source_id,
-    e.updated as entry_updated,
-    e.created as entry_created,
-    e.read_mark as entry_read_mark,
-    e.star_mark as entry_star_mark,
-    e.status as entry_status,
-    e.oid as entry_oid,
-    e.title as entry_title,
-    e.url as entry_url,
-    e.opts as entry_opts,
-    e.content as entry_content,
-    e.user_id as entry_user_id,
-    s.id as source_id, s.group_id as source_group_id, s.kind as source_kind,
-    s.name as source_name, s.interval as source_interval,
-    s.user_id as source_user_id,
-    s.status as source_status,
-    s.mail_report as source_mail_report,
-    sg.id as source_group_id, sg.name as source_group_name,
-    sg.user_id as source_group_user_id,
-    sg.feed as source_group_feed,
-    sg.mail_report as source_group_mail_report
+    e.id as entry__id,
+    e.source_id as entry__source_id,
+    e.updated as entry__updated,
+    e.created as entry__created,
+    e.read_mark as entry__read_mark,
+    e.star_mark as entry__star_mark,
+    e.status as entry__status,
+    e.oid as entry__oid,
+    e.title as entry__title,
+    e.url as entry__url,
+    e.opts as entry__opts,
+    e.content as entry__content,
+    e.user_id as entry__user_id,
+    s.id as source__id,
+    s.group_id as source__group_id,
+    s.kind as source__kind,
+    s.name as source__name,
+    s.interval as source__interval,
+    s.user_id as source__user_id,
+    s.status as source__status,
+    s.mail_report as source__mail_report,
+    sg.id as source_group__id,
+    sg.name as source_group__name,
+    sg.user_id as source_group__user_id,
+    sg.feed as source_group__feed,
+    sg.mail_report as source_group__mail_report
 from entries e
 join sources s on s.id = e.source_id
 left join source_groups sg on sg.id = s.group_id
@@ -113,10 +117,10 @@ def get_starred(db, user_id: int) -> model.Entries:
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id})
         for row in cur:
-            entry = dbc.entry_from_row(row)
-            entry.source = dbc.source_from_row(row)
+            entry = model.Entry.from_row(row)
+            entry.source = model.Source.from_row(row)
             if entry.source.group_id:
-                entry.source.group = dbc.source_group_from_row(row)
+                entry.source.group = model.SourceGroup.from_row(row)
             yield entry
 
 
@@ -170,17 +174,17 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
-            entry = dbc.entry_from_row(row)
+            entry = model.Entry.from_row(row)
             source_id = entry.source_id
             entry.source = user_sources.get(source_id)
             if not entry.source:
                 entry.source = user_sources[source_id] = \
-                    dbc.source_from_row(row)
+                    model.Source.from_row(row)
                 group_id = entry.source.group_id
                 entry.source.group = user_groups.get(group_id)
                 if not entry.source.group:
                     entry.source.group = user_groups[group_id] = \
-                        dbc.source_group_from_row(row)
+                        model.SourceGroup.from_row(row)
             yield entry
 
 
@@ -191,29 +195,29 @@ def find_for_feed(db, group_id: int) -> model.Entries:
         cur.execute(_GET_ENTRIES_BY_GROUP_FEED_SQL, {'group_id': group_id})
         group = None  # model.SourceGroup
         for row in cur:
-            entry = dbc.entry_from_row(row)
-            entry.source = dbc.source_from_row(row)
+            entry = model.Entry.from_row(row)
+            entry.source = model.Source.from_row(row)
             if not group:
-                group = dbc.source_group_from_row(row)
+                group = model.SourceGroup.from_row(row)
             entry.source.group = group
             yield entry
 
 
 _GET_ENTRY_SQL = '''
 select
-    id as entry_id,
-    source_id as entry_source_id,
-    updated as entry_updated,
-    created as entry_created,
-    read_mark as entry_read_mark,
-    star_mark as entry_star_mark,
-    status as entry_status,
-    oid as entry_oid,
-    title as entry_title,
-    url as entry_url,
-    opts as entry_opts,
-    content as entry_content,
-    user_id as entry_user_id
+    id as entry__id,
+    source_id as entry__source_id,
+    updated as entry__updated,
+    created as entry__created,
+    read_mark as entry__read_mark,
+    star_mark as entry__star_mark,
+    status as entry__status,
+    oid as entry__oid,
+    title as entry__title,
+    url as entry__url,
+    opts as entry__opts,
+    content as entry__content,
+    user_id as entry__user_id
 from entries
 '''
 
@@ -229,7 +233,7 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
-        entry = dbc.entry_from_row(row)
+        entry = model.Entry.from_row(row)
         if with_source:
             entry.source = sources.get(db, entry.source_id,
                                        with_group=with_group)
@@ -239,25 +243,34 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
 _INSERT_ENTRY_SQL = """
 INSERT INTO entries (source_id, updated, created,
     read_mark, star_mark, status, oid, title, url, opts, content, user_id)
-VALUES (%(source_id)s, %(updated)s, %(created)s,
-    %(read_mark)s, %(star_mark)s, %(status)s, %(oid)s, %(title)s, %(url)s,
-    %(opts)s, %(content)s, %(user_id)s)
+VALUES (%(entry__source_id)s, %(entry__updated)s, %(entry__created)s,
+    %(entry__read_mark)s, %(entry__star_mark)s, %(entry__status)s,
+    %(entry__oid)s, %(entry__title)s, %(entry__url)s,
+    %(entry__opts)s, %(entry__content)s, %(entry__user_id)s)
 ON CONFLICT (oid) DO NOTHING
 RETURNING id
 """
 
 _UPDATE_ENTRY_SQL = """
-update entries set source_id=%(source_id)s, updated=%(updated)s,
-    created=%(created)s, read_mark=%(read_mark)s, star_mark=%(star_mark)s,
-    status=%(status)s, oid=%(oid)s, title=%(title)s, url=%(url)s,
-    opts=%(opts)s, content=%(content)s
-where id=%(id)s
+update entries
+set source_id=%(entry__source_id)s,
+    updated=%(entry__updated)s,
+    created=%(entry__created)s,
+    read_mark=%(entry__read_mark)s,
+    star_mark=%(entry__star_mark)s,
+    status=%(entry__status)s,
+    oid=%(entry__oid)s,
+    title=%(entry__title)s,
+    url=%(entry__url)s,
+    opts=%(entry__opts)s,
+    content=%(entry__content)s
+where id=%(entry__id)s
 """
 
 
 def save(db, entry: model.Entry) -> model.Entry:
     """ Insert or update entry """
-    row = dbc.entry_to_row(entry)
+    row = entry.to_row()
     with db.cursor() as cur:
         if entry.id is None:
             cur.execute(_INSERT_ENTRY_SQL, row)
@@ -267,7 +280,7 @@ def save(db, entry: model.Entry) -> model.Entry:
     return entry
 
 
-def save_many(db, entries: model.Entries, source_id: int):
+def save_many(db, entries: model.Entries):
     """ Insert entries; where entry with given oid already exists - is deleted
         TODO: save star_mark for updated
     """
@@ -279,7 +292,7 @@ def save_many(db, entries: model.Entries, source_id: int):
             cur.executemany("delete from entries where oid=%s",
                             oids_to_delete)
         _LOG.debug("to del %d, deleted: %d", len(oids_to_delete), cur.rowcount)
-        rows = map(dbc.entry_to_row, entries)
+        rows = map(model.Entry.to_row, entries)
         cur.executemany(_INSERT_ENTRY_SQL, rows)
 
 

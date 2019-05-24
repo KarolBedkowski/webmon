@@ -48,9 +48,11 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
 
 
 _GET_SQL = """
-select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed,
-    mail_report as source_group_mail_report
+select id as source_group__id,
+    name as source_group__name,
+    user_id as source_group__user_id,
+    feed as source_group__feed,
+    mail_report as source_group__mail_report
 from source_groups
 where id= %s
 """
@@ -63,13 +65,15 @@ def get(db, group_id) -> model.SourceGroup:
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
-        return dbc.source_group_from_row(row)
+        return model.SourceGroup.from_row(row)
 
 
 _FIND_SQL = """
-select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed,
-    mail_report as source_group_mail_report
+select id as source_group__id,
+    name as source_group__name,
+    user_id as source_group__user_id,
+    feed as source_group__feed,
+    mail_report as source_group_w_mail_report
 from source_groups
 where name=%s and user_id=%s
 """
@@ -80,13 +84,15 @@ def find(db, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
     with db.cursor() as cur:
         cur.execute(_FIND_SQL, (name, user_id))
         row = cur.fetchone()
-        return dbc.source_group_from_row(row) if row else None
+        return model.SourceGroup.from_row(row) if row else None
 
 
 _GET_BY_FEED_SQL = """
-select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed,
-    mail_report as source_group_mail_report
+select id as source_group__id,
+    name as source_group__name,
+    user_id as source_group__user_id,
+    feed as source_group__feed,
+    mail_report as source_group__mail_report
 from source_groups
 where feed= %s
 """
@@ -101,7 +107,7 @@ def get_by_feed(db, feed: str) -> model.SourceGroup:
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
-        return dbc.source_group_from_row(row)
+        return model.SourceGroup.from_row(row)
 
 
 def get_last_update(db, group_id: int) -> ty.Optional[datetime]:

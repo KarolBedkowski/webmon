@@ -16,6 +16,7 @@ import time
 import typing as ty
 import datetime
 import email.utils
+import json
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
@@ -243,3 +244,14 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
     except TypeError:
         pass
     return None
+
+
+def get_json_if_exists(row_keys, key, row, default=None):
+    if key not in row_keys:
+        return default
+    value = row[key]
+    if value is None:
+        return default
+    if not isinstance(value, str):
+        return value
+    return json.loads(value) if value else default
