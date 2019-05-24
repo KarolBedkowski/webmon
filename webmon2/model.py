@@ -27,6 +27,7 @@ class SourceGroup:
         "name",
         "user_id",
         "feed",
+        "mail_report",
         "unread",
         "sources_count"
     )
@@ -36,6 +37,7 @@ class SourceGroup:
         self.name = args.get('name')
         self.user_id = args.get('user_id')
         self.feed = args.get('feed', '')
+        self.mail_report = args.get('mail_report')
 
         self.unread = args.get('unread')
         self.sources_count = args.get('sources_count')
@@ -49,6 +51,7 @@ class SourceGroup:
         sgr.name = self.name
         sgr.user_id = self.user_id
         sgr.feed = self.feed
+        sgr.mail_report = self.mail_report
         sgr.sources_count = self.sources_count
         return sgr
 
@@ -67,6 +70,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "state",
         "unread",
         "status",
+        "mail_report",
     )
 
     def __init__(self, **args):
@@ -79,8 +83,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.filters = args.get('filters')
         self.user_id = args.get('user_id')
         self.status = args.get('status')
+        self.mail_report = args.get('mail_report')
 
-        self.group = None
+        self.group = None  # type: SourceGroup
         self.state = None
 
         self.unread = None
@@ -99,6 +104,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         src.filters = self.filters
         src.user_id = self.user_id
         src.status = self.status
+        src.mail_report = self.mail_report
         return src
 
 
@@ -212,7 +218,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, id_=None, source_id=None):
         self.id = id_   # type: ty.Optional[int]
-        self.source_id = source_id  # type: ty.Optional[int]
+        self.source_id = source_id  # type: int
         self.updated = None  # type: ty.Optional[datetime]
         self.created = None  # type: ty.Optional[datetime]
         self.read_mark = 0  # type: int
@@ -225,7 +231,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.opts = None    # type: ty.Optional[ty.Dict[str, ty.Any]]
         self.user_id = None  # type: ty.Optional[int]
 
-        self.source = None  # type: ty.Optional[Source]
+        self.source = None  # type: Source
 
     def __str__(self):
         return common.obj2str(self)

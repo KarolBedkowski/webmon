@@ -81,6 +81,7 @@ def source_from_row(row) -> model.Source:
     source.filters = get_json_if_exists(row_keys, "source_filters", row)
     source.status = row['source_status']
     source.user_id = row['source_user_id']
+    source.mail_report = row['source_mail_report']
     return source
 
 
@@ -89,7 +90,8 @@ def source_group_from_row(row):
         id=row["source_group_id"],
         name=row["source_group_name"],
         user_id=row["source_group_user_id"],
-        feed=row["source_group_feed"]
+        feed=row["source_group_feed"],
+        mail_report=row["source_group_mail_report"],
     )
 
 
@@ -104,4 +106,5 @@ def source_to_row(source: model.Source):
         'user_id': source.user_id,
         'status': source.status,
         'id': source.id,
+        'mail_report': source.mail_report,
     }

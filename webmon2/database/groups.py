@@ -18,7 +18,7 @@ from . import _dbcommon as dbc
 _LOG = logging.getLogger(__name__)
 
 _GET_SOURCE_GROUPS_SQL = """
-select sg.id, sg.name, sg.user_id, sg.feed,
+select sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
     (select count(*)
         from entries e
         join sources s on e.source_id = s.id
@@ -40,14 +40,17 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
         groups = [
             model.SourceGroup(
                 id=id, name=name, user_id=user_id, feed=feed,
-                unread=unread, sources_count=sources_count)
-            for id, name, user_id, feed, unread, sources_count in cur]
+                unread=unread, sources_count=sources_count,
+                mail_report=mail_report)
+            for id, name, user_id, feed, mail_report, unread, sources_count
+            in cur]
         return groups
 
 
 _GET_SQL = """
 select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed
+    user_id as source_group_user_id, feed as source_group_feed,
+    mail_report as source_group_mail_report
 from source_groups
 where id= %s
 """
@@ -65,7 +68,8 @@ def get(db, group_id) -> model.SourceGroup:
 
 _FIND_SQL = """
 select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed
+    user_id as source_group_user_id, feed as source_group_feed,
+    mail_report as source_group_mail_report
 from source_groups
 where name=%s and user_id=%s
 """
@@ -81,7 +85,8 @@ def find(db, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
 
 _GET_BY_FEED_SQL = """
 select id as source_group_id, name as source_group_name,
-    user_id as source_group_user_id, feed as source_group_feed
+    user_id as source_group_user_id, feed as source_group_feed,
+    mail_report as source_group_mail_report
 from source_groups
 where feed= %s
 """
@@ -118,14 +123,15 @@ def save(db, group: model.SourceGroup) -> model.SourceGroup:
 
         if group.id is None:
             cur.execute(
-                "insert into source_groups (name, user_id, feed) "
-                "values (%s, %s, %s) returning id",
-                (group.name, group.user_id, group.feed))
+                "insert into source_groups (name, user_id, feed, mail_report) "
+                "values (%s, %s, %s, %s) returning id",
+                (group.name, group.user_id, group.feed, group.mail_report))
             group.id = cur.fetchone()[0]
         else:
             cur.execute(
-                "update source_groups set name= %s, feed=%s where id=%s",
-                (group.name, group.feed, group.id))
+                "update source_groups set name= %s, feed=%s, mail_report=%s "
+                "where id=%s",
+                (group.name, group.feed, group.mail_report, group.id))
         return group
 
 

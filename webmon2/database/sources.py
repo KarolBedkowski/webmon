@@ -28,6 +28,7 @@ select s.id as source_id, s.group_id as source_group_id,
     s.filters as source_filters,
     s.user_id as source_user_id,
     s.status as source_status,
+    s.mail_report as source_mail_report,
     ss.source_id as source_state_source_id,
     ss.next_update as source_state_next_update,
     ss.last_update as source_state_last_update,
@@ -76,7 +77,8 @@ select id as source_id, group_id as source_group_id,
     kind as source_kind, name as source_name, interval as source_interval,
     settings as source_settings, filters as source_filters,
     user_id as source_user_id,
-    status as source_status
+    status as source_status,
+    mail_report as source_mail_report
 from sources where id=%s
 """
 
@@ -101,9 +103,9 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
-    user_id, name, status)
+    user_id, name, status, mail_report)
     values (%(group_id)s, %(kind)s, %(interval)s, %(settings)s, %(filters)s,
-        %(user_id)s, %(name)s, %(status)s)
+        %(user_id)s, %(name)s, %(status)s, %(mail_report)s)
 returning id
 """
 
@@ -111,7 +113,7 @@ _UPDATE_SOURCE_SQL = """
 update sources
 set group_id=%(group_id)s, kind=%(kind)s, name=%(name)s,
     interval=%(interval)s, settings=%(settings)s, filters=%(filters)s,
-    status=%(status)s
+    status=%(status)s, mail_report=%(mail_report)s
 where id=%(id)s
 """
 

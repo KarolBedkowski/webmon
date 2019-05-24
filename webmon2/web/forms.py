@@ -117,6 +117,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         self.settings = None
         self.filters = None
         self.status = None
+        self.mail_report = None
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -146,6 +147,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         form.interval = source.interval or ''
         form.filters = source.filters
         form.status = source.status
+        form.mail_report = source.mail_report
         return form
 
     def update_from_request(self, form):
@@ -154,6 +156,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         self.name = form['name'].strip()
         self.interval = form['interval'].strip()
         self.status = int(form.get('status', 0))
+        self.mail_report = int(form.get('mail_report'))
         for sett in self.settings or []:
             sett.update_from_request(form)
 
@@ -166,6 +169,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.settings = {field.name: field.value
                         for field in self.settings or []}
         src.status = self.status
+        src.mail_report = self.mail_report
         return src
 
 
@@ -175,6 +179,7 @@ class GroupForm:
         self.name = None
         self.feed = None
         self.feed_enabled = None
+        self.mail_report = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -186,6 +191,7 @@ class GroupForm:
         form.name = group.name
         form.feed = group.feed
         form.feed_enabled = group.feed and group.feed != 'off'
+        form.mail_report = group.mail_report
         return form
 
     def update_from_request(self, form):
@@ -196,11 +202,13 @@ class GroupForm:
                 self.feed = None
         else:
             self.feed = 'off'
+        self.mail_report = int(form.get('mail_report', 1))
 
     def update_model(self, group: model.SourceGroup):
         group = group.clone()
         group.name = self.name
         group.feed = self.feed
+        group.mail_report = self.mail_report
         return group
 
     def validate(self) -> ty.Dict[str, str]:

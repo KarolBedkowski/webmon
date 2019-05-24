@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
 <!DOCTYPE html>
 <html>
   <body>
@@ -29,6 +30,10 @@
 		<p>
 			<label for="source-feed">Feed enabled</label>
 			<input type="checkbox" name="feed_enabled" id="source-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
+		</p>
+		<p>
+			<label for="source-mail-report">Send mail reports</label>
+			{{ rf.render_select("mail_report", "source-mail-report", [(0, 'no'), (1, 'as configured in source'), (2, 'yes')], group.mail_report) }}
 		</p>
 		<p class="row">
 			{% if group.id %}

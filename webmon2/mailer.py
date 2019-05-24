@@ -55,12 +55,18 @@ def process(db, user_id):
 
 def _process_groups(db, conf, user_id: int, last_send):
     for group in database.groups.get_all(db, user_id):
+        if group.mail_report == 0:
+            continue
         yield from _process_group(db, conf, user_id, group.id, last_send)
 
 
 def _process_group(db, conf, user_id: int, group_id: int, last_send) \
         -> ty.Iterator[str]:
     entries = list(database.entries.find(db, user_id, group_id=group_id))
+    entries = [entry for entry in entries
+               if entry.source.mail_report == 2
+               or entry.source.group.mail_report == 2
+               ]
     if last_send:
         entries = [entry for entry in entries if entry.updated > last_send]
     if not entries:

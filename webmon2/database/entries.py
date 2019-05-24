@@ -40,9 +40,11 @@ select
     s.name as source_name, s.interval as source_interval,
     s.user_id as source_user_id,
     s.status as source_status,
+    s.mail_report as source_mail_report,
     sg.id as source_group_id, sg.name as source_group_name,
     sg.user_id as source_group_user_id,
-    sg.feed as source_group_feed
+    sg.feed as source_group_feed,
+    sg.mail_report as source_group_mail_report
 from entries e
 join sources s on s.id = e.source_id
 left join source_groups sg on sg.id = s.group_id
@@ -166,15 +168,19 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
+        user_sources = {}
         for row in cur:
             entry = dbc.entry_from_row(row)
-            entry.source = dbc.source_from_row(row)
-            if entry.source.group_id:
+            source = user_sources.get(entry.source_id)
+            if not source:
+                source = user_sources[entry.source_id] = \
+                    dbc.source_from_row(row)
                 group = user_groups.get(entry.source.group_id)
                 if not group:
                     group = user_groups[entry.source.group_id] = \
                         dbc.source_group_from_row(row)
-                entry.source.group = group
+                    source.group = group
+            entry.source = source
             yield entry
 
 
