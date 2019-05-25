@@ -13,6 +13,7 @@ import email.utils
 import datetime
 import logging
 import typing as ty
+from urllib.parse import urlsplit, urlunsplit
 
 import requests
 
@@ -81,6 +82,8 @@ class WebSource(AbstractSource):
             new_state.set_state('last-modified',
                                 response.headers.get('last-modified'))
 
+            entry.icon_data = self._load_image(url)
+
             expires = common.parse_http_date(response.headers.get('expires'))
             if expires:
                 new_state.next_update = expires
@@ -95,6 +98,13 @@ class WebSource(AbstractSource):
         finally:
             if response:
                 response.close()
+
+    def _load_image(self, url):  # pylint: disable=no-self-use
+        url_splited = urlsplit(url)
+        favicon_url = urlunsplit(
+            (url_splited[0], url_splited[1], "favicon.ico", "", ""))
+
+        return self._load_binary(favicon_url)
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -123,8 +133,7 @@ class WebSource(AbstractSource):
 
 
 def _prepare_headers(state):
-    headers = {'User-agent': "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
-                             "Gecko/20100101 Firefox/45.0"}
+    headers = {'User-agent': AbstractSource.AGENT}
     if state.last_update:
         headers['If-Modified-Since'] = email.utils.formatdate(
             state.last_update.timestamp())

@@ -130,7 +130,13 @@ class GithubInput(AbstractSource, GitHubMixin):
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
         entry = _build_entry(self._source, repository, content)
+        icon = self._load_image()
+        if icon:
+            entry.icon_data = icon
         return new_state, [entry]
+
+    def _load_image(self):
+        return self._load_binary("https://github.com/favicon.ico")
 
 
 def _format_gh_commit_short(commit, _full_message: bool) -> str:
@@ -203,7 +209,13 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
         entry = _build_entry(self._source, repository, content)
+        icon = self._load_image()
+        if icon:
+            entry.icon_data = icon
         return new_state, [entry]
+
+    def _load_image(self):
+        return self._load_binary("https://github.com/favicon.ico")
 
 
 def _format_gh_tag(tag) -> str:
@@ -264,6 +276,11 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
                 _build_gh_release_entry(self._source, repository, release)
                 for release in releases
             ]
+            if entries:
+                icon = self._load_image()
+                if icon:
+                    for entry in entries:
+                        entry.icon_data = icon
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("github load error %s", err)
             return state.new_error(str(err)), []
@@ -271,6 +288,9 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
         return new_state, entries
+
+    def _load_image(self):
+        return self._load_binary("https://github.com/favicon.ico")
 
 
 def _build_gh_release_entry(source: model.Source, repository, release) \

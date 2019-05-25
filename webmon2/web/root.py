@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
-    Response, json
+    Response, json, abort
 )
 import prometheus_client
 
@@ -115,3 +115,12 @@ def manifest_json():
         }
         _MANIFEST = json.dumps(manifest)
     return Response(_MANIFEST, mimetype="application/manifest+json")
+
+
+@BP.route('/binary/<datahash>')
+def binary(datahash):
+    db = get_db()
+    data, content_type = database.binaries.get(db, datahash, session['user'])
+    if not data:
+        return abort(404)
+    return Response(data, mimetype=content_type)

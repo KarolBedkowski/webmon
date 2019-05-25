@@ -15,7 +15,7 @@ import typing as ty
 import psycopg2
 from psycopg2 import pool, extras, extensions
 
-from . import settings, users, groups, entries, sources
+from . import settings, users, groups, entries, sources, binaries
 from ._dbcommon import NotFound
 
 __author__ = "Karol Będkowski"
@@ -27,7 +27,8 @@ __all__ = (
     "users",
     "groups",
     "entries",
-    "sources"
+    "sources",
+    "binaries"
 )
 
 _ = ty

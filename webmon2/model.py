@@ -286,8 +286,10 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         "url",
         "content",
         "opts",
+        "icon",
         "user_id",
         "source",
+        "icon_data",
     )
 
     def __init__(self, id_=None, source_id=None):
@@ -304,7 +306,10 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.content = None  # type: ty.Optional[str]
         self.opts = None    # type: ty.Optional[ty.Dict[str, ty.Any]]
         self.user_id = None  # type: ty.Optional[int]
+        self.icon = None  # type: ty.Optional[str]
 
+        # tuple(content type, data)
+        self.icon_data = None  # type: ty.Optional[ty.Tuple[str, ty.Any]]
         self.source = None  # type: Source
 
     def __str__(self):
@@ -323,6 +328,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.opts = self.opts.copy() if self.opts else None
         entry.content = self.content
         entry.user_id = self.user_id
+        entry.icon = self.icon
+        entry.icon_data = self.icon_data
         return entry
 
     @staticmethod
@@ -372,6 +379,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if not self.title:
             _LOG.error("missing title %s", self)
 
+    def calculate_icon_hash(self) -> ty.Optional[str]:
+        self.icon = hashlib.sha1(self.icon_data[1]).hexdigest() \
+            if self.icon_data else None
+        return self.icon
+
     def to_row(self) -> ty.Dict[str, ty.Any]:
         return {
             'entry__source_id': self.source_id,
@@ -387,6 +399,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             'entry__content': self.content,
             'entry__id': self.id,
             'entry__user_id': self.user_id,
+            'entry__icon': self.icon,
         }
 
     @classmethod
@@ -406,6 +419,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if "entry__content" in row_keys:
             entry.content = row["entry__content"]
         entry.user_id = row['entry__user_id']
+        entry.icon = row['entry__icon']
         return entry
 
 

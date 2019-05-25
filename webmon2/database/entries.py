@@ -13,9 +13,11 @@ import logging
 import typing as ty
 from datetime import datetime
 
+import psycopg2
+
 from webmon2 import model
 from . import _dbcommon as dbc
-from . import sources
+from . import sources, binaries
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ select
     e.opts as entry__opts,
     e.content as entry__content,
     e.user_id as entry__user_id,
+    e.icon as entry__icon,
     s.id as source__id,
     s.group_id as source__group_id,
     s.kind as source__kind,
@@ -217,7 +220,8 @@ select
     url as entry__url,
     opts as entry__opts,
     content as entry__content,
-    user_id as entry__user_id
+    user_id as entry__user_id,
+    icon as entry__icon
 from entries
 '''
 
@@ -242,11 +246,13 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
 
 _INSERT_ENTRY_SQL = """
 INSERT INTO entries (source_id, updated, created,
-    read_mark, star_mark, status, oid, title, url, opts, content, user_id)
+    read_mark, star_mark, status, oid, title, url, opts, content, user_id,
+    icon)
 VALUES (%(entry__source_id)s, %(entry__updated)s, %(entry__created)s,
     %(entry__read_mark)s, %(entry__star_mark)s, %(entry__status)s,
     %(entry__oid)s, %(entry__title)s, %(entry__url)s,
-    %(entry__opts)s, %(entry__content)s, %(entry__user_id)s)
+    %(entry__opts)s, %(entry__content)s, %(entry__user_id)s,
+    %(entry__icon)s)
 ON CONFLICT (oid) DO NOTHING
 RETURNING id
 """
@@ -263,7 +269,8 @@ set source_id=%(entry__source_id)s,
     title=%(entry__title)s,
     url=%(entry__url)s,
     opts=%(entry__opts)s,
-    content=%(entry__content)s
+    content=%(entry__content)s,
+    icon=%(entry__icon)s
 where id=%(entry__id)s
 """
 
@@ -277,6 +284,7 @@ def save(db, entry: model.Entry) -> model.Entry:
             entry.id = cur.fetchone()[0]
         else:
             cur.execute(_UPDATE_ENTRY_SQL, row)
+    _save_entry_icon(db, (entry, ))
     return entry
 
 
@@ -294,6 +302,17 @@ def save_many(db, entries: model.Entries):
         _LOG.debug("to del %d, deleted: %d", len(oids_to_delete), cur.rowcount)
         rows = map(model.Entry.to_row, entries)
         cur.executemany(_INSERT_ENTRY_SQL, rows)
+    _save_entry_icon(db, entries)
+
+
+def _save_entry_icon(db, entries):
+    saved = set()
+    for entry in entries:
+        if not entry.icon or entry.icon in saved:
+            continue
+        content_type, data = entry.icon_data
+        binaries.save(db, entry.user_id, content_type, entry.icon, data)
+        saved.add(entry.icon)
 
 
 def delete_old(db, user_id: int, max_datetime: datetime):

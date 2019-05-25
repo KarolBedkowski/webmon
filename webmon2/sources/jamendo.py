@@ -26,6 +26,8 @@ from .abstract import AbstractSource
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
+_JAMENDO_ICON = ("https://cdn-www.jamendo.com/Client/assets/toolkit/images/"
+                 "icon/apple-touch-icon-180x180.1558632652000.png")
 
 
 class JamendoMixin:
@@ -140,11 +142,17 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
         if status != 200:
             return state.new_error(res), []
 
-        result = _jamendo_format_long_list(self._source, res['results'])
+        entries = list(_jamendo_format_long_list(self._source, res['results']))
 
-        _LOG.debug("JamendoAlbumsSource: load done")
+        if entries:
+            icon = self._load_binary(_JAMENDO_ICON)
+            if icon:
+                for entry in entries:
+                    entry.icon_data = icon
+
         new_state = state.new_ok()
-        return new_state, list(result)
+        _LOG.debug("JamendoAlbumsSource: load done")
+        return new_state, entries
 
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
@@ -205,9 +213,16 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
         if status != 200:
             return state.new_error(res), []
 
-        entries = _jamendo_track_format(self._source, res['results'])
+        entries = list(_jamendo_track_format(self._source, res['results']))
+        if entries:
+            icon = self._load_binary(_JAMENDO_ICON)
+            if icon:
+                for entry in entries:
+                    entry.icon_data = icon
+
         new_state = state.new_ok()
-        return new_state, list(entries)
+        _LOG.debug("JamendoTracksSource: load done")
+        return new_state, entries
 
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:

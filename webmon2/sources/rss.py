@@ -26,11 +26,9 @@ _LOG = logging.getLogger(__name__)
 _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
-_AGENT = "Mozilla/5.0 (X11; Linux i686; rv:45.0) Gecko/20100101 Firefox/45.0"
-
 
 feedparser.PARSE_MICROFORMATS = 0
-feedparser.USER_AGENT = _AGENT
+feedparser.USER_AGENT = AbstractSource.AGENT
 
 
 class RssSource(AbstractSource):
@@ -99,6 +97,12 @@ class RssSource(AbstractSource):
         items = [self._load_entry(entry, load_content, load_article)
                  for entry in self._limit_items(entries)]
 
+        if items:
+            image = self._load_image(doc)
+            if image:
+                for item in items:
+                    item.icon_data = image
+
         return new_state, items
 
     def _limit_items(self, entries: ty.List[model.Entry]) \
@@ -136,7 +140,8 @@ class RssSource(AbstractSource):
             return entry
         try:
             response = requests.request(
-                url=entry.url, method='GET', headers={"User-agent": _AGENT},
+                url=entry.url, method='GET',
+                headers={"User-agent": self.AGENT},
                 allow_redirects=True)
             if response:
                 response.raise_for_status()
@@ -172,6 +177,17 @@ class RssSource(AbstractSource):
             name=name,
             settings={'url': url}
         )
+
+    def _load_image(self, feed):
+        image = feed.get('image')
+        if not image:
+            return None
+
+        image_href = image.get('href')
+        if not image_href:
+            return None
+
+        return self._load_binary(image_href)
 
 
 def _fail_error(state: model.SourceState, doc, status: int) \

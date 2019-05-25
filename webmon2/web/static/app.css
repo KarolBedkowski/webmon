@@ -40,3 +40,4 @@ article[data-starred=star] {border-color: red; border-width: 2px;}
 span.confirm{color: red; font-weight: bold;}
 .choice li { display: block; padding: 0.5em 0}
 .choice li > a { font-weight: bold}
+article header > img {float: left; margin: 0.5em 0.5em 0.5em 0.2em;}

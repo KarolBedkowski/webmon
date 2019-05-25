@@ -1,7 +1,11 @@
 {% macro render_source(source) -%}
 	<article>
 		<header>
-			<h4><a href="{{ url_for('source.source_entries', source_id=source.id) }}">{{ source.name }}</a>
+			{% if source.state.state and source.state.state.get('icon') %}
+			<img src="{{ url_for("root.binary", datahash=source.state.state.get('icon') )}}" width="32" height="32" />
+			{% endif %}
+			<h4>
+				<a href="{{ url_for('source.source_entries', source_id=source.id) }}">{{ source.name }}</a>
 				{% if source.unread %}({{ source.unread }}){% endif %}
 				{% if source.group %} <a class="group-tag" href="{{ url_for("group.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
 			</h4>

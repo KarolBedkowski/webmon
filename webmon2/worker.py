@@ -127,6 +127,9 @@ class FetchWorker(threading.Thread):
             max_updated = max(e.updated for e in entries)
             database.entries.save_many(db, entries)
             database.groups.update_state(db, source.group_id, max_updated)
+            icon = entries[0].icon
+            if icon:
+                new_state.set_state('icon', icon)
 
         database.sources.save_state(db, new_state)
 
@@ -142,6 +145,7 @@ class FetchWorker(threading.Thread):
                 continue
 
             entry.validate()
+            entry.calculate_icon_hash()
             content_type = entry.get_opt("content-type")
             entry.content = formatters.sanitize_content(
                 entry.content, content_type)

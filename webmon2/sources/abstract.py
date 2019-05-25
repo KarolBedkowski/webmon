@@ -13,6 +13,8 @@ Abstract source definition
 import typing as ty
 import logging
 
+import requests
+
 from webmon2 import model, common
 
 _LOG = logging.getLogger(__name__)
@@ -26,6 +28,9 @@ class AbstractSource:
     params = []  # type: ty.List[common.SettingDef]
     short_info = ""
     long_info = ""
+
+    AGENT = ("Mozilla/5.0 (X11; Linux i686; rv:45.0) "
+             "Gecko/20100101 Firefox/45.0")
 
     def __init__(self, source: model.Source,
                  sys_settings: ty.Dict[str, ty.Any]) -> None:
@@ -67,6 +72,20 @@ class AbstractSource:
             ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """ Load data; return list of items (Result).  """
         raise NotImplementedError()
+
+    def _load_binary(self, url):
+        try:
+            response = requests.request(
+                url=url, method='GET', headers={"User-agent": self.AGENT},
+                allow_redirects=True)
+            if response:
+                response.raise_for_status()
+                if response.status_code == 200:
+                    return response.headers['Content-Type'], response.content
+                _LOG.info("load binary from %s error: %s", url, response.text)
+        except Exception as err:  # pylint: disable=broad-except
+            _LOG.exception("load binary from %s error: %s", url, err)
+        return None
 
     @classmethod
     def get_param_types(cls) -> ty.Dict[str, str]:

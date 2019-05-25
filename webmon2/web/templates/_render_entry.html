@@ -2,6 +2,9 @@
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<header>
+			{% if entry.icon %}
+			<img src="{{ url_for("root.binary", datahash=entry.icon )}}" width="32" height="32"/>
+			{% endif %}
 			<h4>
 				{% if onlist %}
 					{% if openlink %}
