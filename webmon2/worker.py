@@ -26,7 +26,7 @@ _SOURCES_PROCESSED = Counter(
 _SOURCES_PROCESSED_ERRORS = Counter(
     "webmon2_sources_processed_errors",
     "Sources processed with errors count")
-_CLEANUP_INTERVAL = 60 * 60 * 24;
+_CLEANUP_INTERVAL = 60 * 60 * 24
 
 
 class CheckWorker(threading.Thread):
@@ -43,7 +43,7 @@ class CheckWorker(threading.Thread):
             time.sleep(15 if self.debug else 60)
             with database.DB.get() as db:
                 now = time.time()
-                if now < self.next_cleanup_start:
+                if now > self.next_cleanup_start:
                     _delete_old_entries(db)
                     self.next_cleanup_start = now + _CLEANUP_INTERVAL
 
@@ -198,6 +198,10 @@ def _delete_old_entries(db):
             _LOG.info("removed %d binaries for user %d", removed_bin,
                       user.id)
             db.commit()
+        db.begin()
+        states, entries = database.binaries.clean_sources_entries(db)
+        _LOG.info("cleaned %d source states and %d entries", states, entries)
+        db.commit()
     except Exception as err:  # pylint: disable=broad-except
         _LOG.exception("delete old error: %s", err)
 
