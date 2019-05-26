@@ -1,7 +1,9 @@
 {% macro render_source(source) -%}
 	<article>
 		<header>
-			{% if source.state.state and source.state.state.get('icon') %}
+			{% if source.state.icon %}
+			<img src="{{ url_for("root.binary", datahash=source.state.icon )}}" width="32" height="32" />
+			{% elif source.state.state and source.state.state.get('icon') %}
 			<img src="{{ url_for("root.binary", datahash=source.state.state.get('icon') )}}" width="32" height="32" />
 			{% endif %}
 			<h4>

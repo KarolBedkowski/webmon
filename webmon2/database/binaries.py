@@ -42,6 +42,12 @@ WHERE user_id = %(user_id)s
         SELECT NULL FROM entries e
         WHERE e.user_id = %(user_id)s and e.icon = b.datahash
     )
+    AND NOT EXISTS (
+        SELECT NULL
+        FROM source_state ss
+        JOIN sources s on s.id = ss.source_id
+        WHERE s.user_id = %(user_id)s and ss.icon = b.datahash
+    )
 """
 
 

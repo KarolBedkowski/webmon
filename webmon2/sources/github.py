@@ -22,6 +22,7 @@ from .abstract import AbstractSource
 
 _LOG = logging.getLogger(__name__)
 _GITHUB_MAX_AGE = 90  # 90 days
+_GITHUB_ICON = "https://github.com/favicon.ico"
 _ = ty
 
 
@@ -114,6 +115,8 @@ class GithubInput(AbstractSource, GitHubMixin):
         if not commits:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
 
         short_list = self._conf.get("short_list")
@@ -129,11 +132,11 @@ class GithubInput(AbstractSource, GitHubMixin):
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-        entry = _build_entry(self._source, repository, content)
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
-        icon = self._load_binary("https://github.com/favicon.ico")
-        if icon:
-            entry.icon_data = icon
+        entry = _build_entry(self._source, repository, content)
+        entry.icon = new_state.icon
         return new_state, [entry]
 
 
@@ -196,6 +199,8 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         if not tags:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
 
         try:
@@ -206,11 +211,11 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-        entry = _build_entry(self._source, repository, content)
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
-        icon = self._load_binary("https://github.com/favicon.ico")
-        if icon:
-            entry.icon_data = icon
+        entry = _build_entry(self._source, repository, content)
+        entry.icon_data = new_state.icon
         return new_state, [entry]
 
 
@@ -265,6 +270,8 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         if not releases:
             new_state = state.new_not_modified()
             new_state.set_state('etag', repository.etag)
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
 
         try:
@@ -272,21 +279,18 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
                 _build_gh_release_entry(self._source, repository, release)
                 for release in releases
             ]
-            self._load_icon(entries)
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("github load error %s", err)
             return state.new_error(str(err)), []
 
         new_state = state.new_ok()
         new_state.set_state('etag', repository.etag)
-        return new_state, entries
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
-    def _load_icon(self, entries):
-        if entries:
-            icon = self._load_binary("https://github.com/favicon.ico")
-            if icon:
-                for entry in entries:
-                    entry.icon_data = icon
+        for entry in entries:
+            entry.icon_data = new_state.icon
+        return new_state, entries
 
 
 def _build_gh_release_entry(source: model.Source, repository, release) \

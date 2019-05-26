@@ -165,6 +165,8 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "status",
         "error",
         "state",
+        "icon",
+        "icon_data"
     )
 
     def __init__(self, **args):
@@ -177,6 +179,8 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.status = args.get('status')
         self.error = args.get('error')
         self.state = args.get('state')
+        self.icon = args.get('icon')
+        self.icon_data = args.get('icon_data')
 
     @staticmethod
     def new(source_id):
@@ -193,6 +197,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.source_id = self.source_id
         new_state.error_counter = self.error_counter
         new_state.success_counter = self.success_counter
+        new_state.icon = self.icon
         return new_state
 
     def new_ok(self):
@@ -205,6 +210,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error = None
         state.error_counter = 0
         state.state = self.state.copy() if self.state else None
+        state.icon = self.icon
         return state
 
     def new_error(self, error: str):
@@ -217,6 +223,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error_counter = self.error_counter + 1
         state.last_error = datetime.now()
         state.state = self.state.copy() if self.state else None
+        state.icon = self.icon
         return state
 
     def new_not_modified(self):
@@ -229,6 +236,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error_counter = 0
         state.success_counter = self.success_counter + 1
         state.state = self.state.copy() if self.state else None
+        state.icon = self.icon
         return state
 
     def set_state(self, key, value):
@@ -239,6 +247,13 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     def get_state(self, key, default=None):
         return self.state.get(key, default) if self.state else default
+
+    def set_icon(self, content_type_data):
+        if not content_type_data:
+            return self.icon
+        self.icon = hashlib.sha1(content_type_data[1]).hexdigest()
+        self.icon_data = content_type_data
+        return self.icon
 
     def __str__(self):
         return common.obj2str(self)
@@ -254,6 +269,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             "source_state__status": self.status,
             "source_state__error": self.error,
             "source_state__state": json.dumps(self.state),
+            "source_state__icon": self.icon,
         }
 
     @classmethod
@@ -270,6 +286,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         row_keys = row.keys()
         state.state = common.get_json_if_exists(
             row_keys, "source_state__state", row)
+        state.icon = row['source_state__icon']
         return state
 
 
@@ -383,8 +400,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def calculate_icon_hash(self) -> ty.Optional[str]:
         if not self.icon_data:
             return None
-        ihash = base64.b85encode(hashlib.sha1(self.icon_data[1]).digest())
-        self.icon = ihash.decode('ascii')
+        self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
         return self.icon
 
     def to_row(self) -> ty.Dict[str, ty.Any]:

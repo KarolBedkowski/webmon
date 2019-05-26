@@ -62,7 +62,10 @@ class WebSource(AbstractSource):
             response.raise_for_status()
 
             if response.status_code == 304:
-                return state.new_not_modified(), []
+                new_state = state.new_not_modified()
+                if not new_state.icon:
+                    new_state.set_icon(self._load_image(url))
+                return new_state, []
 
             if response.status_code != 200:
                 msg = "Response code: %d" % response.status_code
@@ -81,8 +84,10 @@ class WebSource(AbstractSource):
             new_state.set_state('etag', response.headers.get('ETag'))
             new_state.set_state('last-modified',
                                 response.headers.get('last-modified'))
+            if not new_state.icon:
+                new_state.set_icon(self._load_image(url))
 
-            entry.icon_data = self._load_image(url)
+            entry.icon = new_state.icon
 
             expires = common.parse_http_date(response.headers.get('expires'))
             if expires:

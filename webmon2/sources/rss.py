@@ -28,7 +28,7 @@ _ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
 
-feedparser.PARSE_MICROFORMATS = 0
+# feedparser.PARSE_MICROFORMATS = 0
 feedparser.USER_AGENT = AbstractSource.AGENT
 
 
@@ -79,10 +79,15 @@ class RssSource(AbstractSource):
         if status == 304 or not entries:
             new_state = state.new_not_modified()
             new_state.set_state('etag', doc.get('etag'))
+            if not new_state.icon:
+                new_state.set_icon(self._load_image(doc))
             return new_state, []
 
         new_state = state.new_ok()
         new_state.set_state('etag', doc.get('etag'))
+        if not new_state.icon:
+            new_state.set_icon(self._load_image(doc))
+
         expires = common.parse_http_date(doc.headers.get('expires'))
         if expires:
             new_state.next_update = expires
@@ -98,11 +103,9 @@ class RssSource(AbstractSource):
         items = [self._load_entry(entry, load_content, load_article)
                  for entry in self._limit_items(entries)]
 
-        if items:
-            image = self._load_image(doc)
-            if image:
-                for item in items:
-                    item.icon_data = image
+        if items and new_state.icon:
+            for item in items:
+                item.icon = new_state.icon
 
         return new_state, items
 

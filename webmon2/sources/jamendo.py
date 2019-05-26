@@ -138,19 +138,21 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
 
         status, res = self._make_request(url)
         if status == 304:
-            return state.new_not_modified(), []
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(_JAMENDO_ICON))
+            return new_state, []
         if status != 200:
             return state.new_error(res), []
 
-        entries = list(_jamendo_format_long_list(self._source, res['results']))
-
-        if entries:
-            icon = self._load_binary(_JAMENDO_ICON)
-            if icon:
-                for entry in entries:
-                    entry.icon_data = icon
-
         new_state = state.new_ok()
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_JAMENDO_ICON))
+
+        entries = list(_jamendo_format_long_list(self._source, res['results']))
+        for entry in entries:
+            entry.icon = new_state.icon
+
         _LOG.debug("JamendoAlbumsSource: load done")
         return new_state, entries
 
@@ -209,18 +211,21 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
 
         status, res = self._make_request(url)
         if status == 304:
-            return state.new_not_modified(), []
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(_JAMENDO_ICON))
+            return new_state, []
         if status != 200:
             return state.new_error(res), []
 
-        entries = list(_jamendo_track_format(self._source, res['results']))
-        if entries:
-            icon = self._load_binary(_JAMENDO_ICON)
-            if icon:
-                for entry in entries:
-                    entry.icon_data = icon
-
         new_state = state.new_ok()
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_JAMENDO_ICON))
+
+        entries = list(_jamendo_track_format(self._source, res['results']))
+        for entry in entries:
+            entry.icon = new_state.icon
+
         _LOG.debug("JamendoTracksSource: load done")
         return new_state, entries
 

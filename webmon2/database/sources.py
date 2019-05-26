@@ -16,7 +16,7 @@ import datetime
 
 from webmon2 import model
 from . import _dbcommon as dbc
-from . import groups
+from . import groups, binaries
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ select s.id as source__id, s.group_id as source__group_id,
     ss.status as source_state__status,
     ss.error as source_state__error,
     ss.state as source_state__state,
+    ss.icon as source_state__icon,
     (select count(*)
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
@@ -128,7 +129,7 @@ def save(db, source: model.Source) -> model.Source:
             source.id = cur.fetchone()[0]
             # create state for new source
             state = model.SourceState.new(source.id)
-            save_state(db, state)
+            save_state(db, state, source.user_id)
         else:
             cur.execute(_UPDATE_SOURCE_SQL, row)
     return source
@@ -198,7 +199,8 @@ select source_id as source_state__source_id,
     success_counter as source_state__success_counter,
     status as source_state__status,
     error as source_state__error,
-    state as source_state__state
+    state as source_state__state,
+    icon as source_state__icon
 from source_state where source_id=%s
 """
 
@@ -215,11 +217,12 @@ def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
 
 _INSERT_STATE_SQL = """
 insert into source_state(source_id, next_update, last_update, last_error,
-    error_counter, success_counter, status, error, state)
+    error_counter, success_counter, status, error, state, icon)
 values (%(source_state__source_id)s, %(source_state__next_update)s,
     %(source_state__last_update)s, %(source_state__last_error)s,
     %(source_state__error_counter)s, %(source_state__success_counter)s,
-    %(source_state__status)s, %(source_state__error)s, %(source_state__state)s)
+    %(source_state__status)s, %(source_state__error)s, %(source_state__state)s,
+    %(source_state__icon)s)
 """
 
 _UPDATE_STATE_SQL = """
@@ -231,18 +234,23 @@ set  next_update=%(source_state__next_update)s,
      success_counter=%(source_state__success_counter)s,
      status=%(source_state__status)s,
      error=%(source_state__error)s,
-     state=%(source_state__state)s
+     state=%(source_state__state)s,
+     icon=%(source_state__icon)s
 where source_id=%(source_state__source_id)s
 """
 
 
-def save_state(db, state: model.SourceState) -> model.SourceState:
+def save_state(db, state: model.SourceState, user_id: int) \
+        -> model.SourceState:
     """ Save (replace) source state """
     row = model.SourceState.to_row(state)
     with db.cursor() as cur:
         cur.execute("delete from source_state where source_id=%s",
                     (state.source_id,))
         cur.execute(_INSERT_STATE_SQL, row)
+    if state.icon_data:
+        content_type, data = state.icon_data
+        binaries.save(db, user_id, content_type, state.icon, data)
     return state
 
 

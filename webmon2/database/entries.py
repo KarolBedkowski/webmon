@@ -308,7 +308,7 @@ def save_many(db, entries: model.Entries):
 def _save_entry_icon(db, entries):
     saved = set()
     for entry in entries:
-        if not entry.icon or entry.icon in saved:
+        if not entry.icon or entry.icon in saved or not entry.icon_data:
             continue
         content_type, data = entry.icon_data
         binaries.save(db, entry.user_id, content_type, entry.icon, data)

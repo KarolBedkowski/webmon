@@ -74,6 +74,7 @@ class AbstractSource:
         raise NotImplementedError()
 
     def _load_binary(self, url):
+        _LOG.debug("loading binary %s", url)
         try:
             response = requests.request(
                 url=url, method='GET', headers={"User-agent": self.AGENT},
@@ -82,7 +83,8 @@ class AbstractSource:
                 response.raise_for_status()
                 if response.status_code == 200:
                     return response.headers['Content-Type'], response.content
-                _LOG.info("load binary from %s error: %s", url, response.text)
+                _LOG.info("load binary from %s status %s error: %s", url,
+                          response.status_code, response.text)
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("load binary from %s error: %s", url, err)
         return None

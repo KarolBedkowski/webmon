@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
-    Response, json, abort
+    Response, json, abort, g
 )
 import prometheus_client
 
@@ -123,4 +123,7 @@ def binary(datahash):
     data, content_type = database.binaries.get(db, datahash, session['user'])
     if not data:
         return abort(404)
-    return Response(data, mimetype=content_type)
+    g.non_action = True
+    resp = Response(data, mimetype=content_type)
+    resp.headers['Cache-Control'] = "max-age=31536000, public, immutable"
+    return resp

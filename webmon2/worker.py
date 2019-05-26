@@ -128,10 +128,10 @@ class FetchWorker(threading.Thread):
             database.entries.save_many(db, entries)
             database.groups.update_state(db, source.group_id, max_updated)
             icon = entries[0].icon
-            if icon:
-                new_state.set_state('icon', icon)
+            if not new_state.icon and icon:
+                new_state.icon = icon
 
-        database.sources.save_state(db, new_state)
+        database.sources.save_state(db, new_state, source.user_id)
 
         _LOG.debug("[%s] processing source %d FINISHED, entries=%d, state=%s",
                    self._idx, source_id, len(entries), str(new_state))
@@ -222,4 +222,4 @@ def _save_state_error(db, source: model.Source, err: str):
     new_state.next_update = datetime.datetime.now() + \
         datetime.timedelta(seconds=next_check_delta)
 
-    database.sources.save_state(db, new_state)
+    database.sources.save_state(db, new_state, source.user_id)
