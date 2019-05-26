@@ -184,7 +184,10 @@ def _delete_old_entries(db):
                 continue
             max_datetime = datetime.datetime.now() - \
                 datetime.timedelta(days=keep_days)
-            database.entries.delete_old(db, user.id, max_datetime)
+            deleted_entries, deleted_oids = database.entries.delete_old(
+                db, user.id, max_datetime)
+            _LOG.info("deleted %d old entries and %d oids for user %d",
+                      deleted_entries, deleted_oids, user.id)
 
             removed_bin = database.binaries.remove_unused(db, user.id)
             _LOG.info("removed %d binaries for user %d", removed_bin,

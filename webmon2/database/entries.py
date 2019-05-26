@@ -315,7 +315,7 @@ def _save_entry_icon(db, entries):
         saved.add(entry.icon)
 
 
-def delete_old(db, user_id: int, max_datetime: datetime):
+def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
     """ Delete old entries for given user """
     with db.cursor() as cur:
         cur.execute("delete from entries where star_mark=0 and read_mark=0 "
@@ -326,8 +326,7 @@ def delete_old(db, user_id: int, max_datetime: datetime):
                     "and created<%s",
                     (user_id, max_datetime))
         deleted_oids = cur.rowcount
-        _LOG.info("delete_old: user: %d, entries: %d, oids: %d",
-                  user_id, deleted_entries, deleted_oids)
+        return (deleted_entries, deleted_oids)
 
 
 def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
