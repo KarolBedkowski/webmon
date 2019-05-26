@@ -399,8 +399,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
         if not self.icon_data:
-            return None
-        self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
+            return self.icon
+        try:
+            self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
+        except Exception as err:
+            _LOG.error("hasing %r error: %s", self.icon_data, err)
         return self.icon
 
     def to_row(self) -> ty.Dict[str, ty.Any]:

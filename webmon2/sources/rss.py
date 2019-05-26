@@ -53,7 +53,7 @@ class RssSource(AbstractSource):
         try:
             new_state, entries = self._load(state)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("load error: %s", err)
+            _LOG.exception("source %d load error: %s", state.source_id, err)
             new_state, entries = state.new_error(str(err)), []
         if new_state.status != 'error':
             new_state.next_update = datetime.datetime.now() + \
@@ -111,7 +111,7 @@ class RssSource(AbstractSource):
 
     def _limit_items(self, entries: ty.List[model.Entry]) \
             -> ty.List[model.Entry]:
-        max_items = self._conf.get("max_items")
+        max_items = int(self._conf.get("max_items"))
         if max_items and len(entries) > max_items:
             entries = entries[:max_items]
         return entries
