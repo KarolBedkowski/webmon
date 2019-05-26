@@ -133,6 +133,12 @@ class FetchWorker(threading.Thread):
 
         database.sources.save_state(db, new_state, source.user_id)
 
+        # if source was updated - save new version
+        updated_source = src.updated_source
+        if updated_source:
+            _LOG.debug("[%s] source %d updated", source_id)
+            database.sources.save(db, updated_source)
+
         _LOG.debug("[%s] processing source %d FINISHED, entries=%d, state=%s",
                    self._idx, source_id, len(entries), str(new_state))
 

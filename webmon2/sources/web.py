@@ -73,6 +73,8 @@ class WebSource(AbstractSource):
                     msg += "\n" + response.text
                 return state.new_error(msg), []
 
+            url = self._check_redirects(response) or url
+
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
             entry.status = 'updated' if state.last_update else 'new'
@@ -103,6 +105,29 @@ class WebSource(AbstractSource):
         finally:
             if response:
                 response.close()
+
+    def _check_redirects(self, response):
+        if not response.history:
+            return None
+        for hist in response.history:
+            if hist.is_permanent_redirect:
+                href = hist.headers.get('Location')
+                if href:
+                    self._updated_source(href)
+                    return href
+        for hist in response.history:
+            if hist.is_redirect:
+                href = hist.headers.get('Location')
+                if href:
+                    self._updated_source(href)
+                    return href
+        return None
+
+    def _update_source(self, new_url=None):
+        if not self._updated_source:
+            self._updated_source = self._source.clone()
+        if new_url:
+            self._updated_source.settings['url'] = new_url
 
     def _load_image(self, url):  # pylint: disable=no-self-use
         url_splited = urlsplit(url)

@@ -36,6 +36,7 @@ class AbstractSource:
                  sys_settings: ty.Dict[str, ty.Any]) -> None:
         super().__init__()
         self._source = source
+        self._updated_source = None
         self._conf = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings, source.settings)
@@ -49,6 +50,10 @@ class AbstractSource:
         for name, error in self.validate_conf(self._conf):
             raise common.ParamError("parameter {} error {}".format(
                 name, error))
+
+    @property
+    def updated_source(self) -> ty.Optional[model.Source]:
+        return self._updated_source
 
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:

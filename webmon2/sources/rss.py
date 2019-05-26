@@ -94,8 +94,10 @@ class RssSource(AbstractSource):
 
         if status == 301:  # permanent redirects
             new_state.set_state("info", 'Permanently redirects: ' + doc.href)
+            self._update_source(new_url=doc.href)
         elif status == 302:
             new_state.set_state('info', 'Temporary redirects: ' + doc.href)
+            self._update_source(new_url=doc.href)
 
         load_article = self._conf['load_article']
         load_content = self._conf['load_content']
@@ -186,11 +188,8 @@ class RssSource(AbstractSource):
     def _load_image(self, feed):
         image_href = None
         image = feed.get('image')
-        _LOG.debug("load image: feed: %s", feed)
-        _LOG.debug("load image: image: %s", image)
         if image:
             image_href = image.get('href') or image.get('url')
-        _LOG.debug("load image: image_href: %s", image_href)
 
         if not image_href:
             link = feed.get('link')
@@ -198,6 +197,12 @@ class RssSource(AbstractSource):
                 image_href = urljoin(link, 'favicon.ico')
 
         return self._load_binary(image_href) if image_href else None
+
+    def _update_source(self, new_url=None):
+        if not self._updated_source:
+            self._updated_source = self._source.clone()
+        if new_url:
+            self._updated_source.settings['url'] = new_url
 
 
 def _fail_error(state: model.SourceState, doc, status: int) \
