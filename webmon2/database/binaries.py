@@ -33,3 +33,19 @@ def save(db, user_id: int, content_type: str, datahash: str, data):
             "VALUES (%s, %s, %s, %s) "
             "ON conflict (datahash, user_id) DO NOTHING",
             (datahash, user_id, psycopg2.Binary(data), content_type))
+
+
+_REMOVE_UNUSED_SQL = """
+DELETE FROM binaries b
+WHERE user_id = %(user_id)s
+    AND NOT EXISTS (
+        SELECT NULL FROM entries e
+        WHERE e.user_id = %(user_id)s and e.icon = b.datahash
+    )
+"""
+
+
+def remove_unused(db, user_id: int) -> int:
+    with db.cursor() as cur:
+        cur.execute(_REMOVE_UNUSED_SQL, {'user_id': user_id})
+        return cur.rowcount

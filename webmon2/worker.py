@@ -185,6 +185,10 @@ def _delete_old_entries(db):
             max_datetime = datetime.datetime.now() - \
                 datetime.timedelta(days=keep_days)
             database.entries.delete_old(db, user.id, max_datetime)
+
+            removed_bin = database.binaries.remove_unused(db, user.id)
+            _LOG.info("removed %d binaries for user %d", removed_bin,
+                      user.id)
             db.commit()
     except Exception as err:  # pylint: disable=broad-except
         _LOG.exception("delete old error: %s", err)
