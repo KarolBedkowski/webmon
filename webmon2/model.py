@@ -16,6 +16,7 @@ from datetime import datetime
 import typing as ty
 import logging
 import json
+import base64
 
 from webmon2 import common
 
@@ -342,7 +343,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         data = "".join(map(
             str, (self.source_id, self.title, self.url, self.content)))
         csum = hashlib.sha1(data.encode('utf-8'))
-        self.oid = csum.hexdigest()
+        self.oid = base64.b64encode(csum.digest()).decode('ascii')
         return self.oid
 
     def get_opt(self, key, default=None):
@@ -380,8 +381,10 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             _LOG.error("missing title %s", self)
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
-        self.icon = hashlib.sha1(self.icon_data[1]).hexdigest() \
-            if self.icon_data else None
+        if not self.icon_data:
+            return None
+        ihash = base64.b85encode(hashlib.sha1(self.icon_data[1]).digest())
+        self.icon = ihash.decode('ascii')
         return self.icon
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
