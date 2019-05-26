@@ -215,7 +215,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
         entry = _build_entry(self._source, repository, content)
-        entry.icon_data = new_state.icon
+        entry.icon = new_state.icon
         return new_state, [entry]
 
 
@@ -289,7 +289,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
         for entry in entries:
-            entry.icon_data = new_state.icon
+            entry.icon = new_state.icon
         return new_state, entries
 
 
