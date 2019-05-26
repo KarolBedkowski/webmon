@@ -65,8 +65,7 @@ class RssSource(AbstractSource):
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
-            self._conf['url'],
-            etag=state.get_state('etag'),
+            self._conf['url'], etag=state.get_state('etag'),
             modified=state.last_update)
         status = doc.get('status') if doc else 400
         if status not in (200, 301, 302, 304):
@@ -111,9 +110,11 @@ class RssSource(AbstractSource):
 
     def _limit_items(self, entries: ty.List[model.Entry]) \
             -> ty.List[model.Entry]:
-        max_items = int(self._conf.get("max_items"))
-        if max_items and len(entries) > max_items:
-            entries = entries[:max_items]
+        max_items = self._conf.get("max_items")
+        if max_items:
+            max_items = int(max_items)
+            if max_items and len(entries) > max_items:
+                entries = entries[:max_items]
         return entries
 
     def _load_entry(self, entry: feedparser.FeedParserDict,
@@ -185,8 +186,11 @@ class RssSource(AbstractSource):
     def _load_image(self, feed):
         image_href = None
         image = feed.get('image')
+        _LOG.debug("load image: feed: %s", feed)
+        _LOG.debug("load image: image: %s", image)
         if image:
-            image_href = image.get('href')
+            image_href = image.get('href') or image.get('url')
+        _LOG.debug("load image: image_href: %s", image_href)
 
         if not image_href:
             link = feed.get('link')

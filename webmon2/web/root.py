@@ -120,9 +120,10 @@ def manifest_json():
 @BP.route('/binary/<datahash>')
 def binary(datahash):
     db = get_db()
-    data, content_type = database.binaries.get(db, datahash, session['user'])
-    if not data:
+    data_content_type = database.binaries.get(db, datahash, session['user'])
+    if not data_content_type:
         return abort(404)
+    data, content_type = data_content_type
     g.non_action = True
     resp = Response(data, mimetype=content_type)
     resp.headers['Cache-Control'] = "max-age=31536000, public, immutable"
