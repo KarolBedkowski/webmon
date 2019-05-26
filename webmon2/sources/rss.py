@@ -13,6 +13,7 @@ import logging
 import typing as ty
 import time
 import datetime
+from urllib.parse import urljoin
 
 import feedparser
 import requests
@@ -179,15 +180,17 @@ class RssSource(AbstractSource):
         )
 
     def _load_image(self, feed):
+        image_href = None
         image = feed.get('image')
-        if not image:
-            return None
+        if image:
+            image_href = image.get('href')
 
-        image_href = image.get('href')
         if not image_href:
-            return None
+            link = feed.get('link')
+            if link:
+                image_href = urljoin(link, 'favicon.ico')
 
-        return self._load_binary(image_href)
+        return self._load_binary(image_href) if image_href else None
 
 
 def _fail_error(state: model.SourceState, doc, status: int) \
