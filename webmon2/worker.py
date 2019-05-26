@@ -26,6 +26,7 @@ _SOURCES_PROCESSED = Counter(
 _SOURCES_PROCESSED_ERRORS = Counter(
     "webmon2_sources_processed_errors",
     "Sources processed with errors count")
+_CLEANUP_INTERVAL = 60 * 60 * 24;
 
 
 class CheckWorker(threading.Thread):
@@ -34,16 +35,17 @@ class CheckWorker(threading.Thread):
         self._todo_queue = queue.Queue()
         self._workers = workers
         self.debug = debug
+        self.next_cleanup_start = time.time()
 
     def run(self):
-        cntr = 0
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
-            time.sleep(15)
+            time.sleep(15 if self.debug else 60)
             with database.DB.get() as db:
-                if not cntr:
+                now = time.time()
+                if now < self.next_cleanup_start:
                     _delete_old_entries(db)
-                cntr = (cntr + 1) % 60
+                    self.next_cleanup_start = now + _CLEANUP_INTERVAL
 
                 _LOG.debug("CheckWorker check start")
                 ids = database.sources.get_sources_to_fetch(db)
@@ -56,11 +58,8 @@ class CheckWorker(threading.Thread):
                     for worker in workers:
                         worker.join()
 
-                _LOG.debug("CheckWorker check done, %r", cntr)
+                _LOG.debug("CheckWorker check done")
                 _send_mails(db)
-
-            if not self.debug:
-                time.sleep(45)
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue)
