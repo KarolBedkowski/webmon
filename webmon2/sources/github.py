@@ -101,9 +101,7 @@ class GithubInput(AbstractSource, GitHubMixin):
         data_since = self._github_check_repo_updated(
             repository, state.last_update)
         if not data_since:
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
-            return new_state, []
+            return state.new_not_modified(etag=repository.etag), []
 
         etag = state.get_state('etag')
         if hasattr(repository, "commits"):
@@ -113,8 +111,7 @@ class GithubInput(AbstractSource, GitHubMixin):
                                                    etag=etag))
 
         if not commits:
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
+            new_state = state.new_not_modified(etag=repository.etag)
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
@@ -130,8 +127,7 @@ class GithubInput(AbstractSource, GitHubMixin):
             _LOG.exception("github load error: %s", err)
             return state.new_error(str(err)), []
 
-        new_state = state.new_ok()
-        new_state.set_state('etag', repository.etag)
+        new_state = state.new_ok(etag=repository.etag)
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
@@ -181,9 +177,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         conf = self._conf
         repository = self._github_get_repository(conf)
         if not self._github_check_repo_updated(repository, state.last_update):
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
-            return new_state, []
+            return state.new_not_modified(etag=repository.etag), []
 
         etag = state.get_state('etag')
         max_items = self._conf["max_items"]
@@ -197,8 +191,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
                     tag.last_modified > state.last_update.replace(
                         tzinfo=timezone.utc)]
         if not tags:
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
+            new_state = state.new_not_modified(etag=repository.etag)
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
@@ -209,8 +202,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             _LOG.exception("github load error: %s", err)
             raise common.InputError(self, err)
 
-        new_state = state.new_ok()
-        new_state.set_state('etag', repository.etag)
+        new_state = state.new_ok(etag=repository.etag)
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
@@ -249,8 +241,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(
                 repository, state.last_update):
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
+            new_state = state.new_not_modified(etag=repository.etag)
             return new_state, []
 
         etag = state.get_state('etag')
@@ -268,8 +259,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             ]
 
         if not releases:
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', repository.etag)
+            new_state = state.new_not_modified(etag=repository.etag)
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_GITHUB_ICON))
             return new_state, []
@@ -283,8 +273,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             _LOG.exception("github load error %s", err)
             return state.new_error(str(err)), []
 
-        new_state = state.new_ok()
-        new_state.set_state('etag', repository.etag)
+        new_state = state.new_ok(etag=repository.etag)
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 

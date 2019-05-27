@@ -56,9 +56,14 @@ class RssSource(AbstractSource):
             _LOG.exception("source %d load error: %s", state.source_id, err)
             new_state, entries = state.new_error(str(err)), []
         if new_state.status != 'error':
-            new_state.next_update = datetime.datetime.now() + \
-                datetime.timedelta(
-                    seconds=common.parse_interval(self._source.interval))
+            if entries and new_state.icon:
+                for entry in entries:
+                    entry.icon = new_state.icon
+            # next update is bigger of now + interval or expire (if set)
+            next_update = datetime.datetime.now() + datetime.timedelta(
+                seconds=common.parse_interval(self._source.interval))
+            new_state.next_update = max(new_state.next_update or next_update,
+                                        next_update)
         return new_state, entries
 
     def _load(self, state: model.SourceState) \
@@ -71,19 +76,19 @@ class RssSource(AbstractSource):
         if status not in (200, 301, 302, 304):
             return _fail_error(state, doc, status)
 
+        # self._check_sy_updateperiod(doc.feed)
+
         entries = doc.get('entries')
         if state.last_update:
             entries = list(_filter_entries_updated(
                 entries, state.last_update.timestamp()))
         if status == 304 or not entries:
-            new_state = state.new_not_modified()
-            new_state.set_state('etag', doc.get('etag'))
+            new_state = state.new_not_modified(etag=doc.get('etag'))
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
             return new_state, []
 
-        new_state = state.new_ok()
-        new_state.set_state('etag', doc.get('etag'))
+        new_state = state.new_ok(etag=doc.get('etag'))
         if not new_state.icon:
             new_state.set_icon(self._load_image(doc))
 
@@ -104,10 +109,6 @@ class RssSource(AbstractSource):
         items = [self._load_entry(entry, load_content, load_article)
                  for entry in self._limit_items(entries)]
 
-        if items and new_state.icon:
-            for item in items:
-                item.icon = new_state.icon
-
         return new_state, items
 
     def _limit_items(self, entries: ty.List[model.Entry]) \
@@ -119,25 +120,21 @@ class RssSource(AbstractSource):
                 entries = entries[:max_items]
         return entries
 
-    def _load_entry(self, entry: feedparser.FeedParserDict,
-                    load_content: bool, load_article: bool) \
-            -> model.Entry:
+    def _load_entry(self, entry: feedparser.FeedParserDict, load_content: bool,
+                    load_article: bool) -> model.Entry:
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
         result.url = _get_val(entry, 'link')
         result.title = _get_val(entry, 'title')
-        result.updated = _get_val(entry, 'updated_parsed') or now
-        result.created = _get_val(entry, 'published_parsed') or now
-        result.status = 'updated' if result.updated > result.created else 'new'
+        result.updated = _get_val(entry, 'updated_parsed', now)
+        result.created = _get_val(entry, 'published_parsed', now)
+        result.status = 'new'
         if load_article:
             result = self._load_article(result)
         elif load_content:
-            content = entry.get('summary')
-            if not content:
-                content = entry['content'][0].value if 'content' in entry \
-                    else entry.get('value')
-            result.content = content
-            # TODO: detect content (?)
+            result.content = entry.get('summary') or (
+                entry['content'][0].value
+                if 'content' in entry else entry.get('value'))
             result.set_opt("content-type", "html")
         return result
 
@@ -198,11 +195,29 @@ class RssSource(AbstractSource):
 
         return self._load_binary(image_href) if image_href else None
 
-    def _update_source(self, new_url=None):
+    def _check_sy_updateperiod(self, feed):
+        if self._source.interval:
+            return
+        sy_updateperiod = feed.get('sy_updateperiod')
+        sy_updatefrequency = feed.get('sy_updatefrequency')
+        if not sy_updatefrequency or not sy_updateperiod:
+            return
+        interval = sy_updateperiod + sy_updatefrequency[0]
+        try:
+            if common.parse_interval(interval):
+                self._update_source(interval=interval)
+        except ValueError:
+            _LOG.debug("wrong sy_update*: %r %r", sy_updateperiod,
+                       sy_updatefrequency)
+
+    def _update_source(self, new_url=None, interval=None):
         if not self._updated_source:
             self._updated_source = self._source.clone()
         if new_url:
             self._updated_source.settings['url'] = new_url
+        if interval:
+            _LOG.debug("interval updated: %s", interval)
+            self._updated_source.interval = interval
 
 
 def _fail_error(state: model.SourceState, doc, status: int) \
@@ -215,15 +230,15 @@ def _fail_error(state: model.SourceState, doc, status: int) \
     return state.new_error(summary), []
 
 
-def _get_val(entry, key: str):
+def _get_val(entry, key: str, default=None):
     val = entry.get(key)
     if val is None:
-        return None
+        return default
     if isinstance(val, time.struct_time):
         try:
             return datetime.datetime.fromtimestamp(time.mktime(val))
         except ValueError:
-            return None
+            return default
     return str(val).strip()
 
 

@@ -135,7 +135,7 @@ class FetchWorker(threading.Thread):
         # if source was updated - save new version
         updated_source = src.updated_source
         if updated_source:
-            _LOG.debug("[%s] source %d updated", source_id)
+            _LOG.debug("[%s] source %d updated", self._idx, source_id)
             database.sources.save(db, updated_source)
 
         _LOG.debug("[%s] processing source %d FINISHED, entries=%d, state=%s",
@@ -169,7 +169,6 @@ class FetchWorker(threading.Thread):
                 source.interval = interval
             src = sources.get_source(source, sys_settings)
             src.validate()
-            src.db = db
             return src
         except common.ParamError as err:
             _LOG.error("[%s] get source class for source id=%d error: %s",

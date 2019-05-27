@@ -34,6 +34,9 @@
 				{% if source.state.state.get('last entry date') %}
 					<p>Last entry: {{ source.state.state.get('last entry date') }}</p>
 				{% endif %}
+				{% if source.state.state.get('expires') %}
+					<p>Expires: {{ source.state.state.get('expires') }}</p>
+				{% endif %}
 			{% endif %}
 			<p>
 				Last update: {{ source.state.last_update | format_date }}

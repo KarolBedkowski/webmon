@@ -43,9 +43,11 @@ class WebSource(AbstractSource):
         """
         new_state, entries = self._load(state)
         if new_state.status != 'error':
-            new_state.next_update = datetime.datetime.now() + \
-                datetime.timedelta(
-                    seconds=common.parse_interval(self._source.interval))
+            # next update is bigger of now + interval or expire (if set)
+            next_update = datetime.datetime.now() + datetime.timedelta(
+                seconds=common.parse_interval(self._source.interval))
+            new_state.next_update = max(new_state.next_update or next_update,
+                                        next_update)
         return new_state, entries
 
     def _load(self, state: model.SourceState):
@@ -82,10 +84,11 @@ class WebSource(AbstractSource):
             entry.url = url
             entry.content = response.text
             entry.set_opt("content-type", "html")
-            new_state = state.new_ok()
-            new_state.set_state('etag', response.headers.get('ETag'))
-            new_state.set_state('last-modified',
-                                response.headers.get('last-modified'))
+
+            new_state = state.new_ok(
+                etag=response.headers.get('ETag'),
+                last_modified=response.headers.get('last_modified')
+            )
             if not new_state.icon:
                 new_state.set_icon(self._load_image(url))
 
@@ -113,13 +116,13 @@ class WebSource(AbstractSource):
             if hist.is_permanent_redirect:
                 href = hist.headers.get('Location')
                 if href:
-                    self._updated_source(href)
+                    self._update_source(new_url=href)
                     return href
         for hist in response.history:
             if hist.is_redirect:
                 href = hist.headers.get('Location')
                 if href:
-                    self._updated_source(href)
+                    self._update_source(new_url=href)
                     return href
         return None
 
