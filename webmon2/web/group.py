@@ -119,10 +119,9 @@ def group_mark_read(group_id):
     if request.args.get('go') == 'next':
         # go to next unread group
         group_id = database.groups.get_next_unread_group(db, user_id)
-        _LOG.info("next group: %r", group_id)
+        _LOG.debug("next group: %r", group_id)
         if group_id:
-            return redirect(url_for('group.group_entries',
-                                    group_id=group_id))
+            return redirect(url_for('group.group_entries', group_id=group_id))
         flash("No more unread groups...")
         return redirect(url_for("root.groups"))
 
@@ -138,7 +137,7 @@ def group_next_unread(group_id):
     db = get_db()
     # go to next unread group
     group_id = database.groups.get_next_unread_group(db, session['user'])
-    _LOG.info("next group: %r", group_id)
+    _LOG.debug  ("next group: %r", group_id)
     if group_id:
         return redirect(url_for('group.group_entries', group_id=group_id))
     flash("No more unread groups...")
