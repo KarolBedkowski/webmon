@@ -30,6 +30,14 @@ BP = Blueprint('root', __name__, url_prefix='/')
 
 @BP.route('/')
 def index():
+    db = get_db()
+    user_id = session['user']
+    if database.settings.get_value(db, "start_at_unread_group", user_id,
+                                   False):
+        group_id = database.groups.get_next_unread_group(db, user_id)
+        if group_id:
+            return redirect(url_for('group.group_entries', group_id=group_id))
+        flash("No more unread groups...")
     return redirect(url_for("entries.entries", mode='unread'))
 
 
