@@ -326,14 +326,25 @@ where source_id=%(source_id)s
     and read_mark=0 and user_id=%(user_id)s
 """
 
+_MARK_READ_BY_IDS_SQL = """
+UPDATE entries
+SET read_mark=1
+WHERE source_id=%(source_id)s
+    AND id=ANY(%(ids)s)
+    AND read_mark=0 AND user_id=%(user_id)s
+"""
 
-def mark_read(db, user_id: int, source_id: int, max_id: int, min_id=0) -> int:
+
+def mark_read(db, user_id: int, source_id: int, max_id: int, min_id=0,
+              ids=None) -> int:
     """ Mark source read """
+    args = {'source_id': source_id, 'max_id': max_id, 'min_id': min_id,
+            'user_id': user_id, "ids": ids}
     with db.cursor() as cur:
-        cur.execute(
-            _MARK_READ_SQL,
-            {'source_id': source_id, 'max_id': max_id, 'min_id': min_id,
-             'user_id': user_id})
+        if ids:
+            cur.execute(_MARK_READ_BY_IDS_SQL, args)
+        else:
+            cur.execute(_MARK_READ_SQL, args)
         changed = cur.rowcount
         return changed
 

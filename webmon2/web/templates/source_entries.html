@@ -20,7 +20,7 @@
 	<h1>{% block title %}Entries in {{ source.name }} ({{ total_entries }}){% endblock %}</h1>
 	<nav>
 		{% if max_id %}
-		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}">✔ Mark read</a>
+		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}" data-action="mark-all-read">✔ Mark read</a>
 		{% endif %}
 		<a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
 		<a href="{{ url_for('source.source_edit', source_id=source.id, back=request.url) }}">✎ Edit</a>
@@ -48,7 +48,7 @@
 		{{ nav_bar() }}
 		{% if max_id %}
 			<p class="row">
-				<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" class="right">✔ Mark read</a>
+				<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" class="right" data-action="mark-all-read">✔ Mark read</a>
 				<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=0, max_id=-1, go='next') }}" class="right">➥ Mark all read and go to next group</a>
 			</p>
 		{% endif %}

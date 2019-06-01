@@ -113,8 +113,10 @@ def group_mark_read(group_id):
     max_id = int(request.args.get('max_id'))
     min_id = int(request.args.get('min_id', 0))
     user_id = session['user']
+    r_ids = request.args.get('ids')
+    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
     database.groups.mark_read(db, user_id, group_id, min_id=min_id,
-                              max_id=max_id)
+                              max_id=max_id, ids=ids)
     db.commit()
     if request.args.get('go') == 'next':
         # go to next unread group
@@ -137,7 +139,7 @@ def group_next_unread(group_id):
     db = get_db()
     # go to next unread group
     group_id = database.groups.get_next_unread_group(db, session['user'])
-    _LOG.debug  ("next group: %r", group_id)
+    _LOG.debug("next group: %r", group_id)
     if group_id:
         return redirect(url_for('group.group_entries', group_id=group_id))
     flash("No more unread groups...")

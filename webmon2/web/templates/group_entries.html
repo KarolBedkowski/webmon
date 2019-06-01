@@ -20,7 +20,7 @@
 	<h1>{% block title %}Entries in {{ group.name}}{% endblock %} ({{ total_entries }})</h1>
 	<nav>
 		{% if max_id %}
-		<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}">✔ Mark read</a>
+		<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}" data-action="mark-all-read">✔ Mark read</a>
 		{% endif %}
 		<a href="{{ url_for('group.refresh_group', group_id=group.id) }}">↺ Refresh</a>
 		{% if showed == 'all' %}
@@ -47,7 +47,7 @@
 		{{ nav_bar() }}
 		{% if max_id %}
 		<p class="row">
-			<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id) }}" class="right">✔  Mark visible read</a>
+			<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=min_id, max_id=max_id) }}" data-action="mark-all-read" class="right">✔  Mark visible read</a>
 			<a href="{{ url_for('group.group_mark_read', group_id=group.id, min_id=0, max_id=-1, go='next') }}" class="right">➥ Mark all read and go to next group</a>
 		</p>
 		{% endif %}

@@ -123,6 +123,22 @@
 				event.preventDefault();
 				window.history.back();
 		}});
+
+		function getArticleIds() {
+			let articlesId = []
+			document.querySelectorAll("article[data-entry-id]").forEach((element) => {
+				articlesId.push(element.dataset.entryId);
+			});
+			return articlesId;
+		}
+
+		document.querySelectorAll("a[data-action=mark-all-read]").forEach((element) => {
+			element.onclick = (event) => {
+				event.preventDefault();
+				let articlesId = getArticleIds().join(",");
+				let url = element.attributes.href.value + "&ids=" + articlesId;
+				window.location.href = url;
+		}});
 	});
 
 })();

@@ -367,9 +367,9 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
 
 
 def mark_read(db, user_id: int, entry_id=None, min_id=None,
-              max_id=None, read=True):
+              max_id=None, read=True, ids=None):
     """ Change read mark for given entry"""
-    assert (entry_id or max_id) and user_id
+    assert (entry_id or max_id or ids) and user_id
     read = 1 if read else 0
     _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
                "user_id=%r", entry_id, min_id, max_id, read, user_id)
@@ -379,6 +379,11 @@ def mark_read(db, user_id: int, entry_id=None, min_id=None,
                 "update entries set read_mark=%s where id=%s "
                 "and read_mark=%s and user_id=%s",
                 (read, entry_id, 1-read, user_id))
+        elif ids:
+            cur.execute(
+                "UPDATE Entries SET read_mark=%s "
+                "WHERE id=ANY(%s) AND user_id=%s",
+                (read, ids, user_id))
         elif max_id:
             cur.execute(
                 "update entries set read_mark=%s "

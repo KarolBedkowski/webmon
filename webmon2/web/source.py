@@ -138,8 +138,11 @@ def source_mark_read(source_id):
     min_id = int(request.args.get('min_id', 0))
     max_id = int(request.args['max_id'])
     user_id = session['user']
+    r_ids = request.args.get('ids')
+    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
+
     database.sources.mark_read(db, user_id, source_id, max_id=max_id,
-                               min_id=min_id)
+                               min_id=min_id, ids=ids)
     db.commit()
     if request.args.get('go') == 'next':
         source_id = database.sources.find_next_unread(db, user_id)

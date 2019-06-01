@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 from flask import (
-    Blueprint, render_template, redirect, url_for, request, session
+    Blueprint, render_template, redirect, url_for, request, session, flash
 )
 
 from webmon2.web import get_db, _commons as c
@@ -59,9 +59,13 @@ def entries_starred():
 def entries_mark_read(mode):
     db = get_db()
     user_id = session['user']
-    database.entries.mark_read(
+    r_ids = request.args.get('ids')
+    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
+    marked = database.entries.mark_read(
         db, user_id,
         max_id=int(request.args['max_id']),
-        min_id=int(request.args['min_id']))
+        min_id=int(request.args['min_id']),
+        ids=ids)
     db.commit()
+    flash(f"{marked} entries marked read")
     return redirect(url_for("entries.entries", mode=mode))

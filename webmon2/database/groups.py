@@ -174,15 +174,25 @@ where source_id in (select id from sources where group_id=%(group_id)s)
     and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
     and read_mark=0 and user_id=%(user_id)s
 """
+_MARK_READ_BY_IDS_SQL = """
+UPDATE entries
+SET read_mark=1
+WHERE id=ANY(%(ids)s) AND read_mark=0 AND user_id=%(user_id)s
+"""
 
 
-def mark_read(db, user_id: int, group_id: int, max_id, min_id=0) -> int:
+def mark_read(db, user_id: int, group_id: int, max_id, min_id=0,
+              ids=None) -> int:
     """ Mark entries in given group read. """
     assert group_id, "no group id"
-    assert max_id
+    assert max_id or ids
+    args = {"group_id": group_id, "min_id": min_id, "max_id": max_id,
+            "user_id": user_id, "ids": ids}
     with db.cursor() as cur:
-        cur.execute(_MARK_READ_SQL, {"group_id": group_id, "min_id": min_id,
-                                     "max_id": max_id, "user_id": user_id})
+        if ids:
+            cur.execute(_MARK_READ_BY_IDS_SQL, args)
+        else:
+            cur.execute(_MARK_READ_SQL, args)
         changed = cur.rowcount
         return changed
 
