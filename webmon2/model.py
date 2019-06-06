@@ -211,8 +211,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error_counter = 0
         state.state = self.state.copy() if self.state else None
         state.icon = self.icon
-        if states:
-            state.state.update(states)
+        state.update_state(states)
         return state
 
     def new_error(self, error: str, **states):
@@ -226,8 +225,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.last_error = datetime.now()
         state.state = self.state.copy() if self.state else None
         state.icon = self.icon
-        if states:
-            state.state.update(states)
+        state.update_state(states)
         return state
 
     def new_not_modified(self, **states):
@@ -241,8 +239,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter = self.success_counter + 1
         state.state = self.state.copy() if self.state else None
         state.icon = self.icon
-        if states:
-            state.state.update(states)
+        state.update_state(states)
         return state
 
     def set_state(self, key, value):
@@ -253,6 +250,13 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     def get_state(self, key, default=None):
         return self.state.get(key, default) if self.state else default
+
+    def update_state(self, states):
+        if not states:
+            return
+        if not self.state:
+            self.state = {}
+        self.state.update(states)
 
     def set_icon(self, content_type_data):
         if not content_type_data:
