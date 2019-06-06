@@ -12,7 +12,11 @@
 				{% if source.group %} <a class="group-tag" href="{{ url_for("group.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
 			</h4>
 			<nav>
-				&#9716; <time>{{ source.state.last_update|age }}</time>
+				{% if source.state.last_update %}
+					&#9716; <time>{{ source.state.last_update|age }}</time>
+				{% else %}
+					<b>not updated</b>
+				{% endif %}
 				| <a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
 				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
 				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
