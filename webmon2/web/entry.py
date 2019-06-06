@@ -31,12 +31,12 @@ def entry(entry_id):
     user_id = session['user']
     entry_ = database.entries.get(db, entry_id, with_source=True,
                                   with_group=True)
-    unread = entry_.read_mark != 1
+    unread = entry_.read_mark == 0
     if user_id != entry_.user_id:
         return abort(404)
     if not entry_.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id)
-        entry_.read_mark = 1
+        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
+        entry_.read_mark = 2
         db.commit()
 
     next_entry = database.entries.find_next_entry_id(
@@ -55,7 +55,7 @@ def entry_mark_read_api():
     state = request.form['value']
     user_id = session['user']
     updated = database.entries.mark_read(
-        db, user_id, entry_id=entry_id, read=state == 'read')
+        db, user_id, entry_id=entry_id, read=(1 if state == 'read' else 0))
     db.commit()
     return state if updated else ""
 

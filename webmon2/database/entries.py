@@ -98,6 +98,11 @@ order by e.id desc
 limit 100
 '''
 
+_GET_HISTORY_ENTRIES_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where e.read_mark = 2 and e.user_id=%(user_id)s
+order by e.id
+'''
+
 
 def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
                   unread: bool) -> str:
@@ -114,17 +119,38 @@ def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
     return _GET_ENTRIES_SQL
 
 
+def _yield_entries(cur):
+    sources = {}
+    groups = {}
+    for row in cur:
+        entry = model.Entry.from_row(row)
+        entry.source = sources.get(entry.source_id)
+        if not entry.source:
+            entry.source = sources[entry.source_id] = \
+                model.Source.from_row(row)
+        group_id = entry.source.group_id
+        if group_id and not entry.source.group:
+            entry.source.group = groups.get(group_id)
+            if not entry.source.group:
+                entry.source.group = groups[group_id] = \
+                    model.SourceGroup.from_row(row)
+        yield entry
+
+
 def get_starred(db, user_id: int) -> model.Entries:
     """Get all starred entries for given user """
     assert user_id, 'no user_id'
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {'user_id': user_id})
-        for row in cur:
-            entry = model.Entry.from_row(row)
-            entry.source = model.Source.from_row(row)
-            if entry.source.group_id:
-                entry.source.group = model.SourceGroup.from_row(row)
-            yield entry
+        yield from _yield_entries(cur)
+
+
+def get_history(db, user_id: int) -> model.Entries:
+    """Get all entries manually read (read_mark=2) for given user """
+    assert user_id, 'no user_id'
+    with db.cursor() as cur:
+        cur.execute(_GET_HISTORY_ENTRIES_SQL, {'user_id': user_id})
+        yield from _yield_entries(cur)
 
 
 def get_total_count(db, user_id: int, source_id=None, group_id=None,
@@ -367,18 +393,16 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
 
 
 def mark_read(db, user_id: int, entry_id=None, min_id=None,
-              max_id=None, read=True, ids=None):
+              max_id=None, read=1, ids=None):
     """ Change read mark for given entry"""
     assert (entry_id or max_id or ids) and user_id
-    read = 1 if read else 0
     _LOG.debug("mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, "
                "user_id=%r", entry_id, min_id, max_id, read, user_id)
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s "
-                "and read_mark=%s and user_id=%s",
-                (read, entry_id, 1-read, user_id))
+                "update entries set read_mark=%s where id=%s and user_id=%s",
+                (read, entry_id, user_id))
         elif ids:
             cur.execute(
                 "UPDATE Entries SET read_mark=%s "

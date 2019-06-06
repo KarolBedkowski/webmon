@@ -55,6 +55,14 @@ def entries_starred():
     return render_template("starred.html", entries=entries_)
 
 
+@BP.route('/history')
+def entries_history():
+    db = get_db()
+    user_id = session['user']
+    entries_ = list(database.entries.get_history(db, user_id))
+    return render_template("history.html", entries=entries_)
+
+
 @BP.route('/<mode>/mark/read')
 def entries_mark_read(mode):
     db = get_db()

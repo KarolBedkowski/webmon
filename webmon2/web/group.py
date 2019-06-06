@@ -176,8 +176,8 @@ def group_entry(group_id, mode, entry_id):
     if user_id != entry.user_id or group_id != entry.source.group_id:
         return abort(404)
     if not entry.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id)
-        entry.read_mark = 1
+        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
+        entry.read_mark = 2
         db.commit()
     unread = mode != 'all'
     next_entry = database.groups.find_next_entry_id(

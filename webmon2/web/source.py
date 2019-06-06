@@ -274,8 +274,8 @@ def source_entry(source_id, mode, entry_id):
     if user_id != entry.user_id or source_id != entry.source_id:
         return abort(404)
     if not entry.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id)
-        entry.read_mark = 1
+        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
+        entry.read_mark = 2
         db.commit()
     unread = mode != 'all'
     next_entry = database.sources.find_next_entry_id(
