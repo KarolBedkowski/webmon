@@ -33,8 +33,12 @@ class Grep(AbstractFilter):
 
     def __init__(self, conf):
         super().__init__(conf)
-        self._re = re.compile(conf["pattern"], re.IGNORECASE | re.MULTILINE |
-                              re.DOTALL)
+        pattern = conf.get("pattern")
+        if pattern:
+            self._re = re.compile(pattern, re.IGNORECASE | re.MULTILINE |
+                                  re.DOTALL)
+        else:
+            self._re = None
 
     def filter(self, entries: model.Entries, prev_state: model.SourceState,
                curr_state: model.SourceState) -> model.Entries:
