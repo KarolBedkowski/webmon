@@ -21,7 +21,7 @@
 				{% endif %}
 				{% if entry.source.group %}<a class="group-tag" href="{{ url_for("group.group_entries", group_id=entry.source.group_id) }}">{{ entry.source.group.name }}</a>{% endif %}
 			</h4>
-			<nav>
+			<div class="actions">
 				<a href="{{ url_for('source.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
 				| &#9716;<time>{{ entry.updated|age }}</time>
 				| <a href="#" data-action="mark_read"></a>
@@ -29,7 +29,7 @@
 				{% if entry.url %}
 					| <a href="{{ entry.url }}">Original content</a>
 				{% endif %}
-			</nav>
+			</div>
 		</header>
  		{% if entry.is_long_content() and mode == 'summary' %}
 			<section>

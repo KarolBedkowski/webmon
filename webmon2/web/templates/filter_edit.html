@@ -6,10 +6,6 @@
 
 {% block header %}
   <h1>{% block title %}Source{% endblock %}</h1>
-<style>
-	input,textarea,select {width: 75%;}
-	label {width: 20%; display: inline-block; vertical-align: top;}
-</style>
 {% endblock %}
 
 {% block content %}
@@ -26,19 +22,20 @@
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<p>
-			<fieldset>
+			<fieldset class="form-wrapper">
 				<legend>Settings</legend>
 				{% for field in form.fields %}
 					{{ rf.render_field(field) }}
 				{% endfor %}
 			</fieldset>
 		</p>
-		<p class="row">
+		<div class="row2">
+			<span></span>
 			<span class="right">
 				<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
 				<button type="submit">Save</button>
 			</span>
-		</p>
+		</div>
 	</form>
 {% endblock %}
 

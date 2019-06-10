@@ -18,7 +18,7 @@
 
 {% block header %}
 	<h1>{% block title %}Entries in {{ source.name }} ({{ total_entries }}){% endblock %}</h1>
-	<nav>
+	<div class="actions">
 		{% if max_id %}
 		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}" data-action="mark-all-read">✔ Mark read</a>
 		{% endif %}
@@ -29,8 +29,8 @@
 		{% else %}
 		<a href="{{ url_for('source.source_entries', source_id=source.id, mode='all') }}">⊛ Show all</a>
 		{% endif %}
-		{{ nav_bar() }}
-	</nav>
+	</div>
+	{{ nav_bar() }}
 {% endblock %}
 
 {% block content %}
@@ -44,15 +44,13 @@
 {% endblock %}
 
 {% block footer %}
-	<nav>
-		{{ nav_bar() }}
-		{% if max_id %}
-			<p class="row">
-				<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" class="right" data-action="mark-all-read">✔ Mark read</a>
-				<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=0, max_id=-1, go='next') }}" class="right">➥ Mark all read and go to next group</a>
-			</p>
-		{% endif %}
-	</nav>
+	{{ nav_bar() }}
+	{% if max_id %}
+		<div class="actions">
+			<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" data-action="mark-all-read">✔ Mark read</a>
+			<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=0, max_id=-1, go='next') }}">➥ Mark all read and go to next group</a>
+		</div>
+	{% endif %}
 {% endblock %}
 
   </body>

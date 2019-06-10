@@ -6,10 +6,10 @@
 
 {% block header %}
 	<h1>{% block title %}Sources in group {{ group.name }} ({{ sources|length}}){% endblock %}</h1>
-	<nav>
+	<div class="actions">
 		<a href="{{ url_for("group.refresh_group", group_id=group.id)}}">Refresh group</a>
 		<a href="{{ url_for("source.source_new")}}">New source</a>
-	</nav>
+	</div>
 {% endblock %}
 
 {% block content %}

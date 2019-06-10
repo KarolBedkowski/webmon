@@ -1,28 +1,28 @@
 {% macro render_field(field) -%}
-	<p>
-		<label{% if field.required %} class="field-required"{% endif %}>{{ field.description }}</label>
-		{% if field.type == 'str' %}
-			<input type="text" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
-				{% if field.required %}required="required"{% endif %}
-				{% if field.default_value %}placeholder="Default: {{ field.default_value }}"{% endif %}
-			/>
-		{% elif field.type == 'number' %}
-			<input type="number" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
-				{% if field.required %}required="required"{% endif %} />
-		{% elif field.type == 'checkbox' %}
-			<input type="checkbox" name="{{ field.fieldname}}" {%if field.value %}checked="checked"{% endif %} />
-		{% elif field.type == 'select' %}
-			<select name="{{ field.fieldname}}" value="{{ field.value }}"
-				{% if field.required %}required="required"{% endif %} >
-				{% for value, description in field.options %}
-				<option value="{{ value }}">{{ description }}</option>
-				{% endfor %}
-			</select>
-		{% endif %}
-		{% if field.error %}
-			<span class="field-error">{{ field.error }}</span>
-		{% endif %}
-	</p>
+	<label{% if field.required %} class="field-required"{% endif %}>{{ field.description }}</label>
+	<span>
+	{% if field.type == 'str' %}
+		<input type="text" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
+			{% if field.required %}required="required"{% endif %}
+			{% if field.default_value %}placeholder="Default: {{ field.default_value }}"{% endif %}
+		/>
+	{% elif field.type == 'number' %}
+		<input type="number" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
+			{% if field.required %}required="required"{% endif %} />
+	{% elif field.type == 'checkbox' %}
+		<input type="checkbox" name="{{ field.fieldname}}" {%if field.value %}checked="checked"{% endif %} />
+	{% elif field.type == 'select' %}
+		<select name="{{ field.fieldname}}" value="{{ field.value }}"
+			{% if field.required %}required="required"{% endif %} >
+			{% for value, description in field.options %}
+			<option value="{{ value }}">{{ description }}</option>
+			{% endfor %}
+		</select>
+	{% endif %}
+	{% if field.error %}
+		<span class="field-error">{{ field.error }}</span>
+	{% endif %}
+	</span>
 {%- endmacro %}
 
 {% macro render_select(name, id, values, current_value) -%}

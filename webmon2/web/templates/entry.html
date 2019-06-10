@@ -5,15 +5,17 @@
   <body>
 
 {% macro nav_bar() %}
-	<nav class="row">
+	<nav class="row2">
+		<span class="left">
 		{% if prev_entry %}
-			<a href="{{ url_for("entry.entry", entry_id=prev_entry) }}" class="left">← Prev</a>
-		{% else %}
-			&nbsp;
+			<a href="{{ url_for("entry.entry", entry_id=prev_entry) }}">← Prev</a>
 		{% endif %}
+		</span>
+		<span class="right">
 		{% if next_entry %}
-			<a href="{{ url_for("entry.entry", entry_id=next_entry) }}" class="right">Next →</a>
+			<a href="{{ url_for("entry.entry", entry_id=next_entry) }}">Next →</a>
 		{% endif %}
+		</span>
 	</nav>
 {% endmacro %}
 

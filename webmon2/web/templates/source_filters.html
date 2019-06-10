@@ -23,10 +23,10 @@
 		</ul>
 	</p>
 	<footer>
-		<nav>
+		<div class="actions">
 			<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
 			<a href="{{ url_for("source.source_filter_add", source_id=source.id) }}">Add filter</a>
-		</nav>
+		</div>
 	</footer>
 {% endblock %}
 

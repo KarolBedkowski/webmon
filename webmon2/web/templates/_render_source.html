@@ -11,7 +11,7 @@
 				{% if source.unread %}({{ source.unread }}){% endif %}
 				{% if source.group %} <a class="group-tag" href="{{ url_for("group.group_entries", group_id=source.group_id) }}">{{ source.group.name }}</a>{% endif %}
 			</h4>
-			<nav>
+			<div class="actions">
 				{% if source.state.last_update %}
 					&#9716; <time>{{ source.state.last_update|age }}</time>
 				{% else %}
@@ -21,7 +21,7 @@
 				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
 				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
 				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Realy delete source?">✘ Delete</a></span>
-			</nav>
+			</div>
 			{% if source.status == 0 %}
 				<p class="error">Need configure</p>
 			{% elif source.status == 2 %}

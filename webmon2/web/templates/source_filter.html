@@ -6,10 +6,6 @@
 
 {% block header %}
   <h1>{% block title %}filter{% endblock %}</h1>
-<style>
-	input,textarea,select {width: 75%;}
-	label {width: 20%; display: inline-block; vertical-align: top;}
-</style>
 {% endblock %}
 
 {% block content %}
@@ -23,20 +19,19 @@
 	{% endif %}
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		<p>
+		<div class="form-wrapper">
 			<label for="filter-name">Name</label>
 			<input type="text" name="name" id="filter-name" value="{{ filter.name }}" readonly="readonly" />
-		</p>
-		<p>
-			<fieldset>
-				<legend>Settings</legend>
-				{% for sett in filter.settings %}
-					{{ rf.render_field(sett) }}
-				{% endfor %}
-			</fieldset>
-		</p>
-		<p>
-			<button type="submit">Save</button>
+		</div>
+		<fieldset class="form-wrapper">
+			<legend>Settings</legend>
+			{% for sett in filter.settings %}
+				{{ rf.render_field(sett) }}
+			{% endfor %}
+		</fieldset>
+		<p class="row2">
+			&nbsp;
+			<button type="submit" class="right">Save</button>
 		</p>
 	</form>
 {% endblock %}
