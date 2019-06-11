@@ -417,6 +417,20 @@ def mark_read(db, user_id: int, entry_id=None, min_id=None,
     return changed
 
 
+def mark_all_read(db, user_id: int, max_date=None):
+    with db.cursor() as cur:
+        if max_date:
+            cur.execute(
+                "update entries set read_mark=1 where user_id=%s "
+                "and read_mark=0 and updated<%s",
+                (user_id, max_date))
+        else:
+            cur.execute(
+                "update entries set read_mark=1 where user_id=%s "
+                "and read_mark=0", (user_id, ))
+        return cur.rowcount
+
+
 def find_next_entry_id(db, user_id: int, entry_id: int, unread=True) \
         -> ty.Optional[int]:
     with db.cursor() as cur:

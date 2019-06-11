@@ -11,6 +11,7 @@ Web gui
 """
 
 import logging
+import datetime
 
 from flask import (
     Blueprint, render_template, redirect, url_for, request, flash, session,
@@ -143,4 +144,25 @@ def sett_data_import_opml():
     except Exception as err:  # pylint: disable=broad-except
         flash("Error importing file: " + str(err), 'error')
         _LOG.exception("import file error")
+    return redirect(url_for("system.sett_data"))
+
+
+@BP.route("/settings/data/manipulation/mark_all_read")
+def sett_data_mark_all_read():
+    user_id = session['user']
+    db = get_db()
+    updated = database.entries.mark_all_read(db, user_id)
+    db.commit()
+    flash(f"{updated} entries mark read")
+    return redirect(url_for("system.sett_data"))
+
+
+@BP.route("/settings/data/manipulation/mark_all_read_y")
+def sett_data_mark_all_read_yesterday():
+    user_id = session['user']
+    db = get_db()
+    max_date = datetime.date.today()-datetime.timedelta(days=1)
+    updated = database.entries.mark_all_read(db, user_id, max_date)
+    db.commit()
+    flash(f"{updated} entries mark read")
     return redirect(url_for("system.sett_data"))
