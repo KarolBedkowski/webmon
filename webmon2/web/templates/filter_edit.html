@@ -5,7 +5,7 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Source{% endblock %}</h1>
+  <h1>{% block title %}Filter edit{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
@@ -17,18 +17,15 @@
 			{% endfor %}
 		<p>
 	{% endif %}
-	<h1>Filter {{ filter.name }}</h1>
-	<p><blockquote>{{ fltr.long_info }}</blockquote></p>
+	<p><b>{{ filter.name }}</b>: {{ fltr.long_info }}</p>
+	<h4>Settings</h4>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		<p>
-			<fieldset class="form-wrapper">
-				<legend>Settings</legend>
-				{% for field in form.fields %}
-					{{ rf.render_field(field) }}
-				{% endfor %}
-			</fieldset>
-		</p>
+		<div class="form-wrapper">
+			{% for field in form.fields %}
+				{{ rf.render_field(field) }}
+			{% endfor %}
+		</div>
 		<div class="row2">
 			<span></span>
 			<span class="right">

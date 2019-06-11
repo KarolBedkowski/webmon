@@ -14,12 +14,15 @@
 	<h2>Default and global settings</h2>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		{% for field in form.fields %}
-			{{ rf.render_field(field) }}
-		{% endfor %}
-		<p class="row">
+		<div class="form-wrapper">
+			{% for field in form.fields %}
+				{{ rf.render_field(field) }}
+			{% endfor %}
+		</div>
+		<div class="row2">
+			&nbsp;
 			<button class="right" type="submit">Save</button>
-		</p>
+		</div>
 	</form>
 {% endblock %}
 

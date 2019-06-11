@@ -18,13 +18,10 @@
 		<p>
 	{% endif %}
 	<section>
+		<p><b>{{ source_cls.short_info }}</b>: {{ source_cls.long_info }}</p>
 		<form method="POST">
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<div class="form-wrapper">
-				<label for="source-kind">Kind</label>
-				<input type="text" id="source-kind" readonly="readonly" value="{{ source_cls.short_info }}" />
-				<span></span><blockquote>{{ source_cls.long_info }}</blockquote>
-
 				<label for="source-name" class="field-required">Name</label>
 				<input type="text" name="name" id="source-name" value="{{ form.name }}" required="required" />
 				{% if form.status != 0 %}
@@ -46,12 +43,12 @@
 				{{ rf.render_select("mail_report", "source-mail-report", [(1, 'as configured in group'), (0, 'no'), (2, 'yes')], form.mail_report) }}
 			</div>
 			{% if form.settings %}
-				<fieldset class="form-wrapper">
-				<legend>Settings</legend>
+				<h4>Source settings</h4>
+				<div class="form-wrapper">
 				{% for sett in form.settings %}
 					{{ rf.render_field(sett) }}
 				{% endfor %}
-				</fieldset>
+				</div>
 			{% endif %}
 			<p class="row2">
 				<span class="left">

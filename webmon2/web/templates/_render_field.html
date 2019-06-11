@@ -1,6 +1,5 @@
 {% macro render_field(field) -%}
 	<label{% if field.required %} class="field-required"{% endif %}>{{ field.description }}</label>
-	<span>
 	{% if field.type == 'str' %}
 		<input type="text" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
 			{% if field.required %}required="required"{% endif %}
@@ -20,9 +19,9 @@
 		</select>
 	{% endif %}
 	{% if field.error %}
+		<span></span>
 		<span class="field-error">{{ field.error }}</span>
 	{% endif %}
-	</span>
 {%- endmacro %}
 
 {% macro render_select(name, id, values, current_value) -%}

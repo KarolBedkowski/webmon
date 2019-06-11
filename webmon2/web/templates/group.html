@@ -6,10 +6,6 @@
 
 {% block header %}
   <h1>{% block title %}Group{% endblock %}</h1>
-<style>
-	input,textarea,select {width: 75%;}
-	label {width: 20%; display: inline-block; vertical-align: top;}
-</style>
 {% endblock %}
 
 {% block content %}
@@ -21,34 +17,34 @@
 			{% endfor %}
 		<p>
 	{% endif %}
-	<form method="POST">
-		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
-		<p>
-			<label for="group-name">Name</label>
-			<input type="text" name="name" id="group-name" required="required" value="{{ group.name or '' }}" />
-		</p>
-		<p>
-			<label for="group-feed">Feed enabled</label>
-			<input type="checkbox" name="feed_enabled" id="group-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
-		</p>
-		<p>
-			<label for="group-mail-report">Send mail reports</label>
-			{{ rf.render_select("mail_report", "group-mail-report", [(0, 'no'), (1, 'as configured in source'), (2, 'yes')], group.mail_report) }}
-		</p>
-		<p class="row">
-			{% if group.id %}
-				<span class="left"><a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">⚠ Delete</a></span>
-			{% endif %}
-			<span class="right">
-				{% if request.args.get('back') %}
-					<a href="{{ request.args['back'] }}" >Back</a>
-				{% else %}
-					<a href="#" data-action="hist-back">Back</a>
+	<section>
+		<form method="POST">
+			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+			<div class="form-wrapper">
+				<label for="group-name">Name</label>
+				<input type="text" name="name" id="group-name" required="required" value="{{ group.name or '' }}" />
+				<label for="group-feed">Feed enabled</label>
+				<input type="checkbox" name="feed_enabled" id="group-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
+				<label for="group-mail-report">Send mail reports</label>
+				{{ rf.render_select("mail_report", "group-mail-report", [(0, 'no'), (1, 'as configured in source'), (2, 'yes')], group.mail_report) }}
+			</div>
+			<div class="row2">
+				<span class="left">
+				{% if group.id %}
+					<a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Realy delete group?">⚠ Delete</a>
 				{% endif %}
-				<button type="submit">Save</button>
-			</span>
-		</p>
-	</form>
+				</span>
+				<span class="right">
+					{% if request.args.get('back') %}
+						<a href="{{ request.args['back'] }}" >Back</a>
+					{% else %}
+						<a href="#" data-action="hist-back">Back</a>
+					{% endif %}
+					<button type="submit">Save</button>
+				</span>
+			</div>
+		</form>
+	</section>
 {% endblock %}
 
   </body>
