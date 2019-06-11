@@ -141,7 +141,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
     def from_model(source: model.Source):
         form = SourceForm()
         form.id = source.id
-        form.group_id = source.id
+        form.group_id = source.group_id
         form.kind = source.kind
         form.name = source.name
         form.interval = source.interval or ''
