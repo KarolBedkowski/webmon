@@ -43,7 +43,7 @@
 				<label for="source-interval">Interval</label>
 				<input type="text" name="interval" id="source-interval" value="{{ form.interval or '' }}"/>
 				<label for="source-mail-report">Send mail reports</label>
-				{{ rf.render_select("mail_report", "source-mail-report", [(0, 'no'), (1, 'as configured in group'), (2, 'yes')], form.mail_report) }}
+				{{ rf.render_select("mail_report", "source-mail-report", [(1, 'as configured in group'), (0, 'no'), (2, 'yes')], form.mail_report) }}
 			</div>
 			{% if form.settings %}
 				<fieldset class="form-wrapper">
