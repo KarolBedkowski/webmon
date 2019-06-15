@@ -59,7 +59,7 @@ CREATE TABLE source_state (
     success_counter integer default 0,
     status          varchar,
     error           varchar,
-    state           varchar
+    state           text
 );
 
 CREATE INDEX source_states_next_update_idx ON source_state(next_update);

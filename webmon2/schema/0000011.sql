@@ -5,7 +5,7 @@
  * Distributed under terms of the GPLv3 license.
  */
 
-ALTER TABLE source_state ADD COLUMN icon varchar(32);
+ALTER TABLE source_state ADD COLUMN icon varchar(40);
 COMMENT ON COLUMN source_state.icon IS 'icon hash';
 
 
