@@ -73,7 +73,7 @@ select id as source_group__id,
     name as source_group__name,
     user_id as source_group__user_id,
     feed as source_group__feed,
-    mail_report as source_group_w_mail_report
+    mail_report as source_group__mail_report
 from source_groups
 where name=%s and user_id=%s
 """
