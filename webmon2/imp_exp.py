@@ -34,7 +34,7 @@ def _dump_sources(sources):
         yield dump_object(
             source,
             ("id", "group_id", "kind", "name", "interval",
-             "settings", "filters", "user_id"))
+             "settings", "filters", "user_id", "status"))
 
 
 def dump_export(db, user_id: int) -> str:
@@ -76,7 +76,7 @@ def dump_import(db, user_id: int, data_str: str):
     for source in data.get('sources') or []:
         src = model.Source()
         fill_object(src, source, ("group_id", "kind", "name", "interval",
-                                  "settings", "filters", "user_id"))
+                                  "settings", "filters", "user_id", "status"))
         src.user_id = user_id
         src.group_id = groups_map[source['group_id']]
         src = database.sources.save(db, src)

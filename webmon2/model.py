@@ -94,7 +94,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.settings = args.get('settings')
         self.filters = args.get('filters')
         self.user_id = args.get('user_id')
-        self.status = args.get('status')
+        self.status = args.get('status', 1)
         self.mail_report = args.get('mail_report')
 
         self.group = None  # type: SourceGroup
