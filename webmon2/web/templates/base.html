@@ -20,14 +20,18 @@
 	<body>
 		<header id="main-header">
 			<nav>
-				<a href="{{ url_for("root.index") }}"><img src="{{ url_for('static', filename="icon.svg") }}" width="32" heifht="32" /></a>
-				<a href="{{ url_for("entries.entries", mode='unread') }}">{% if request.entries_unread_count %}<b>Entries ({{ request.entries_unread_count }})</b>{% else %}Entries{% endif %}</a>
-				<a href="{{ url_for("entries.entries_starred") }}">Starred</a>
-				<a href="{{ url_for("entries.entries_history") }}">History</a>
-				<a href="{{ url_for("root.sources") }}">Sources</a>
-				<a href="{{ url_for("root.groups") }}">Groups</a>
-				<a href="{{ url_for("system.sett_index") }}">Settings</a>
-				<a href="{{ url_for("sec.logout") }}">Logout</a>
+				<input type="checkbox" id="toggle-menu" checked >
+				<label for="toggle-menu" class="menu-button"></label>
+				<section class="menu">
+					<a href="{{ url_for("root.index") }}"><img src="{{ url_for('static', filename="icon.svg") }}" width="32" heifht="32" /></a>
+					<a href="{{ url_for("entries.entries", mode='unread') }}">{% if request.entries_unread_count %}<b>Entries ({{ request.entries_unread_count }})</b>{% else %}Entries{% endif %}</a>
+					<a href="{{ url_for("entries.entries_starred") }}">Starred</a>
+					<a href="{{ url_for("entries.entries_history") }}">History</a>
+					<a href="{{ url_for("root.sources") }}">Sources</a>
+					<a href="{{ url_for("root.groups") }}">Groups</a>
+					<a href="{{ url_for("system.sett_index") }}">Settings</a>
+					<a href="{{ url_for("sec.logout") }}">Logout</a>
+				</section>
 			</nav>
 		</header>
 		<section id="flashes">

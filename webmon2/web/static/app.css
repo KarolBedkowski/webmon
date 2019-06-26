@@ -48,3 +48,15 @@ article[data-state=unread] a[data-action=mark_read]:before{content: "✔︎ Read
 article[data-starred=star] {border-color: red; border-width: 2px;}
 article[data-starred=star] a[data-action=mark_star]:before{content: "★ Starred"; font-weight: bold}
 article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star";}
+
+
+#main-header nav input#toggle-menu { display: none; }
+
+@media only screen and (max-width : 640px) {
+	header#main-header { position: absolute; top: 0; left: 0; width: 100%; }
+	#main-header nav a { display: block; width: 100%; padding: 5px 0; margin: 0; float: none; }
+	#main-header nav { width: 100%; text-align: center; margin: 0 auto; display: block; }
+	#main-header nav .menu { padding: 1em; margin: 40px; background: #fff; border: 1px solid #444; position: relative; top: 0; transition: top 0.5s ease-in-out; }
+	#main-header nav input#toggle-menu + label { display: block; width: 36px; height: 36px; background:url(menu.png) center right no-repeat  #fff; position: absolute; right: 0; top: 0; cursor: pointer; z-index: 10; }
+	input#toggle-menu:checked ~ .menu { top: -400px; }
+}
