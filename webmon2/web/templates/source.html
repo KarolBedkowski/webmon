@@ -32,7 +32,10 @@
 					</select>
 				{% endif %}
 				<label for="source-group">Group</label>
-				<select name="group_id" id="source-group" value="{{ form.group_id }}">
+				<select name="group_id" id="source-group" value="{{ form.group_id }}" required="required">
+					{% if not form.id %}
+					<option value=""></option>
+					{% endif %}
 					{% for group in groups %}
 					<option value="{{ group.id }}" {% if group.id == form.group_id %} selected="selected"{% endif %}>{{ group.name }}</option>
 					{% endfor %}
@@ -68,6 +71,7 @@
 			</p>
 		</form>
 	</section>
+	{% if form.id %}
 	<section>
 		<h2>State</h2>
 		<p>Next update: {{ source.state.next_update | format_date }}</p>
@@ -83,6 +87,7 @@
 			{% endfor %}
 		{% endif %}
 	</section>
+	{% endif %}
 {% endblock %}
 
   </body>
