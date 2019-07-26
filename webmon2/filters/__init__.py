@@ -37,6 +37,7 @@ def _load_filters():
     from . import sort
     from . import wrap
     from . import split_re
+    from . import score
     try:
         from . import split_text
     except ImportError as err:
