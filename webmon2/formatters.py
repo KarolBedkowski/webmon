@@ -70,5 +70,6 @@ def body_format(body: str, content_type: str) -> str:
 
 def sanitize_content(body: str, content_type: str) -> str:
     if content_type == 'html':
-        return format_html(body)
+        body = format_html(body)
+    body = body.replace("\x00", '')
     return body
