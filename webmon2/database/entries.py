@@ -39,7 +39,7 @@ select
     e.content as entry__content,
     e.user_id as entry__user_id,
     e.icon as entry__icon,
-    e.priority as entry__priority,
+    e.score as entry__score,
     s.id as source__id,
     s.group_id as source__group_id,
     s.kind as source__kind,
@@ -48,7 +48,7 @@ select
     s.user_id as source__user_id,
     s.status as source__status,
     s.mail_report as source__mail_report,
-    s.default_prio as source__default_prio,
+    s.default_score as source__default_score,
     sg.id as source_group__id,
     sg.name as source_group__name,
     sg.user_id as source_group__user_id,
@@ -250,7 +250,7 @@ select
     content as entry__content,
     user_id as entry__user_id,
     icon as entry__icon,
-    priority as entry__priority
+    score as entry__score
 from entries
 '''
 
@@ -276,12 +276,12 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
 _INSERT_ENTRY_SQL = """
 INSERT INTO entries (source_id, updated, created,
     read_mark, star_mark, status, oid, title, url, opts, content, user_id,
-    icon, priority)
+    icon, score)
 VALUES (%(entry__source_id)s, %(entry__updated)s, %(entry__created)s,
     %(entry__read_mark)s, %(entry__star_mark)s, %(entry__status)s,
     %(entry__oid)s, %(entry__title)s, %(entry__url)s,
     %(entry__opts)s, %(entry__content)s, %(entry__user_id)s,
-    %(entry__icon)s, %(entry__priority)s)
+    %(entry__icon)s, %(entry__score)s)
 ON CONFLICT (oid) DO NOTHING
 RETURNING id
 """
@@ -300,7 +300,7 @@ set source_id=%(entry__source_id)s,
     opts=%(entry__opts)s,
     content=%(entry__content)s,
     icon=%(entry__icon)s,
-    priority=%(entry__priority)s
+    score=%(entry__score)s
 where id=%(entry__id)s
 """
 

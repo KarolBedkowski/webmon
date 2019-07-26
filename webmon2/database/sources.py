@@ -29,7 +29,7 @@ select s.id as source__id, s.group_id as source__group_id,
     s.user_id as source__user_id,
     s.status as source__status,
     s.mail_report as source__mail_report,
-    s.default_prio as source__default_prio,
+    s.default_score as source__default_score,
     ss.source_id as source_state__source_id,
     ss.next_update as source_state__next_update,
     ss.last_update as source_state__last_update,
@@ -80,7 +80,7 @@ select id as source__id, group_id as source__group_id,
     settings as source__settings, filters as source__filters,
     user_id as source__user_id, status as source__status,
     mail_report as source__mail_report,
-    default_prio as source__default_prio
+    default_score as source__default_score
 from sources where id=%s
 """
 
@@ -105,11 +105,11 @@ def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
 
 _INSERT_SOURCE_SQL = """
 insert into sources (group_id, kind, interval, settings, filters,
-    user_id, name, status, mail_report, default_prio)
+    user_id, name, status, mail_report, default_score)
     values (%(source__group_id)s, %(source__kind)s, %(source__interval)s,
         %(source__settings)s, %(source__filters)s, %(source__user_id)s,
         %(source__name)s, %(source__status)s, %(source__mail_report)s,
-        %(source__default_prio)s)
+        %(source__default_score)s)
 returning id
 """
 
@@ -119,7 +119,7 @@ set group_id=%(source__group_id)s, kind=%(source__kind)s,
     name=%(source__name)s, interval=%(source__interval)s,
     settings=%(source__settings)s, filters=%(source__filters)s,
     status=%(source__status)s, mail_report=%(source__mail_report)s,
-    default_prio=%(source__default_prio)s
+    default_score=%(source__default_score)s
 where id=%(source__id)s
 """
 

@@ -5,13 +5,13 @@
 			{% if entry.icon %}
 			<img src="{{ url_for("root.binary", datahash=entry.icon )}}" width="32" height="32"/>
 			{% endif %}
-			{% if entry.priority < 5 %}
+			{% if entry.score < -5 %}
 				{% set priority_cls = "prio-lowest" %}
-			{% elif entry.priority < 0 %}
+			{% elif entry.score < 0 %}
 				{% set priority_cls = "prio-low" %}
-			{% elif entry.priority > 5 %}
+			{% elif entry.score > 5 %}
 				{% set priority_cls = "prio-highest" %}
-			{% elif entry.priority > 0 %}
+			{% elif entry.score > 0 %}
 				{% set priority_cls = "prio-high" %}
 			{% else %}
 				{% set priority_cls = "" %}

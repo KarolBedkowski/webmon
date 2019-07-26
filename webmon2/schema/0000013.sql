@@ -6,7 +6,7 @@
  */
 
 
-ALTER TABLE sources ADD COLUMN default_prio INTEGER DEFAULT 0;
-ALTER TABLE entries ADD COLUMN priority INTEGER DEFAULT 0;
+ALTER TABLE sources ADD COLUMN default_score INTEGER DEFAULT 0;
+ALTER TABLE entries ADD COLUMN score INTEGER DEFAULT 0;
 
 -- vim:et
