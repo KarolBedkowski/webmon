@@ -118,6 +118,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         self.filters = None
         self.status = None
         self.mail_report = None
+        self.default_prio = 0
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -148,6 +149,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         form.filters = source.filters
         form.status = source.status
         form.mail_report = source.mail_report
+        form.default_prio = source.default_prio or 0
         return form
 
     def update_from_request(self, form):
@@ -157,6 +159,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         self.interval = form['interval'].strip()
         self.status = int(form.get('status', 0))
         self.mail_report = int(form.get('mail_report'))
+        self.default_prio = int(form.get('default_prio'))
         for sett in self.settings or []:
             sett.update_from_request(form)
 
@@ -170,6 +173,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
                         for field in self.settings or []}
         src.status = self.status
         src.mail_report = self.mail_report
+        src.default_prio = self.default_prio
         return src
 
 

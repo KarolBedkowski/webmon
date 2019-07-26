@@ -83,6 +83,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "unread",
         "status",
         "mail_report",
+        "default_prio"
     )
 
     def __init__(self, **args):
@@ -96,6 +97,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.user_id = args.get('user_id')
         self.status = args.get('status', 1)
         self.mail_report = args.get('mail_report')
+        self.default_prio = args.get('default_prio')
 
         self.group = None  # type: SourceGroup
         self.state = None
@@ -117,6 +119,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         src.user_id = self.user_id
         src.status = self.status
         src.mail_report = self.mail_report
+        src.default_prio = self.default_prio
         return src
 
     @classmethod
@@ -135,6 +138,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.status = row['source__status']
         source.user_id = row['source__user_id']
         source.mail_report = row['source__mail_report']
+        source.default_prio = row['source__default_prio']
         return source
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
@@ -151,6 +155,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
             'source__status': self.status,
             'source__id': self.id,
             'source__mail_report': self.mail_report,
+            'source__default_prio': self.default_prio,
         }
 
 
@@ -318,6 +323,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         "user_id",
         "source",
         "icon_data",
+        "priority",
     )
 
     def __init__(self, id_=None, source_id=None):
@@ -335,6 +341,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.opts = None    # type: ty.Optional[ty.Dict[str, ty.Any]]
         self.user_id = None  # type: ty.Optional[int]
         self.icon = None  # type: ty.Optional[str]
+        self.priority = 0   # type; int
 
         # tuple(content type, data)
         self.icon_data = None  # type: ty.Optional[ty.Tuple[str, ty.Any]]
@@ -358,12 +365,14 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.user_id = self.user_id
         entry.icon = self.icon
         entry.icon_data = self.icon_data
+        entry.priority = self.priority
         return entry
 
     @staticmethod
     def for_source(source: Source):
         entry = Entry(source_id=source.id)
         entry.user_id = source.user_id
+        entry.priority = source.default_prio or 0
         return entry
 
     def calculate_oid(self):
@@ -432,6 +441,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             'entry__id': self.id,
             'entry__user_id': self.user_id,
             'entry__icon': self.icon,
+            'entry__priority': self.priority,
         }
 
     @classmethod
@@ -452,6 +462,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             entry.content = row["entry__content"]
         entry.user_id = row['entry__user_id']
         entry.icon = row['entry__icon']
+        entry.priority = row['entry__priority']
         return entry
 
 

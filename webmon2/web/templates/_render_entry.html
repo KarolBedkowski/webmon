@@ -5,18 +5,29 @@
 			{% if entry.icon %}
 			<img src="{{ url_for("root.binary", datahash=entry.icon )}}" width="32" height="32"/>
 			{% endif %}
-			<h4>
+			{% if entry.priority < 5 %}
+				{% set priority_cls = "prio-lowest" %}
+			{% elif entry.priority < 0 %}
+				{% set priority_cls = "prio-low" %}
+			{% elif entry.priority > 5 %}
+				{% set priority_cls = "prio-highest" %}
+			{% elif entry.priority > 0 %}
+				{% set priority_cls = "prio-high" %}
+			{% else %}
+				{% set priority_cls = "" %}
+			{% endif %}
+			<h4 class="{{ priority_cls }}">
 				{% if onlist %}
 					{% if openlink %}
-					<a href="{{ openlink }}">{{ entry.human_title() }}</a>
+					<a href="{{ openlink }}" class="title">{{ entry.human_title() }}</a>
 					{% else %}
-					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}">{{ entry.human_title() }}</a>
+					<a href="{{ url_for("entry.entry", entry_id=entry.id) }}" class="title">{{ entry.human_title() }}</a>
 					{% endif %}
 				{% else %}
 					{% if entry.url %}
-						<a href="{{ entry.url }}">{{ entry.human_title() }}</a>
+						<a href="{{ entry.url }}" class="title">{{ entry.human_title() }}</a>
 					{% else %}
-						{{ entry.human_title() }}
+						<p class="title">{{ entry.human_title() }}</p>
 					{% endif %}
 				{% endif %}
 				{% if entry.source.group %}<a class="group-tag" href="{{ url_for("group.group_entries", group_id=entry.source.group_id) }}">{{ entry.source.group.name }}</a>{% endif %}

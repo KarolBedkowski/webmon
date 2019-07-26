@@ -60,3 +60,15 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 	#main-header nav input#toggle-menu + label { display: block; width: 36px; height: 36px; background:url(menu.png) center right no-repeat  #fff; position: absolute; right: 0; top: 0; cursor: pointer; z-index: 10; }
 	input#toggle-menu:checked ~ .menu { top: -400px; }
 }
+
+.prio-high .title {color: red;  }
+.prio-high .title:before{content: "▲ ";}
+
+.prio-highest .title {color: red;  }
+.prio-highest .title:before{content: "▲▲ ";}
+
+.prio-low .title {color: #aaa }
+.prio-low .title:before{content: "▼ ";}
+
+.prio-lowest .title {color: #aaa }
+.prio-lowest .title:before{content: "▼▼ ";}

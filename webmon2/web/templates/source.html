@@ -44,6 +44,8 @@
 				<input type="text" name="interval" id="source-interval" value="{{ form.interval or '' }}"/>
 				<label for="source-mail-report">Send mail reports</label>
 				{{ rf.render_select("mail_report", "source-mail-report", [(1, 'as configured in group'), (0, 'no'), (2, 'yes')], form.mail_report) }}
+				<label for="source-default-prio">Default priority for entries</label>
+				<input type="number" name="default_prio" id="source-default-prio" value="{{ form.default_prio }}" required="required" />
 			</div>
 			{% if form.settings %}
 				<h4>Source settings</h4>
