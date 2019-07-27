@@ -150,8 +150,13 @@ class RssSource(AbstractSource):
             if response:
                 response.raise_for_status()
                 if response.status_code == 200:
-                    entry.content = response.text
-                    entry.set_opt("content-type", "html")
+                    content_type = response.headers['content-type']
+                    if content_type.startswith('text/'):
+                        entry.content = response.text
+                        entry.set_opt("content-type", content_type)
+                    else:
+                        entry.content = "Article not loaded because of "\
+                            "content type: " + content_type
                 else:
                     entry.content = "Loading article error: " + response.text
         except Exception as err:  # pylint: disable=broad-except
