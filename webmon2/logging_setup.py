@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """Logging setup.
-Copyright (c) Karol Będkowski, 2014-2017
+Copyright (c) Karol Będkowski, 2014-2019
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -14,7 +14,7 @@ import tempfile
 import time
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2017"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
 
 
 class ColorFormatter(logging.Formatter):
@@ -82,13 +82,10 @@ def setup(filename, debug=False, silent=False):
 
     console = logging.StreamHandler()
     fmtr = logging.Formatter
-    if sys.platform != "win32":
+    if sys.platform != "win32" and debug:
         fmtr = ColorFormatter
 
-    if debug:
-        console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
-    else:
-        console.setFormatter(fmtr("%(message)s"))
+    console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
     logger.addHandler(console)
 
     log = logging.getLogger("logging")

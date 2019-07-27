@@ -48,14 +48,16 @@ def format_html(body: str) -> str:
         content = doc.get_clean_html()
         _BODY_CACHE.set(body_hash, content)
         return content
-    except TypeError:
-        _LOG.exception("_readable_html error: %r", body)
+    except TypeError as err:
+        _LOG.warning("_readable_html error: %s", err)
+        _LOG.debug("body: %r", body)
     try:
         content = doc.summary(html_partial=True)
         _BODY_CACHE.set(body_hash, content)
         return content
     except TypeError:
-        _LOG.exception("_readable_html error: %r", body)
+        _LOG.warning("_readable_html summary error: %s", err)
+        _LOG.debug("body: %r", body)
 
     return body
 
