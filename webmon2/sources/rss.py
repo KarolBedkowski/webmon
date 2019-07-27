@@ -182,7 +182,9 @@ class RssSource(AbstractSource):
             settings={'url': url}
         )
 
-    def _load_image(self, feed):
+    def _load_image(self, doc):
+        _LOG.debug("source %d load image", self._source.id)
+        feed = doc.feed
         image_href = None
         image = feed.get('image')
         if image:
