@@ -139,6 +139,14 @@
 				let url = element.attributes.href.value + "&ids=" + articlesId;
 				window.location.href = url;
 		}});
+
+		document.querySelectorAll("time").forEach((element) => {
+			if (element.title != undefined) {
+				element.onclick = (event) => {
+					element.innerHTML = element.getAttribute('title');
+				};
+			}
+		});
 	});
 
 })();
