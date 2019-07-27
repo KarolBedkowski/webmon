@@ -99,6 +99,7 @@ def _render_entry_plain(entry):
     yield '\n\n'
     title = entry.title + " " + entry.updated.strftime("%x %X")
     yield '### '
+    yield _get_entry_score_mark(entry)
     if entry.url:
         yield '['
         yield title
@@ -173,3 +174,15 @@ def _encrypt(conf, message: str) -> str:
         _LOG.error("EMailOutput: encrypt error: %s", stderr)
         return stderr
     return stdout
+
+
+def _get_entry_score_mark(entry):
+    if entry.score < -5:
+        return "▼▼ "
+    if entry.score < 0:
+        return "▼ "
+    if entry.score > 5:
+        return "▲▲ "
+    if entry.score > 0:
+        return "▲ "
+    return ""
