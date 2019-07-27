@@ -210,5 +210,30 @@ class TestParseTimeRanges(unittest.TestCase):
             tsr, time.mktime(tuple(now))), False)
 
 
+class TestParseFormListData(unittest.TestCase):
+    def test_simple(self):
+        data = {
+            'a-0-f1': 1,
+            'a-0-f2': 'abc',
+            'a-2-f1': 2,
+            'a-10-f2': 'bd',
+            'b-3-f3': 12,
+        }
+        values = list(common.parse_form_list_data(data, 'a'))
+        self.assertEqual(3, len(values))
+        self.assertEqual(values[0]['f1'], 1)
+        self.assertEqual(values[0]['f2'], 'abc')
+        self.assertEqual(values[0]['__idx'], 0)
+        self.assertEqual(values[1]['f1'], 2)
+        self.assertEqual(values[1]['__idx'], 2)
+        self.assertEqual(values[2]['f2'], 'bd')
+        self.assertEqual(values[2]['__idx'], 10)
+
+        values = list(common.parse_form_list_data(data, 'b'))
+        self.assertEqual(1, len(values))
+        self.assertEqual(values[0]['f3'], 12)
+        self.assertEqual(values[0]['__idx'], 3)
+
+
 if __name__ == '__main__':
     unittest.main()

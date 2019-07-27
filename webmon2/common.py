@@ -255,3 +255,25 @@ def get_json_if_exists(row_keys, key, row, default=None):
     if not isinstance(value, str):
         return value
     return json.loads(value) if value else default
+
+
+def parse_form_list_data(form, prefix):
+    """ Parse form data named <prefix>-<idx>-<name> to
+        enumeration[{<name>: <value>}]
+        for each idx and matched prefix
+    """
+    values = {}
+    for key, val in form.items():
+        try:
+            kprefix, kidx, kname = key.split('-')
+            kidx = int(kidx)
+        except (ValueError, TypeError):
+            continue
+        if kprefix != prefix:
+            continue
+        if kidx not in values:
+            values[kidx] = {kname: val, '__idx': kidx}
+        else:
+            values[kidx][kname] = val
+    for _, val in sorted(values.items()):
+        yield val
