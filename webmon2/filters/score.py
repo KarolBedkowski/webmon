@@ -66,8 +66,11 @@ class Score(AbstractFilter):
         return add
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        add = self._score_for_content(entry.content, entry.title)
-        _LOG.debug("apply score %s for entry %s (%r)", add, entry.title,
-                   entry.score)
-        entry.score += add
+        try:
+            add = self._score_for_content(entry.content, entry.title)
+            _LOG.debug("apply score %s for entry %s (%r)", add, entry.title,
+                       entry.score)
+            entry.score += add
+        except Exception as err:
+            _LOG.error("apply score error: %s; %s", err, entry)
         return [entry]
