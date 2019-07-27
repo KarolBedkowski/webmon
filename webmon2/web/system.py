@@ -19,6 +19,7 @@ from flask import (
 )
 
 from webmon2.web import get_db, forms
+from webmon2 import model, common
 from webmon2 import database, imp_exp, opml
 
 
@@ -166,3 +167,25 @@ def sett_data_mark_all_read_yesterday():
     db.commit()
     flash(f"{updated} entries mark read")
     return redirect(url_for("system.sett_data"))
+
+
+@BP.route('/settings/scoring', methods=["GET", "POST"])
+def sett_scoring():
+    user_id = session['user']
+    db = get_db()
+    if request.method == 'POST':
+        scs = [
+            model.ScoringSett(
+                user_id=user_id,
+                pattern=sett.get('pattern'),
+                active=sett.get('active'),
+                score_change=sett.get('score'))
+            for sett in common.parse_form_list_data(request.form, 'r')]
+        scs = filter(lambda x: x.valid(), scs)
+        database.scoring.save(db, user_id, scs)
+        db.commit()
+        flash("Saved")
+        return redirect(url_for("system.sett_scoring"))
+
+    rules = database.scoring.get(db, user_id)
+    return render_template("system/scoring.html", rules=rules)

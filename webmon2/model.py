@@ -573,3 +573,45 @@ class User:
             'user__active': self.active,
             'user__admin': self.admin
         }
+
+
+class ScoringSett:
+    __slots__ = (
+        "id",
+        "user_id",
+        "pattern",
+        "active",
+        "score_change",
+    )
+
+    def __init__(self, **args):
+        self.id = args.get('id')
+        self.user_id = args.get('user_id')
+        self.pattern = args.get("pattern")
+        self.active = args.get('active')
+        self.score_change = args.get('score_change')
+
+    def __str__(self):
+        return common.obj2str(self)
+
+    def valid(self):
+        return self.user_id and self.pattern and self.pattern.strip()
+
+    @classmethod
+    def from_row(cls, row):
+        return ScoringSett(
+            id=row['scoring_sett__id'],
+            user_id=row['scoring_sett__user_id'],
+            pattern=row['scoring_sett__pattern'],
+            active=row['scoring_sett__active'],
+            score_change=row['scoring_sett__score_change']
+        )
+
+    def to_row(self):
+        return {
+            'scoring_sett__id': self.id,
+            'scoring_sett__user_id': self.user_id,
+            'scoring_sett__pattern': self.pattern,
+            'scoring_sett__active': self.active,
+            'scoring_sett__score_change': self.score_change
+        }

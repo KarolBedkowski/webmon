@@ -1,6 +1,7 @@
 {% macro render_entry(entry, mode, onlist, openlink=None) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
+		<!-- {{ entry.score }} -->
 		<header>
 			{% if entry.icon %}
 			<img src="{{ url_for("root.binary", datahash=entry.icon )}}" width="32" height="32"/>

@@ -25,8 +25,8 @@ class Score(AbstractFilter):
     """Apply score to elements by regexp"""
 
     name = "score"
-    short_info = "Change priority of elements by defined regular expression"
-    long_info = "Change element priority according to matched patterns."
+    short_info = "Change score of elements by defined regular expression"
+    long_info = "Change element score according to matched patterns."
     params = [
         common.SettingDef("patterns", "Regular expressions separated by ';'",
                           required=True),

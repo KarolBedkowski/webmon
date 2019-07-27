@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+<body>
+
+{% block header %}
+  <h1>{% block title %}Scoring{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<h2>Global scoring rules</h2>
+	<form method="POST">
+		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+		<table id="tab-rules">
+			<thead>
+				<tr>
+					<th>Pattern</th>
+					<th>Active</th>
+					<th>Score</th>
+					<th>&nbsp;</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for r in rules %}
+				<tr>
+					<td><input type="text" name="r-{{ loop.index0 }}-pattern" value="{{ r.pattern }}" required></td>
+					<td><input type="checkbox" name="r-{{ loop.index0 }}-active" {% if r.active %}checked="checked"{% endif %} /></td>
+					<td><input type="number" name="r-{{ loop.index0 }}-score" value="{{ r.score_change }}" required /></td>
+					<td><a href="#" data-action="delete">Delete</a></td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<div class="row2">
+			<a href="#" id='add-new-rule'>Add new rule</a>
+			<button class="right" type="submit">Save</button>
+		</div>
+	</form>
+{% endblock %}
+{% block scripts %}
+	<script type='application/javascript'>
+	(function() {
+		'use strict';
+		var last_idx = document.querySelectorAll("a[data-action=delete]").length;
+
+		function update_callbacks() {
+			document.querySelectorAll("a[data-action=delete]").forEach((element) => {
+				element.onclick = (event) => {
+					event.preventDefault();
+					element.parentElement.parentElement.remove();
+				}
+			});
+		}
+
+		update_callbacks();
+
+		document.querySelector("#add-new-rule").onclick = (event) => {
+			event.preventDefault();
+			last_idx++;
+			var tmpl = `
+				<tr>
+					<td><input type="text" name="r-${last_idx}-pattern" value=""></td>
+					<td><input type="checkbox" name="r-${last_idx}-active" checked="checked" /></td>
+					<td><input type="number" name="r-${last_idx}-score" value="0" required /></td>
+					<td><a href="#" data-action="delete">Delete</a></td>
+				</tr>
+				`
+			document.querySelector("#tab-rules tbody").insertAdjacentHTML('beforeend', tmpl);
+			update_callbacks();
+		};
+	})();
+	</script>
+{% endblock %}
+</body>
+</html>

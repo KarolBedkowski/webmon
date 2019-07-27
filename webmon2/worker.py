@@ -16,6 +16,8 @@ import threading
 import logging
 import datetime
 import random
+import re
+
 from prometheus_client import Counter
 
 from . import sources, common, filters, database, model, formatters, mailer
@@ -119,7 +121,9 @@ class FetchWorker(threading.Thread):
             entries = filters.filter_by(source.filters, entries,
                                         source.state, new_state, db)
 
-        entries = list(self._final_filter_entries(entries))
+        entries = self._final_filter_entries(entries)
+        entries = self._score_entries(entries, db, source.user_id)
+        entries = list(entries)
         if entries:
             max_date = max(entry.updated for entry in entries)
             new_state.set_state("last_entry_date", str(max_date))
@@ -156,6 +160,31 @@ class FetchWorker(threading.Thread):
                 entry.content, content_type)
             entries_oids.add(entry.oid)
             yield entry
+
+    def _score_entries(self, entries: model.Entries, db, user_id: int) \
+            -> model.Entries:
+        # load scoring
+        scss = list(self._load_scoring(db, user_id))
+        if not scss:
+            return entries
+        for entry in entries:
+            entry.score += sum(
+                score_change
+                for pattern, score_change in scss
+                if pattern.match(entry.content)
+            )
+            yield entry
+
+    def _load_scoring(self, db, user_id):  # pylint: disable=no-self-us
+        for scs in database.scoring.get_active(db, user_id):
+            _LOG.debug("scs: %s", scs)
+            try:
+                cre = re.compile(".*(" + scs.pattern + ").*",
+                                 re.IGNORECASE | re.MULTILINE | re.DOTALL)
+                yield (cre, scs.score_change)
+            except re.error as err:
+                _LOG.warning("compile scoring pattern error: %s %s",
+                             scs, err)
 
     def _get_src(self, db, source):
         try:
