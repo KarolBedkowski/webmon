@@ -48,6 +48,26 @@ class TestScore(unittest.TestCase):
             "pyeethon rsust gg2o"
         ))
 
+    def test_score_manu_multiple(self):
+        conf = {
+            "patterns": "rust;python;go",
+            "score_change": 1,
+            "match_many": True,
+        }
+        sco = score.Score(conf)
+        self.assertEqual(3, sco._score_for_conent(
+            "python rust go go",
+            "rust",
+        ))
+        self.assertEqual(3, sco._score_for_conent(
+            "python go go",
+            "rust",
+        ))
+        self.assertEqual(2, sco._score_for_conent(
+            "python g2",
+            "rust",
+        ))
+
 
 if __name__ == '__main__':
     unittest.main()

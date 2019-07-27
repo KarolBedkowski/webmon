@@ -48,22 +48,25 @@ class Score(AbstractFilter):
             _LOG.debug("patterns count: %s", len(self._re))
         else:
             self._re = []
-            _LOG.warn("no patterns!")
+            _LOG.warning("no patterns!")
         self._match_many = conf.get("match_many")
         self._score = conf.get("score_change")
 
-    def _score_for_conent(self, content) -> int:
+    def _score_for_conent(self, *content) -> int:
         add = 0
         if self._match_many:
             add = sum(self._score
                       for pattern in self._re
-                      if pattern.match(content))
-        elif any(pattern.match(content) for pattern in self._re):
+                      if any(pattern.match(item)
+                             for item in content
+                             if item))
+        elif any(any(pattern.match(item) for item in content if item)
+                 for pattern in self._re):
             add = self._score
         return add
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        add = self._score_for_conent(entry.content)
+        add = self._score_for_conent(entry.content, entry.title)
         _LOG.debug("apply score %s for entry %r", add, entry)
         entry.score += add
         return [entry]

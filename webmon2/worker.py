@@ -171,11 +171,12 @@ class FetchWorker(threading.Thread):
             entry.score += sum(
                 score_change
                 for pattern, score_change in scss
-                if pattern.match(entry.content)
+                if (entry.title and pattern.match(entry.title)) or
+                (entry.content and pattern.match(entry.content))
             )
             yield entry
 
-    def _load_scoring(self, db, user_id):  # pylint: disable=no-self-us
+    def _load_scoring(self, db, user_id):  # pylint: disable=no-self-use
         for scs in database.scoring.get_active(db, user_id):
             _LOG.debug("scs: %s", scs)
             try:
