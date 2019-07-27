@@ -21,13 +21,13 @@ class TestScore(unittest.TestCase):
             "match_many": True,
         }
         sco = score.Score(conf)
-        self.assertEqual(3, sco._score_for_conent(
+        self.assertEqual(3, sco._score_for_content(
             "python rust go go"
         ))
-        self.assertEqual(1, sco._score_for_conent(
+        self.assertEqual(1, sco._score_for_content(
             "pyeethon rsust go go"
         ))
-        self.assertEqual(0, sco._score_for_conent(
+        self.assertEqual(0, sco._score_for_content(
             "pyeethon rsust gg2o"
         ))
 
@@ -38,13 +38,13 @@ class TestScore(unittest.TestCase):
             "match_many": False,
         }
         sco = score.Score(conf)
-        self.assertEqual(1, sco._score_for_conent(
+        self.assertEqual(1, sco._score_for_content(
             "python rust go go"
         ))
-        self.assertEqual(1, sco._score_for_conent(
+        self.assertEqual(1, sco._score_for_content(
             "pyeethon rsust go go"
         ))
-        self.assertEqual(0, sco._score_for_conent(
+        self.assertEqual(0, sco._score_for_content(
             "pyeethon rsust gg2o"
         ))
 
@@ -55,15 +55,15 @@ class TestScore(unittest.TestCase):
             "match_many": True,
         }
         sco = score.Score(conf)
-        self.assertEqual(3, sco._score_for_conent(
+        self.assertEqual(3, sco._score_for_content(
             "python rust go go",
             "rust",
         ))
-        self.assertEqual(3, sco._score_for_conent(
+        self.assertEqual(3, sco._score_for_content(
             "python go go",
             "rust",
         ))
-        self.assertEqual(2, sco._score_for_conent(
+        self.assertEqual(2, sco._score_for_content(
             "python g2",
             "rust",
         ))

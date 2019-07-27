@@ -50,9 +50,9 @@ class Score(AbstractFilter):
             self._re = []
             _LOG.warning("no patterns!")
         self._match_many = conf.get("match_many")
-        self._score = conf.get("score_change")
+        self._score = int(conf.get("score_change"))
 
-    def _score_for_conent(self, *content) -> int:
+    def _score_for_content(self, *content) -> int:
         add = 0
         if self._match_many:
             add = sum(self._score
@@ -66,7 +66,8 @@ class Score(AbstractFilter):
         return add
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        add = self._score_for_conent(entry.content, entry.title)
-        _LOG.debug("apply score %s for entry %r", add, entry)
+        add = self._score_for_content(entry.content, entry.title)
+        _LOG.debug("apply score %s for entry %s (%r)", add, entry.title,
+                   entry.score)
         entry.score += add
         return [entry]
