@@ -192,13 +192,16 @@ def source_filter_edit(source_id, idx):
     user_id = session['user']
     if not source or source.user_id != user_id:
         return abort(404)
-    idx = int(idx)
-    is_new = idx < 0 or idx >= len(source.filters or [])
+    is_new = idx == 'new'
+    if not is_new:
+        idx = int(idx)
+        is_new = idx < 0 or idx >= len(source.filters or [])
     if is_new:  # new filter
         name = request.args.get('name')
         if not name:
             return redirect(url_for("source_filter_add", source_id=source_id))
         conf = {'name': request.args['name']}
+        idx = -1
     else:
         conf = source.filters[idx]
 

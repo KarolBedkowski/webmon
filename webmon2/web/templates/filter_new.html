@@ -14,7 +14,7 @@
 	<p>
 		<ul class="choice">
 			{% for name, short_info, long_info in filters_info %}
-			<li><a href="{{ url_for("source.source_filter_edit", source_id=source_id, idx=-1, name=name) }}">{{ name }}</a><br/>
+			<li><a href="{{ url_for("source.source_filter_edit", source_id=source_id, idx='new', name=name) }}">{{ name }}</a><br/>
 				{{ short_info }}
 			</li>
 			{% endfor %}
