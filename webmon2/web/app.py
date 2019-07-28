@@ -61,6 +61,12 @@ def _start_bg_tasks(args):
     cworker.start()
 
 
+_CSP = ("default-src 'self' 'unsafe-inline'; "
+        "img-src *; media-src *; "
+        "frame-src *; "
+        "worker-src 'self' 'unsafe-inline' *; ")
+
+
 def create_app(debug, root, args):
     template_folder = os.path.join(os.path.dirname(__file__), 'templates')
     # create and configure the app
@@ -109,6 +115,7 @@ def create_app(debug, root, args):
                     'no-cache, max-age=0, must-revalidate, no-store'
             response.headers['Access-Control-Expose-Headers'] = 'X-CSRF-TOKEN'
             response.headers['X-CSRF-TOKEN'] = session['_csrf_token']
+        response.headers['Content-Security-Policy'] = _CSP
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).\
             observe(resp_time)
