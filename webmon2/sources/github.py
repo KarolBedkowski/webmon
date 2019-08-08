@@ -168,7 +168,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         common.SettingDef("github_token", "user personal token", required=True,
                           global_param=True),
         common.SettingDef("max_items", "Maximal number of tags to load",
-                          default=100),
+                          default=5),
     ]  # type: ty.List[common.SettingDef]
 
     def load(self, state: model.SourceState) \
@@ -179,21 +179,17 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         if not self._github_check_repo_updated(repository, state.last_update):
             return state.new_not_modified(etag=repository.etag), []
 
-        etag = state.get_state('etag')
-        max_items = self._conf["max_items"]
-        if hasattr(repository, "tags"):
-            tags = list(repository.tags(max_items, etag=etag))
-        else:
-            tags = list(repository.iter_tags(max_items, etag=etag))
+        tags = _load_tags(repository, self._conf["max_items"],
+                          state.get_state('etag'))
 
         if state.last_update:
-            tags = [tag for tag in tags if not tag.last_modified or
-                    tag.last_modified > state.last_update.replace(
-                        tzinfo=timezone.utc)]
+            tags = _filter_tags(tags, repository, state.last_update)
+
+        tags = list(tags)
+
         if not tags:
             new_state = state.new_not_modified(etag=repository.etag)
-            if not new_state.icon:
-                new_state.set_icon(self._load_binary(_GITHUB_ICON))
+            self._state_update_icon(new_state)
             return new_state, []
 
         try:
@@ -203,12 +199,36 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             raise common.InputError(self, err)
 
         new_state = state.new_ok(etag=repository.etag)
-        if not new_state.icon:
-            new_state.set_icon(self._load_binary(_GITHUB_ICON))
+        self._state_update_icon(new_state)
 
         entry = _build_entry(self._source, repository, content)
         entry.icon = new_state.icon
         return new_state, [entry]
+
+    def _state_update_icon(self, new_state):
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(_GITHUB_ICON))
+
+
+def _filter_tags(tags, repository, min_date: datetime):
+    """ For each tag in tags load commit informations from repo and compare
+        commit last update date with min_date; return only tags with date after
+        than min_date """
+    for tag in tags:
+        try:
+            commit = repository.commit(tag.commit.sha)
+            if commit:
+                commit_date = common.parse_http_date(commit.last_modified)
+                if commit_date > min_date:
+                    yield tag
+        except github3.exceptions.NotFoundError:
+            pass
+
+
+def _load_tags(repository, max_items, etag):
+    if hasattr(repository, "tags"):
+        return repository.tags(max_items, etag=etag)
+    return repository.iter_tags(max_items, etag=etag)
 
 
 def _format_gh_tag(tag) -> str:
