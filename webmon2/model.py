@@ -403,7 +403,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if not self.content:
             return False
         lines = self.content.count('\n')
-        return lines > 20
+        characters = len(self.content)
+        return lines > 10 or characters > 400
 
     def get_summary(self):
         return '\n'.join(self.content.split('\n', 21)[:20]) + "\n…"
