@@ -181,11 +181,11 @@ WHERE id=ANY(%(ids)s) AND read_mark=0 AND user_id=%(user_id)s
 """
 
 
-def mark_read(db, user_id: int, group_id: int, max_id, min_id=0,
+def mark_read(db, user_id: int, group_id: int, max_id=0, min_id=0,
               ids=None) -> int:
     """ Mark entries in given group read. """
     assert group_id, "no group id"
-    assert max_id or ids
+    assert (min_id and max_id) or ids
     args = {"group_id": group_id, "min_id": min_id, "max_id": max_id,
             "user_id": user_id, "ids": ids}
     with db.cursor() as cur:
