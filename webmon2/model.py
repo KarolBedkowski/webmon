@@ -17,10 +17,18 @@ import typing as ty
 import logging
 import json
 import base64
+from enum import IntEnum
 
 from webmon2 import common
 
 _LOG = logging.getLogger(__name__)
+
+
+class MailReportMode(IntEnum):
+    NO_SEND = 0
+    AS_GROUP = 1
+    AS_ENTRY = 1
+    SEND = 2
 
 
 class SourceGroup:
