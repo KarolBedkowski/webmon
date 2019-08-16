@@ -43,25 +43,28 @@ class CheckWorker(threading.Thread):
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15 if self.debug else 60)
-            with database.DB.get() as db:
-                now = time.time()
-                if now > self.next_cleanup_start:
-                    _delete_old_entries(db)
-                    self.next_cleanup_start = now + _CLEANUP_INTERVAL
+            try:
+                with database.DB.get() as db:
+                    now = time.time()
+                    if now > self.next_cleanup_start:
+                        _delete_old_entries(db)
+                        self.next_cleanup_start = now + _CLEANUP_INTERVAL
 
-                _LOG.debug("CheckWorker check start")
-                ids = database.sources.get_sources_to_fetch(db)
-                for id_ in ids:
-                    self._todo_queue.put(id_)
+                    _LOG.debug("CheckWorker check start")
+                    ids = database.sources.get_sources_to_fetch(db)
+                    for id_ in ids:
+                        self._todo_queue.put(id_)
 
-                if not self._todo_queue.empty():
-                    workers = [self._start_worker(idx) for idx
-                               in range(min(self._workers, len(ids)))]
-                    for worker in workers:
-                        worker.join()
+                    if not self._todo_queue.empty():
+                        workers = [self._start_worker(idx) for idx
+                                   in range(min(self._workers, len(ids)))]
+                        for worker in workers:
+                            worker.join()
 
-                _LOG.debug("CheckWorker check done")
-                _send_mails(db)
+                    _LOG.debug("CheckWorker check done")
+                    _send_mails(db)
+            except Exception as err:  # pylint: disable=broad-except
+                _LOG.exception("CheckWorker thread error", err)
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue)
