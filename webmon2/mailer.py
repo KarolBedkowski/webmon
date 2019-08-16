@@ -21,7 +21,7 @@ import typing as ty
 
 import html2text as h2t
 
-from webmon2 import database, common, formatters
+from webmon2 import database, common, formatters, model
 
 
 _LOG = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ def process(db, user_id):
             _LOG.debug("still waiting for send mail")
             return
 
-    content = ''.join(_process_groups(db, conf, user_id, last_send))
+    content = ''.join(_process_groups(db, conf, user_id))
 #    _LOG.debug("content: %s", content)
     if content and not _send_mail(conf, content):
         return
@@ -53,30 +53,27 @@ def process(db, user_id):
                              datetime.now().timestamp())
 
 
-def _process_groups(db, conf, user_id: int, last_send):
+def _process_groups(db, conf, user_id: int):
     for group in database.groups.get_all(db, user_id):
-        if group.mail_report == 0:
+        if group.mail_report == model.MailReportMode.NO_SEND:
+            _LOG.debug("group %s skipped", group.name)
             continue
-        yield from _process_group(db, conf, user_id, group.id, last_send)
+        yield from _process_group(db, conf, user_id, group.id)
 
 
-def _process_group(db, conf, user_id: int, group_id: int, last_send) \
-        -> ty.Iterator[str]:
+def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
     entries = list(database.entries.find(db, user_id, group_id=group_id))
     entries = [entry for entry in entries
-               if entry.source.mail_report == 2
-               or entry.source.group.mail_report == 2
+               if entry.source.mail_report == model.MailReportMode.SEND
+               or entry.source.group.mail_report == model.MailReportMode.SEND
                ]
-    if last_send:
-        entries = [entry for entry in entries if entry.updated > last_send]
     if not entries:
+        _LOG.debug("no entries to send in group %d", group_id)
         return
 
     if conf.get('mail_mark_read'):
-        min_id = min(entry.id for entry in entries)
-        max_id = max(entry.id for entry in entries)
-        database.groups.mark_read(db, user_id, group_id, min_id=min_id,
-                                  max_id=max_id)
+        ids = [entry.id for entry in entries]
+        database.groups.mark_read(db, user_id, group_id, ids=ids)
 
     fentry = entries[0]
     group_name = fentry.source.group.name \
