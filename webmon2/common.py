@@ -192,17 +192,24 @@ class SettingDef:  # pylint: disable=too-few-public-methods
 
     # pylint: disable=too-many-arguments
     def __init__(self, name, description, default=None, required=False,
-                 options=None, value_type=None, global_param=False):
+                 options=None, value_type=None, global_param=False,
+                 **kwargs):
         self.name = name
         self.description = description
         self.default = default
         self.required = required
         self.options = options
+        self.parameters = kwargs
         if value_type is None:
             self.type = str if default is None else type(default)
         else:
             self.type = value_type
         self.global_param = global_param
+
+    def get_parameter(self, key, default=None):
+        if self.parameters:
+            return self.parameters.get(key, default)
+        return default
 
     def validate_value(self, value) -> bool:
         if self.required and self.default is None and \

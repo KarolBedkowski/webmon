@@ -43,6 +43,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         self.default_value = None
         # error messge
         self.error = None  # type: ty.Optional[str]
+        self.parameters = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
 
     def __str__(self):
         return common.obj2str(self)
@@ -67,6 +68,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field.type_class = param.type
         field.fieldname = prefix + param.name
         field.default_value = sett_value
+        field.parameters = param.parameters
         return field
 
     @staticmethod
@@ -86,6 +88,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field.value = setting.value
         field.fieldname = prefix + setting.key
         field.default_value = ''
+        field.parameters = setting.parameters
         return field
 
     def update_from_request(self, form):
@@ -104,6 +107,11 @@ class Field:  # pylint: disable=too-many-instance-attributes
         if self.type_class:
             form_value = self.type_class(form_value)
         self.value = form_value
+
+    def get_parameter(self, key, default=None):
+        if self.parameters:
+            return self.parameters.get(key, default)
+        return default
 
 
 class SourceForm:  # pylint: disable=too-many-instance-attributes
@@ -225,7 +233,7 @@ class GroupForm:
 class Filter:  # pylint: disable=too-few-public-methods
     def __init__(self, name=None):
         self.name = name
-        self.parametes = []
+        self.parameters = []
 
 
 class FieldsForm:
