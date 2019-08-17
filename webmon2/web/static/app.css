@@ -24,6 +24,7 @@ article footer {text-align: right}
 
 .form-wrapper{display: grid; grid-template-columns: auto 2fr; grid-gap: 20px; grid-auto-flow: row;margin: 1em auto;}
 input[type=checkbox] {justify-self: left}
+input {height: 1em; }
 label.field-required:after{content:"*"; font-width: bold; color:red}
 .field-error{color: red; font-weight: bold; margin: 0 1em}
 .group-tag{background-color: #ff9;border: 1px solid black; font-size: 70%; padding: 0.2em 0.5em;margin-left:1em; float: right;border-radius: 4px;}
@@ -59,6 +60,7 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 	#main-header nav .menu { padding: 1em; margin: 40px; background: #fff; border: 1px solid #444; position: relative; top: 0; }
 	#main-header nav input#toggle-menu + label { display: block; width: 36px; height: 36px; background:url(menu.png) center right no-repeat  #fff; position: absolute; right: 0; top: 0; cursor: pointer; z-index: 10; }
 	#main-header nav input#toggle-menu:checked ~ .menu { display: none; }
+	body {padding: 0 1em;}
 }
 
 .prio-high .title {color: red;  }
