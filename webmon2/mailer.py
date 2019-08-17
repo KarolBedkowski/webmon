@@ -169,8 +169,8 @@ def _encrypt(conf, message: str) -> str:
     stdout, stderr = subp.communicate(message.encode('utf-8'))
     if subp.wait(60) != 0:
         _LOG.error("EMailOutput: encrypt error: %s", stderr)
-        return stderr
-    return stdout
+        return stderr.decode('utf-8')
+    return stdout.decode('utf-8')
 
 
 def _get_entry_score_mark(entry):

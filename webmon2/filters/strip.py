@@ -28,7 +28,8 @@ class Strip(AbstractFilter):
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        entry.content = entry.content.strip()
+        if entry.content:
+            entry.content = entry.content.strip()
         yield entry
 
 
@@ -40,12 +41,10 @@ class Compact(AbstractFilter):
     long_info = "Remove duplicated empty lines from content"
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        if not entry.content:
-            return
-        entry.content = '\n'.join(filter(
-            None, map(str.rstrip, entry.content.split('\n'))))
         if entry.content:
-            yield entry
+            entry.content = '\n'.join(filter(
+                None, map(str.rstrip, entry.content.split('\n'))))
+        yield entry
 
 
 class Head(AbstractFilter):
@@ -60,8 +59,7 @@ class Head(AbstractFilter):
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        if not entry.content:
-            return
-        cnt = self._conf['count']
-        entry.content = '\n'.join(entry.content.split('\n', cnt + 1)[:cnt])
+        if entry.content:
+            cnt = self._conf['count']
+            entry.content = '\n'.join(entry.content.split('\n', cnt + 1)[:cnt])
         yield entry

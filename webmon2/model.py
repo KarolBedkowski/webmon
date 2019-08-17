@@ -408,11 +408,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.content
 
     def is_long_content(self) -> bool:
-        if not self.content:
-            return False
-        lines = self.content.count('\n')
-        characters = len(self.content)
-        return lines > 10 or characters > 400
+        if self.content:
+            lines = self.content.count('\n')
+            characters = len(self.content)
+            return lines > 10 or characters > 400
+        return False
 
     def get_summary(self):
         return '\n'.join(self.content.split('\n', 21)[:20]) + "\n…"

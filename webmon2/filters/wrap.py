@@ -52,4 +52,4 @@ class Wrap(AbstractFilter):
                 subsequent_indent=indent,
                 max_lines=self._conf['max_lines'],
                 width=self._conf['width'])
-            yield entry
+        yield entry

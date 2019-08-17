@@ -67,18 +67,18 @@ def get_filter(conf) -> ty.Optional[AbstractFilter]:
     raise UnknownFilterException()
 
 
-def filter_by(filters_conf: [dict], entries: model.Entries,
+def filter_by(filters_conf: ty.List[ty.Dict], entries: model.Entries,
               prev_state: model.SourceState,
               curr_state: model.SourceState,
-              db) \
-              -> ty.Tuple[model.Entries, model.SourceState]:
+              db) -> model.Entries:
     """ Apply filters by configuration to entries list. """
 
     for filter_conf in filters_conf:
         fltr = get_filter(filter_conf)
-        fltr.db = db
-        fltr.validate()
-        entries = fltr.filter(entries, prev_state, curr_state)
+        if fltr:
+            fltr.db = db
+            fltr.validate()
+            entries = fltr.filter(entries, prev_state, curr_state)
 
     return entries
 
