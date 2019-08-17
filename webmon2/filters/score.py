@@ -50,7 +50,7 @@ class Score(AbstractFilter):
             self._re = []
             _LOG.warning("no patterns!")
         self._match_many = conf.get("match_many")
-        self._score = int(conf.get("score_change"))
+        self._score = int(conf.get("score_change", 0))
 
     def _score_for_content(self, *content) -> int:
         add = 0
