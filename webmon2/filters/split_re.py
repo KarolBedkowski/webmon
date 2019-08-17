@@ -31,7 +31,7 @@ class SelectByRE(AbstractFilter):
         "expression. Expression must contain at least one group; can also " \
         "contain groups 'title' and 'content'."
     params = [
-        common.SettingDef("re", "selector", required=True),
+        common.SettingDef("re", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):

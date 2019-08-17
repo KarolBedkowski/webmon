@@ -48,7 +48,7 @@ class GetElementsByCss(AbstractFilter):
     short_info = "Extract elements by CSS query"
     long_info = "Search and extract element from content by given CSS query"
     params = [
-        common.SettingDef("sel", "selector", required=True),
+        common.SettingDef("sel", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):
@@ -75,7 +75,7 @@ class GetElementsByXpath(AbstractFilter):
     long_info = "Search and extract elements from html/xml content "\
         "by given xpath"
     params = [
-        common.SettingDef("xpath", "selector", required=True),
+        common.SettingDef("xpath", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
     stop_change_content = True
 
@@ -90,7 +90,7 @@ class GetElementsById(AbstractFilter):
     short_info = "Extract elements by given ID"
     long_info = "Search and extract element from html content by given ID"
     params = [
-        common.SettingDef("sel", "selector", required=True),
+        common.SettingDef("sel", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:

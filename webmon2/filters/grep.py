@@ -26,7 +26,8 @@ class Grep(AbstractFilter):
     short_info = "Filter elements by regular expression"
     long_info = "Select element matching or not matching to given pattern."
     params = [
-        common.SettingDef("pattern", "Regular expression", required=True),
+        common.SettingDef("pattern", "Regular expression", required=True,
+                          multiline=True),
         common.SettingDef("invert", "Accept items not matching",
                           default=False),
     ]  # type: ty.List[common.SettingDef]

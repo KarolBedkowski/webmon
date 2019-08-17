@@ -29,7 +29,7 @@ class Score(AbstractFilter):
     long_info = "Change element score according to matched patterns."
     params = [
         common.SettingDef("patterns", "Regular expressions separated by ';'",
-                          required=True),
+                          required=True, multiline=True),
         common.SettingDef("score_change", "Value added do score when match",
                           default=5, value_type=int),
         common.SettingDef("match_many",
