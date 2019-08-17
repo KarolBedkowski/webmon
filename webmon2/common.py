@@ -198,10 +198,10 @@ class SettingDef:  # pylint: disable=too-few-public-methods
         self.default = default
         self.required = required
         self.options = options
-        if value_type is None and default is not None:
-            self.type = type(default)
+        if value_type is None:
+            self.type = str if default is None else type(default)
         else:
-            self.type = str
+            self.type = value_type
         self.global_param = global_param
 
     def validate_value(self, value) -> bool:
