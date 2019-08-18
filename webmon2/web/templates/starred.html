@@ -6,6 +6,9 @@
 
 {% block header %}
 	<h1>{% block title %}Starred{% endblock %} ({{ entries|length }})</h1>
+	<div class="actions">
+		<a href="{{ url_for("entries.entries_search") }}">🔍 Search</a>
+	</div>
 {% endblock %}
 
 {% block content %}

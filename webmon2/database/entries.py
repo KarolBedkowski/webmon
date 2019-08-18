@@ -105,6 +105,19 @@ where e.read_mark = 2 and e.user_id=%(user_id)s
 order by e.id
 '''
 
+_GET_ENTRIES_FULLTEXT_TITLE_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
+    and e.user_id=%(user_id)s
+order by e.id
+'''
+
+_GET_ENTRIES_FULLTEXT_SQL = _GET_ENTRIES_SQL_MAIN + '''
+where to_tsvector(content || ' ' || title)
+        @@ to_tsquery('pg_catalog.simple', %(query)s)
+    and e.user_id=%(user_id)s
+order by e.id
+'''
+
 
 def _get_find_sql(source_id: ty.Optional[int], group_id: ty.Optional[int],
                   unread: bool) -> str:
@@ -200,6 +213,35 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
     if limit:
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
+    with db.cursor() as cur:
+        cur.execute(sql, args)
+        user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
+        user_sources = {}  # type: ty.Dict[int, model.Source]
+        for row in cur:
+            entry = model.Entry.from_row(row)
+            source_id = entry.source_id
+            entry.source = user_sources.get(source_id)
+            if not entry.source:
+                entry.source = user_sources[source_id] = \
+                    model.Source.from_row(row)
+                group_id = entry.source.group_id
+                entry.source.group = user_groups.get(group_id)
+                if not entry.source.group:
+                    entry.source.group = user_groups[group_id] = \
+                        model.SourceGroup.from_row(row)
+            yield entry
+
+
+def find_fulltext(db, user_id: int, query: str, title_only: bool) \
+        -> model.Entries:
+    """ Find entries for user by full-text search on title or title and content.
+    """
+    args = {
+        "user_id": user_id,
+        'query': query,
+    }
+    sql = _GET_ENTRIES_FULLTEXT_TITLE_SQL if title_only \
+        else _GET_ENTRIES_FULLTEXT_SQL
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]

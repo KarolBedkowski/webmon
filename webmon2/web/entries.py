@@ -63,6 +63,21 @@ def entries_history():
     return render_template("history.html", entries=entries_)
 
 
+@BP.route('/search')
+def entries_search():
+    db = get_db()
+    user_id = session['user']
+    query = request.args.get('query')
+    query = query.strip() if query else ''
+    title_only = bool(request.args.get('title-only'))
+    entries_ = None
+    if query:
+        entries_ = list(database.entries.find_fulltext(
+            db, user_id, query, title_only))
+    return render_template("entries_search.html", entries=entries_,
+                           query=query, title_only=title_only)
+
+
 @BP.route('/<mode>/mark/read')
 def entries_mark_read(mode):
     db = get_db()

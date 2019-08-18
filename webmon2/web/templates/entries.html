@@ -30,6 +30,7 @@
 		{% else %}
 		<a href="{{ url_for('entries.entries', mode='all') }}">⊛ Show all</a>
 		{% endif %}
+		<a href="{{ url_for("entries.entries_search") }}">🔍 Search</a>
 	</div>
 	{{ nav_bar() }}
 {% endblock %}

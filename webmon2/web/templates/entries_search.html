@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% import '_render_entry.html' as re %}
+<!DOCTYPE html>
+<html>
+  <body>
+
+
+{% block header %}
+	<h1>{% block title %}Entries search{% endblock %}</h1>
+	<div class="actions">
+		<form>
+			<fieldset>
+				<label>Query: </label>
+				<input name="query" value="{{ query }}" required />
+				<label>Title only: </label>
+				<input type="checkbox" name="title-only" {% if title_only %} checked="checked" {% endif %} />
+				<button type="submit">Search</button>
+			</fieldset>
+		</form>
+	</div>
+{% endblock %}
+
+{% block content %}
+	{% if query %}
+		{% if not entries %}
+			<p>No entries...</p>
+		{% endif %}
+		{% for entry in entries %}
+			{{ re.render_entry(entry, 'summary', True) }}
+		{% endfor %}
+	{% endif %}
+{% endblock %}
+
+  </body>
+</html>
