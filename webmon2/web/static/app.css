@@ -7,8 +7,9 @@ h1,h2,h3,h4 a {text-decoration: none}
 pre{background: #eee;padding: 1em;}
 img{max-width: 100%}
 
-#main-header nav {display: flex; justify-content: space-between;align-items: center;}
-nav a, .actions a {margin: 1em; margin-right: 1em;}
+#main-header nav .menu {display: flex; justify-content: space-between; align-items: center;}
+.actions {margin-top: 1em; margin-bottom: 1em;}
+.actions a {padding: 0.5em;}
 .row3 {display:grid; grid-template-columns: 1fr auto 1fr; margin: 1em 0;}
 .row2 {display:grid; grid-template-columns: 1fr 1fr; margin: 1em 0;}
 .left {justify-self:start}
@@ -55,10 +56,11 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 
 @media only screen and (max-width : 640px) {
 	header#main-header { position: absolute; top: 0; left: 0; width: 100%; }
+	#main-header .menu {flex-flow: column;}
 	#main-header nav a { display: block; width: 100%; padding: 5px 0; margin: 0; float: none; }
 	#main-header nav { width: 100%; text-align: center; margin: 0 auto; display: block; }
 	#main-header nav .menu { padding: 1em; margin: 40px; background: #fff; border: 1px solid #444; position: relative; top: 0; }
-	#main-header nav input#toggle-menu + label { display: block; width: 36px; height: 36px; background:url(menu.png) center right no-repeat  #fff; position: absolute; right: 0; top: 0; cursor: pointer; z-index: 10; }
+	#main-header nav input#toggle-menu + label { display: block; width: 36px; height: 36px; background:url(menu.png) center right no-repeat  #fff; position: absolute; right: 5px; top: 5px; cursor: pointer; z-index: 10; }
 	#main-header nav input#toggle-menu:checked ~ .menu { display: none; }
 	body {padding: 0 1em;}
 }
