@@ -11,8 +11,9 @@ Inputs related to github
 """
 import logging
 import typing as ty
-from datetime import timezone, datetime, timedelta
+from datetime import datetime, timedelta
 
+from dateutil import tz
 import github3
 
 from webmon2 import common, model
@@ -42,7 +43,7 @@ class GitHubMixin:
             min_date = datetime.now() - timedelta(days=_GITHUB_MAX_AGE)
             return min_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        if repository.updated_at <= last_updated.replace(tzinfo=timezone.utc):
+        if repository.updated_at <= last_updated.replace(tzinfo=tz.tzlocal()):
             return None
 
         return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -220,6 +221,7 @@ def _filter_tags(tags, repository, min_date: datetime):
             if commit:
                 commit_date = common.parse_http_date(commit.last_modified)
                 if commit_date > min_date:
+                    tag.ex_commit_date = commit_date
                     yield tag
         except github3.exceptions.NotFoundError:
             pass
@@ -232,8 +234,8 @@ def _load_tags(repository, max_items, etag):
 
 
 def _format_gh_tag(tag) -> str:
-    if tag.last_modified:
-        return tag.name + " " + str(tag.last_modified)
+    if hasattr(tag, 'ex_commit_date'):
+        return tag.name + " " + str(tag.ex_commit_date)
     return tag.name
 
 
@@ -272,10 +274,10 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             releases = list(repository.iter_releases(max_items, etag=etag))
 
         if state.last_update:
+            last_update = state.last_update.replace(tzinfo=tz.tzlocal())
             releases = [
                 release for release in releases
-                if release.created_at > state.last_update.replace(
-                    tzinfo=timezone.utc)
+                if not release.created_at or release.created_at > last_update
             ]
 
         if not releases:
@@ -305,7 +307,8 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 def _build_gh_release_entry(source: model.Source, repository, release) \
         -> model.Entry:
     res = ['### ', release.name, ' ', release.tag_name,
-           '\n\nDate: ', release.created_at.strftime("%x %X")]
+           '\n\nDate: ',
+           release.created_at.astimezone(tz.tzlocal()).strftime("%x %X")]
     if release.html_url:
         res.extend(('\n', release.html_url))
     if release.body:

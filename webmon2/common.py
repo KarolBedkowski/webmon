@@ -18,6 +18,8 @@ import datetime
 import email.utils
 import json
 
+from dateutil import tz
+
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
 
@@ -242,12 +244,14 @@ def obj2str(obj):
 
 
 def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
+    """ Parse date in format 'Sat, 03 Aug 2019 21:38:14 GMT' and change
+        timezone to local"""
     if not date:
         return None
     try:
-        parsed_date = email.utils.parsedate(date)
-        if parsed_date:
-            return datetime.datetime(*parsed_date[:6])
+        parsed = email.utils.parsedate_to_datetime(date)
+        if parsed:
+            return parsed.astimezone(tz.tzlocal()).replace(tzinfo=None)
     except TypeError:
         pass
     return None

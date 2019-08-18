@@ -28,6 +28,7 @@ REQUIRES = [
     'gevent',
     "readability-lxml",
     "psycopg2",
+    'python-dateutil'
 ]
 
 
