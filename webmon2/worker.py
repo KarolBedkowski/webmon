@@ -158,9 +158,8 @@ class FetchWorker(threading.Thread):
 
             entry.validate()
             entry.calculate_icon_hash()
-            content_type = entry.get_opt("content-type")
-            entry.content = formatters.sanitize_content(
-                entry.content, content_type)
+            entry.content, entry.content_type = formatters.sanitize_content(
+                entry.content, entry.content_type)
             entries_oids.add(entry.oid)
             yield entry
 
@@ -169,7 +168,8 @@ class FetchWorker(threading.Thread):
         # load scoring
         scss = list(self._load_scoring(db, user_id))
         if not scss:
-            return entries
+            yield from entries
+            return
         for entry in entries:
             entry.score += sum(
                 score_change

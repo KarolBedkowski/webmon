@@ -62,8 +62,7 @@ def group(key):
                     updated=updated)
 
     for entry in database.entries.find_for_feed(db, group.id):
-        content_type = entry.get_opt('content-type')
-        body = formatters.body_format(entry.content, content_type)
+        body = entry.content
         atom_content_type = 'text' if entry.get_opt('preformated') else 'html'
         url = urllib.parse.urljoin(request.url_root,
                                    url_for("entry.entry", entry_id=entry.id))

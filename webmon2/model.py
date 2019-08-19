@@ -414,8 +414,18 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             return lines > 10 or characters > 400
         return False
 
+    def _get_content_type(self):
+        return self.get_opt("content-type")
+
+    def _set_content_type(self, content_type):
+        if self.opts is None:
+            self.opts = {}
+        self.opts['content-type'] = content_type
+
+    content_type = property(_get_content_type, _set_content_type)
+
     def get_summary(self):
-        return '\n'.join(self.content.split('\n', 21)[:20]) + "\n…"
+        return '\n'.join(self.content.split('\n', 21)[:20])[:400] + "\n…"
 
     def validate(self):
         if not isinstance(self.updated, datetime):

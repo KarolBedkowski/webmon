@@ -49,3 +49,5 @@ def register(app):
     app.jinja_env.filters['format_date'] = _format_date
     app.jinja_env.filters['absolute_url'] = _absoute_url
     app.jinja_env.filters['format_html'] = formatters.format_html
+    app.jinja_env.filters['cleanup_html'] = formatters.cleanup_html
+    app.jinja_env.filters['summary'] = formatters.entry_summary

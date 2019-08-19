@@ -71,7 +71,7 @@ def _build_entry(source: model.Source, repository, content: str) \
     entry.status = 'new'
     entry.content = content
     entry.created = entry.updated = datetime.now()
-    entry.set_opt("content-type", "plain")
+    entry.set_opt("content-type", "markdown")
     return entry
 
 

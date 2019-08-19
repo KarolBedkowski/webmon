@@ -43,29 +43,24 @@
 				{% endif %}
 			</div>
 		</header>
+		{% set content_type = entry.get_opt('content-type') %}
  		{% if entry.is_long_content() and mode == 'summary' %}
 			<section>
-			{% if entry.get_opt('content-type') == 'html' %}
-				{{ entry.get_summary()|safe }}
-			{% elif entry.get_opt('content-type') == 'preformated' %}
-				<pre>{{ entry.get_summary() }}</pre>
-			{% elif entry.get_opt('content-type') == 'safe' %}
-				{{ entry.get_summary()|safe }}
-			{% else %}
-				{{ entry.get_summary()|format_markdown|safe }}
-			{% endif %}
+				{{ entry.content|summary(content_type) }}
 			</section>
 			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
 		{% elif entry.content %}
 			<section>
-			{% if entry.get_opt('content-type') == 'html' %}
-				{{ entry.content|safe }}
-			{% elif entry.get_opt('content-type') == 'preformated' %}
+			{% if content_type == 'markdown' %}
+				{{ entry.get_summary()|format_markdown|safe }}
+			{% elif content_type == 'preformated' %}
 				<pre>{{ entry.content }}</pre>
-			{% elif entry.get_opt('content-type') == 'safe' %}
+			{% elif content_type == 'safe' %}
 				{{ entry.content|safe }}
+			{% elif content_type == 'plain' %}
+				{{ entry.content }}
 			{% else %}
-				{{ entry.content|format_markdown|safe }}
+				{{ entry.get_summary()|cleanup_html|safe }}
 			{% endif %}
 			</section>
 		{% endif %}
