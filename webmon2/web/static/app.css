@@ -66,13 +66,13 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 }
 
 .prio-high .title {color: red;  }
-.prio-high .title:before{content: "▲ ";}
+.prio-high .title:after{content: " ▲";}
 
 .prio-highest .title {color: red;  }
-.prio-highest .title:before{content: "▲▲ ";}
+.prio-highest .title:after{content: " ▲▲";}
 
 .prio-low .title {color: #aaa }
-.prio-low .title:before{content: "▼ ";}
+.prio-low .title:after{content: " ▼";}
 
 .prio-lowest .title {color: #aaa }
-.prio-lowest .title:before{content: "▼▼ ";}
+.prio-lowest .title:after{content: " ▼▼";}
