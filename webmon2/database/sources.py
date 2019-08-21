@@ -339,8 +339,9 @@ WHERE source_id=%(source_id)s
 """
 
 
-def mark_read(db, user_id: int, source_id: int, max_id: int, min_id=0,
-              ids=None) -> int:
+def mark_read(db, user_id: int, source_id: int, max_id: int = None,
+              min_id: int = None, ids: ty.Optional[ty.Iterable[int]] = None) \
+        -> int:
     """ Mark source read """
     args = {'source_id': source_id, 'max_id': max_id, 'min_id': min_id,
             'user_id': user_id, "ids": ids}

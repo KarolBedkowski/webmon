@@ -110,11 +110,11 @@ def group_entries(group_id, mode='unread', page=0):
 @BP.route("/group/<int:group_id>/mark/read")
 def group_mark_read(group_id):
     db = get_db()
-    max_id = int(request.args.get('max_id'))
-    min_id = int(request.args.get('min_id', 0))
+    max_id = int(request.args.get('max_id', -1))
+    min_id = int(request.args.get('min_id', -1))
     user_id = session['user']
     r_ids = request.args.get('ids')
-    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
+    ids = list(map(int, r_ids.split(","))) if r_ids else None
     database.groups.mark_read(db, user_id, group_id, min_id=min_id,
                               max_id=max_id, ids=ids)
     db.commit()

@@ -135,11 +135,11 @@ def source_entries(source_id, mode='unread', page=0):
 @BP.route("/<int:source_id>/mark/read")
 def source_mark_read(source_id):
     db = get_db()
-    min_id = int(request.args.get('min_id', 0))
+    min_id = int(request.args.get('min_id', -1))
     max_id = int(request.args['max_id'])
     user_id = session['user']
     r_ids = request.args.get('ids')
-    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
+    ids = list(map(int, r_ids.split(","))) if r_ids else None
 
     database.sources.mark_read(db, user_id, source_id, max_id=max_id,
                                min_id=min_id, ids=ids)
