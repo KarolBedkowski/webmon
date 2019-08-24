@@ -26,6 +26,7 @@ article footer {text-align: right}
 .form-wrapper{display: grid; grid-template-columns: auto 2fr; grid-gap: 20px; grid-auto-flow: row;margin: 1em auto;}
 input[type=checkbox] {justify-self: left}
 input {height: 1em; }
+[type=file] {height: auto}
 label.field-required:after{content:"*"; font-width: bold; color:red}
 .field-error{color: red; font-weight: bold; margin: 0 1em}
 .group-tag{background-color: #ff9;border: 1px solid black; font-size: 70%; padding: 0.2em 0.5em;margin-left:1em; float: right;border-radius: 4px;}
