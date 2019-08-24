@@ -495,6 +495,7 @@ class Setting:
         "value_type",
         "description",
         "user_id",
+        "parameters",
     )
 
     def __init__(self, key=None, value=None, value_type=None,
@@ -504,6 +505,7 @@ class Setting:
         self.value_type = value_type
         self.description = description
         self.user_id = user_id
+        self.parameters = None
 
     def set_value(self, value):
         if self.value_type == 'int':
