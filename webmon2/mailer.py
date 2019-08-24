@@ -106,14 +106,15 @@ def _render_entry_plain(entry):
     else:
         yield title
     yield '\n\n'
-    content_type = entry.get_opt('content-type')
-    if content_type == 'html':
-        conv = h2t.HTML2Text(bodywidth=74)
-        conv.protect_links = True
-        yield conv.handle(entry.content)
-    else:
-        yield entry.content
-    yield '\n\n\n'
+    if entry.content:
+        content_type = entry.content_type
+        if content_type not in ('plain', 'markdown'):
+            conv = h2t.HTML2Text(bodywidth=74)
+            conv.protect_links = True
+            yield conv.handle(entry.content)
+        else:
+            yield entry.content
+        yield '\n\n\n'
 
 
 def _prepare_msg(conf, content):
