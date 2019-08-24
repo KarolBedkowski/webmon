@@ -65,6 +65,8 @@ def body_format(body: str, content_type: str) -> str:
 
 
 def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
+    if not body:
+        return body, content_type
     result_type = content_type
     if content_type == 'html' or content_type.startswith('text/html'):
         body = format_html(body)

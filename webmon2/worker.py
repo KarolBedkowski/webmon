@@ -158,8 +158,13 @@ class FetchWorker(threading.Thread):
 
             entry.validate()
             entry.calculate_icon_hash()
-            entry.content, entry.content_type = formatters.sanitize_content(
-                entry.content, entry.content_type)
+            if entry.content:
+                if not entry.content_type:
+                    _LOG.warning("no conent type for entry: %s", entry)
+                    entry.content_type = 'html'
+                entry.content, entry.content_type = \
+                    formatters.sanitize_content(entry.content,
+                                                entry.content_type)
             entries_oids.add(entry.oid)
             yield entry
 
