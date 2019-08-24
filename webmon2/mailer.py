@@ -62,38 +62,59 @@ def _process_groups(db, conf, user_id: int):
 
 
 def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
-    entries = list(database.entries.find(db, user_id, group_id=group_id))
-    entries = [entry for entry in entries
-               if entry.source.mail_report == model.MailReportMode.SEND
-               or entry.source.group.mail_report == model.MailReportMode.SEND
+    _LOG.debug("processing group %d", group_id)
+    sources = [source
+               for source
+               in database.sources.get_all(db, user_id, group_id)
+               if source.unread
+               and source.mail_report != model.MailReportMode.NO_SEND
                ]
-    if not entries:
-        _LOG.debug("no entries to send in group %d", group_id)
+    if not sources:
         return
 
-    if conf.get('mail_mark_read'):
-        ids = [entry.id for entry in entries]
-        database.groups.mark_read(db, user_id, group_id, ids=ids)
-
-    fentry = entries[0]
-    group_name = fentry.source.group.name \
-        if fentry.source and fentry.source.group \
-        else fentry.title
-    group_name += f" [{len(entries)}]"
+    group_name = sources[0].group.name
     yield group_name
     yield '\n'
     yield '=' * len(group_name)
     yield '\n\n'
-    for entry in entries:
-        yield from _render_entry_plain(entry)
+
+    for source in sources:
+        yield from _proces_source(db, conf, user_id, source.id)
+
     yield '\n\n\n'
 
 
-def _render_entry_plain(entry):
-    yield entry.source.name
+def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
+    _LOG.debug("processing source %d", source_id)
+
+    entries = [entry
+               for entry
+               in database.entries.find(db, user_id, source_id=source_id)
+               if entry.source.mail_report == model.MailReportMode.SEND
+               or entry.source.group.mail_report == model.MailReportMode.SEND
+               ]
+
+    if not entries:
+        _LOG.debug("no entries to send in source %d", source_id)
+        return
+
+    source_name = entries[0].source.name
+    yield source_name
     yield '\n'
-    yield '-' * len(entry.source.name)
+    yield '-' * len(source_name)
     yield '\n\n'
+
+    for entry in entries:
+        yield from _render_entry_plain(entry)
+
+    if conf.get('mail_mark_read'):
+        ids = [entry.id for entry in entries]
+        database.entries.mark_read(db, user_id, ids=ids)
+
+    yield '\n\n'
+
+
+def _render_entry_plain(entry):
     title = entry.title + " " + entry.updated.strftime("%x %X")
     yield '### '
     yield _get_entry_score_mark(entry)
@@ -105,7 +126,6 @@ def _render_entry_plain(entry):
         yield ')'
     else:
         yield title
-    yield '\n\n'
     if entry.content:
         content_type = entry.content_type
         if content_type not in ('plain', 'markdown'):
@@ -114,7 +134,7 @@ def _render_entry_plain(entry):
             yield conv.handle(entry.content)
         else:
             yield entry.content
-        yield '\n\n\n'
+        yield '\n'
 
 
 def _prepare_msg(conf, content):
