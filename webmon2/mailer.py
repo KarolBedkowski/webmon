@@ -126,6 +126,7 @@ def _render_entry_plain(entry):
         yield ')'
     else:
         yield title
+    yield '\n'
     if entry.content:
         content_type = entry.content_type
         if content_type not in ('plain', 'markdown'):
