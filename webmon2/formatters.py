@@ -46,12 +46,26 @@ def format_html(body: str) -> str:
 
 def _clean_html_brutal(content):
     body_start = content.find('<body')
-    if body_start < 0:
-        return content
-    content = content[body_start:]
-    body_end = content.find("</body")
-    if body_end > -1:
-        content = content[:body_end]
+    if body_start >= 0:
+        body_mark_end = content.find('>', body_start)
+        content = content[body_mark_end + 1:]
+        body_end = content.find("</body")
+        if body_end > -1:
+            content = content[:body_end]
+    while True:
+        script_start = content.find('<script')
+        if script_start < 0:
+            break
+        script_end = content.find('</script>', script_start)
+        if script_end > script_start:
+            content = content[:script_start] + content[script_end + 9:]
+        else:
+            script_end = content.find('/>', script_start)
+            if script_end > script_start:
+                content = content[:script_start] + content[script_end + 2:]
+            else:
+                # broken
+                break
     return content
 
 
@@ -80,6 +94,7 @@ def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
 
 
 def cleanup_html(content: str) -> str:
+    """ Try to clean html content """
     return _clean_html_brutal(content)
 
 
