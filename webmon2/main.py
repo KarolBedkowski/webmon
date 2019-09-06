@@ -69,6 +69,10 @@ def _parse_options():
                         default="/")
     parser.add_argument("--workers", type=int, default=2,
                         help="number of background workers")
+    parser.add_argument("--web-address", type=str,
+                        default="127.0.0.1:5000",
+                        help="web interface listen address",
+                        dest="web_address")
     return parser.parse_args()
 
 
