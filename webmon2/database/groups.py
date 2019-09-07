@@ -243,8 +243,6 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
 
 def delete(db, user_id: int, group_id: int):
     """ Delete group; move existing sources to main (or first) group
-
-    TODO: recalculate state
     """
     with db.cursor() as cur:
         cur.execute('select count(1) from source_groups where user_id=%s',
