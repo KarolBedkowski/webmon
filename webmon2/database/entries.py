@@ -413,9 +413,8 @@ def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
     _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
     with db.cursor() as cur:
         cur.execute(
-            "update entries set star_mark=%s where id=%s and star_mark=%s "
-            "and user_id=%s",
-            (star, entry_id, 1-star, user_id))
+            "update entries set star_mark=%s where id=%s and star_mark=%s",
+            (star, entry_id, 1-star))
         changed = cur.rowcount
     _LOG.debug("changed: %d", changed)
     return changed
@@ -453,8 +452,8 @@ def mark_read(db, user_id: int, entry_id=None, min_id=None,
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s and user_id=%s",
-                (read, entry_id, user_id))
+                "update entries set read_mark=%s where id=%s",
+                (read, entry_id))
         elif ids:
             cur.execute(
                 "UPDATE Entries SET read_mark=%s "
