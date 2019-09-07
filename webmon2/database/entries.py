@@ -362,16 +362,26 @@ def save(db, entry: model.Entry) -> model.Entry:
 
 def save_many(db, entries: model.Entries):
     """ Insert entries; where entry with given oid already exists - is deleted
-        TODO: save star_mark for updated
+        and inserted again; star mark is preserved.
     """
     with db.cursor() as cur:
         # filter updated entries; should be deleted & inserted
         oids_to_delete = [(entry.oid, ) for entry in entries
                           if entry.status == 'updated']
         if oids_to_delete:
+            # find stared entries
+            cur.execute("select oid from entries where oid=%s and star_mark=1",
+                        oids_to_delete)
+            marked_oids = {row[0] for row in cur}
             cur.executemany("delete from entries where oid=%s",
                             oids_to_delete)
-        _LOG.debug("to del %d, deleted: %d", len(oids_to_delete), cur.rowcount)
+            _LOG.debug("to del %d, deleted: %d", len(oids_to_delete),
+                       cur.rowcount)
+            # set star mark for updated entries
+            if marked_oids:
+                for entry in entries:
+                    if entry.oid in marked_oids:
+                        entry.star_mark = True
         rows = map(model.Entry.to_row, entries)
         cur.executemany(_INSERT_ENTRY_SQL, rows)
     _save_entry_icon(db, entries)
