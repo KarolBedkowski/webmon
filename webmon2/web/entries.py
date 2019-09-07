@@ -69,12 +69,14 @@ def _get_req_source(db, user_id):
         return None
     try:
         source_id = int(source_id)
-        source = database.sources.get(db, source_id)
-        if source.user_id == user_id:
-            return source
-    except (ValueError, database.NotFound) as err:
+        if not source_id:
+            return None
+    except ValueError as err:
         _LOG.debug("req source error: %s", err)
-    return None
+        return None
+    return database.sources.get(db, source_id,
+                                with_state=False, with_group=False,
+                                user_id=user_id)
 
 
 def _get_req_group(db, user_id):

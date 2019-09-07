@@ -41,8 +41,8 @@ def source_refresh(source_id):
 def source_delete(source_id):
     db = get_db()
     user_id = session['user']
-    source = database.sources.get(db, source_id)
-    if not source or source.user_id != user_id:
+    source = database.sources.get(db, source_id, user_id=user_id)
+    if not source:
         return abort(404)
     database.sources.delete(db, source_id)
     db.commit()
@@ -61,7 +61,8 @@ def source_edit(source_id=None, kind=None):
     db = get_db()
     user_id = session['user']
     if source_id:
-        source = database.sources.get(db, source_id, with_state=True)
+        source = database.sources.get(db, source_id, with_state=True,
+                                      user_id=user_id)
         if not source or source.user_id != user_id:
             return abort(404)
     elif kind:
@@ -111,8 +112,9 @@ def source_edit(source_id=None, kind=None):
 def source_entries(source_id, mode='unread', page=0):
     db = get_db()
     user_id = session['user']
-    source = database.sources.get(db, source_id, with_group=True)
-    if source.user_id != user_id:
+    source = database.sources.get(db, source_id, with_group=True,
+                                  user_id=user_id)
+    if not source:
         return abort(404)
 
     offset = (page or 0) * c.PAGE_LIMIT
@@ -164,8 +166,8 @@ def source_mark_read(source_id):
 def source_filters(source_id):
     db = get_db()
     user_id = session['user']
-    source = database.sources.get(db, source_id)
-    if not source or source.user_id != user_id:
+    source = database.sources.get(db, source_id, user_id=user_id)
+    if not source:
         return abort(404)
     _LOG.debug("source.filters: %s", source.filters)
     filter_fields = [
@@ -188,9 +190,9 @@ def source_filter_add(source_id):
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=['GET', 'POST'])
 def source_filter_edit(source_id, idx):
     db = get_db()
-    source = database.sources.get(db, source_id)
     user_id = session['user']
-    if not source or source.user_id != user_id:
+    source = database.sources.get(db, source_id, user_id=user_id)
+    if not source:
         return abort(404)
     is_new = idx == 'new'
     if not is_new:
@@ -269,8 +271,8 @@ def source_filter_delete(source_id, idx):
 def source_entry(source_id, mode, entry_id):
     db = get_db()
     user_id = session['user']
-    src = database.sources.get(db, source_id)
-    if not src or src.user_id != user_id:
+    src = database.sources.get(db, source_id, user_id=user_id)
+    if not src:
         return abort(404)
     entry = database.entries.get(db, entry_id, with_source=True,
                                  with_group=True)

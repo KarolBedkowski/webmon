@@ -85,16 +85,23 @@ from sources where id=%s
 """
 
 
-def get(db, id_: int, with_state=False, with_group=True) -> model.Source:
-    """ Get one source with optionally with state and group info """
+def get(db, id_: int, with_state=False, with_group=True,
+        user_id: ty.Optional[int] = None) -> model.Source:
+    """ Get one source with optionally with state and group info.
+        Optionally check is source belong to given user.
+        Return none when not found.
+    """
     with db.cursor() as cur:
         cur.execute(_GET_SOURCE_SQL, (id_, ))
         row = cur.fetchone()
 
     if row is None:
-        raise dbc.NotFound()
+        return None
 
     source = model.Source.from_row(row)
+    if user_id and user_id != source.user_id:
+        return None
+
     if with_state:
         source.state = get_state(db, source.id)
     if with_group and source.group_id:

@@ -93,9 +93,8 @@ class FetchWorker(threading.Thread):
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source_id)
-        try:
-            source = database.sources.get(db, id_=source_id, with_state=True)
-        except database.NotFound:
+        source = database.sources.get(db, id_=source_id, with_state=True)
+        if not sources:
             _LOG.error("[%s] source %d not found!", self._idx, source_id)
             return
 
