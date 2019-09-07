@@ -29,6 +29,7 @@
 		{% else %}
 		<a href="{{ url_for('source.source_entries', source_id=source.id, mode='all') }}">⊛ Show all</a>
 		{% endif %}
+		<a href="{{ url_for("entries.entries_search", source_id=source.id) }}">🔍 Search</a>
 	</div>
 	{{ nav_bar() }}
 {% endblock %}

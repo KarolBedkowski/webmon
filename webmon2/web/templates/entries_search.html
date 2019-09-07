@@ -6,7 +6,7 @@
 
 
 {% block header %}
-	<h1>{% block title %}Entries search{% endblock %}</h1>
+	<h1>{% block title %}Entries search{% endblock %} {{ search_ctx }}</h1>
 	<div class="actions">
 		<form>
 			<fieldset>
@@ -15,6 +15,8 @@
 				<label>Title only: </label>
 				<input type="checkbox" name="title-only" {% if title_only %} checked="checked" {% endif %} />
 				<button type="submit">Search</button>
+				<input type="hidden" name="group_id" value="{{ group_id }}" />
+				<input type="hidden" name="source_id" value="{{ source_id }}" />
 			</fieldset>
 		</form>
 	</div>

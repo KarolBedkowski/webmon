@@ -107,15 +107,12 @@ order by e.id
 
 _GET_ENTRIES_FULLTEXT_TITLE_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
-    and e.user_id=%(user_id)s
-order by e.id
 '''
 
 _GET_ENTRIES_FULLTEXT_SQL = _GET_ENTRIES_SQL_MAIN + '''
 where to_tsvector(content || ' ' || title)
         @@ to_tsquery('pg_catalog.simple', %(query)s)
     and e.user_id=%(user_id)s
-order by e.id
 '''
 
 
@@ -228,16 +225,29 @@ def find(db, user_id: int, source_id=None, group_id=None, unread=True,
             yield entry
 
 
-def find_fulltext(db, user_id: int, query: str, title_only: bool) \
+def find_fulltext(db, user_id: int, query: str, title_only: bool,
+                  group_id: ty.Optional[int] = None,
+                  source_id: ty.Optional[int] = None) \
         -> model.Entries:
     """ Find entries for user by full-text search on title or title and content.
+        Search in source (if given source_id) or in group (if given group_id)
+        or in all entries given user
     """
     args = {
         "user_id": user_id,
         'query': query,
+        'group_id': group_id,
+        'source_id': source_id,
     }
     sql = _GET_ENTRIES_FULLTEXT_TITLE_SQL if title_only \
         else _GET_ENTRIES_FULLTEXT_SQL
+    if source_id:
+        sql += " and e.source_id=%(source_id)s "
+    elif group_id:
+        sql += " and s.group_id=%(group_id)s "
+    else:
+        sql += " and e.user_id=%(user_id)s "
+    sql += " order by e.id"
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]

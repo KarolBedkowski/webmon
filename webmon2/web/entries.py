@@ -63,6 +63,34 @@ def entries_history():
     return render_template("history.html", entries=entries_)
 
 
+def _get_req_source(db, user_id):
+    source_id = request.args.get("source_id")
+    if not source_id:
+        return None
+    try:
+        source_id = int(source_id)
+        source = database.sources.get(db, source_id)
+        if source.user_id == user_id:
+            return source
+    except (ValueError, database.NotFound) as err:
+        _LOG.debug("req source error: %s", err)
+    return None
+
+
+def _get_req_group(db, user_id):
+    group_id = request.args.get("group_id")
+    if not group_id:
+        return None
+    try:
+        group_id = int(group_id)
+        group = database.groups.get(db, group_id)
+        if group.user_id == user_id:
+            return group
+    except (ValueError, database.NotFound) as err:
+        _LOG.debug("req group error: %s", err)
+    return None
+
+
 @BP.route('/search')
 def entries_search():
     db = get_db()
@@ -70,12 +98,27 @@ def entries_search():
     query = request.args.get('query')
     query = query.strip() if query else ''
     title_only = bool(request.args.get('title-only'))
+
+    search_ctx = ''
+    source = _get_req_source(db, user_id)
+    source_id, group_id = None, None
+    if source:
+        search_ctx = "in source: " + source.name
+        source_id = source.id
+    else:
+        group = _get_req_group(db, user_id)
+        if group:
+            search_ctx = "in group: " + group.name
+            group_id = group.id
+
     entries_ = None
     if query:
         entries_ = list(database.entries.find_fulltext(
-            db, user_id, query, title_only))
+            db, user_id, query, title_only, group_id, source_id))
     return render_template("entries_search.html", entries=entries_,
-                           query=query, title_only=title_only)
+                           query=query, title_only=title_only,
+                           group_id=group_id or '', source_id=source_id or '',
+                           search_ctx=search_ctx)
 
 
 @BP.route('/<mode>/mark/read')
