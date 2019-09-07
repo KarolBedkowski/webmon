@@ -254,7 +254,7 @@ def find_fulltext(db, user_id: int, query: str, title_only: bool,
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            source_id = entry.source_id
+            source_id = entry.source_id  # type: int
             entry.source = user_sources.get(source_id)
             if not entry.source:
                 entry.source = user_sources[source_id] = \

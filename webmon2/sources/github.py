@@ -220,7 +220,7 @@ def _filter_tags(tags, repository, min_date: datetime):
             commit = repository.commit(tag.commit.sha)
             if commit:
                 commit_date = common.parse_http_date(commit.last_modified)
-                if commit_date > min_date:
+                if commit_date and commit_date > min_date:
                     tag.ex_commit_date = commit_date
                     yield tag
         except github3.exceptions.NotFoundError:

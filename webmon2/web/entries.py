@@ -85,6 +85,8 @@ def _get_req_group(db, user_id):
         return None
     try:
         group_id = int(group_id)
+        if not group_id:
+            return None
     except ValueError as err:
         _LOG.debug("req group error: %s", err)
         return None
