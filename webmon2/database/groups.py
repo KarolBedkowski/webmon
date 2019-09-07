@@ -58,14 +58,20 @@ where id= %s
 """
 
 
-def get(db, group_id) -> model.SourceGroup:
-    """ Get one group. """
+def get(db, group_id, user_id: ty.Optional[int] = None) \
+        -> ty.Optional[model.SourceGroup]:
+    """ Get one group. Optionally check is group belong to user.
+    Return None if not found.
+    """
     with db.cursor() as cur:
         cur.execute(_GET_SQL, (group_id, ))
         row = cur.fetchone()
         if not row:
-            raise dbc.NotFound()
-        return model.SourceGroup.from_row(row)
+            return None
+        source = model.SourceGroup.from_row(row)
+        if user_id and source.user_id != user_id:
+            return None
+        return source
 
 
 _FIND_SQL = """

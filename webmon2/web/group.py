@@ -44,8 +44,8 @@ def group_edit(group_id=0):
     db = get_db()
     user_id = session['user']
     if group_id:
-        sgroup = database.groups.get(db, group_id)
-        if not sgroup or sgroup.user_id != user_id:
+        sgroup = database.groups.get(db, group_id, user_id)
+        if not sgroup:
             return abort(404)
     else:
         sgroup = model.SourceGroup(user_id=user_id)
@@ -70,8 +70,8 @@ def group_edit(group_id=0):
 def group_sources(group_id: int):
     db = get_db()
     user_id = session['user']
-    group = database.groups.get(db, group_id)
-    if group.user_id != user_id:
+    group = database.groups.get(db, group_id, user_id)
+    if not group:
         return abort(404)
     return render_template(
         "group_sources.html",
@@ -84,10 +84,9 @@ def group_sources(group_id: int):
 @BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
 def group_entries(group_id, mode='unread', page=0):
     db = get_db()
-    sgroup = database.groups.get(db, group_id)
     user_id = session['user']
-
-    if sgroup.user_id != user_id:
+    sgroup = database.groups.get(db, group_id, user_id)
+    if not sgroup:
         return abort(404)
 
     offset = (page or 0) * c.PAGE_LIMIT
@@ -151,8 +150,8 @@ def group_delete(group_id):
     db = get_db()
     user_id = session['user']
     try:
-        group_ = database.groups.get(db, group_id)
-        if not group_ or group_.user_id != user_id:
+        group_ = database.groups.get(db, group_id, user_id)
+        if not group_:
             return abort(404)
         database.groups.delete(db, user_id, group_id)
         db.commit()
@@ -168,8 +167,8 @@ def group_delete(group_id):
 def group_entry(group_id, mode, entry_id):
     db = get_db()
     user_id = session['user']
-    group = database.groups.get(db, group_id)
-    if not group or group.user_id != user_id:
+    group = database.groups.get(db, group_id, user_id)
+    if not group:
         return abort(404)
     entry = database.entries.get(db, entry_id, with_source=True,
                                  with_group=True)

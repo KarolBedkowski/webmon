@@ -83,12 +83,10 @@ def _get_req_group(db, user_id):
         return None
     try:
         group_id = int(group_id)
-        group = database.groups.get(db, group_id)
-        if group.user_id == user_id:
-            return group
-    except (ValueError, database.NotFound) as err:
+    except ValueError as err:
         _LOG.debug("req group error: %s", err)
-    return None
+        return None
+    return database.groups.get(db, group_id, user_id)
 
 
 @BP.route('/search')
