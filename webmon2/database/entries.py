@@ -171,26 +171,22 @@ def get_history(db, user_id: int) -> model.Entries:
 def get_total_count(db, user_id: int, source_id=None, group_id=None,
                     unread=True) -> int:
     """ Get number of read/all entries for user/source/group """
+    assert user_id or source_id or group_id
     args = {
         'group_id': group_id,
         'source_id': source_id,
         "user_id": user_id,
     }
     if source_id:
-        sql = "select count(*) from entries where source_id=%(source_id)s "\
-            "and user_id=%(user_id)s"
-        if unread:
-            sql += " and read_mark=0"
+        sql = "select count(*) from entries where source_id=%(source_id)s "
     elif group_id:
-        sql = ("select count(*) from entries where source_id in "
-               "(select id from sources s where s.group_id=%(group_id)s) "
-               "and user_id=%(user_id)s")
-        if unread:
-            sql += "and read_mark=0"
+        sql = ("select count(*) from entries e "
+               "join sources s on e.source_id = s.id "
+               "where s.group_id=%(group_id)s ")
     else:
         sql = "select count(*) from entries where user_id=%(user_id)s"
-        if unread:
-            sql += " and read_mark=0"
+    if unread:
+        sql += " and read_mark=0"
     with db.cursor() as cur:
         cur.execute(sql, args)
         result = cur.fetchone()[0]
