@@ -47,6 +47,8 @@ Options
 --web-app-root WEB_APP_ROOT
                       root for url patch (for reverse proxy)
 --workers WORKERS     number of background workers
+--web-address WEB_ADDRESS
+                      web interface listen address (default: 127.0.0.1:5000)
 
 
 DATABASE - connection string in form:
