@@ -18,6 +18,7 @@ import smtplib
 import logging
 import subprocess
 import typing as ty
+import re
 
 import html2text as h2t
 
@@ -44,8 +45,12 @@ def process(db, user_id):
             _LOG.debug("still waiting for send mail")
             return
 
-    content = ''.join(_process_groups(db, conf, user_id))
-#    _LOG.debug("content: %s", content)
+    try:
+        content = ''.join(_process_groups(db, conf, user_id))
+    except Exception as err:
+        _LOG.error('prepare mail error', err)
+        return
+
     if content and not _send_mail(conf, content):
         return
 
@@ -70,6 +75,7 @@ def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
                and source.mail_report != model.MailReportMode.NO_SEND
                ]
     if not sources:
+        _LOG.debug('no unread sources in group %d', group_id)
         return
 
     group_name = sources[0].group.name
@@ -105,6 +111,7 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
     yield '\n\n'
 
     for entry in entries:
+        _LOG.debug('processing entry id %dd', entry.id)
         yield from _render_entry_plain(entry)
 
     if conf.get('mail_mark_read'):
@@ -112,6 +119,15 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
         database.entries.mark_read(db, user_id, ids=ids)
 
     yield '\n\n'
+
+
+_HEADER_LINE = re.compile(r'^#+ .+')
+
+
+def _adjust_header(line, prefix='###'):
+    if line and _HEADER_LINE.match(line):
+        return prefix + line
+    return line
 
 
 def _render_entry_plain(entry):
@@ -134,7 +150,7 @@ def _render_entry_plain(entry):
             conv.protect_links = True
             yield conv.handle(entry.content)
         else:
-            yield entry.content
+            yield "\n".join(map(_adjust_header, entry.content.split("\n")))
         yield '\n'
 
 
@@ -165,6 +181,8 @@ def _send_mail(conf, content):
         msg['Date'] = email.utils.formatdate()
         smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") \
             else smtplib.SMTP()
+        if _LOG.isEnabledFor(logging.DEBUG):
+            smtp.set_debuglevel(True)
         host, port = conf["smtp_host"], conf["smtp_port"]
         _LOG.debug("host, port: %r, %r", host, port)
         smtp.connect(host, port)
