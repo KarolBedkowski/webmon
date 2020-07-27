@@ -16,7 +16,10 @@ import time
 import random
 
 from flask import Flask, g, url_for, session, request, redirect, abort
-from werkzeug.wsgi import DispatcherMiddleware
+try:
+    from werkzeug.wsgi import DispatcherMiddleware
+except ImportError:
+    from wsgizeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
