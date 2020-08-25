@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2019
+# Copyright (c) Karol Będkowski, 2016-2020
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -12,7 +12,7 @@ Models
 
 import os
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta
 import typing as ty
 import logging
 import json
@@ -199,7 +199,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     def new(source_id):
         source = SourceState()
         source.source_id = source_id
-        source.next_update = datetime.now()
+        source.next_update = datetime.now() + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
         source.status = 'new'
