@@ -2,7 +2,7 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2020
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -26,10 +26,10 @@ except ImportError:
 from . import database, logging_setup, worker, web, cli
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2020"
 _ = ty
 
-VERSION = "2.0"
+VERSION = "2.1"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
