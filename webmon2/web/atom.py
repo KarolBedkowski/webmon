@@ -5,6 +5,8 @@
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
+#
+# based on  https://github.com/nwalsh1995/min-rss-gen
 
 """
 Web gui
@@ -14,34 +16,89 @@ import logging
 import typing as ty
 import urllib
 from datetime import datetime
+import xml.etree.ElementTree
 
 from flask import (
     Blueprint, url_for, request, abort, Response
 )
-from werkzeug.contrib.atom import AtomFeed
 
 from webmon2.web import get_db
 from webmon2 import database
-from webmon2 import formatters
 
 
-_ = ty
 _LOG = logging.getLogger(__name__)
 BP = Blueprint('atom', __name__, url_prefix='/atom')
+
+DEFAULT_ETREE = xml.etree.ElementTree
+ItemElement = ty.NewType("ItemElement", DEFAULT_ETREE.Element)
+
+
+def add_subelement_with_text(
+        root: DEFAULT_ETREE.Element,
+        child_tag: str,
+        text: str
+        ) -> DEFAULT_ETREE.SubElement:
+    sub = DEFAULT_ETREE.SubElement(root, child_tag)
+    sub.text = text
+    return sub
+
+
+def gen_item(
+        title: ty.Optional[str] = None,
+        link: ty.Optional[str] = None,
+        description: ty.Optional[str] = None,
+        comments: ty.Optional[str] = None,
+        pubDate: ty.Optional[str] = None,
+        ) -> ItemElement:
+
+    args = {k: v for k, v in locals().items() if v is not None}
+    item = DEFAULT_ETREE.Element("item")
+    for tag_name, tag_value in args.items():
+        add_subelement_with_text(item, tag_name, tag_value)
+
+    return ItemElement(item)
+
+
+def start_rss(
+        title: str,
+        link: str,
+        description: str,
+        pubDate: ty.Optional[str] = None,
+        lastBuildDate: ty.Optional[str] = None,
+        items: ty.Optional[ty.Iterable[ItemElement]] = None
+        ) -> DEFAULT_ETREE.Element:
+    args = {k: v for k, v in locals().items() if v is not None
+            and k not in ("items", "title", "link", "description")}
+
+    rss = DEFAULT_ETREE.Element("rss", version="2.0")
+    channel = DEFAULT_ETREE.SubElement(rss, "channel")
+
+    add_subelement_with_text(channel, "title", title)
+    add_subelement_with_text(channel, "link", link)
+    add_subelement_with_text(channel, "description", description)
+
+    for atitle, value in args.items():
+        add_subelement_with_text(channel, atitle, value)
+
+    if items is not None:
+        channel.extend(items)
+
+    return rss
+
 
 
 @BP.route("/group/<key>")
 def group(key):
-    db = get_db()
-
     if key == 'off':
         return abort(404)
 
+    db = get_db()
+
     try:
-        group = database.groups.get_by_feed(db, key)
+        grp = database.groups.get_by_feed(db, key)
     except database.NotFound:
         return abort(404)
-    updated_etag = database.groups.get_state(db, group.id)
+    updated_etag = database.groups.get_state(db, grp.id)
     _LOG.debug('updated_etag %r', updated_etag)
     if not updated_etag:
         return Response('Not modified', 304)
@@ -57,22 +114,29 @@ def group(key):
         _LOG.debug('if_matche: %s', request.if_match)
         return Response('Not modified', 304)
 
-    feed = AtomFeed("Webmon2 - " + group.name,
-                    feed_url=request.url, url=request.url_root,
-                    updated=updated)
+    rss_items = []
 
-    for entry in database.entries.find_for_feed(db, group.id):
+    for entry in database.entries.find_for_feed(db, grp.id):
         body = entry.content
-        atom_content_type = 'text' if entry.get_opt('preformated') else 'html'
         url = urllib.parse.urljoin(request.url_root,
                                    url_for("entry.entry", entry_id=entry.id))
 
-        feed.add(entry.title or entry.group.name, body,
-                 content_type=atom_content_type, url=url,
-                 updated=entry.updated or entry.created or datetime.now(),
-                 published=entry.created)
+        rss_items.append(gen_item(
+            title=entry.title or entry.grp.name,
+            link=url,
+            description=body,
+            pubDate=(entry.updated or entry.created
+                     or datetime.now()).isoformat()))
 
-    response = feed.get_response()
+    rss_xml_element = start_rss(
+        title="Webmon2 - " + grp.name,
+        description="Webmon2 feed for group " + grp.name,
+        link=request.url,
+        items=rss_items,
+        pubDate=updated.isoformat())
+
+    response = Response(xml.etree.ElementTree.tostring(rss_xml_element),
+                        mimetype="application/atom+xml")
     response.headers['ETag'] = etag
     response.headers['Last-Modified'] = updated
     return response
