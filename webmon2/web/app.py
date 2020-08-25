@@ -19,7 +19,7 @@ from flask import Flask, g, url_for, session, request, redirect, abort
 try:
     from werkzeug.wsgi import DispatcherMiddleware
 except ImportError:
-    from wsgizeug.middleware.dispatcher import DispatcherMiddleware
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
