@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2019
+# Copyright (c) Karol Będkowski, 2016-2020
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -98,7 +98,13 @@ class FetchWorker(threading.Thread):
             _LOG.error("[%s] source %d not found!", self._idx, source_id)
             return
 
-        src = self._get_src(db, source)
+        try:
+            src = self._get_src(db, source)
+        except sources.UnknownInputException as err:
+            _LOG.error("[%s] source %d: unknown input", self._idx, source_id)
+            _save_state_error(db, source, "unsupported source")
+            return
+
         if not src:
             return
 
@@ -108,6 +114,12 @@ class FetchWorker(threading.Thread):
             _LOG.exception("[%s] load source id=%d error: %s",
                            self._idx, source_id, err)
             _save_state_error(db, source, err)
+            return
+
+        if new_state.status == 'error':
+            _SOURCES_PROCESSED_ERRORS.inc()
+            new_state.next_update = _calc_next_check_on_error(source)
+            database.sources.save_state(db, new_state, source.user_id)
             return
 
         last_update = source.state.last_update or datetime.datetime.now()
@@ -257,14 +269,18 @@ def _send_mails(db):
     _LOG.debug("_send_mails end")
 
 
-def _save_state_error(db, source: model.Source, err: str):
-    _SOURCES_PROCESSED_ERRORS.inc()
+def _calc_next_check_on_error(source: model.Source):
     next_check_delta = common.parse_interval(source.interval or '1d')
     # add some random time
-    next_check_delta += random.randint(600, 3600)
+    next_check_delta += random.randint(3600, 7200)
+    return datetime.datetime.now() + datetime.timedelta(
+        seconds=next_check_delta)
+
+
+def _save_state_error(db, source: model.Source, err: str):
+    _SOURCES_PROCESSED_ERRORS.inc()
 
     new_state = source.state.new_error(str(err))
-    new_state.next_update = datetime.datetime.now() + \
-        datetime.timedelta(seconds=next_check_delta)
+    new_state.next_update = _calc_next_check_on_error(source)
 
     database.sources.save_state(db, new_state, source.user_id)
