@@ -58,10 +58,9 @@ class WebSource(AbstractSource):
             response = requests.request(
                 url=url, method='GET', headers=headers,
                 timeout=self._conf['timeout'], allow_redirects=True)
-            if not response:
-                return state.new_error("no result"), []
 
-            response.raise_for_status()
+            if response is None:
+                return state.new_error("no result"), []
 
             if response.status_code == 304:
                 new_state = state.new_not_modified()

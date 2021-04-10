@@ -14,7 +14,7 @@ img{max-width: 100%}
 .row2 {display:grid; grid-template-columns: 1fr 1fr; margin: 1em 0;}
 .left {justify-self:start}
 .left * {margin-right: 0.5em}
-.right {justify-self:end}
+.right {justify-self:end; width: max-content}
 .right * {margin-left: 0.5em}
 
 article header .actions {font-size: 90%;margin: 0}

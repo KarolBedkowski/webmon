@@ -23,7 +23,7 @@
 				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Realy delete source?">✘ Delete</a></span>
 			</div>
 			{% if source.status == 0 %}
-				<p class="error">Need configure</p>
+				<p class="error">Need configure &amp; activate.</p>
 			{% elif source.status == 2 %}
 				<p class="warn">Disabled</p>
 			{% else %}
