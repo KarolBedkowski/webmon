@@ -16,5 +16,7 @@ webmon.db*
 build
 *.egg-info
 dist
-
+Doxyfile
+Makefile
+/log
 /.gtm/
