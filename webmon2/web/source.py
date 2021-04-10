@@ -66,7 +66,8 @@ def source_edit(source_id=None, kind=None):
         if not source or source.user_id != user_id:
             return abort(404)
     elif kind:
-        source = model.Source(kind=kind, user_id=user_id, name='')
+        source = model.Source(kind=kind, user_id=user_id, name='',
+                              status=0)
     else:
         return abort(400)
     src = sources.get_source(source, {})
@@ -85,12 +86,13 @@ def source_edit(source_id=None, kind=None):
         source = source_form.update_model(source)
         errors.update(src.validate_conf(source.settings, user_settings))
         if not errors:
-            if source.status == 0:
+            next_action = request.form.get("next_action")
+            if next_action == 'save_activate':
                 source.status = 1
+
             source = database.sources.save(db, source)
             db.commit()
             flash("Source saved")
-            next_action = request.form.get("next_action")
             if next_action == 'edit_filters':
                 return redirect(url_for("source.source_filters",
                                         source_id=source.id))
