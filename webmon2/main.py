@@ -21,7 +21,13 @@ try:
     import stackprinter
     stackprinter.set_excepthook(style='color')
 except ImportError:
-    pass
+    print('no stackprinter')
+    try:
+        from rich.traceback import install
+        install()
+    except ImportError:
+        print('no rich.trackback')
+
 
 from . import database, logging_setup, worker, web, cli
 

@@ -42,6 +42,11 @@ def _load_plugins():
     except ImportError:
         _LOG.warn("feedparser module not found")
 
+    try:
+        from . import gitlab
+    except ImportError as err:
+        _LOG.warn("gitlab load error: {}", err)
+
 
 _load_plugins()
 
