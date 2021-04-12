@@ -33,7 +33,7 @@ class AbstractGitLabSource(AbstractSource):
     params = AbstractSource.params + [
         common.SettingDef("project", "project id; i.e. user/project",
                           required=True),
-        common.SettingDef("gitlab_url", "GitLab url", required=True,
+        common.SettingDef("gitlab_url", "GitLab url",
                           default=_GITLAB_DEFAULT_URL),
         common.SettingDef("gitlab_token", "user personal token", required=True,
                           global_param=True),
