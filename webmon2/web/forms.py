@@ -67,7 +67,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             if values else None
         field.type_class = param.type
         field.fieldname = prefix + param.name
-        field.default_value = sett_value
+        field.default_value = sett_value or param.default or ''
         field.parameters = param.parameters
         return field
 
