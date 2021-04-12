@@ -27,9 +27,17 @@ _FAVICON = "favicon.ico"
 _ = ty
 
 
-class GitLabMixin:
+class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
     # pylint: disable=too-few-public-methods
+    params = AbstractSource.params + [
+        common.SettingDef("project", "project id; i.e. user/project",
+                          required=True),
+        common.SettingDef("gitlab_url", "GitLab url", required=True,
+                          default=_GITLAB_DEFAULT_URL),
+        common.SettingDef("gitlab_token", "user personal token", required=True,
+                          global_param=True),
+    ]
 
     @staticmethod
     def _gitlab_check_project_updated(
@@ -54,8 +62,9 @@ class GitLabMixin:
 
         return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def _gitlab_get_project(self, conf: dict):
+    def _gitlab_get_project(self):
         """Create project object according to configuration. """
+        conf = self._conf
         if conf.get("gitlab_url") and conf.get("gitlab_token"):
             try:
                 gitl = gitlab.Gitlab(conf.get("gitlab_url"),
@@ -66,8 +75,8 @@ class GitLabMixin:
                 raise common.InputError(self, "Gitlab auth error: " + str(err))
         return None
 
-    def _get_favicon(self, conf: dict):
-        url = conf['gitlab_url']
+    def _get_favicon(self):
+        url = self._conf['gitlab_url']
         if not url.endswith('/'):
             url += '/'
         return url + _FAVICON
@@ -85,20 +94,14 @@ def _build_entry(source: model.Source, project, content: str) \
     return entry
 
 
-class GitLabCommits(AbstractSource, GitLabMixin):
+class GitLabCommits(AbstractGitLabSource):
     """Load last commits from gitlab."""
 
     name = "gitlab_commits"
     short_info = "Commit history from GitLab repository"
     long_info = 'Source load commits history from configured repository.' \
         ' For work required configured GitLab account with token.'
-    params = AbstractSource.params + [
-        common.SettingDef("project", "project id; i.e. user/project",
-                          required=True),
-        common.SettingDef("gitlab_url", "GitLab url", required=True,
-                          default=_GITLAB_DEFAULT_URL),
-        common.SettingDef("gitlab_token", "user personal token", required=True,
-                          global_param=True),
+    params = AbstractGitLabSource.params + [
         common.SettingDef("short_list", "show commits as short list",
                           default=True),
         common.SettingDef("full_message", "show commits whole commit body",
@@ -108,7 +111,7 @@ class GitLabCommits(AbstractSource, GitLabMixin):
     def load(self, state: model.SourceState) \
             -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         """Return commits."""
-        project = self._gitlab_get_project(self._conf)
+        project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
 
@@ -123,7 +126,7 @@ class GitLabCommits(AbstractSource, GitLabMixin):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(
-                    self._get_favicon(self._conf)))
+                    self._get_favicon()))
             return new_state, []
 
         short_list = self._conf.get("short_list")
@@ -140,7 +143,7 @@ class GitLabCommits(AbstractSource, GitLabMixin):
         new_state = state.new_ok()
         if not new_state.icon:
             new_state.set_icon(self._load_binary(
-                self._get_favicon(self._conf)))
+                self._get_favicon()))
 
         entry = _build_entry(self._source, project, content)
         entry.icon = new_state.icon
@@ -160,3 +163,64 @@ def _format_gl_commit_long(commit, full_message: bool) -> str:
         msg = msg[:1]
     result.extend(msg)
     return "\n".join(result)
+
+
+class GitLabTagsSource(AbstractGitLabSource):
+    """Load last tags from gitlab."""
+
+    name = "gitlab_tags"
+    short_info = "Tags from GitLab repository"
+    long_info = 'Source load tags from configured repository.' \
+        ' For work required configured GitLab account with token.'
+    params = AbstractGitLabSource.params + [
+        common.SettingDef("max_items", "Maximal number of tags to load",
+                          default=5),
+    ]  # type: ty.List[common.SettingDef]
+
+    def load(self, state: model.SourceState) \
+            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+        """Return commits."""
+        project = self._gitlab_get_project()
+        if not project:
+            return state.new_error("Project not found"), []
+
+        data_since = self._gitlab_check_project_updated(
+            project, state.last_update)
+        if not data_since:
+            return state.new_not_modified(), []
+
+        tags = project.tags.list(since=data_since)
+        _LOG.debug("tags: %r", tags)
+        if not tags:
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(
+                    self._get_favicon()))
+            return new_state, []
+
+        try:
+            content = '\n\n'.join(filter(None, map(_format_gl_tag, tags)))
+        except Exception as err:
+            _LOG.exception("gitlab load error: %s", err)
+            raise common.InputError(self, err)
+
+        new_state = state.new_ok()
+        self._state_update_icon(new_state)
+
+        entry = _build_entry(self._source, project, content)
+        entry.icon = new_state.icon
+        return new_state, [entry]
+
+    def _state_update_icon(self, new_state):
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(self._get_favicon()))
+
+
+def _format_gl_tag(tag) -> str:
+    res = tag.name
+    commit_date = tag.commit.get('committed_date')
+    if commit_date:
+        res += " " + commit_date
+    if tag.message:
+        res += " " + tag.message
+    return res
