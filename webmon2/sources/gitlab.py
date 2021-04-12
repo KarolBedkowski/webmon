@@ -189,7 +189,8 @@ class GitLabTagsSource(AbstractGitLabSource):
         if not data_since:
             return state.new_not_modified(), []
 
-        tags = project.tags.list(since=data_since)
+        tags = project.tags.list(since=data_since,
+                                 per_page=self._conf['max_items'])
         _LOG.debug("tags: %r", tags)
         if not tags:
             new_state = state.new_not_modified()
@@ -224,3 +225,71 @@ def _format_gl_tag(tag) -> str:
     if tag.message:
         res += " " + tag.message
     return res
+
+
+class GitLabReleasesSource(AbstractGitLabSource):
+    """Load last releases from gitlab."""
+
+    name = "gitlab_releases"
+    short_info = "Releases from GitLab repository"
+    long_info = 'Source load releases history from configured repository.' \
+        ' For work required configured GitLab account with token.'
+    params = AbstractGitLabSource.params + [
+        common.SettingDef("max_items", "Maximal number of tags to load",
+                          value_type=int),
+    ]  # type: ty.List[common.SettingDef]
+
+    def load(self, state: model.SourceState) \
+            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+        """Return releases."""
+
+        project = self._gitlab_get_project()
+        if not project:
+            return state.new_error("Project not found"), []
+
+        data_since = self._gitlab_check_project_updated(
+            project, state.last_update)
+        if not data_since:
+            return state.new_not_modified(), []
+
+        releases = project.releases.list(since=data_since,
+                                         per_page=self._conf['max_items'])
+        _LOG.debug("releases: %r", releases)
+
+        if not releases:
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_binary(
+                    self._get_favicon()))
+            return new_state, []
+
+        entries = [
+            _build_gl_release_entry(self._source, project, release)
+            for release in releases
+        ]
+
+        new_state = state.new_ok()
+        if not new_state.icon:
+            new_state.set_icon(self._load_binary(
+                self._get_favicon()))
+
+        for entry in entries:
+            entry.icon = new_state.icon
+        return new_state, entries
+
+
+def _build_gl_release_entry(source: model.Source, project, release) \
+        -> model.Entry:
+    res = ['### ', release.name, ' ', release.tag_name,
+           '\n\nDate: ', release.created_at]
+    links = release.attributes.get('_links')
+    if links:
+        slink = links.get('self')
+        if slink:
+            res.extend(('\n', slink))
+    if release.description:
+        res.append('\n')
+        res.extend(line.strip() + "\n"
+                   for line in release.description.strip().split('\n'))
+    content = "".join(map(str, res))
+    return _build_entry(source, project, content)
