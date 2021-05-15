@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -19,12 +19,12 @@ _LOG = logging.getLogger(__name__)
 
 _GET_SOURCE_GROUPS_SQL = """
 select sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
-    (select count(*)
+    (select count(1)
         from entries e
         join sources s on e.source_id = s.id
         where e.read_mark = 0 and s.group_id = sg.id
     ) as unread,
-    (select count(*) from sources s where s.group_id = sg.id)
+    (select count(1) from sources s where s.group_id = sg.id)
         as sources_count
 from source_groups sg
 where sg.user_id= %s

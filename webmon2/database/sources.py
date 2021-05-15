@@ -40,7 +40,7 @@ select s.id as source__id, s.group_id as source__group_id,
     ss.error as source_state__error,
     ss.state as source_state__state,
     ss.icon as source_state__icon,
-    (select count(*)
+    (select count(1)
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
 left join source_state ss on ss.source_id = s.id
