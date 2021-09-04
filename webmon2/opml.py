@@ -28,9 +28,9 @@ class InvalidFile(RuntimeError):
 
 def load_opml(content: bytes):
     root = etree.XML(content)
-    if root.tag != 'opml':
-        raise InvalidFile('content is not opml')
-    body = root.find('body')
+    if root.tag != "opml":
+        raise InvalidFile("content is not opml")
+    body = root.find("body")
     data = sorted(_load(body), key=lambda x: x[0])
     return itertools.groupby(data, lambda x: x[0])
 
@@ -54,18 +54,14 @@ def dump_data(db, user_id: int):
     groups = database.groups.get_all(db, user_id)
     gnodes = []
     for group in groups:
-        items = (_dump_source(source)
-                 for source
-                 in database.sources.get_all(db, user_id, group.id))
+        items = (
+            _dump_source(source)
+            for source in database.sources.get_all(db, user_id, group.id)
+        )
         items = list(filter(lambda x: x is not None, items))
         if items:
             gnodes.append(E.outline(*items, text=group.name, title=group.name))
-    root = E.opml(
-        E.head(
-            E.title("subscriptions")
-        ),
-        E.body(*gnodes)
-    )
+    root = E.opml(E.head(E.title("subscriptions")), E.body(*gnodes))
     return etree.tostring(root)
 
 
@@ -82,8 +78,8 @@ def _dump_source(source):
 
 
 def _load(node, group=None):
-    for snode in node.findall('outline'):
-        ntype = snode.attrib.get('type')
+    for snode in node.findall("outline"):
+        ntype = snode.attrib.get("type")
         if ntype:
             scls = sources.get_source_class(ntype)
             if scls:
@@ -96,6 +92,6 @@ def _load(node, group=None):
                 except ValueError as err:
                     _LOG.info("import error %s for %s", err, snode.attrib)
             continue
-        ntitle = snode.attrib.get('title')
+        ntitle = snode.attrib.get("title")
         if ntitle:
             yield from _load(snode, ntitle)

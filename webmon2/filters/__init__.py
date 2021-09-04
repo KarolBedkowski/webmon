@@ -38,6 +38,7 @@ def _load_filters():
     from . import wrap
     from . import split_re
     from . import score
+
     try:
         from . import split_text
     except ImportError as err:
@@ -52,7 +53,7 @@ class UnknownFilterException(Exception):
 
 
 def get_filter(conf) -> ty.Optional[AbstractFilter]:
-    """ Get filter object by configuration """
+    """Get filter object by configuration"""
     name = conf.get("name")
     if not name:
         _LOG.error("missing filter name: %r", conf)
@@ -67,11 +68,14 @@ def get_filter(conf) -> ty.Optional[AbstractFilter]:
     raise UnknownFilterException()
 
 
-def filter_by(filters_conf: ty.List[ty.Dict], entries: model.Entries,
-              prev_state: model.SourceState,
-              curr_state: model.SourceState,
-              db) -> model.Entries:
-    """ Apply filters by configuration to entries list. """
+def filter_by(
+    filters_conf: ty.List[ty.Dict],
+    entries: model.Entries,
+    prev_state: model.SourceState,
+    curr_state: model.SourceState,
+    db,
+) -> model.Entries:
+    """Apply filters by configuration to entries list."""
 
     for filter_conf in filters_conf:
         fltr = get_filter(filter_conf)
@@ -84,10 +88,13 @@ def filter_by(filters_conf: ty.List[ty.Dict], entries: model.Entries,
 
 
 def filters_name() -> ty.List[str]:
-    return [name
-            for name, scls in common.get_subclasses_with_name(AbstractFilter)]
+    return [
+        name for name, scls in common.get_subclasses_with_name(AbstractFilter)
+    ]
 
 
 def filters_info() -> ty.List[ty.Tuple[str, str, str]]:
-    return [(name, scls.short_info, scls.long_info)
-            for name, scls in common.get_subclasses_with_name(AbstractFilter)]
+    return [
+        (name, scls.short_info, scls.long_info)
+        for name, scls in common.get_subclasses_with_name(AbstractFilter)
+    ]

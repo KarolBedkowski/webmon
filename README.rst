@@ -22,6 +22,8 @@ Dependences
 * cssselect & python3-lxml (for elements filtering)
 * readability-lxml
 * flask, Werkzeug, gevent
+* python-gitlab (for gitlab api; pip install python-gitlab)
+* pyotp, pyqrcode for TOTP 2FA
 
 
 Usage
@@ -44,6 +46,8 @@ Options
 --change-user-password CHANGE_USER_PASS
                       change user password; arguments in form
                       <login>:<password>
+--remove-user-totp REMOVE_USER_TOTP
+                      remove 2 factor authentication for user
 --web-app-root WEB_APP_ROOT
                       root for url patch (for reverse proxy)
 --workers WORKERS     number of background workers
@@ -67,7 +71,7 @@ file in ~/.local/share/webmon2 and creating subclass of:
 Licence
 -------
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

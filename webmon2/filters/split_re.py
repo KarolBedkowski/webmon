@@ -27,25 +27,29 @@ class SelectByRE(AbstractFilter):
 
     name = "get-elements-by-re"
     short_info = "Extract elements by regular expression"
-    long_info = "Search and extract element from content by given regular " \
-        "expression. Expression must contain at least one group; can also " \
+    long_info = (
+        "Search and extract element from content by given regular "
+        "expression. Expression must contain at least one group; can also "
         "contain groups 'title' and 'content'."
+    )
     params = [
         common.SettingDef("re", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):
         super().__init__(conf)
-        self._re = re.compile(conf['re'],
-                              re.IGNORECASE | re.LOCALE | re.MULTILINE)
+        self._re = re.compile(
+            conf["re"], re.IGNORECASE | re.LOCALE | re.MULTILINE
+        )
 
     def validate(self):
         super().validate()
         try:
-            self._re = re.compile(self._conf["sel"],
-                                  re.IGNORECASE | re.LOCALE | re.MULTILINE)
+            self._re = re.compile(
+                self._conf["sel"], re.IGNORECASE | re.LOCALE | re.MULTILINE
+            )
         except Exception:  # pylint: disable=broad-except
-            raise ValueError('Invalid re selector for filtering')
+            raise ValueError("Invalid re selector for filtering")
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         for match in self._re.finditer(entry.content):
@@ -53,8 +57,8 @@ class SelectByRE(AbstractFilter):
                 continue
             groupdict = match.groupdict()
             if groupdict:
-                content = groupdict.get('content') or match.groups()[0]
-                title = groupdict.get('title')
+                content = groupdict.get("content") or match.groups()[0]
+                title = groupdict.get("title")
                 yield _new_entry(entry, content, title)
             else:
                 yield _new_entry(entry, match.group())
@@ -62,7 +66,7 @@ class SelectByRE(AbstractFilter):
 
 def _new_entry(entry, content, title=None):
     new_entry = entry.clone()
-    new_entry.status = 'new'
+    new_entry.status = "new"
     if title:
         new_entry.title = title
     new_entry.content = content

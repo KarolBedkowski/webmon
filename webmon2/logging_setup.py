@@ -19,14 +19,22 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
 
 class ColorFormatter(logging.Formatter):
     """Formatter for logs that color messages according to level."""
-    FORMAT_MAP = {level: ("\033[1;%dm%-8s\033[0m" % (color, level))
-                  for level, color in
-                  (("DEBUG", 34), ("INFO", 37), ("WARNING", 33), ("ERROR", 31),
-                   ("CRITICAL", 31))}
+
+    FORMAT_MAP = {
+        level: ("\033[1;%dm%-8s\033[0m" % (color, level))
+        for level, color in (
+            ("DEBUG", 34),
+            ("INFO", 37),
+            ("WARNING", 33),
+            ("ERROR", 31),
+            ("CRITICAL", 31),
+        )
+    }
 
     def format(self, record):
-        record.levelname = self.FORMAT_MAP.get(record.levelname,
-                                               record.levelname)
+        record.levelname = self.FORMAT_MAP.get(
+            record.levelname, record.levelname
+        )
         return logging.Formatter.format(self, record)
 
 
@@ -58,7 +66,7 @@ def setup(filename, debug=False, silent=False):
     """
     logger = logging.getLogger()
     log_req = logging.getLogger("requests")
-    log_github3 = logging.getLogger('github3')
+    log_github3 = logging.getLogger("github3")
 
     if debug:
         logger.setLevel(logging.DEBUG)
@@ -76,8 +84,11 @@ def setup(filename, debug=False, silent=False):
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
         fileh = logging.FileHandler(log_fullpath)
-        fileh.setFormatter(logging.Formatter(
-            "%(asctime)s %(levelname)-8s %(name)s - %(message)s"))
+        fileh.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)-8s %(name)s - %(message)s"
+            )
+        )
         logger.addHandler(fileh)
 
     console = logging.StreamHandler()

@@ -33,18 +33,27 @@ def _dump_sources(sources):
     for source in sources:
         yield dump_object(
             source,
-            ("id", "group_id", "kind", "name", "interval",
-             "settings", "filters", "user_id", "status"))
+            (
+                "id",
+                "group_id",
+                "kind",
+                "name",
+                "interval",
+                "settings",
+                "filters",
+                "user_id",
+                "status",
+            ),
+        )
 
 
 def dump_export(db, user_id: int) -> str:
     data = {
-        'groups': list(_dump_groups(
-            database.groups.get_all(db, user_id))),
-        'settings': list(map(dump_object,
-                             database.settings.get_all(db, user_id))),
-        'sources': list(_dump_sources(
-            database.sources.get_all(db, user_id))),
+        "groups": list(_dump_groups(database.groups.get_all(db, user_id))),
+        "settings": list(
+            map(dump_object, database.settings.get_all(db, user_id))
+        ),
+        "sources": list(_dump_sources(database.sources.get_all(db, user_id))),
     }
     return json.dumps(data)
 
@@ -53,7 +62,7 @@ def fill_object(obj, data: dict, attrs=None):
     if not attrs:
         attrs = getattr(obj, "__slots__")
     for attr in attrs:
-        if attr in data and attr != 'id':
+        if attr in data and attr != "id":
             setattr(obj, attr, data[attr])
 
 
@@ -63,21 +72,33 @@ def dump_import(db, user_id: int, data_str: str):
         raise RuntimeError("no data")
 
     groups_map = {}
-    for group in data.get('groups') or []:
-        grp = database.groups.find(db, user_id, group['name'])
+    for group in data.get("groups") or []:
+        grp = database.groups.find(db, user_id, group["name"])
         if not grp:
             grp = model.SourceGroup()
             fill_object(grp, group)
             grp.user_id = user_id
             grp = database.groups.save(db, grp)
-        groups_map[group['id']] = grp.id
+        groups_map[group["id"]] = grp.id
 
     sources_map = {}
-    for source in data.get('sources') or []:
+    for source in data.get("sources") or []:
         src = model.Source()
-        fill_object(src, source, ("group_id", "kind", "name", "interval",
-                                  "settings", "filters", "user_id", "status"))
+        fill_object(
+            src,
+            source,
+            (
+                "group_id",
+                "kind",
+                "name",
+                "interval",
+                "settings",
+                "filters",
+                "user_id",
+                "status",
+            ),
+        )
         src.user_id = user_id
-        src.group_id = groups_map[source['group_id']]
+        src.group_id = groups_map[source["group_id"]]
         src = database.sources.save(db, src)
-        sources_map[source['id']] = src.id
+        sources_map[source["id"]] = src.id

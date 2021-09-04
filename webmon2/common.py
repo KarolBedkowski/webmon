@@ -54,8 +54,8 @@ class OperationError(RuntimeError):
 
 
 def find_subclass(base_class, name: str):
-    """ Find subclass to given `base_class` with given value of
-    attribute `name` """
+    """Find subclass to given `base_class` with given value of
+    attribute `name`"""
 
     for cname, clazz in get_subclasses_with_name(base_class):
         if cname == name:
@@ -65,11 +65,11 @@ def find_subclass(base_class, name: str):
 
 
 def get_subclasses_with_name(base_class):
-    """ Iter over subclasses and yield `name` attribute """
+    """Iter over subclasses and yield `name` attribute"""
 
     def find(parent_cls):
         for rcls in getattr(parent_cls, "__subclasses__")():
-            name = getattr(rcls, 'name')
+            name = getattr(rcls, "name")
             if name:
                 yield name, rcls
             yield from find(rcls)
@@ -112,14 +112,15 @@ def apply_defaults(*confs: ConfDict) -> ConfDict:
     result = {}  # type: ConfDict
     for idx, conf in enumerate(confs):
         if conf:
-            result.update((key, val) for key, val in conf.items()
-                          if val or idx == 0)
+            result.update(
+                (key, val) for key, val in conf.items() if val or idx == 0
+            )
     return result
 
 
 def create_missing_dir(path: str):
-    """ Check path and if not exists create directory.
-        If path exists and is not directory - raise error.
+    """Check path and if not exists create directory.
+    If path exists and is not directory - raise error.
     """
     path = os.path.expanduser(path)
     if os.path.exists(path):
@@ -131,20 +132,20 @@ def create_missing_dir(path: str):
 
 
 def is_whitespace(character: str) -> bool:
-    return character in (' ', '\t')
+    return character in (" ", "\t")
 
 
 def get_whitespace_prefix(text: str) -> str:
     """Get all whitespace characters from beginning of `text`"""
-    return ''.join(itertools.takewhile(is_whitespace, text))
+    return "".join(itertools.takewhile(is_whitespace, text))
 
 
 def _parse_hour_min(text: str) -> int:
     hours = 0  # type: int
     minutes = 0  # type: int
     text = text.strip()
-    if ':' in text:
-        hours_str, minutes_str, *_ = text.split(':', 3)
+    if ":" in text:
+        hours_str, minutes_str, *_ = text.split(":", 3)
         hours = int(hours_str) % 24
         minutes = int(minutes_str) % 60
     else:
@@ -154,17 +155,17 @@ def _parse_hour_min(text: str) -> int:
 
 
 def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
-    """ Parse hours ranges defined as:
+    """Parse hours ranges defined as:
         hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
     Returns iterable: (start_time, end_time) for each valid range
     start_time, end_time = int: hour * 60 + minutes
     """
     # pylint: disable=invalid-sequence-index
-    inp = inp.replace(' ', '').replace('\t', '')
-    for hrang in inp.split(','):
-        if '-' not in hrang:
+    inp = inp.replace(" ", "").replace("\t", "")
+    for hrang in inp.split(","):
+        if "-" not in hrang:
             continue
-        start, stop = hrang.split('-')
+        start, stop = hrang.split("-")
         if not start or not stop:
             continue
         try:
@@ -175,9 +176,10 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
             pass
 
 
-def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
-        -> bool:
-    """ Check is `timestamp` is one of time ranges defined in `tsrange`"""
+def check_date_in_timerange(
+    tsrange: str, timestamp: ty.Union[int, float]
+) -> bool:
+    """Check is `timestamp` is one of time ranges defined in `tsrange`"""
     timestampt = time.localtime(timestamp)
     tshm = timestampt.tm_hour * 60 + timestampt.tm_min
     for rstart, rstop in parse_hours_range(tsrange):
@@ -193,9 +195,17 @@ def check_date_in_timerange(tsrange: str, timestamp: ty.Union[int, float]) \
 class SettingDef:  # pylint: disable=too-few-public-methods
 
     # pylint: disable=too-many-arguments
-    def __init__(self, name, description, default=None, required=False,
-                 options=None, value_type=None, global_param=False,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        description,
+        default=None,
+        required=False,
+        options=None,
+        value_type=None,
+        global_param=False,
+        **kwargs
+    ):
         self.name = name
         self.description = description
         self.default = default
@@ -214,8 +224,11 @@ class SettingDef:  # pylint: disable=too-few-public-methods
         return default
 
     def validate_value(self, value) -> bool:
-        if self.required and self.default is None and \
-                (value is None or self.type == str and not value):
+        if (
+            self.required
+            and self.default is None
+            and (value is None or self.type == str and not value)
+        ):
             return False
         try:
             self.type(value)
@@ -235,17 +248,18 @@ def obj2str(obj):
     if hasattr(obj, "__dict__"):
         values = obj.__dict__.items()
     else:
-        values = ((key, getattr(obj, key))
-                  for key in getattr(obj, "__slots__"))
-    kvs = ", ".join([key + "=" + _val2str(val)
-                     for key, val in values
-                     if key[0] != "_"])
+        values = (
+            (key, getattr(obj, key)) for key in getattr(obj, "__slots__")
+        )
+    kvs = ", ".join(
+        [key + "=" + _val2str(val) for key, val in values if key[0] != "_"]
+    )
     return "<" + obj.__class__.__name__ + " " + kvs + ">"
 
 
 def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
-    """ Parse date in format 'Sat, 03 Aug 2019 21:38:14 GMT' and change
-        timezone to local"""
+    """Parse date in format 'Sat, 03 Aug 2019 21:38:14 GMT' and change
+    timezone to local"""
     if not date:
         return None
     try:
@@ -269,21 +283,21 @@ def get_json_if_exists(row_keys, key, row, default=None):
 
 
 def parse_form_list_data(form, prefix):
-    """ Parse form data named <prefix>-<idx>-<name> to
-        enumeration[{<name>: <value>}]
-        for each idx and matched prefix
+    """Parse form data named <prefix>-<idx>-<name> to
+    enumeration[{<name>: <value>}]
+    for each idx and matched prefix
     """
     values = {}
     for key, val in form.items():
         try:
-            kprefix, kidx, kname = key.split('-')
+            kprefix, kidx, kname = key.split("-")
             kidx = int(kidx)
         except (ValueError, TypeError):
             continue
         if kprefix != prefix:
             continue
         if kidx not in values:
-            values[kidx] = {kname: val, '__idx': kidx}
+            values[kidx] = {kname: val, "__idx": kidx}
         else:
             values[kidx][kname] = val
     for _, val in sorted(values.items()):

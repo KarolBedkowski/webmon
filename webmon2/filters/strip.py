@@ -24,8 +24,7 @@ class Strip(AbstractFilter):
     name = "strip"
     short_info = "Remove white characters"
     long_info = "Remove white characters from begging and end of content"
-    params = [
-    ]  # type: ty.List[common.SettingDef]
+    params = []  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -42,8 +41,9 @@ class Compact(AbstractFilter):
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
-            entry.content = '\n'.join(filter(
-                None, map(str.rstrip, entry.content.split('\n'))))
+            entry.content = "\n".join(
+                filter(None, map(str.rstrip, entry.content.split("\n")))
+            )
         yield entry
 
 
@@ -54,12 +54,13 @@ class Head(AbstractFilter):
     short_info = "Get only first lines"
     long_info = "Get defined number top lines from content"
     params = [
-        common.SettingDef("count", "Maximum number of last lines to get",
-                          default=20),
+        common.SettingDef(
+            "count", "Maximum number of last lines to get", default=20
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
-            cnt = self._conf['count']
-            entry.content = '\n'.join(entry.content.split('\n', cnt + 1)[:cnt])
+            cnt = self._conf["count"]
+            entry.content = "\n".join(entry.content.split("\n", cnt + 1)[:cnt])
         yield entry

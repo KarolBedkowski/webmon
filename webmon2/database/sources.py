@@ -40,37 +40,45 @@ select s.id as source__id, s.group_id as source__group_id,
     ss.error as source_state__error,
     ss.state as source_state__state,
     ss.icon as source_state__icon,
-    (select count(*)
+    (select count(1)
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
 left join source_state ss on ss.source_id = s.id
 """
 
-_GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + """
+_GET_SOURCES_SQL = (
+    _GET_SOURCES_SQL_BASE
+    + """
 where s.user_id=%(user_id)s
 order by s.name """
+)
 
-_GET_SOURCES_BY_GROUP_SQL = _GET_SOURCES_SQL_BASE + """
+_GET_SOURCES_BY_GROUP_SQL = (
+    _GET_SOURCES_SQL_BASE
+    + """
 where group_id = %(group_id)s and s.user_id = %(user_id)s
 order by s.name """
+)
 
 
 def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
-    """ Get all sources for given user and (optional) in group.
-        Include state and number of unread entries
+    """Get all sources for given user and (optional) in group.
+    Include state and number of unread entries
     """
     with db.cursor() as cur:
         user_groups = {g.id: g for g in groups.get_all(db, user_id)}
         args = {"user_id": user_id, "group_id": group_id}
-        sql = _GET_SOURCES_SQL if group_id is None \
-            else _GET_SOURCES_BY_GROUP_SQL
+        sql = (
+            _GET_SOURCES_SQL if group_id is None else _GET_SOURCES_BY_GROUP_SQL
+        )
         cur.execute(sql, args)
         for row in cur:
             source = model.Source.from_row(row)
             source.state = model.SourceState.from_row(row)
-            source.unread = row['unread']
-            source.group = user_groups.get(source.group_id) \
-                if source.group_id else None
+            source.unread = row["unread"]
+            source.group = (
+                user_groups.get(source.group_id) if source.group_id else None
+            )
             yield source
 
 
@@ -85,14 +93,19 @@ from sources where id=%s
 """
 
 
-def get(db, id_: int, with_state=False, with_group=True,
-        user_id: ty.Optional[int] = None) -> model.Source:
-    """ Get one source with optionally with state and group info.
-        Optionally check is source belong to given user.
-        Return none when not found.
+def get(
+    db,
+    id_: int,
+    with_state=False,
+    with_group=True,
+    user_id: ty.Optional[int] = None,
+) -> model.Source:
+    """Get one source with optionally with state and group info.
+    Optionally check is source belong to given user.
+    Return none when not found.
     """
     with db.cursor() as cur:
-        cur.execute(_GET_SOURCE_SQL, (id_, ))
+        cur.execute(_GET_SOURCE_SQL, (id_,))
         row = cur.fetchone()
 
     if row is None:
@@ -132,7 +145,7 @@ where id=%(source__id)s
 
 
 def save(db, source: model.Source) -> model.Source:
-    """ Insert or update source """
+    """Insert or update source"""
     row = source.to_row()
     with db.cursor() as cur:
         if source.id is None:
@@ -147,16 +160,17 @@ def save(db, source: model.Source) -> model.Source:
 
 
 def delete(db, source_id: int) -> int:
-    """ Delete source """
+    """Delete source"""
     with db.cursor() as cur:
-        cur.execute("delete from sources where id=%s", (source_id, ))
+        cur.execute("delete from sources where id=%s", (source_id,))
         updated = cur.rowcount
         return updated
 
 
-def update_filter(db, source_id: int, filter_idx: int,
-                  filter_: ty.Dict[str, ty.Any]):
-    """ Append or update filter in given source """
+def update_filter(
+    db, source_id: int, filter_idx: int, filter_: ty.Dict[str, ty.Any]
+):
+    """Append or update filter in given source"""
     source = get(db, source_id, False, False)
     if not source.filters:
         source.filters = [filter_]
@@ -168,7 +182,7 @@ def update_filter(db, source_id: int, filter_idx: int,
 
 
 def delete_filter(db, user_id: int, source_id: int, filter_idx: int):
-    """ Delete filter in source """
+    """Delete filter in source"""
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
         return
@@ -177,27 +191,35 @@ def delete_filter(db, user_id: int, source_id: int, filter_idx: int):
         save(db, source)
 
 
-def move_filter(db, user_id: int, source_id: int, filter_idx: int,
-                direction: str):
-    """ Change position of given filter in source """
-    assert direction in ('up', 'down')
+def move_filter(
+    db, user_id: int, source_id: int, filter_idx: int, direction: str
+):
+    """Change position of given filter in source"""
+    assert direction in ("up", "down")
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
         return
-    if not source.filters or filter_idx >= len(source.filters) \
-            or len(source.filters) == 1:
+    if (
+        not source.filters
+        or filter_idx >= len(source.filters)
+        or len(source.filters) == 1
+    ):
         return
-    if direction == 'up':
+    if direction == "up":
         if filter_idx <= 0:
             return
-        source.filters[filter_idx - 1], source.filters[filter_idx] = \
-            source.filters[filter_idx], source.filters[filter_idx - 1]
+        source.filters[filter_idx - 1], source.filters[filter_idx] = (
+            source.filters[filter_idx],
+            source.filters[filter_idx - 1],
+        )
         save(db, source)
-    elif direction == 'down':
+    elif direction == "down":
         if filter_idx >= len(source.filters) - 2:
             return
-        source.filters[filter_idx + 1], source.filters[filter_idx] = \
-            source.filters[filter_idx], source.filters[filter_idx + 1]
+        source.filters[filter_idx + 1], source.filters[filter_idx] = (
+            source.filters[filter_idx],
+            source.filters[filter_idx + 1],
+        )
         save(db, source)
 
 
@@ -217,9 +239,9 @@ from source_state where source_id=%s
 
 
 def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
-    """ Get state for given source """
+    """Get state for given source"""
     cur = db.cursor()
-    cur.execute(_GET_STATE_SQL, (source_id, ))
+    cur.execute(_GET_STATE_SQL, (source_id,))
     row = cur.fetchone()
     state = model.SourceState.from_row(row) if row else None
     cur.close()
@@ -251,13 +273,15 @@ where source_id=%(source_state__source_id)s
 """
 
 
-def save_state(db, state: model.SourceState, user_id: int) \
-        -> model.SourceState:
-    """ Save (replace) source state """
+def save_state(
+    db, state: model.SourceState, user_id: int
+) -> model.SourceState:
+    """Save (replace) source state"""
     row = model.SourceState.to_row(state)
     with db.cursor() as cur:
-        cur.execute("delete from source_state where source_id=%s",
-                    (state.source_id,))
+        cur.execute(
+            "delete from source_state where source_id=%s", (state.source_id,)
+        )
         cur.execute(_INSERT_STATE_SQL, row)
     if state.icon_data:
         content_type, data = state.icon_data
@@ -275,9 +299,9 @@ _GET_SOURCES_TO_FETCH_SQL = """
 
 
 def get_sources_to_fetch(db) -> ty.List[int]:
-    """ Find sources with next update state in past """
+    """Find sources with next update state in past"""
     with db.cursor() as cur:
-        cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(), ))
+        cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(),))
         ids = [row[0] for row in cur]
         return ids
 
@@ -295,17 +319,20 @@ where (last_update is null or last_update < now() - '-1 minutes'::interval)
 
 
 def refresh(db, user_id, source_id=None, group_id=None) -> int:
-    """ Mark source to refresh; return founded sources """
+    """Mark source to refresh; return founded sources"""
     assert user_id or source_id or group_id
     sql = _REFRESH_SQL
     if group_id:
-        sql += ("and source_id in "
-                "(select id from sources where group_id=%(group_id)s)")
+        sql += (
+            "and source_id in "
+            "(select id from sources where group_id=%(group_id)s)"
+        )
     elif source_id:
         sql += "and source_id=%(source_id)s"
     cur = db.cursor()
-    cur.execute(sql, {"group_id": group_id, "source_id": source_id,
-                      "user_id": user_id})
+    cur.execute(
+        sql, {"group_id": group_id, "source_id": source_id, "user_id": user_id}
+    )
     updated = cur.rowcount
     cur.close()
     return updated
@@ -322,9 +349,9 @@ where status='error'
 
 
 def refresh_errors(db, user_id: int) -> int:
-    """ Refresh all sources in error state for given user """
+    """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
-        cur.execute(_REFRESH_ERRORS_SQL, (user_id, ))
+        cur.execute(_REFRESH_ERRORS_SQL, (user_id,))
         updated = cur.rowcount
         return updated
 
@@ -346,12 +373,22 @@ WHERE source_id=%(source_id)s
 """
 
 
-def mark_read(db, user_id: int, source_id: int, max_id: int = None,
-              min_id: int = None, ids: ty.Optional[ty.Iterable[int]] = None) \
-        -> int:
-    """ Mark source read """
-    args = {'source_id': source_id, 'max_id': max_id, 'min_id': min_id,
-            'user_id': user_id, "ids": ids}
+def mark_read(
+    db,
+    user_id: int,
+    source_id: int,
+    max_id: int = None,
+    min_id: int = None,
+    ids: ty.Optional[ty.Iterable[int]] = None,
+) -> int:
+    """Mark source read"""
+    args = {
+        "source_id": source_id,
+        "max_id": max_id,
+        "min_id": min_id,
+        "user_id": user_id,
+        "ids": ids,
+    }
     with db.cursor() as cur:
         if ids:
             cur.execute(_MARK_READ_BY_IDS_SQL, args)
@@ -361,68 +398,79 @@ def mark_read(db, user_id: int, source_id: int, max_id: int = None,
         return changed
 
 
-def get_filter_state(db, source_id: int, filter_name: str) \
-        -> ty.Optional[ty.Dict[str, ty.Any]]:
-    """ Get state for given filter in source """
+def get_filter_state(
+    db, source_id: int, filter_name: str
+) -> ty.Optional[ty.Dict[str, ty.Any]]:
+    """Get state for given filter in source"""
     with db.cursor() as cur:
-        cur.execute('select state from filters_state '
-                    'where source_id=%s and filter_name=%s',
-                    (source_id, filter_name))
+        cur.execute(
+            "select state from filters_state "
+            "where source_id=%s and filter_name=%s",
+            (source_id, filter_name),
+        )
         row = cur.fetchone()
     if not row:
         return None
-    return json.loads(row[0]) if isinstance(row[0], str) and row[0] \
-        else row[0]
+    return json.loads(row[0]) if isinstance(row[0], str) and row[0] else row[0]
 
 
 def put_filter_state(db, source_id: int, filter_name: str, state):
-    """ Save source filter state """
+    """Save source filter state"""
     with db.cursor() as cur:
         cur.execute(
-            'delete from filters_state '
-            'where source_id=%s and filter_name=%s',
-            (source_id, filter_name))
+            "delete from filters_state "
+            "where source_id=%s and filter_name=%s",
+            (source_id, filter_name),
+        )
         if state is not None:
             state = json.dumps(state)
             cur.execute(
-                'insert into filters_state (source_id, filter_name, state) '
-                'values(%s, %s, %s)', (source_id, filter_name, state))
+                "insert into filters_state (source_id, filter_name, state) "
+                "values(%s, %s, %s)",
+                (source_id, filter_name, state),
+            )
 
 
-def find_next_entry_id(db, source_id: int, entry_id: int, unread=True) \
-        -> ty.Optional[int]:
+def find_next_entry_id(
+    db, source_id: int, entry_id: int, unread=True
+) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
             cur.execute(
                 "select min(e.id) "
                 "from entries e "
                 "where e.id > %s and e.read_mark=0 and e.source_id=%s",
-                (entry_id, source_id))
+                (entry_id, source_id),
+            )
         else:
             cur.execute(
                 "select min(e.id) "
                 "from entries e  "
                 "where e.id > %s and e.source_id=%s",
-                (entry_id, source_id))
+                (entry_id, source_id),
+            )
         row = cur.fetchone()
         return row[0] if row else None
 
 
-def find_prev_entry_id(db, source_id: int, entry_id: int, unread=True) \
-        -> ty.Optional[int]:
+def find_prev_entry_id(
+    db, source_id: int, entry_id: int, unread=True
+) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
             cur.execute(
                 "select max(e.id) "
                 "from entries e "
                 "where e.id < %s and e.read_mark=0 and e.source_id=%s",
-                (entry_id, source_id))
+                (entry_id, source_id),
+            )
         else:
             cur.execute(
                 "select max(e.id) "
                 "from entries e "
                 "where e.id < %s and e.source_id=%s",
-                (entry_id, source_id))
+                (entry_id, source_id),
+            )
         row = cur.fetchone()
         return row[0] if row else None
 
@@ -433,6 +481,7 @@ def find_next_unread(db, user_id: int) -> ty.Optional[int]:
             "select e.source_id "
             "from entries e "
             "where e.user_id = %s and e.read_mark=0",
-            (user_id, ))
+            (user_id,),
+        )
         row = cur.fetchone()
         return row[0] if row else None

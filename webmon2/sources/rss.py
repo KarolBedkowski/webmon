@@ -33,86 +33,98 @@ feedparser.USER_AGENT = AbstractSource.AGENT
 
 
 class RssSource(AbstractSource):
-    """ Load data from rss
-    """
+    """Load data from rss"""
+
     name = "rss"
     short_info = "RSS/Atom channel"
-    long_info = 'Load data form RSS/Atom channel. Require define url.'
+    long_info = "Load data form RSS/Atom channel. Require define url."
     params = AbstractSource.params + [
         common.SettingDef("url", "RSS xml url", required=True),
-        common.SettingDef("max_items", "Maximal number of articles to load",
-                          value_type=int),
-        common.SettingDef("load_content", "Load content of entries",
-                          default=False),
+        common.SettingDef(
+            "max_items", "Maximal number of articles to load", value_type=int
+        ),
+        common.SettingDef(
+            "load_content", "Load content of entries", default=False
+        ),
         common.SettingDef("load_article", "Load article", default=False),
     ]  # type: ty.List[common.SettingDef]
 
-    def load(self, state: model.SourceState) \
-            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
-        """ Return rss items as one or many parts; each part is on article. """
+    def load(
+        self, state: model.SourceState
+    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+        """Return rss items as one or many parts; each part is on article."""
         try:
             new_state, entries = self._load(state)
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("source %d load error: %s", state.source_id, err)
             new_state, entries = state.new_error(str(err)), []
-        if new_state.status != 'error':
+        if new_state.status != "error":
             if entries and new_state.icon:
                 for entry in entries:
                     entry.icon = new_state.icon
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
-                seconds=common.parse_interval(self._source.interval))
-            new_state.next_update = max(new_state.next_update or next_update,
-                                        next_update)
+                seconds=common.parse_interval(self._source.interval)
+            )
+            new_state.next_update = max(
+                new_state.next_update or next_update, next_update
+            )
         return new_state, entries
 
-    def _load(self, state: model.SourceState) \
-            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    def _load(
+        self, state: model.SourceState
+    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
-            self._conf['url'], etag=state.get_state('etag'),
-            modified=state.last_update)
-        status = doc.get('status') if doc else 400
+            self._conf["url"],
+            etag=state.get_state("etag"),
+            modified=state.last_update,
+        )
+        status = doc.get("status") if doc else 400
         if status not in (200, 301, 302, 304):
             return _fail_error(state, doc, status)
 
         # self._check_sy_updateperiod(doc.feed)
 
-        entries = doc.get('entries')
+        entries = doc.get("entries")
         if state.last_update:
-            entries = list(_filter_entries_updated(
-                entries, state.last_update.timestamp()))
+            entries = list(
+                _filter_entries_updated(entries, state.last_update.timestamp())
+            )
         if status == 304 or not entries:
-            new_state = state.new_not_modified(etag=doc.get('etag'))
+            new_state = state.new_not_modified(etag=doc.get("etag"))
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
             return new_state, []
 
-        new_state = state.new_ok(etag=doc.get('etag'))
+        new_state = state.new_ok(etag=doc.get("etag"))
         if not new_state.icon:
             new_state.set_icon(self._load_image(doc))
 
-        expires = common.parse_http_date(doc.headers.get('expires'))
+        expires = common.parse_http_date(doc.headers.get("expires"))
         if expires:
             new_state.next_update = expires
-            new_state.set_state('expires', str(expires))
+            new_state.set_state("expires", str(expires))
 
         if status == 301:  # permanent redirects
-            new_state.set_state("info", 'Permanently redirects: ' + doc.href)
+            new_state.set_state("info", "Permanently redirects: " + doc.href)
             self._update_source(new_url=doc.href)
         elif status == 302:
-            new_state.set_state('info', 'Temporary redirects: ' + doc.href)
+            new_state.set_state("info", "Temporary redirects: " + doc.href)
             self._update_source(new_url=doc.href)
 
-        load_article = self._conf['load_article']
-        load_content = self._conf['load_content']
-        items = [self._load_entry(entry, load_content, load_article)
-                 for entry in self._limit_items(entries)]
+        load_article = self._conf["load_article"]
+        load_content = self._conf["load_content"]
+        items = [
+            self._load_entry(entry, load_content, load_article)
+            for entry in self._limit_items(entries)
+        ]
 
         return new_state, items
 
-    def _limit_items(self, entries: ty.List[model.Entry]) \
-            -> ty.List[model.Entry]:
+    def _limit_items(
+        self, entries: ty.List[model.Entry]
+    ) -> ty.List[model.Entry]:
         max_items = self._conf.get("max_items")
         if max_items:
             max_items = int(max_items)
@@ -120,21 +132,27 @@ class RssSource(AbstractSource):
                 entries = entries[:max_items]
         return entries
 
-    def _load_entry(self, entry: feedparser.FeedParserDict, load_content: bool,
-                    load_article: bool) -> model.Entry:
+    def _load_entry(
+        self,
+        entry: feedparser.FeedParserDict,
+        load_content: bool,
+        load_article: bool,
+    ) -> model.Entry:
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
-        result.url = _get_val(entry, 'link')
-        result.title = _get_val(entry, 'title')
-        result.updated = _get_val(entry, 'updated_parsed', now)
-        result.created = _get_val(entry, 'published_parsed', now)
-        result.status = 'new'
+        result.url = _get_val(entry, "link")
+        result.title = _get_val(entry, "title")
+        result.updated = _get_val(entry, "updated_parsed", now)
+        result.created = _get_val(entry, "published_parsed", now)
+        result.status = "new"
         if load_article:
             result = self._load_article(result)
         elif load_content:
-            result.content = entry.get('summary') or (
-                entry['content'][0].value
-                if 'content' in entry else entry.get('value'))
+            result.content = entry.get("summary") or (
+                entry["content"][0].value
+                if "content" in entry
+                else entry.get("value")
+            )
             result.set_opt("content-type", "html")
         return result
 
@@ -144,19 +162,23 @@ class RssSource(AbstractSource):
             return entry
         try:
             response = requests.request(
-                url=entry.url, method='GET',
+                url=entry.url,
+                method="GET",
                 headers={"User-agent": self.AGENT},
-                allow_redirects=True)
+                allow_redirects=True,
+            )
             if response:
                 response.raise_for_status()
                 if response.status_code == 200:
-                    content_type = response.headers['content-type']
-                    if content_type.startswith('text/'):
+                    content_type = response.headers["content-type"]
+                    if content_type.startswith("text/"):
                         entry.content = response.text
                         entry.set_opt("content-type", content_type)
                     else:
-                        entry.content = "Article not loaded because of "\
+                        entry.content = (
+                            "Article not loaded because of "
                             "content type: " + content_type
+                        )
                 else:
                     entry.content = "Loading article error: " + response.text
         except Exception as err:  # pylint: disable=broad-except
@@ -166,47 +188,44 @@ class RssSource(AbstractSource):
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         return {
-            'text': source.name,
-            'title': source.name,
-            'type': 'rss',
-            'xmlUrl': source.settings['url'],
+            "text": source.name,
+            "title": source.name,
+            "type": "rss",
+            "xmlUrl": source.settings["url"],
         }
 
     @classmethod
-    def from_opml(cls, opml_node: ty.Dict[str, ty.Any]) \
-            -> ty.Optional[model.Source]:
-        url = opml_node['xmlUrl']
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        url = opml_node["xmlUrl"]
         if not url:
-            raise ValueError('missing xmlUrl')
-        name = opml_node.get('text') or opml_node['title']
+            raise ValueError("missing xmlUrl")
+        name = opml_node.get("text") or opml_node["title"]
         if not name:
-            raise ValueError('missing text/title')
-        return model.Source(
-            kind='rss',
-            name=name,
-            settings={'url': url}
-        )
+            raise ValueError("missing text/title")
+        return model.Source(kind="rss", name=name, settings={"url": url})
 
     def _load_image(self, doc):
         _LOG.debug("source %d load image", self._source.id)
         feed = doc.feed
         image_href = None
-        image = feed.get('image')
+        image = feed.get("image")
         if image:
-            image_href = image.get('href') or image.get('url')
+            image_href = image.get("href") or image.get("url")
 
         if not image_href:
-            link = feed.get('link')
+            link = feed.get("link")
             if link:
-                image_href = urljoin(link, 'favicon.ico')
+                image_href = urljoin(link, "favicon.ico")
 
         return self._load_binary(image_href) if image_href else None
 
     def _check_sy_updateperiod(self, feed):
         if self._source.interval:
             return
-        sy_updateperiod = feed.get('sy_updateperiod')
-        sy_updatefrequency = feed.get('sy_updatefrequency')
+        sy_updateperiod = feed.get("sy_updateperiod")
+        sy_updatefrequency = feed.get("sy_updatefrequency")
         if not sy_updatefrequency or not sy_updateperiod:
             return
         interval = sy_updateperiod + sy_updatefrequency[0]
@@ -214,26 +233,28 @@ class RssSource(AbstractSource):
             if common.parse_interval(interval):
                 self._update_source(interval=interval)
         except ValueError:
-            _LOG.debug("wrong sy_update*: %r %r", sy_updateperiod,
-                       sy_updatefrequency)
+            _LOG.debug(
+                "wrong sy_update*: %r %r", sy_updateperiod, sy_updatefrequency
+            )
 
     def _update_source(self, new_url=None, interval=None):
         if not self._updated_source:
             self._updated_source = self._source.clone()
         if new_url:
-            self._updated_source.settings['url'] = new_url
+            self._updated_source.settings["url"] = new_url
         if interval:
             _LOG.debug("interval updated: %s", interval)
             self._updated_source.interval = interval
 
 
-def _fail_error(state: model.SourceState, doc, status: int) \
-            -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+def _fail_error(
+    state: model.SourceState, doc, status: int
+) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
     _LOG.error("load document error %s: %s", status, doc)
     summary = f"Loading page error: {status}"
-    feed = doc.get('feed')
+    feed = doc.get("feed")
     if feed:
-        summary = feed.get('summary') or summary
+        summary = feed.get("summary") or summary
     return state.new_error(summary), []
 
 
@@ -252,13 +273,13 @@ def _get_val(entry, key: str, default=None):
 def _filter_entries_updated(entries, timestamp):
     now = time.localtime(time.time())
     for entry in entries:
-        updated_parsed = entry.get('updated_parsed')
+        updated_parsed = entry.get("updated_parsed")
         if not updated_parsed:
-            entry['updated_parsed'] = now
+            entry["updated_parsed"] = now
             yield entry
         try:
             if time.mktime(updated_parsed) > timestamp:
                 yield entry
         except (ValueError, TypeError):
-            entry['updated_parsed'] = now
+            entry["updated_parsed"] = now
             yield entry

@@ -24,10 +24,11 @@ from . import sources, common, filters, database, model, formatters, mailer
 
 _LOG = logging.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
-    "webmon2_sources_processed", "Sources processed count")
+    "webmon2_sources_processed", "Sources processed count"
+)
 _SOURCES_PROCESSED_ERRORS = Counter(
-    "webmon2_sources_processed_errors",
-    "Sources processed with errors count")
+    "webmon2_sources_processed_errors", "Sources processed with errors count"
+)
 _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
@@ -56,8 +57,10 @@ class CheckWorker(threading.Thread):
                         self._todo_queue.put(id_)
 
                     if not self._todo_queue.empty():
-                        workers = [self._start_worker(idx) for idx
-                                   in range(min(self._workers, len(ids)))]
+                        workers = [
+                            self._start_worker(idx)
+                            for idx in range(min(self._workers, len(ids)))
+                        ]
                         for worker in workers:
                             worker.join()
 
@@ -86,8 +89,9 @@ class FetchWorker(threading.Thread):
                     self._process_source(db, source_id)
                     db.commit()
                 except Exception:  # pylint: disable=broad-except
-                    _LOG.exception("[%s] process source %d error", self._idx,
-                                   source_id)
+                    _LOG.exception(
+                        "[%s] process source %d error", self._idx, source_id
+                    )
                     db.rollback()
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
@@ -111,12 +115,13 @@ class FetchWorker(threading.Thread):
         try:
             new_state, entries = src.load(source.state)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("[%s] load source id=%d error: %s",
-                           self._idx, source_id, err)
+            _LOG.exception(
+                "[%s] load source id=%d error: %s", self._idx, source_id, err
+            )
             _save_state_error(db, source, err)
             return
 
-        if new_state.status == 'error':
+        if new_state.status == "error":
             _SOURCES_PROCESSED_ERRORS.inc()
             new_state.next_update = _calc_next_check_on_error(source)
             database.sources.save_state(db, new_state, source.user_id)
@@ -124,16 +129,20 @@ class FetchWorker(threading.Thread):
 
         last_update = source.state.last_update or datetime.datetime.now()
         next_update = last_update + datetime.timedelta(
-            seconds=common.parse_interval(source.interval))
-        if new_state.next_update is None \
-                or new_state.next_update < next_update:
+            seconds=common.parse_interval(source.interval)
+        )
+        if (
+            new_state.next_update is None
+            or new_state.next_update < next_update
+        ):
             new_state.next_update = next_update
 
         db.begin()
 
         if source.filters:
-            entries = filters.filter_by(source.filters, entries,
-                                        source.state, new_state, db)
+            entries = filters.filter_by(
+                source.filters, entries, source.state, new_state, db
+            )
 
         entries = self._final_filter_entries(entries)
         entries = self._score_entries(entries, db, source.user_id)
@@ -156,8 +165,13 @@ class FetchWorker(threading.Thread):
             _LOG.debug("[%s] source %d updated", self._idx, source_id)
             database.sources.save(db, updated_source)
 
-        _LOG.debug("[%s] processing source %d FINISHED, entries=%d, state=%s",
-                   self._idx, source_id, len(entries), str(new_state))
+        _LOG.debug(
+            "[%s] processing source %d FINISHED, entries=%d, state=%s",
+            self._idx,
+            source_id,
+            len(entries),
+            str(new_state),
+        )
 
     def _final_filter_entries(self, entries):  # pylint: disable=no-self-use
         entries_oids = set()
@@ -172,15 +186,19 @@ class FetchWorker(threading.Thread):
             if entry.content:
                 if not entry.content_type:
                     _LOG.warning("no conent type for entry: %s", entry)
-                    entry.content_type = 'html'
-                entry.content, entry.content_type = \
-                    formatters.sanitize_content(entry.content,
-                                                entry.content_type)
+                    entry.content_type = "html"
+                (
+                    entry.content,
+                    entry.content_type,
+                ) = formatters.sanitize_content(
+                    entry.content, entry.content_type
+                )
             entries_oids.add(entry.oid)
             yield entry
 
-    def _score_entries(self, entries: model.Entries, db, user_id: int) \
-            -> model.Entries:
+    def _score_entries(
+        self, entries: model.Entries, db, user_id: int
+    ) -> model.Entries:
         # load scoring
         scss = list(self._load_scoring(db, user_id))
         if not scss:
@@ -190,8 +208,8 @@ class FetchWorker(threading.Thread):
             entry.score += sum(
                 score_change
                 for pattern, score_change in scss
-                if (entry.title and pattern.match(entry.title)) or
-                (entry.content and pattern.match(entry.content))
+                if (entry.title and pattern.match(entry.title))
+                or (entry.content and pattern.match(entry.content))
             )
             yield entry
 
@@ -199,29 +217,37 @@ class FetchWorker(threading.Thread):
         for scs in database.scoring.get_active(db, user_id):
             _LOG.debug("scs: %s", scs)
             try:
-                cre = re.compile(".*(" + scs.pattern + ").*",
-                                 re.IGNORECASE | re.MULTILINE | re.DOTALL)
+                cre = re.compile(
+                    ".*(" + scs.pattern + ").*",
+                    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+                )
                 yield (cre, scs.score_change)
             except re.error as err:
-                _LOG.warning("compile scoring pattern error: %s %s",
-                             scs, err)
+                _LOG.warning("compile scoring pattern error: %s %s", scs, err)
 
     def _get_src(self, db, source):
         try:
-            sys_settings = database.settings.get_dict(
-                db, source.user_id)
+            sys_settings = database.settings.get_dict(db, source.user_id)
             # _LOG.debug('[%s] sys_settings: %r', self._idx, sys_settings)
             if not source.interval:
-                interval = sys_settings.get('interval') or '1d'
-                _LOG.debug("[%s] source %d has no interval; using default: %r",
-                           self._idx, source.id, interval)
+                interval = sys_settings.get("interval") or "1d"
+                _LOG.debug(
+                    "[%s] source %d has no interval; using default: %r",
+                    self._idx,
+                    source.id,
+                    interval,
+                )
                 source.interval = interval
             src = sources.get_source(source, sys_settings)
             src.validate()
             return src
         except common.ParamError as err:
-            _LOG.error("[%s] get source class for source id=%d error: %s",
-                       self._idx, source.id, err)
+            _LOG.error(
+                "[%s] get source class for source id=%d error: %s",
+                self._idx,
+                source.id,
+                err,
+            )
             _save_state_error(db, source, str(err))
         return None
 
@@ -232,19 +258,25 @@ def _delete_old_entries(db):
         for user in users:
             db.begin()
             keep_days = database.settings.get_value(
-                db, 'keep_entries_days', user.id, default=90)
+                db, "keep_entries_days", user.id, default=90
+            )
             if not keep_days:
                 continue
-            max_datetime = datetime.datetime.now() - \
-                datetime.timedelta(days=keep_days)
+            max_datetime = datetime.datetime.now() - datetime.timedelta(
+                days=keep_days
+            )
             deleted_entries, deleted_oids = database.entries.delete_old(
-                db, user.id, max_datetime)
-            _LOG.info("deleted %d old entries and %d oids for user %d",
-                      deleted_entries, deleted_oids, user.id)
+                db, user.id, max_datetime
+            )
+            _LOG.info(
+                "deleted %d old entries and %d oids for user %d",
+                deleted_entries,
+                deleted_oids,
+                user.id,
+            )
 
             removed_bin = database.binaries.remove_unused(db, user.id)
-            _LOG.info("removed %d binaries for user %d", removed_bin,
-                      user.id)
+            _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
             db.commit()
         db.begin()
         states, entries = database.binaries.clean_sources_entries(db)
@@ -270,11 +302,12 @@ def _send_mails(db):
 
 
 def _calc_next_check_on_error(source: model.Source):
-    next_check_delta = common.parse_interval(source.interval or '1d')
+    next_check_delta = common.parse_interval(source.interval or "1d")
     # add some random time
     next_check_delta += random.randint(3600, 7200)
     return datetime.datetime.now() + datetime.timedelta(
-        seconds=next_check_delta)
+        seconds=next_check_delta
+    )
 
 
 def _save_state_error(db, source: model.Source, err: str):

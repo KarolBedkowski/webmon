@@ -22,18 +22,23 @@ class Join(AbstractFilter):
 
     name = "join"
     short_info = "Join elements"
-    long_info = "Join content from all elements loaded by source to one "\
-        "element"
+    long_info = (
+        "Join content from all elements loaded by source to one " "element"
+    )
 
-    def filter(self, entries: model.Entries, prev_state: model.SourceState,
-               curr_state: model.SourceState) -> model.Entries:
+    def filter(
+        self,
+        entries: model.Entries,
+        prev_state: model.SourceState,
+        curr_state: model.SourceState,
+    ) -> model.Entries:
         try:
             first_entry = next(entries)
         except StopIteration:
             return
         for entry in entries:
             first_entry.content = first_entry.content + "\n\n" + entry.content
-            first_entry.status = 'new'
+            first_entry.status = "new"
         yield first_entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:

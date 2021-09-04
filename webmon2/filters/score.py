@@ -28,13 +28,21 @@ class Score(AbstractFilter):
     short_info = "Change score of elements by defined regular expression"
     long_info = "Change element score according to matched patterns."
     params = [
-        common.SettingDef("patterns", "Regular expressions separated by ';'",
-                          required=True, multiline=True),
-        common.SettingDef("score_change", "Value added do score when match",
-                          default=5, value_type=int),
-        common.SettingDef("match_many",
-                          "Change score on match every pattern",
-                          default=True)
+        common.SettingDef(
+            "patterns",
+            "Regular expressions separated by ';'",
+            required=True,
+            multiline=True,
+        ),
+        common.SettingDef(
+            "score_change",
+            "Value added do score when match",
+            default=5,
+            value_type=int,
+        ),
+        common.SettingDef(
+            "match_many", "Change score on match every pattern", default=True
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):
@@ -42,9 +50,12 @@ class Score(AbstractFilter):
         patterns = conf.get("patterns")
         if patterns:
             self._re = [
-                re.compile(".*(" + pattern.strip() + ").*",
-                           re.IGNORECASE | re.MULTILINE | re.DOTALL)
-                for pattern in patterns.split(";")]
+                re.compile(
+                    ".*(" + pattern.strip() + ").*",
+                    re.IGNORECASE | re.MULTILINE | re.DOTALL,
+                )
+                for pattern in patterns.split(";")
+            ]
             _LOG.debug("patterns count: %s", len(self._re))
         else:
             self._re = []
@@ -55,21 +66,27 @@ class Score(AbstractFilter):
     def _score_for_content(self, *content) -> int:
         add = 0
         if self._match_many:
-            add = sum(self._score
-                      for pattern in self._re
-                      if any(pattern.match(item)
-                             for item in content
-                             if item))
-        elif any(any(pattern.match(item) for item in content if item)
-                 for pattern in self._re):
+            add = sum(
+                self._score
+                for pattern in self._re
+                if any(pattern.match(item) for item in content if item)
+            )
+        elif any(
+            any(pattern.match(item) for item in content if item)
+            for pattern in self._re
+        ):
             add = self._score
         return add
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         try:
             add = self._score_for_content(entry.content, entry.title)
-            _LOG.debug("apply score %s for entry %s (%r)", add, entry.title,
-                       entry.score)
+            _LOG.debug(
+                "apply score %s for entry %s (%r)",
+                add,
+                entry.title,
+                entry.score,
+            )
             entry.score += add
         except Exception as err:
             _LOG.error("apply score error: %s; %s", err, entry)

@@ -32,24 +32,25 @@ where user_id = %s
 
 
 def get(db, user_id: int) -> ty.Iterable[model.ScoringSett]:
-    """ Get scoring settings for user """
+    """Get scoring settings for user"""
     with db.cursor() as cur:
-        cur.execute(_GET_ALL_SQL_FOR_USER, (user_id, ))
-        return [model.ScoringSett.from_row(row)
-                for row in cur]
+        cur.execute(_GET_ALL_SQL_FOR_USER, (user_id,))
+        return [model.ScoringSett.from_row(row) for row in cur]
 
 
-_GET_ACTIVE_SQL_FOR_USER = _GET_ALL_SQL_FOR_USER + """
+_GET_ACTIVE_SQL_FOR_USER = (
+    _GET_ALL_SQL_FOR_USER
+    + """
 and active
 """
+)
 
 
 def get_active(db, user_id: int) -> ty.Iterable[model.ScoringSett]:
-    """ Get active scoring settings for user """
+    """Get active scoring settings for user"""
     with db.cursor() as cur:
-        cur.execute(_GET_ACTIVE_SQL_FOR_USER, (user_id, ))
-        return [model.ScoringSett.from_row(row)
-                for row in cur]
+        cur.execute(_GET_ACTIVE_SQL_FOR_USER, (user_id,))
+        return [model.ScoringSett.from_row(row) for row in cur]
 
 
 _INSERT_SQL = """
@@ -60,9 +61,9 @@ values (%(scoring_sett__user_id)s, %(scoring_sett__pattern)s,
 
 
 def save(db, user_id: int, scoring_settings: ty.List[model.ScoringSett]):
-    """ Save / update scoring settings for user """
+    """Save / update scoring settings for user"""
     with db.cursor() as cur:
-        cur.execute("delete from scoring_sett where user_id=%s", (user_id, ))
+        cur.execute("delete from scoring_sett where user_id=%s", (user_id,))
         if scoring_settings:
             rows = [scs.to_row() for scs in scoring_settings]
             cur.executemany(_INSERT_SQL, rows)

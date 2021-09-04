@@ -32,22 +32,31 @@ class NDiff(AbstractFilter):
         common.SettingDef(
             "threshold",
             "Skip elements when changes percent is below this level",
-            default=0.1),
+            default=0.1,
+        ),
         common.SettingDef(
             "min_changed",
             "Skip elements when changes lines is below this level",
-            default=1),
+            default=1,
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def validate(self):
         super().validate()
         threshold = self._conf.get("threshold")
-        if not isinstance(threshold, (float, int)) \
-                or threshold < 0 or threshold > 1:
+        if (
+            not isinstance(threshold, (float, int))
+            or threshold < 0
+            or threshold > 1
+        ):
             raise common.ParamError("invalid threshold : %r" % threshold)
 
-    def filter(self, entries: model.Entries, prev_state: model.SourceState,
-               curr_state: model.SourceState) -> model.Entries:
+    def filter(
+        self,
+        entries: model.Entries,
+        prev_state: model.SourceState,
+        curr_state: model.SourceState,
+    ) -> model.Entries:
         if not entries:
             return
         try:
@@ -58,65 +67,74 @@ class NDiff(AbstractFilter):
             return
 
         filter_state = database.sources.get_filter_state(
-            self.db, curr_state.source_id, self.name)
-        prev_content = filter_state.get('content') if filter_state else None
+            self.db, curr_state.source_id, self.name
+        )
+        prev_content = filter_state.get("content") if filter_state else None
 
         # save current state
-        filter_state = {'content': entry.content}
+        filter_state = {"content": entry.content}
         database.sources.put_filter_state(
-            self.db, curr_state.source_id, self.name, filter_state)
+            self.db, curr_state.source_id, self.name, filter_state
+        )
 
         if not prev_content:
             _LOG.debug("no prev_content")
             entry = entry.clone()
-            entry.status = 'new'
-            entry.set_opt('preformated', True)
+            entry.status = "new"
+            entry.set_opt("preformated", True)
             entry.set_opt("content-type", "plain")
             yield entry
             return
 
-        old_lines = prev_content.split('\n')
-        new_lines = entry.content.split('\n')
+        old_lines = prev_content.split("\n")
+        new_lines = entry.content.split("\n")
         res = list(difflib.ndiff(old_lines, new_lines))
 
-        changed_lines = sum(1 for line in res if line[0] != ' ')
-        if not _check_changes(changed_lines, len(old_lines),
-                              self._conf.get("threshold"),
-                              self._conf.get("min_changed")):
+        changed_lines = sum(1 for line in res if line[0] != " ")
+        if not _check_changes(
+            changed_lines,
+            len(old_lines),
+            self._conf.get("threshold"),
+            self._conf.get("min_changed"),
+        ):
             _LOG.debug("no changes")
             return
 
         entry = entry.clone()
-        entry.status = 'new'
-        entry.content = '\n'.join(res)
+        entry.status = "new"
+        entry.content = "\n".join(res)
         entry.set_opt("content-type", "preformated")
-        entry.set_opt('_ndiff_changed_lines', changed_lines)
-        entry.set_opt('_ndiff_old_lines', len(old_lines))
+        entry.set_opt("_ndiff_changed_lines", changed_lines)
+        entry.set_opt("_ndiff_old_lines", len(old_lines))
         yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass
 
 
-def _check_changes(changed_lines: int, old_lines: int,
-                   changes_th, min_changed) -> bool:
+def _check_changes(
+    changed_lines: int, old_lines: int, changes_th, min_changed
+) -> bool:
     if not changed_lines:
         return False
 
     if changes_th and old_lines:
         changes = float(changed_lines) / old_lines
-        _LOG.debug("changes: %d / %d (%f %%)", changed_lines, old_lines,
-                   changes)
+        _LOG.debug(
+            "changes: %d / %d (%f %%)", changed_lines, old_lines, changes
+        )
         if changes < changes_th:
-            _LOG.info("changes not above threshold (%f<%f)", changes,
-                      changes_th)
+            _LOG.info(
+                "changes not above threshold (%f<%f)", changes, changes_th
+            )
             return False
 
     if min_changed and old_lines:
         _LOG.debug("changes: %f", changed_lines)
         if changed_lines < min_changed:
-            _LOG.info("changes not above minimum (%d<%d)", changed_lines,
-                      min_changed)
+            _LOG.info(
+                "changes not above minimum (%d<%d)", changed_lines, min_changed
+            )
             return False
 
     return True

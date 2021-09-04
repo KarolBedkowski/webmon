@@ -30,10 +30,10 @@ left join user_settings us on us.key = s.key and us.user_id=%s
 
 
 def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
-    """ Get all settings for given user. """
+    """Get all settings for given user."""
     assert user_id
     cur = db.cursor()
-    cur.execute(_GET_ALL_SQL, (user_id, ))
+    cur.execute(_GET_ALL_SQL, (user_id,))
     for row in cur:
         yield model.Setting.from_row(row)
     cur.close()
@@ -52,7 +52,7 @@ where s.key=%s
 
 
 def get(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
-    """ Get one setting for given user """
+    """Get one setting for given user"""
     cur = db.cursor()
     cur.execute(_GET_SQL, (user_id, key))
     row = cur.fetchone()
@@ -67,24 +67,23 @@ values (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
 
 
 def save_all(db, settings: ty.List[model.Setting]):
-    """ Save all settings """
+    """Save all settings"""
     cur = db.cursor()
     rows = [setting.to_row() for setting in settings]
     cur.executemany(
         "delete from user_settings where key=%s and user_id=%s",
-        [(setting.key, setting.user_id) for setting in settings])
+        [(setting.key, setting.user_id) for setting in settings],
+    )
     cur.executemany(_INSERT_SQL, rows)
     cur.close()
 
 
-def get_value(db, key: str, user_id: int, default=None) \
-        -> ty.Any:
-    """ Get value of setting for given user """
+def get_value(db, key: str, user_id: int, default=None) -> ty.Any:
+    """Get value of setting for given user"""
     setting = get(db, key, user_id)
     return setting.value if setting else default
 
 
 def get_dict(db, user_id: int) -> ty.Dict[str, ty.Any]:
-    """ Get dictionary of setting for given user. """
-    return {setting.key: setting.value
-            for setting in get_all(db, user_id)}
+    """Get dictionary of setting for given user."""
+    return {setting.key: setting.value for setting in get_all(db, user_id)}
