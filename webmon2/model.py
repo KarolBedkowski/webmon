@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2020
+# Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -18,6 +18,8 @@ import logging
 import json
 import base64
 from enum import IntEnum
+
+import pyotp
 
 from webmon2 import common
 
@@ -39,18 +41,18 @@ class SourceGroup:
         "feed",
         "mail_report",
         "unread",
-        "sources_count"
+        "sources_count",
     )
 
     def __init__(self, **args):
-        self.id = args.get('id')
-        self.name = args.get('name')
-        self.user_id = args.get('user_id')
-        self.feed = args.get('feed', '')
-        self.mail_report = args.get('mail_report')
+        self.id = args.get("id")
+        self.name = args.get("name")
+        self.user_id = args.get("user_id")
+        self.feed = args.get("feed", "")
+        self.mail_report = args.get("mail_report")
 
-        self.unread = args.get('unread')
-        self.sources_count = args.get('sources_count')
+        self.unread = args.get("unread")
+        self.sources_count = args.get("sources_count")
 
     def __str__(self):
         return common.obj2str(self)
@@ -91,21 +93,21 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "unread",
         "status",
         "mail_report",
-        "default_score"
+        "default_score",
     )
 
     def __init__(self, **args):
-        self.id = args.get('id')
-        self.group_id = args.get('group_id')
-        self.kind = args.get('kind')
-        self.name = args.get('name')
-        self.interval = args.get('interval')
-        self.settings = args.get('settings')
-        self.filters = args.get('filters')
-        self.user_id = args.get('user_id')
-        self.status = args.get('status', 1)
-        self.mail_report = args.get('mail_report')
-        self.default_score = args.get('default_score')
+        self.id = args.get("id")
+        self.group_id = args.get("group_id")
+        self.kind = args.get("kind")
+        self.name = args.get("name")
+        self.interval = args.get("interval")
+        self.settings = args.get("settings")
+        self.filters = args.get("filters")
+        self.user_id = args.get("user_id")
+        self.status = args.get("status", 1)
+        self.mail_report = args.get("mail_report")
+        self.default_score = args.get("default_score")
 
         self.group = None  # type: SourceGroup
         self.state = None
@@ -140,30 +142,34 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.interval = row["source__interval"]
         row_keys = row.keys()
         source.settings = common.get_json_if_exists(
-            row_keys, "source__settings", row)
+            row_keys, "source__settings", row
+        )
         source.filters = common.get_json_if_exists(
-            row_keys, "source__filters", row)
-        source.status = row['source__status']
-        source.user_id = row['source__user_id']
-        source.mail_report = row['source__mail_report']
-        source.default_score = row['source__default_score']
+            row_keys, "source__filters", row
+        )
+        source.status = row["source__status"]
+        source.user_id = row["source__user_id"]
+        source.mail_report = row["source__mail_report"]
+        source.default_score = row["source__default_score"]
         return source
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
         return {
-            'source__group_id': self.group_id,
-            'source__kind': self.kind,
-            'source__name': self.name,
-            'source__interval': self.interval,
-            'source__settings': (json.dumps(self.settings)
-                                 if self.settings else None),
-            'source__filters': (json.dumps(self.filters)
-                                if self.filters else None),
-            'source__user_id': self.user_id,
-            'source__status': self.status,
-            'source__id': self.id,
-            'source__mail_report': self.mail_report,
-            'source__default_score': self.default_score,
+            "source__group_id": self.group_id,
+            "source__kind": self.kind,
+            "source__name": self.name,
+            "source__interval": self.interval,
+            "source__settings": (
+                json.dumps(self.settings) if self.settings else None
+            ),
+            "source__filters": (
+                json.dumps(self.filters) if self.filters else None
+            ),
+            "source__user_id": self.user_id,
+            "source__status": self.status,
+            "source__id": self.id,
+            "source__mail_report": self.mail_report,
+            "source__default_score": self.default_score,
         }
 
 
@@ -179,21 +185,21 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "error",
         "state",
         "icon",
-        "icon_data"
+        "icon_data",
     )
 
     def __init__(self, **args):
-        self.source_id = args.get('source_id')
-        self.next_update = args.get('next_update')
-        self.last_update = args.get('last_update')
-        self.last_error = args.get('last_error')
-        self.error_counter = args.get('error_counter')
-        self.success_counter = args.get('success_counter')
-        self.status = args.get('status')
-        self.error = args.get('error')
-        self.state = args.get('state')
-        self.icon = args.get('icon')
-        self.icon_data = args.get('icon_data')
+        self.source_id = args.get("source_id")
+        self.next_update = args.get("next_update")
+        self.last_update = args.get("last_update")
+        self.last_error = args.get("last_error")
+        self.error_counter = args.get("error_counter")
+        self.success_counter = args.get("success_counter")
+        self.status = args.get("status")
+        self.error = args.get("error")
+        self.state = args.get("state")
+        self.icon = args.get("icon")
+        self.icon_data = args.get("icon_data")
 
     @staticmethod
     def new(source_id):
@@ -202,7 +208,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.next_update = datetime.now() + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
-        source.status = 'new'
+        source.status = "new"
         return source
 
     def create_new(self):
@@ -217,7 +223,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
-        state.status = 'ok'
+        state.status = "ok"
         state.success_counter = self.success_counter + 1
         state.last_error = None
         state.error = None
@@ -232,7 +238,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.source_id = self.source_id
         state.error = error
         state.last_update = self.last_update
-        state.status = 'error'
+        state.status = "error"
         state.success_counter = self.success_counter
         state.error_counter = self.error_counter + 1
         state.last_error = datetime.now()
@@ -245,7 +251,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
-        state.status = 'not modified'
+        state.status = "not modified"
         state.last_error = None
         state.error = None
         state.error_counter = 0
@@ -308,8 +314,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error = row["source_state__error"]
         row_keys = row.keys()
         state.state = common.get_json_if_exists(
-            row_keys, "source_state__state", row)
-        state.icon = row['source_state__icon']
+            row_keys, "source_state__state", row
+        )
+        state.icon = row["source_state__icon"]
         return state
 
 
@@ -335,21 +342,21 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, id_=None, source_id=None):
-        self.id = id_   # type: ty.Optional[int]
+        self.id = id_  # type: ty.Optional[int]
         self.source_id = source_id  # type: int
         self.updated = None  # type: ty.Optional[datetime]
         self.created = None  # type: ty.Optional[datetime]
         self.read_mark = 0  # type: int
         self.star_mark = 0  # type: int
         self.status = None  # type: ty.Optional[str]
-        self.oid = None     # type: ty.Optional[str]
-        self.title = None   # type: ty.Optional[str]
-        self.url = None     # type: ty.Optional[str]
+        self.oid = None  # type: ty.Optional[str]
+        self.title = None  # type: ty.Optional[str]
+        self.url = None  # type: ty.Optional[str]
         self.content = None  # type: ty.Optional[str]
-        self.opts = None    # type: ty.Optional[ty.Dict[str, ty.Any]]
+        self.opts = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
         self.user_id = None  # type: ty.Optional[int]
         self.icon = None  # type: ty.Optional[str]
-        self.score = 0   # type; int
+        self.score = 0  # type; int
 
         # tuple(content type, data)
         self.icon_data = None  # type: ty.Optional[ty.Tuple[str, ty.Any]]
@@ -384,10 +391,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return entry
 
     def calculate_oid(self):
-        data = "".join(map(
-            str, (self.source_id, self.title, self.url, self.content)))
-        csum = hashlib.sha1(data.encode('utf-8'))
-        self.oid = base64.b64encode(csum.digest()).decode('ascii')
+        data = "".join(
+            map(str, (self.source_id, self.title, self.url, self.content))
+        )
+        csum = hashlib.sha1(data.encode("utf-8"))
+        self.oid = base64.b64encode(csum.digest()).decode("ascii")
         return self.oid
 
     def get_opt(self, key, default=None):
@@ -402,14 +410,14 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if self.title:
             return self.title
         if not self.content:
-            return '<no title>'
+            return "<no title>"
         if len(self.content) > 50:
-            return self.content[:50] + '…'
+            return self.content[:50] + "…"
         return self.content
 
     def is_long_content(self) -> bool:
         if self.content:
-            lines = self.content.count('\n')
+            lines = self.content.count("\n")
             characters = len(self.content)
             return lines > 10 or characters > 400
         return False
@@ -420,12 +428,12 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def _set_content_type(self, content_type):
         if self.opts is None:
             self.opts = {}
-        self.opts['content-type'] = content_type
+        self.opts["content-type"] = content_type
 
     content_type = property(_get_content_type, _set_content_type)
 
     def get_summary(self):
-        return '\n'.join(self.content.split('\n', 21)[:20])[:400] + "\n…"
+        return "\n".join(self.content.split("\n", 21)[:20])[:400] + "\n…"
 
     def validate(self):
         if not isinstance(self.updated, datetime):
@@ -446,21 +454,21 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
         return {
-            'entry__source_id': self.source_id,
-            'entry__updated': self.updated,
-            'entry__created': self.created,
-            'entry__read_mark': self.read_mark,
-            'entry__star_mark': self.star_mark,
-            'entry__status': self.status,
-            'entry__oid': self.oid,
-            'entry__title': self.title,
-            'entry__url': self.url,
-            'entry__opts': json.dumps(self.opts),
-            'entry__content': self.content,
-            'entry__id': self.id,
-            'entry__user_id': self.user_id,
-            'entry__icon': self.icon,
-            'entry__score': self.score,
+            "entry__source_id": self.source_id,
+            "entry__updated": self.updated,
+            "entry__created": self.created,
+            "entry__read_mark": self.read_mark,
+            "entry__star_mark": self.star_mark,
+            "entry__status": self.status,
+            "entry__oid": self.oid,
+            "entry__title": self.title,
+            "entry__url": self.url,
+            "entry__opts": json.dumps(self.opts),
+            "entry__content": self.content,
+            "entry__id": self.id,
+            "entry__user_id": self.user_id,
+            "entry__icon": self.icon,
+            "entry__score": self.score,
         }
 
     @classmethod
@@ -479,9 +487,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.opts = common.get_json_if_exists(row_keys, "entry__opts", row)
         if "entry__content" in row_keys:
             entry.content = row["entry__content"]
-        entry.user_id = row['entry__user_id']
-        entry.icon = row['entry__icon']
-        entry.score = row['entry__score']
+        entry.user_id = row["entry__user_id"]
+        entry.icon = row["entry__icon"]
+        entry.score = row["entry__score"]
         return entry
 
 
@@ -498,8 +506,14 @@ class Setting:
         "parameters",
     )
 
-    def __init__(self, key=None, value=None, value_type=None,
-                 description=None, user_id=None):
+    def __init__(
+        self,
+        key=None,
+        value=None,
+        value_type=None,
+        description=None,
+        user_id=None,
+    ):
         self.key = key
         self.value = value
         self.value_type = value_type
@@ -508,12 +522,12 @@ class Setting:
         self.parameters = None
 
     def set_value(self, value):
-        if self.value_type == 'int':
+        if self.value_type == "int":
             self.value = int(value)
-        elif self.value_type == 'float':
+        elif self.value_type == "float":
             self.value = float(value)
-        elif self.value_type == 'bool':
-            self.value = value.lower() in ('true', 'yes')
+        elif self.value_type == "bool":
+            self.value = value.lower() in ("true", "yes")
         else:
             self.value = str(value)
 
@@ -522,24 +536,24 @@ class Setting:
 
     @classmethod
     def from_row(cls, row):
-        value = row['setting__value']
+        value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
         return Setting(
-            key=row['setting__key'],
+            key=row["setting__key"],
             value=value,
-            value_type=row['setting__value_type'],
-            description=row['setting__description'],
-            user_id=row['setting__user_id']
+            value_type=row["setting__value_type"],
+            description=row["setting__description"],
+            user_id=row["setting__user_id"],
         )
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
         return {
-            'setting__key': self.key,
-            'setting__value': json.dumps(self.value),
-            'setting__value_type': self.value_type,
-            'setting__description': self.description,
-            'setting__user_id': self.user_id,
+            "setting__key": self.key,
+            "setting__value": json.dumps(self.value),
+            "setting__value_type": self.value_type,
+            "setting__description": self.description,
+            "setting__user_id": self.user_id,
         }
 
 
@@ -551,48 +565,72 @@ class User:
         "password",
         "active",
         "admin",
+        "totp",
     )
 
     def __init__(self, **args):
-        self.id = args.get('id')
-        self.login = args.get('login')
-        self.email = args.get('email')
-        self.password = args.get('password')
-        self.active = args.get('active')
-        self.admin = args.get('admin')
+        self.id = args.get("id")
+        self.login = args.get("login")
+        self.email = args.get("email")
+        self.password = args.get("password")
+        self.active = args.get("active")
+        self.admin = args.get("admin")
+        self.totp = args.get("totp")
 
     def hash_password(self, password):
         salt = os.urandom(16)
         phash = hashlib.scrypt(
-            password.encode('utf-8'), salt=salt, n=16, r=16, p=2)
+            password.encode("utf-8"), salt=salt, n=16, r=16, p=2
+        )
         self.password = salt.hex() + phash.hex()
 
     def verify_password(self, password):
         salt = bytes.fromhex(self.password[:32])
         passw = bytes.fromhex(self.password[32:])
         phash = hashlib.scrypt(
-            password.encode('utf-8'), salt=salt, n=16, r=16, p=2)
+            password.encode("utf-8"), salt=salt, n=16, r=16, p=2
+        )
         return passw == phash
+
+    def generate_totp(self):
+        return pyotp.random_base32()
+
+    def verify_totp(self, totp, secret=None):
+        secret = secret or self.totp
+        if not secret:
+            return True
+
+        if not totp:
+            return False
+
+        try:
+            totp = int(totp)
+        except ValueError:
+            return False
+
+        return pyotp.TOTP(secret).verify(totp)
 
     @classmethod
     def from_row(cls, row):
         return User(
-            id=row['user__id'],
-            login=row['user__login'],
-            email=row['user__email'],
-            password=row['user__password'],
-            active=row['user__active'],
-            admin=row['user__admin']
+            id=row["user__id"],
+            login=row["user__login"],
+            email=row["user__email"],
+            password=row["user__password"],
+            active=row["user__active"],
+            admin=row["user__admin"],
+            totp=row["user__totp"],
         )
 
     def to_row(self):
         return {
-            'user__id': self.id,
-            'user__login': self.login,
-            'user__email': self.email,
-            'user__password': self.password,
-            'user__active': self.active,
-            'user__admin': self.admin
+            "user__id": self.id,
+            "user__login": self.login,
+            "user__email": self.email,
+            "user__password": self.password,
+            "user__active": self.active,
+            "user__admin": self.admin,
+            "user__totp": self.totp,
         }
 
 
@@ -606,11 +644,11 @@ class ScoringSett:
     )
 
     def __init__(self, **args):
-        self.id = args.get('id')
-        self.user_id = args.get('user_id')
+        self.id = args.get("id")
+        self.user_id = args.get("user_id")
         self.pattern = args.get("pattern")
-        self.active = args.get('active')
-        self.score_change = args.get('score_change')
+        self.active = args.get("active")
+        self.score_change = args.get("score_change")
 
     def __str__(self):
         return common.obj2str(self)
@@ -621,18 +659,18 @@ class ScoringSett:
     @classmethod
     def from_row(cls, row):
         return ScoringSett(
-            id=row['scoring_sett__id'],
-            user_id=row['scoring_sett__user_id'],
-            pattern=row['scoring_sett__pattern'],
-            active=row['scoring_sett__active'],
-            score_change=row['scoring_sett__score_change']
+            id=row["scoring_sett__id"],
+            user_id=row["scoring_sett__user_id"],
+            pattern=row["scoring_sett__pattern"],
+            active=row["scoring_sett__active"],
+            score_change=row["scoring_sett__score_change"],
         )
 
     def to_row(self):
         return {
-            'scoring_sett__id': self.id,
-            'scoring_sett__user_id': self.user_id,
-            'scoring_sett__pattern': self.pattern,
-            'scoring_sett__active': self.active,
-            'scoring_sett__score_change': self.score_change
+            "scoring_sett__id": self.id,
+            "scoring_sett__user_id": self.user_id,
+            "scoring_sett__pattern": self.pattern,
+            "scoring_sett__active": self.active,
+            "scoring_sett__score_change": self.score_change,
         }
