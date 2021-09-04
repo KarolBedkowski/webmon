@@ -69,6 +69,21 @@ def change_user_pass(args):
         print("password changed")
 
 
+def remove_user_totp(login):
+    if not login:
+        print("missing login arguments for --remove-user-totp")
+        return
+    with database.DB.get() as db:
+        user = database.users.get(db, login=login)
+        if not user:
+            print("user not found")
+            return
+        user.totp = None
+        user = database.users.save(db, user)
+        db.commit()
+        print("user changed")
+
+
 def process_cli(args) -> bool:
     if args.add_user:
         add_user(args.add_user)
@@ -76,6 +91,10 @@ def process_cli(args) -> bool:
 
     if args.change_user_pass:
         change_user_pass(args.change_user_pass)
+        return True
+
+    if args.remove_user_totp:
+        change_user_pass(args.remove_user_totp)
         return True
 
     if args.migrate_filename:
