@@ -70,6 +70,9 @@ def _parse_options():
                         help="change user password; arguments in form "
                         "<login>:<password>",
                         dest="change_user_pass")
+    parser.add_argument("--remove-user-totp",
+                        help="remove 2 factor authentication for user",
+                        dest="remove_user_totp")
     parser.add_argument("--web-app-root",
                         help="root for url patch (for reverse proxy)",
                         default="/")

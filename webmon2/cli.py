@@ -10,7 +10,8 @@
 command line commands
 """
 
-from . import database, sources, filters, common
+from . import database, sources, filters, common, security
+from webmon2 import model
 
 
 def _show_abilities_cls(title, base_cls):
@@ -36,14 +37,13 @@ def show_abilities():
 
 
 def add_user(args):
-    from webmon2 import model
     user_pass_adm = args.split(':')
     if len(user_pass_adm) < 2:
         print("wrong arguments for --add-user")
         return
     user = model.User(login=user_pass_adm[0], active=True)
-    user.hash_password(user_pass_adm[1])
-    user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == 'admin'
+    user.password = security.hash_password(user_pass_adm[1])
+    user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == "admin"
     with database.DB.get() as db:
         user = database.users.save(db, user)
         db.commit()
@@ -63,10 +63,25 @@ def change_user_pass(args):
         if not user:
             print("user not found")
             return
-        user.hash_password(user_pass[1])
+        user.password = security.hash_password(user_pass[1])
         user = database.users.save(db, user)
         db.commit()
         print("password changed")
+
+
+def remove_user_totp(login):
+    if not login:
+        print("missing login arguments for --remove-user-totp")
+        return
+    with database.DB.get() as db:
+        user = database.users.get(db, login=login)
+        if not user:
+            print("user not found")
+            return
+        user.totp = None
+        user = database.users.save(db, user)
+        db.commit()
+        print("user changed")
 
 
 def process_cli(args) -> bool:
@@ -76,6 +91,10 @@ def process_cli(args) -> bool:
 
     if args.change_user_pass:
         change_user_pass(args.change_user_pass)
+        return True
+
+    if args.remove_user_totp:
+        change_user_pass(args.remove_user_totp)
         return True
 
     if args.migrate_filename:
