@@ -52,8 +52,8 @@ class TestApplyDefaults(unittest.TestCase):
                 "c1": 123,
                 "c2": 234,
                 "c3": [1, 2, 3, 4, 5],
-                "c5": {"a1": "a1"}
-            }
+                "c5": {"a1": "a1"},
+            },
         }
         res = common.apply_defaults(defaults, conf)
         self.assertDictEqual(res, conf)
@@ -75,8 +75,8 @@ class TestApplyDefaults(unittest.TestCase):
                 "c1": 123,
                 "c2": 234,
                 "c3": [1, 2, 3, 4, 5],
-                "c5": {"a1": "a1"}
-            }
+                "c5": {"a1": "a1"},
+            },
         }
         res = common.apply_defaults(defaults, conf)
         print(res)
@@ -86,7 +86,7 @@ class TestApplyDefaults(unittest.TestCase):
         self.assertEqual(res["c"]["c2"], 234)
         self.assertEqual(res["c"]["c3"], [1, 2, 3, 4, 5])
         self.assertEqual(res["c"]["c5"]["a1"], "a1")
-        self.assertTrue('c6' not in res["c"])
+        self.assertTrue("c6" not in res["c"])
         self.assertEqual(res["d"], 12)
 
 
@@ -135,105 +135,127 @@ class TestParseTimeRanges(unittest.TestCase):
         print(now)
         tsr = "13-14"
         now[3], now[4] = 12, 13
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 13, 13
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 14, 13
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
 
     def test_03_check_date_in_trange_02(self):
         now = list(time.localtime())
         tsr = "23:30 - 1:45"
         now[3], now[4] = 22, 40
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 23, 40
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 0, 40
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 1, 40
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 1, 50
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 6, 50
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
 
     def test_03_check_date_in_trange_03(self):
         now = list(time.localtime())
         tsr = " 04:40-10:50, 11 -12,23:30-2:00"
         now[3], now[4] = 4, 15
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 6, 15
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 10, 55
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 11, 00
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 12, 00
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 12, 1
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 15, 20
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 23, 20
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
         now[3], now[4] = 23, 30
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 0, 0
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 1, 0
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 2, 0
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), True)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+        )
         now[3], now[4] = 2, 15
-        self.assertEqual(common.check_date_in_timerange(
-            tsr, time.mktime(tuple(now))), False)
+        self.assertEqual(
+            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+        )
 
 
 class TestParseFormListData(unittest.TestCase):
     def test_simple(self):
         data = {
-            'a-0-f1': 1,
-            'a-0-f2': 'abc',
-            'a-2-f1': 2,
-            'a-10-f2': 'bd',
-            'b-3-f3': 12,
+            "a-0-f1": 1,
+            "a-0-f2": "abc",
+            "a-2-f1": 2,
+            "a-10-f2": "bd",
+            "b-3-f3": 12,
         }
-        values = list(common.parse_form_list_data(data, 'a'))
+        values = list(common.parse_form_list_data(data, "a"))
         self.assertEqual(3, len(values))
-        self.assertEqual(values[0]['f1'], 1)
-        self.assertEqual(values[0]['f2'], 'abc')
-        self.assertEqual(values[0]['__idx'], 0)
-        self.assertEqual(values[1]['f1'], 2)
-        self.assertEqual(values[1]['__idx'], 2)
-        self.assertEqual(values[2]['f2'], 'bd')
-        self.assertEqual(values[2]['__idx'], 10)
+        self.assertEqual(values[0]["f1"], 1)
+        self.assertEqual(values[0]["f2"], "abc")
+        self.assertEqual(values[0]["__idx"], 0)
+        self.assertEqual(values[1]["f1"], 2)
+        self.assertEqual(values[1]["__idx"], 2)
+        self.assertEqual(values[2]["f2"], "bd")
+        self.assertEqual(values[2]["__idx"], 10)
 
-        values = list(common.parse_form_list_data(data, 'b'))
+        values = list(common.parse_form_list_data(data, "b"))
         self.assertEqual(1, len(values))
-        self.assertEqual(values[0]['f3'], 12)
-        self.assertEqual(values[0]['__idx'], 3)
+        self.assertEqual(values[0]["f3"], 12)
+        self.assertEqual(values[0]["__idx"], 3)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

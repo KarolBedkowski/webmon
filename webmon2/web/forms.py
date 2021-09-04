@@ -49,25 +49,24 @@ class Field:  # pylint: disable=too-many-instance-attributes
         return common.obj2str(self)
 
     @staticmethod
-    def from_input_params(param, values=None, prefix='', sett_value=None):
+    def from_input_params(param, values=None, prefix="", sett_value=None):
         field = Field()
         field.name = param.name
         field.description = param.description
         if param.options:
-            field.type = 'select'
+            field.type = "select"
         elif param.type == int:
-            field.type = 'number'
+            field.type = "number"
         elif param.type == bool:
-            field.type = 'checkbox'
+            field.type = "checkbox"
         else:
-            field.type = 'str'
+            field.type = "str"
         field.required = param.required and not sett_value
         field.options = [(val, val) for val in param.options or []]
-        field.value = values.get(field.name, param.default) \
-            if values else None
+        field.value = values.get(field.name, param.default) if values else None
         field.type_class = param.type
         field.fieldname = prefix + param.name
-        field.default_value = sett_value or param.default or ''
+        field.default_value = sett_value or param.default or ""
         field.parameters = param.parameters
         return field
 
@@ -76,32 +75,32 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field = Field()
         field.name = setting.key
         field.description = setting.description
-        if setting.value_type == 'int':
-            field.type = 'number'
+        if setting.value_type == "int":
+            field.type = "number"
             field.type_class = int
-        elif setting.value_type == 'bool':
-            field.type = 'checkbox'
+        elif setting.value_type == "bool":
+            field.type = "checkbox"
             field.type_class = bool
         else:
-            field.type = 'str'
+            field.type = "str"
             field.type_class = str
         field.value = setting.value
         field.fieldname = prefix + setting.key
-        field.default_value = ''
+        field.default_value = ""
         field.parameters = setting.parameters
         return field
 
     def update_from_request(self, form):
         form_value = form.get(self.fieldname)
-        if self.type == 'checkbox':
+        if self.type == "checkbox":
             self.value = bool(form_value)
             return
         if form_value is None:
             if self.required:
                 raise ValueError("missing value")
             return
-        if self.type == 'number':
-            if form_value == '':
+        if self.type == "number":
+            if form_value == "":
                 self.value = None
                 return
         if self.type_class:
@@ -131,7 +130,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
     def validate(self) -> ty.Dict[str, str]:
         result = {}
         if not self.group_id:
-            result['group_id'] = "Missing group"
+            result["group_id"] = "Missing group"
         if not self.name:
             result["name"] = "Missing name"
         if not self.kind:
@@ -143,7 +142,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
             try:
                 common.parse_interval(self.interval)
             except ValueError:
-                result['interval'] = "invalid interval"
+                result["interval"] = "invalid interval"
         return result
 
     @staticmethod
@@ -153,7 +152,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         form.group_id = source.group_id
         form.kind = source.kind
         form.name = source.name
-        form.interval = source.interval or ''
+        form.interval = source.interval or ""
         form.filters = source.filters
         form.status = source.status
         form.mail_report = source.mail_report
@@ -161,13 +160,13 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         return form
 
     def update_from_request(self, form):
-        group_id = form['group_id'].strip()
+        group_id = form["group_id"].strip()
         self.group_id = int(group_id) if group_id else None
-        self.name = form['name'].strip()
-        self.interval = form['interval'].strip()
-        self.status = int(form.get('status', 0))
-        self.mail_report = int(form.get('mail_report'))
-        self.default_score = int(form.get('default_score'))
+        self.name = form["name"].strip()
+        self.interval = form["interval"].strip()
+        self.status = int(form.get("status", 0))
+        self.mail_report = int(form.get("mail_report"))
+        self.default_score = int(form.get("default_score"))
         for sett in self.settings or []:
             sett.update_from_request(form)
 
@@ -177,8 +176,9 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.name = self.name
         src.interval = self.interval
         src.filters = self.filters
-        src.settings = {field.name: field.value
-                        for field in self.settings or []}
+        src.settings = {
+            field.name: field.value for field in self.settings or []
+        }
         src.status = self.status
         src.mail_report = self.mail_report
         src.default_score = self.default_score
@@ -202,19 +202,19 @@ class GroupForm:
         form.id = group.id
         form.name = group.name
         form.feed = group.feed
-        form.feed_enabled = group.feed and group.feed != 'off'
+        form.feed_enabled = group.feed and group.feed != "off"
         form.mail_report = group.mail_report
         return form
 
     def update_from_request(self, form):
-        self.name = form['name'].strip()
-        self.feed_enabled = form.get('feed_enabled')
+        self.name = form["name"].strip()
+        self.feed_enabled = form.get("feed_enabled")
         if self.feed_enabled:
-            if self.feed == 'off':
+            if self.feed == "off":
                 self.feed = None
         else:
-            self.feed = 'off'
-        self.mail_report = int(form.get('mail_report', 1))
+            self.feed = "off"
+        self.mail_report = int(form.get("mail_report", 1))
 
     def update_model(self, group: model.SourceGroup):
         group = group.clone()
@@ -226,7 +226,7 @@ class GroupForm:
     def validate(self) -> ty.Dict[str, str]:
         result = {}
         if not self.name:
-            result['name'] = "Missing name"
+            result["name"] = "Missing name"
         return result
 
 
@@ -241,7 +241,7 @@ class FieldsForm:
         self.fields = fields or []  # type: ty.List[Field]
 
     def update_from_request(self, request_form) -> bool:
-        """ Update fields from request; return True if no errors"""
+        """Update fields from request; return True if no errors"""
         no_errors = True
         for field in self.fields:
             try:

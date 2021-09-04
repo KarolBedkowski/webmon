@@ -29,33 +29,38 @@ _LOG = logging.getLogger(__name__)
 
 
 def process(db, user_id):
-    """ Process unread entries for user and send report via mail """
+    """Process unread entries for user and send report via mail"""
     conf = database.settings.get_dict(db, user_id)
-    if not conf.get('mail_enabled'):
+    if not conf.get("mail_enabled"):
         _LOG.debug("mail not enabled for user %d", user_id)
         return
 
     last_send = database.users.get_state(
-        db, user_id, 'mail_last_send',
-        conv=lambda x: datetime.fromtimestamp(float(x)))
+        db,
+        user_id,
+        "mail_last_send",
+        conv=lambda x: datetime.fromtimestamp(float(x)),
+    )
     if last_send:
         interval = timedelta(
-            seconds=common.parse_interval(conf.get('mail_interval', '1h')))
+            seconds=common.parse_interval(conf.get("mail_interval", "1h"))
+        )
         if last_send + interval > datetime.now():
             _LOG.debug("still waiting for send mail")
             return
 
     try:
-        content = ''.join(_process_groups(db, conf, user_id))
+        content = "".join(_process_groups(db, conf, user_id))
     except Exception as err:
-        _LOG.error('prepare mail error', err)
+        _LOG.error("prepare mail error", err)
         return
 
     if content and not _send_mail(conf, content):
         return
 
-    database.users.set_state(db, user_id, 'mail_last_send',
-                             datetime.now().timestamp())
+    database.users.set_state(
+        db, user_id, "mail_last_send", datetime.now().timestamp()
+    )
 
 
 def _process_groups(db, conf, user_id: int):
@@ -68,37 +73,36 @@ def _process_groups(db, conf, user_id: int):
 
 def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
     _LOG.debug("processing group %d", group_id)
-    sources = [source
-               for source
-               in database.sources.get_all(db, user_id, group_id)
-               if source.unread
-               and source.mail_report != model.MailReportMode.NO_SEND
-               ]
+    sources = [
+        source
+        for source in database.sources.get_all(db, user_id, group_id)
+        if source.unread and source.mail_report != model.MailReportMode.NO_SEND
+    ]
     if not sources:
-        _LOG.debug('no unread sources in group %d', group_id)
+        _LOG.debug("no unread sources in group %d", group_id)
         return
 
     group_name = sources[0].group.name
     yield group_name
-    yield '\n'
-    yield '=' * len(group_name)
-    yield '\n\n'
+    yield "\n"
+    yield "=" * len(group_name)
+    yield "\n\n"
 
     for source in sources:
         yield from _proces_source(db, conf, user_id, source.id)
 
-    yield '\n\n\n'
+    yield "\n\n\n"
 
 
 def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
     _LOG.debug("processing source %d", source_id)
 
-    entries = [entry
-               for entry
-               in database.entries.find(db, user_id, source_id=source_id)
-               if entry.source.mail_report == model.MailReportMode.SEND
-               or entry.source.group.mail_report == model.MailReportMode.SEND
-               ]
+    entries = [
+        entry
+        for entry in database.entries.find(db, user_id, source_id=source_id)
+        if entry.source.mail_report == model.MailReportMode.SEND
+        or entry.source.group.mail_report == model.MailReportMode.SEND
+    ]
 
     if not entries:
         _LOG.debug("no entries to send in source %d", source_id)
@@ -106,25 +110,25 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
 
     source_name = entries[0].source.name
     yield source_name
-    yield '\n'
-    yield '-' * len(source_name)
-    yield '\n\n'
+    yield "\n"
+    yield "-" * len(source_name)
+    yield "\n\n"
 
     for entry in entries:
-        _LOG.debug('processing entry id %dd', entry.id)
+        _LOG.debug("processing entry id %dd", entry.id)
         yield from _render_entry_plain(entry)
 
-    if conf.get('mail_mark_read'):
+    if conf.get("mail_mark_read"):
         ids = [entry.id for entry in entries]
         database.entries.mark_read(db, user_id, ids=ids)
 
-    yield '\n\n'
+    yield "\n\n"
 
 
-_HEADER_LINE = re.compile(r'^#+ .+')
+_HEADER_LINE = re.compile(r"^#+ .+")
 
 
-def _adjust_header(line, prefix='###'):
+def _adjust_header(line, prefix="###"):
     if line and _HEADER_LINE.match(line):
         return prefix + line
     return line
@@ -132,42 +136,43 @@ def _adjust_header(line, prefix='###'):
 
 def _render_entry_plain(entry):
     title = entry.title + " " + entry.updated.strftime("%x %X")
-    yield '### '
+    yield "### "
     yield _get_entry_score_mark(entry)
     if entry.url:
-        yield '['
+        yield "["
         yield title
-        yield ']('
+        yield "]("
         yield entry.url
-        yield ')'
+        yield ")"
     else:
         yield title
-    yield '\n'
+    yield "\n"
     if entry.content:
         content_type = entry.content_type
-        if content_type not in ('plain', 'markdown'):
+        if content_type not in ("plain", "markdown"):
             conv = h2t.HTML2Text(bodywidth=74)
             conv.protect_links = True
             yield conv.handle(entry.content)
         else:
             yield "\n".join(map(_adjust_header, entry.content.split("\n")))
-        yield '\n'
+        yield "\n"
 
 
 def _prepare_msg(conf, content):
-    body_plain = _encrypt(conf, content) if conf.get('mail_encrypt') \
-        else content
+    body_plain = (
+        _encrypt(conf, content) if conf.get("mail_encrypt") else content
+    )
 
-    if not conf.get('mail_html'):
-        return email.mime.text.MIMEText(body_plain, 'plain', 'utf-8')
+    if not conf.get("mail_html"):
+        return email.mime.text.MIMEText(body_plain, "plain", "utf-8")
 
-    msg = email.mime.multipart.MIMEMultipart('alternative')
-    msg.attach(email.mime.text.MIMEText(body_plain, 'plain', 'utf-8'))
+    msg = email.mime.multipart.MIMEMultipart("alternative")
+    msg.attach(email.mime.text.MIMEText(body_plain, "plain", "utf-8"))
 
     html = formatters.format_markdown(content)
-    if conf.get('mail_encrypt'):
+    if conf.get("mail_encrypt"):
         html = _encrypt(conf, html)
-    msg.attach(email.mime.text.MIMEText(html, 'html', 'utf-8'))
+    msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
     return msg
 
 
@@ -175,12 +180,11 @@ def _send_mail(conf, content):
     _LOG.debug("send mail: %r", conf)
     try:
         msg = _prepare_msg(conf, content)
-        msg['Subject'] = conf["mail_subject"]
-        msg['From'] = conf["mail_from"]
-        msg['To'] = conf["mail_to"]
-        msg['Date'] = email.utils.formatdate()
-        smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") \
-            else smtplib.SMTP()
+        msg["Subject"] = conf["mail_subject"]
+        msg["From"] = conf["mail_from"]
+        msg["To"] = conf["mail_to"]
+        msg["Date"] = email.utils.formatdate()
+        smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") else smtplib.SMTP()
         if _LOG.isEnabledFor(logging.DEBUG):
             smtp.set_debuglevel(True)
         host, port = conf["smtp_host"], conf["smtp_port"]
@@ -191,7 +195,7 @@ def _send_mail(conf, content):
             smtp.starttls()
         if conf.get("smtp_login"):
             smtp.login(conf["smtp_login"], conf["smtp_password"])
-        smtp.sendmail(msg['From'], [msg['To']], msg.as_string())
+        smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
         _LOG.debug("mail send")
     except Exception:  # pylint: disable=broad-except
         _LOG.exception("send mail error")
@@ -202,15 +206,17 @@ def _send_mail(conf, content):
 
 
 def _encrypt(conf, message: str) -> str:
-    subp = subprocess.Popen(["gpg", "-e", "-a", "-r", conf["mail_to"]],
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
-    stdout, stderr = subp.communicate(message.encode('utf-8'))
+    subp = subprocess.Popen(
+        ["gpg", "-e", "-a", "-r", conf["mail_to"]],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout, stderr = subp.communicate(message.encode("utf-8"))
     if subp.wait(60) != 0:
         _LOG.error("EMailOutput: encrypt error: %s", stderr)
-        return stderr.decode('utf-8')
-    return stdout.decode('utf-8')
+        return stderr.decode("utf-8")
+    return stdout.decode("utf-8")
 
 
 def _get_entry_score_mark(entry):

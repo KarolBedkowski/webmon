@@ -28,8 +28,12 @@ class Sort(AbstractFilter):
     def __init__(self, conf):
         super().__init__(conf)
 
-    def filter(self, entries: model.Entries, prev_state: model.SourceState,
-               curr_state: model.SourceState) -> model.Entries:
+    def filter(
+        self,
+        entries: model.Entries,
+        prev_state: model.SourceState,
+        curr_state: model.SourceState,
+    ) -> model.Entries:
         return sorted(entries, key=lambda e: (e.title, e.content))
 
     def _filter(self, entry: model.Entry) -> model.Entries:

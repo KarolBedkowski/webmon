@@ -29,7 +29,7 @@ __all__ = (
     "entries",
     "sources",
     "binaries",
-    "scoring"
+    "scoring",
 )
 
 _ = ty
@@ -71,8 +71,8 @@ class DB:
         _LOG.info("initializing database")
         conn_str = extensions.parse_dsn(conn_str)
         cls.POOL = pool.ThreadedConnectionPool(
-            1, 20,
-            connection_factory=extras.LoggingConnection, **conn_str)
+            1, 20, connection_factory=extras.LoggingConnection, **conn_str
+        )
         # common.create_missing_dir(os.path.dirname(filename))
         with DB() as db:
             db.check()
@@ -95,7 +95,7 @@ class DB:
 
     def check(self):
         with self.cursor() as cur:
-            cur.execute('select now()')
+            cur.execute("select now()")
             _LOG.debug("check: %s", cur.fetchone())
             self.rollback()
 
@@ -103,9 +103,9 @@ class DB:
         self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
-        schema_files = os.path.join(os.path.dirname(__file__), '..', 'schema')
+        schema_files = os.path.join(os.path.dirname(__file__), "..", "schema")
         for fname in sorted(os.listdir(schema_files)):
-            if not fname.endswith('.sql'):
+            if not fname.endswith(".sql"):
                 continue
             try:
                 version = int(os.path.splitext(fname)[0])
@@ -122,8 +122,9 @@ class DB:
                     with open(fpath) as update_file:
                         cur.execute(update_file.read())
                     cur.execute(
-                        'insert into schema_version(version) values(%s)',
-                        (version, ))
+                        "insert into schema_version(version) values(%s)",
+                        (version,),
+                    )
                 self._conn.commit()
             except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
@@ -133,7 +134,7 @@ class DB:
     def _get_schema_version(self):
         with self.cursor() as cur:
             try:
-                cur.execute('select max(version) from schema_version')
+                cur.execute("select max(version) from schema_version")
                 row = cur.fetchone()
                 if row:
                     return row[0] or 0

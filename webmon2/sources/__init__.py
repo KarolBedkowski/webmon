@@ -56,7 +56,7 @@ class UnknownInputException(Exception):
 
 
 def get_source(source: model.Source, sys_settings):
-    """ Get input class according to configuration """
+    """Get input class according to configuration"""
     scls = common.find_subclass(AbstractSource, source.kind)
     if scls:
         src = scls(source, sys_settings)
@@ -71,10 +71,13 @@ def get_source_class(kind: str) -> ty.Optional[AbstractSource]:
 
 
 def sources_name():
-    return [name
-            for name, scls in common.get_subclasses_with_name(AbstractSource)]
+    return [
+        name for name, scls in common.get_subclasses_with_name(AbstractSource)
+    ]
 
 
 def sources_info():
-    return [(name, scls.short_info, scls.long_info)
-            for name, scls in common.get_subclasses_with_name(AbstractSource)]
+    return [
+        (name, scls.short_info, scls.long_info)
+        for name, scls in common.get_subclasses_with_name(AbstractSource)
+    ]

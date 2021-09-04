@@ -19,14 +19,18 @@ import pyotp
 
 def hash_password(password):
     salt = os.urandom(16)
-    phash = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16, r=16, p=2)
+    phash = hashlib.scrypt(
+        password.encode("utf-8"), salt=salt, n=16, r=16, p=2
+    )
     return salt.hex() + phash.hex()
 
 
 def verify_password(hashed, password):
     salt = bytes.fromhex(hashed[:32])
     passw = bytes.fromhex(hashed[32:])
-    phash = hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16, r=16, p=2)
+    phash = hashlib.scrypt(
+        password.encode("utf-8"), salt=salt, n=16, r=16, p=2
+    )
     return passw == phash
 
 

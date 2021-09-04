@@ -26,23 +26,30 @@ class Grep(AbstractFilter):
     short_info = "Filter elements by regular expression"
     long_info = "Select element matching or not matching to given pattern."
     params = [
-        common.SettingDef("pattern", "Regular expression", required=True,
-                          multiline=True),
-        common.SettingDef("invert", "Accept items not matching",
-                          default=False),
+        common.SettingDef(
+            "pattern", "Regular expression", required=True, multiline=True
+        ),
+        common.SettingDef(
+            "invert", "Accept items not matching", default=False
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf):
         super().__init__(conf)
         pattern = conf.get("pattern")
         if pattern:
-            self._re = re.compile(pattern, re.IGNORECASE | re.MULTILINE |
-                                  re.DOTALL)
+            self._re = re.compile(
+                pattern, re.IGNORECASE | re.MULTILINE | re.DOTALL
+            )
         else:
             self._re = None
 
-    def filter(self, entries: model.Entries, prev_state: model.SourceState,
-               curr_state: model.SourceState) -> model.Entries:
+    def filter(
+        self,
+        entries: model.Entries,
+        prev_state: model.SourceState,
+        curr_state: model.SourceState,
+    ) -> model.Entries:
         if not self._re:
             return entries
         if self._conf["invert"]:

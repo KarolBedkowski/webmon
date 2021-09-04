@@ -18,38 +18,34 @@ import urllib
 from datetime import datetime
 import xml.etree.ElementTree
 
-from flask import (
-    Blueprint, url_for, request, abort, Response
-)
+from flask import Blueprint, url_for, request, abort, Response
 
 from webmon2.web import get_db
 from webmon2 import database
 
 
 _LOG = logging.getLogger(__name__)
-BP = Blueprint('atom', __name__, url_prefix='/atom')
+BP = Blueprint("atom", __name__, url_prefix="/atom")
 
 DEFAULT_ETREE = xml.etree.ElementTree
 ItemElement = ty.NewType("ItemElement", DEFAULT_ETREE.Element)
 
 
 def add_subelement_with_text(
-        root: DEFAULT_ETREE.Element,
-        child_tag: str,
-        text: str
-        ) -> DEFAULT_ETREE.SubElement:
+    root: DEFAULT_ETREE.Element, child_tag: str, text: str
+) -> DEFAULT_ETREE.SubElement:
     sub = DEFAULT_ETREE.SubElement(root, child_tag)
     sub.text = text
     return sub
 
 
 def gen_item(
-        title: ty.Optional[str] = None,
-        link: ty.Optional[str] = None,
-        description: ty.Optional[str] = None,
-        comments: ty.Optional[str] = None,
-        pubDate: ty.Optional[str] = None,
-        ) -> ItemElement:
+    title: ty.Optional[str] = None,
+    link: ty.Optional[str] = None,
+    description: ty.Optional[str] = None,
+    comments: ty.Optional[str] = None,
+    pubDate: ty.Optional[str] = None,
+) -> ItemElement:
 
     args = {k: v for k, v in locals().items() if v is not None}
     item = DEFAULT_ETREE.Element("item")
@@ -60,15 +56,18 @@ def gen_item(
 
 
 def start_rss(
-        title: str,
-        link: str,
-        description: str,
-        pubDate: ty.Optional[str] = None,
-        lastBuildDate: ty.Optional[str] = None,
-        items: ty.Optional[ty.Iterable[ItemElement]] = None
-        ) -> DEFAULT_ETREE.Element:
-    args = {k: v for k, v in locals().items() if v is not None
-            and k not in ("items", "title", "link", "description")}
+    title: str,
+    link: str,
+    description: str,
+    pubDate: ty.Optional[str] = None,
+    lastBuildDate: ty.Optional[str] = None,
+    items: ty.Optional[ty.Iterable[ItemElement]] = None,
+) -> DEFAULT_ETREE.Element:
+    args = {
+        k: v
+        for k, v in locals().items()
+        if v is not None and k not in ("items", "title", "link", "description")
+    }
 
     rss = DEFAULT_ETREE.Element("rss", version="2.0")
     channel = DEFAULT_ETREE.SubElement(rss, "channel")
@@ -86,10 +85,9 @@ def start_rss(
     return rss
 
 
-
 @BP.route("/group/<key>")
 def group(key):
-    if key == 'off':
+    if key == "off":
         return abort(404)
 
     db = get_db()
@@ -99,44 +97,52 @@ def group(key):
     except database.NotFound:
         return abort(404)
     updated_etag = database.groups.get_state(db, grp.id)
-    _LOG.debug('updated_etag %r', updated_etag)
+    _LOG.debug("updated_etag %r", updated_etag)
     if not updated_etag:
-        return Response('Not modified', 304)
+        return Response("Not modified", 304)
 
     db.commit()
     updated, etag = updated_etag
 
     if request.if_modified_since and request.if_modified_since >= updated:
-        _LOG.debug('if_modified_since: %s', request.if_modified_since)
-        return Response('Not modified', 304)
+        _LOG.debug("if_modified_since: %s", request.if_modified_since)
+        return Response("Not modified", 304)
 
     if request.if_match and request.if_match.contains(etag):
-        _LOG.debug('if_matche: %s', request.if_match)
-        return Response('Not modified', 304)
+        _LOG.debug("if_matche: %s", request.if_match)
+        return Response("Not modified", 304)
 
     rss_items = []
 
     for entry in database.entries.find_for_feed(db, grp.id):
         body = entry.content
-        url = urllib.parse.urljoin(request.url_root,
-                                   url_for("entry.entry", entry_id=entry.id))
+        url = urllib.parse.urljoin(
+            request.url_root, url_for("entry.entry", entry_id=entry.id)
+        )
 
-        rss_items.append(gen_item(
-            title=entry.title or entry.grp.name,
-            link=url,
-            description=body,
-            pubDate=(entry.updated or entry.created
-                     or datetime.now()).isoformat()))
+        rss_items.append(
+            gen_item(
+                title=entry.title or entry.grp.name,
+                link=url,
+                description=body,
+                pubDate=(
+                    entry.updated or entry.created or datetime.now()
+                ).isoformat(),
+            )
+        )
 
     rss_xml_element = start_rss(
         title="Webmon2 - " + grp.name,
         description="Webmon2 feed for group " + grp.name,
         link=request.url,
         items=rss_items,
-        pubDate=updated.isoformat())
+        pubDate=updated.isoformat(),
+    )
 
-    response = Response(xml.etree.ElementTree.tostring(rss_xml_element),
-                        mimetype="application/atom+xml")
-    response.headers['ETag'] = etag
-    response.headers['Last-Modified'] = updated
+    response = Response(
+        xml.etree.ElementTree.tostring(rss_xml_element),
+        mimetype="application/atom+xml",
+    )
+    response.headers["ETag"] = etag
+    response.headers["Last-Modified"] = updated
     return response

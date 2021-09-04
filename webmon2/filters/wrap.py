@@ -24,12 +24,13 @@ class Wrap(AbstractFilter):
 
     name = "wrap"
     short_info = "Wrap long lines"
-    long_info = "Wrap long content lines to given width; also allow limit " \
+    long_info = (
+        "Wrap long content lines to given width; also allow limit "
         "total number of lines"
+    )
     params = [
         common.SettingDef("width", "Max line width", default=76),
-        common.SettingDef("max_lines", "Max number of lines",
-                          value_type=int),
+        common.SettingDef("max_lines", "Max number of lines", value_type=int),
     ]  # type: ty.List[common.SettingDef]
 
     def validate(self):
@@ -50,6 +51,7 @@ class Wrap(AbstractFilter):
                 break_on_hyphens=False,
                 initial_indent=indent,
                 subsequent_indent=indent,
-                max_lines=self._conf['max_lines'],
-                width=self._conf['width'])
+                max_lines=self._conf["max_lines"],
+                width=self._conf["width"],
+            )
         yield entry

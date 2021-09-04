@@ -25,9 +25,13 @@ def _show_abilities_cls(title, base_cls):
             print("    Parameters:")
             for param in cls.params:
                 print(
-                    "     - {:<15s}\t{:<20s}\tdefault={!r:<10}\t{}"
-                    .format(param.name, param.description, param.default,
-                            "Required" if param.required else ""))
+                    "     - {:<15s}\t{:<20s}\tdefault={!r:<10}\t{}".format(
+                        param.name,
+                        param.description,
+                        param.default,
+                        "Required" if param.required else "",
+                    )
+                )
     print()
 
 
@@ -37,7 +41,7 @@ def show_abilities():
 
 
 def add_user(args):
-    user_pass_adm = args.split(':')
+    user_pass_adm = args.split(":")
     if len(user_pass_adm) < 2:
         print("wrong arguments for --add-user")
         return
@@ -54,7 +58,7 @@ def add_user(args):
 
 
 def change_user_pass(args):
-    user_pass = args.split(':')
+    user_pass = args.split(":")
     if len(user_pass) != 2:
         print("wrong arguments for --reset-password; required login:pass")
         return
@@ -99,6 +103,7 @@ def process_cli(args) -> bool:
 
     if args.migrate_filename:
         from . import migrate
+
         migrate.migrate(args.migrate_filename)
         return True
 

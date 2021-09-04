@@ -13,7 +13,7 @@ __all__ = (
 
 
 def get_db():
-    database = getattr(g, '_database', None)
+    database = getattr(g, "_database", None)
     if database is None:
         database = g._database = DB.get()
     return database
