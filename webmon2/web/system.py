@@ -28,7 +28,7 @@ from flask import (
 )
 
 from webmon2.web import get_db, forms
-from webmon2 import model, common
+from webmon2 import model, common, security
 from webmon2 import database, imp_exp, opml
 
 
@@ -77,8 +77,12 @@ def sett_user():
         elif not request.form["curr_password"]:
             flash("Missing curr_password password", "error")
         else:
-            if user.verify_password(request.form["curr_password"]):
-                user.hash_password(request.form["new_password1"])
+            if security.verify_password(
+                user.password, request.form["curr_password"]
+            ):
+                user.password = security.hash_password(
+                    request.form["new_password1"]
+                )
                 database.users.save(db, user)
                 db.commit()
                 flash("Password changed")
@@ -112,13 +116,11 @@ def sett_user_totp_get():
 
     totp = session.get("temp_totp")
     if not totp:
-        totp = user.generate_totp()
+        totp = security.generate_totp()
         session["temp_totp"] = totp
         session.modified = True
 
-    otp_url = (
-        f"otpauth://totp/Webmon2:{user.login}?secret={totp}&issuer=Webmon2"
-    )
+    otp_url = security.generate_totp_url(totp, user.login)
 
     return render_template("system/user.totp.html", totp=totp, otp_url=otp_url)
 
@@ -135,7 +137,7 @@ def sett_user_totp_post():
         return abort(400)
 
     totp = request.form["totp"]
-    if user.verify_totp(totp, secret):
+    if security.verify_totp(secret, totp):
         user.totp = secret
         database.users.save(db, user)
         db.commit()

@@ -98,10 +98,13 @@ def create_app(debug, root, args):
         if not _check_csrf_token():
             return abort(400)
         path = request.path
-        g.non_action = (path.startswith('/static')
-                        or path.startswith('/sec/login')
-                        or path.startswith('/metrics')
-                        or path.startswith('/atom'))
+        g.non_action = (
+            path.startswith("/static")
+            or path.startswith("/sec/login")
+            or path.startswith("/metrics")
+            or path.startswith("/atom")
+            or path == "/favicon.ico"
+        )
         if g.non_action:
             return None
         user_id = session.get('user')

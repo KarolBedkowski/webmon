@@ -21,7 +21,7 @@ from flask import (
     session,
 )
 
-from webmon2 import database
+from webmon2 import database, security
 from webmon2.web import get_db
 
 
@@ -33,28 +33,38 @@ BP = Blueprint("sec", __name__, url_prefix="/sec")
 def login():
     if "temp_user_id" in session:
         del session["temp_user_id"]
-    if "temp_redirect" in session:
-        del session["temp_redirect"]
-    session.modified = True
+    if "user" in session:
+        del session["user"]
 
+    session.modified = True
     if request.method == "POST":
         flogin = request.form["login"]
         fpassword = request.form["password"]
         db = get_db()
         user = database.users.get(db, login=flogin)
-        if user and user.active and user.verify_password(fpassword):
+        if (
+            user
+            and user.active
+            and security.verify_password(user.password, fpassword)
+        ):
             if user.totp:
                 session["temp_user_id"] = user.id
-                session["temp_redirect"] = request.args.get("back")
                 session.modified = True
+                session.permanent = False
+                print(session)
                 return redirect(url_for("sec.login_totp"))
 
             session["user"] = user.id
             session["user_admin"] = bool(user.admin)
+            back = session.get("_back_url")
+            if back:
+                del session["_back_url"]
+
             session.permanent = True
             session.modified = True
 
-            return redirect(request.args.get("back", url_for("root.index")))
+            return redirect(back or url_for("root.index"))
+
         flash("Invalid user and/or password")
 
     return render_template("login.html")
@@ -62,17 +72,18 @@ def login():
 
 @BP.route("/login/totp", methods=["POST", "GET"])
 def login_totp():
-    user_id = session["temp_user_id"]
     if request.method == "POST":
-        ftotp = request.form["otp"]
         db = get_db()
-        user = database.users.get(db, user_id)
-        if user and user.active and user.verify_totp(ftotp):
-            back = session["temp_redirect"]
+        user = database.users.get(db, session["temp_user_id"])
+        ftotp = request.form["otp"]
+        if user and user.active and security.verify_totp(user.totp, ftotp):
+            back = session.get("_back_url")
+            if back:
+                del session["_back_url"]
+
             session["user"] = user.id
             session["user_admin"] = bool(user.admin)
             del session["temp_user_id"]
-            del session["temp_redirect"]
             session.permanent = True
             session.modified = True
             return redirect(back or url_for("root.index"))

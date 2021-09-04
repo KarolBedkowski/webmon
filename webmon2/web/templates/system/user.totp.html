@@ -13,8 +13,8 @@
 {% block content %}
 	<h2>User TOTP</h2>
 	<h3>Secret</h3>
+	<p>Secret: <code>{{ totp }}</code></p>
 	<p><img id="qrcode" src="{{ url_for('system.sys_qrcode', url=otp_url) }}"></p>
-	<p>{{ totp }}</p>
 	<h3>Confirmation</h3>
 	<form method="POST" autocomplete="new-password">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>

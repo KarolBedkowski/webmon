@@ -577,39 +577,6 @@ class User:
         self.admin = args.get("admin")
         self.totp = args.get("totp")
 
-    def hash_password(self, password):
-        salt = os.urandom(16)
-        phash = hashlib.scrypt(
-            password.encode("utf-8"), salt=salt, n=16, r=16, p=2
-        )
-        self.password = salt.hex() + phash.hex()
-
-    def verify_password(self, password):
-        salt = bytes.fromhex(self.password[:32])
-        passw = bytes.fromhex(self.password[32:])
-        phash = hashlib.scrypt(
-            password.encode("utf-8"), salt=salt, n=16, r=16, p=2
-        )
-        return passw == phash
-
-    def generate_totp(self):
-        return pyotp.random_base32()
-
-    def verify_totp(self, totp, secret=None):
-        secret = secret or self.totp
-        if not secret:
-            return True
-
-        if not totp:
-            return False
-
-        try:
-            totp = int(totp)
-        except ValueError:
-            return False
-
-        return pyotp.TOTP(secret).verify(totp)
-
     @classmethod
     def from_row(cls, row):
         return User(
