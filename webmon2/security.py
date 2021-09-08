@@ -14,7 +14,15 @@ import os
 import hashlib
 import socket
 
-import pyotp
+try:
+    import pyotp
+except ImportError:
+    pyotp = None
+    print("pyotp module not found - TOTP unavailable!")
+
+
+class NotAvaliable(RuntimeError):
+    pass
 
 
 def hash_password(password):
@@ -34,11 +42,21 @@ def verify_password(hashed, password):
     return passw == phash
 
 
+def otp_available():
+    return pyotp is not None
+
+
 def generate_totp():
+    if pyotp is None:
+        raise NotAvaliable()
+
     return pyotp.random_base32()
 
 
 def generate_totp_url(secret, name):
+    if pyotp is None:
+        raise NotAvaliable()
+
     my_name = "webmon2." + socket.gethostname()
     return pyotp.totp.TOTP(secret).provisioning_uri(
         name=name + "@" + my_name, issuer_name=my_name
@@ -46,6 +64,9 @@ def generate_totp_url(secret, name):
 
 
 def verify_totp(secret, totp):
+    if pyotp is None:
+        raise NotAvaliable()
+
     if not secret:
         return True
 

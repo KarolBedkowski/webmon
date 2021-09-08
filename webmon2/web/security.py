@@ -47,7 +47,7 @@ def login():
             and user.active
             and security.verify_password(user.password, fpassword)
         ):
-            if user.totp:
+            if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
                 session.modified = True
                 session.permanent = False
