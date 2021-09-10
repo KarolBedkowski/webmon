@@ -1,0 +1,34 @@
+# Changelog
+
+## 2.3.1 2021-09-10
+
+### Bug Fixes
+
+- Back to right place after login
+- Typo
+
+### Dev
+
+- make pyotp/totp and pyqrcode optional dependences
+
+## 2.3.0 2021-09-04
+
+### Feature
+
+- Support TOTP authentication
+- Support GitLab source for tags/commits/releases
+
+## 2.2.0 2021-04-10
+
+### Feature
+
+- Sources must be activated after configure
+
+### Bugfix
+
+- Better error handling when loading data
+
+
+
+
+; vim: ft=markdown
