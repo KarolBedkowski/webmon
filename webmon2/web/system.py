@@ -14,7 +14,12 @@ import logging
 import datetime
 from io import BytesIO
 
-import pyqrcode
+try:
+    import pyqrcode
+except ImportError:
+    print("pyqrcode not available")
+    pyqrcode = None
+
 from flask import (
     Blueprint,
     render_template,
@@ -89,12 +94,20 @@ def sett_user():
             else:
                 flash("Wrong current password", "error")
 
+    otp_available = security.otp_available()
     totp_enabled = bool(user.totp)
-    return render_template("system/user.html", totp_enabled=totp_enabled)
+    return render_template(
+        "system/user.html",
+        totp_enabled=totp_enabled,
+        otp_available=otp_available,
+    )
 
 
 @BP.route("/settings/user/totp/remove", methods=["GET", "POST"])
 def sett_user_totp_del():
+    if not security.otp_available():
+        return abort(404)
+
     db = get_db()
     user = database.users.get(db, id_=session["user"])
     if not user.totp:
@@ -121,12 +134,19 @@ def sett_user_totp_get():
         session.modified = True
 
     otp_url = security.generate_totp_url(totp, user.login)
-
-    return render_template("system/user.totp.html", totp=totp, otp_url=otp_url)
+    return render_template(
+        "system/user.totp.html",
+        totp=totp,
+        otp_url=otp_url,
+        qrcode_available=pyqrcode is not None,
+    )
 
 
 @BP.route("/settings/user/totp", methods=["POST"])
 def sett_user_totp_post():
+    if not security.otp_available():
+        return abort(404)
+
     secret = session["temp_totp"]
     if not secret:
         return abort(400)
@@ -270,6 +290,9 @@ def sett_scoring():
 
 @BP.route("/qrcode")
 def sys_qrcode():
+    if pyqrcode is None:
+        return abort(404)
+
     url = request.args["url"]
     qrc = pyqrcode.create(url)
     stream = BytesIO()

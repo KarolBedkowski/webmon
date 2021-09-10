@@ -31,13 +31,15 @@
 		</div>
 	</form>
 
-	<h3>TOTP</h3>
-	{% if totp_enabled %}
-		<p>TOTP enabled</p>
-		<span><a href="{{ url_for("system.sett_user_totp_del") }}"
-				 data-req-confirm="yes" data-question="Realy disable TOTP?">✘ Delete</a></span>
-	{% else %}
-		<p><a href="{{ url_for("system.sett_user_totp_get")}}">Setup TOTP</a></p>
+	{% if otp_available %}
+		<h3>Two-Factor Authentication (2FA)</h3>
+		{% if totp_enabled %}
+			<p>TOTP enabled</p>
+			<span><a href="{{ url_for("system.sett_user_totp_del") }}"
+					data-req-confirm="yes" data-question="Really disable TOTP?">✘ Disable TOTP</a></span>
+		{% else %}
+			<p><a href="{{ url_for("system.sett_user_totp_get")}}">Setup TOTP</a></p>
+		{% endif %}
 	{% endif %}
 
 {% endblock %}

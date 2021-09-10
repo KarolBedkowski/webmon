@@ -1,5 +1,5 @@
-WebMon ver 2.x
-==============
+WebMon ver 2.3.x
+================
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
 albums, RSS channels.

@@ -37,6 +37,7 @@ def login():
         del session["user"]
 
     session.modified = True
+
     if request.method == "POST":
         flogin = request.form["login"]
         fpassword = request.form["password"]
@@ -47,11 +48,9 @@ def login():
             and user.active
             and security.verify_password(user.password, fpassword)
         ):
-            if user.totp:
+            if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
-                session.modified = True
                 session.permanent = False
-                print(session)
                 return redirect(url_for("sec.login_totp"))
 
             session["user"] = user.id
@@ -61,7 +60,6 @@ def login():
                 del session["_back_url"]
 
             session.permanent = True
-            session.modified = True
 
             return redirect(back or url_for("root.index"))
 

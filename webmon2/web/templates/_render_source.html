@@ -20,7 +20,7 @@
 				| <a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
 				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
 				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
-				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Realy delete source?">✘ Delete</a></span>
+				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Really delete source?">✘ Delete</a></span>
 			</div>
 			{% if source.status == 0 %}
 				<p class="error">Need configure &amp; activate.</p>
