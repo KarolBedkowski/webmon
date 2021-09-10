@@ -112,6 +112,7 @@ def create_app(debug, root, args):
         request.req_start_time = time.time()
         if not _check_csrf_token():
             return abort(400)
+
         path = request.path
         g.non_action = (
             path.startswith("/static")
@@ -122,9 +123,15 @@ def create_app(debug, root, args):
         )
         if g.non_action:
             return None
+
         user_id = session.get("user")
         if user_id is None:
-            return redirect(url_for("sec.login", back=request.url))
+            # back url is registered only for get request to prevent bad request
+            if request.method == "GET":
+                session["_back_url"] = request.url
+                session.modified = True
+
+            return redirect(url_for("sec.login"))
         _count_unread(user_id)
         return None
 
