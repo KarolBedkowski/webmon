@@ -35,6 +35,9 @@ def process(db, user_id):
         _LOG.debug("mail not enabled for user %d", user_id)
         return
 
+    if _is_silent_hour(conf):
+        return
+
     last_send = database.users.get_state(
         db,
         user_id,
@@ -229,3 +232,33 @@ def _get_entry_score_mark(entry):
     if entry.score > 0:
         return "▲ "
     return ""
+
+
+def _is_silent_hour(conf):
+    begin = conf.get("silent_hours_from", "")
+    end = conf.get("silent_hours_to", "")
+
+    _LOG.debug("check silent hours %r", (begin, end))
+
+    if not begin or not end:
+        return False
+
+    try:
+        begin = int(begin)
+        end = int(end)
+    except ValueError:
+        _LOG.exception("parse silent hours%r  error", (begin, end))
+        return False
+
+    hour = datetime.now().hour
+
+    if begin > end:  # ie 22 - 6
+        if hour >= begin or hour < end:
+            return True
+    else:  # ie 0-6
+        if begin <= hour and hour <= end:
+            return True
+
+    _LOG.debug("not in silent hours")
+
+    return False
