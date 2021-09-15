@@ -82,7 +82,7 @@ _CSP = (
 )
 
 
-def create_app(debug, root, args):
+def create_app(debug, root, conf):
     template_folder = os.path.join(os.path.dirname(__file__), "templates")
     # create and configure the app
     app = Flask(
@@ -97,6 +97,7 @@ def create_app(debug, root, args):
         APPLICATION_ROOT=root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
     )
+    app.config["app_conf"] = conf
     app.app_context().push()
 
     _register_blueprints(app)
@@ -219,10 +220,10 @@ def _parse_listen_address(address):
     return host, port
 
 
-def start_app(args):
-    root = args.web_app_root
-    app = create_app(args.debug, root, args)
-    host, port = _parse_listen_address(args.web_address)
+def start_app(args, conf):
+    root = conf["web"]["root"]
+    app = create_app(args.debug, root, conf)
+    host, port = _parse_listen_address(conf["web"]["address"])
 
     if root != "/":
         app.wsgi_app = DispatcherMiddleware(

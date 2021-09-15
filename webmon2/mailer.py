@@ -28,7 +28,7 @@ from webmon2 import database, common, formatters, model
 _LOG = logging.getLogger(__name__)
 
 
-def process(db, user_id):
+def process(db, user_id, app_conf):
     """Process unread entries for user and send report via mail"""
     conf = database.settings.get_dict(db, user_id)
     if not conf.get("mail_enabled"):
@@ -58,7 +58,7 @@ def process(db, user_id):
         _LOG.error("prepare mail error", err)
         return
 
-    if content and not _send_mail(conf, content):
+    if content and not _send_mail(conf, content, app_conf):
         return
 
     database.users.set_state(
@@ -179,25 +179,32 @@ def _prepare_msg(conf, content):
     return msg
 
 
-def _send_mail(conf, content):
+def _send_mail(conf, content, app_conf):
     _LOG.debug("send mail: %r", conf)
+    mailer_conf = app_conf["smtp"]
+    if not mailer_conf["enabled"]:
+        _LOG.debug("mailer disabled")
+        return False
+
     try:
         msg = _prepare_msg(conf, content)
         msg["Subject"] = conf["mail_subject"]
-        msg["From"] = conf["mail_from"]
+        msg["From"] = mailer_conf["from"]
         msg["To"] = conf["mail_to"]
         msg["Date"] = email.utils.formatdate()
-        smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") else smtplib.SMTP()
+        ssl = mailer_conf["ssl"]
+        smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
         if _LOG.isEnabledFor(logging.DEBUG):
             smtp.set_debuglevel(True)
-        host, port = conf["smtp_host"], conf["smtp_port"]
+        host = mailer_conf["address"]
+        port = mailer_conf["port"]
         _LOG.debug("host, port: %r, %r", host, port)
         smtp.connect(host, port)
         smtp.ehlo()
-        if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
+        if mailer_conf["starttls"] and not ssl:
             smtp.starttls()
-        if conf.get("smtp_login"):
-            smtp.login(conf["smtp_login"], conf["smtp_password"])
+        if mailer_conf["smtp_login"]:
+            smtp.login(mailer_conf["login"], mailer_conf["password"])
         smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
         _LOG.debug("mail send")
     except Exception:  # pylint: disable=broad-except

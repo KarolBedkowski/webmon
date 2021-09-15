@@ -31,7 +31,7 @@ except ImportError:
         print("no rich.trackback")
 
 
-from . import database, logging_setup, worker, web, cli
+from . import database, logging_setup, worker, web, cli, conf
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
@@ -69,7 +69,7 @@ def _parse_options():
     )
     parser.add_argument(
         "--database",
-        default="postgresql://webmon2:webmon2@" "127.0.0.1:5432/webmon2",
+        default="postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2",
         help="database connection string",
     )
     parser.add_argument(
@@ -105,6 +105,49 @@ def _parse_options():
         help="web interface listen address",
         dest="web_address",
     )
+    parser.add_argument(
+        "--smtp-server-address",
+        help="smtp server address",
+        dest="smtp_server_address",
+    )
+    parser.add_argument(
+        "--smtp-server-port", help="smtp server port", dest="smtp_server_port"
+    )
+    parser.add_argument(
+        "--smtp-server-ssl",
+        help="enable ssl for smtp serve",
+        action="store_true",
+        dest="smtp_server_ssl",
+    )
+    parser.add_argument(
+        "--smtp-server-starttls",
+        help="enable starttls for smtp serve",
+        action="store_true",
+        dest="smtp_server_starttls",
+    )
+    parser.add_argument(
+        "--smtp-server-from",
+        help="email address for webmon",
+        dest="smtp_server_from",
+    )
+    parser.add_argument(
+        "--smtp-server-login",
+        help="login for smtp authentication",
+        dest="smtp_server_login",
+    )
+    parser.add_argument(
+        "--smtp-server-password",
+        help="password for smtp authentication",
+        dest="smtp_server_password",
+    )
+
+    parser.add_argument(
+        "-c",
+        "--conf",
+        help="configuration file name",
+        dest="conf",
+    )
+
     return parser.parse_args()
 
 
@@ -180,18 +223,32 @@ def main():
         cli.show_abilities()
         return
 
+    app_conf = None
+    if args.conf:
+        app_conf = conf.load_conf(args.conf)
+
+    if not app_conf:
+        _LOG.debug("loading default conf")
+        app_conf = conf.default_conf()
+
+    app_conf = conf.update_from_args(app_conf, args)
+    _LOG.debug("app_conf: %r", app_conf)
+    if not conf.validate(app_conf):
+        _LOG.error("app_conf validation error")
+        return
+
     database.DB.initialize(
-        args.database, update_schema=not is_running_from_reloader()
+        app_conf["database"], update_schema=not is_running_from_reloader()
     )
 
     if cli.process_cli(args):
         return
 
     if not is_running_from_reloader():
-        cworker = worker.CheckWorker(args.workers, debug=args.debug)
+        cworker = worker.CheckWorker(app_conf, debug=args.debug)
         cworker.start()
 
-    web.start_app(args)
+    web.start_app(args, app_conf)
 
 
 if __name__ == "__main__":
