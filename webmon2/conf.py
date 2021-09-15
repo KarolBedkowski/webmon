@@ -9,6 +9,7 @@
 """
 Application configuration.
 """
+import os
 import logging
 import typing as ty
 import configparser
@@ -42,6 +43,19 @@ def load_conf(fileobj):
     conf.read_string(_DEFAULTS)
     conf.read_file(fileobj)
     return conf
+
+
+def try_load_user_conf():
+    user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
+    if os.path.isfile(user_conf):
+        try:
+            _LOG.info("loading %s", user_conf)
+            with open(user_conf) as fileobj:
+                return load_conf(fileobj)
+        except:
+            _LOG.exception("load file %s error", user_conf)
+
+    return None
 
 
 def default_conf():

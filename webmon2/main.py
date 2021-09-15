@@ -255,6 +255,8 @@ def main():
     app_conf = None
     if args.conf:
         app_conf = conf.load_conf(args.conf)
+    else:
+        app_conf = conf.try_load_user_conf()
 
     if not app_conf:
         _LOG.debug("loading default conf")
