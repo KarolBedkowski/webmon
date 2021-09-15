@@ -122,19 +122,24 @@ def _parse_options():
     parser_serve = subparsers.add_parser("serve", help="Start application")
 
     parser_serve.add_argument(
-        "--web-app-root",
+        "--app-root",
         help="root for url patch (for reverse proxy)",
-        default="/",
+        dest="web_app_root",
     )
     parser_serve.add_argument(
         "--workers", type=int, default=2, help="number of background workers"
     )
     parser_serve.add_argument(
-        "--web-address",
+        "--address",
         type=str,
-        default="127.0.0.1:5000",
         help="web interface listen address",
         dest="web_address",
+    )
+    parser_serve.add_argument(
+        "--port",
+        type=str,
+        help="web interface listen port",
+        dest="web_port",
     )
     parser_serve.add_argument(
         "--smtp-server-address",

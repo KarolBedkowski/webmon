@@ -21,7 +21,8 @@ workers = 2
 database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
 
 [web]
-address = 127.0.0.1:5000
+address = 127.0.0.1
+port = 5000
 root = /
 
 [smtp]
@@ -59,6 +60,8 @@ def update_from_args(conf, args):
 
         if args.web_address:
             conf.set("web", "address", args.web_address)
+        if args.web_port:
+            conf.set("web", "port", str(args.web_port))
 
         if args.workers:
             conf.set("main", "workers", str(args.workers))
@@ -96,9 +99,19 @@ def validate(conf: ty.Dict) -> bool:
         valid = False
 
     web_address = conf.get("web", "address")
-    if not web_address or not ":" in web_address:
+    if not web_address:
         _LOG.error("Invalid web address")
         valid = False
+
+    try:
+        web_port = int(conf.get("web", "port"))
+    except ValueError:
+        _LOG.error("Invalid web port")
+        valid = False
+    else:
+        if web_port < 1 or web_port > 65535:
+            _LOG.error("Invalid web port")
+            valid = False
 
     if not conf.get("main", "database"):
         _LOG.error("Missing database configuration")

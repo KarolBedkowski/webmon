@@ -204,26 +204,11 @@ def simple_not_found(_env, resp):
     return [b"Not found"]
 
 
-def _parse_listen_address(address):
-    if not address or ":" not in address:
-        return "127.0.0.1", 5000
-    host, port = address.split(":", 1)
-    try:
-        port = int(port)
-        if port < 0 or port > 65535:
-            raise ValueError()
-    except ValueError:
-        _LOG.warning("invalid listen port %s, using default 5000", port)
-    if not host:
-        _LOG.warning("missing host; using 127.0.0.1 as listen address")
-        host = "127.0.0.1"
-    return host, port
-
-
 def start_app(args, conf):
-    root = conf["web"]["root"]
+    root = conf.get("web", "root")
     app = create_app(args.debug, root, conf)
-    host, port = _parse_listen_address(conf["web"]["address"])
+    host = conf.get("web", "address")
+    port = conf.getint("web", "port")
 
     if root != "/":
         app.wsgi_app = DispatcherMiddleware(
