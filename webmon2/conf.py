@@ -9,7 +9,6 @@
 """
 Application configuration.
 """
-import os
 import logging
 import typing as ty
 import yaml
@@ -17,13 +16,9 @@ import yaml
 _LOG = logging.getLogger("conf")
 
 
-def load_conf(filename):
-    if os.path.isfile(filename):
-        with open(filename) as fconf:
-            return yaml.safe_load(fconf)
-
-    _LOG.debug("config file %s not found", filename)
-    return None
+def load_conf(fileobj):
+    with fileobj as fconf:
+        return yaml.safe_load(fconf)
 
 
 def default_conf():
@@ -51,36 +46,37 @@ def update_from_args(conf, args):
     if args.database:
         conf["database"] = args.database
 
-    if args.web_app_root:
-        conf["web"]["root"] = args.web_app_root
+    if args.cmd == "serve":
+        if args.web_app_root:
+            conf["web"]["root"] = args.web_app_root
 
-    if args.web_address:
-        conf["web"]["address"] = args.web_address
+        if args.web_address:
+            conf["web"]["address"] = args.web_address
 
-    if args.workers:
-        conf["workers"] = args.workers
+        if args.workers:
+            conf["workers"] = args.workers
 
-    if args.smtp_server_address:
-        conf["smtp"]["address"] = args.smtp_server_address
-        conf["smtp"]["enabled"] = True
+        if args.smtp_server_address:
+            conf["smtp"]["address"] = args.smtp_server_address
+            conf["smtp"]["enabled"] = True
 
-    if args.smtp_server_port:
-        conf["smtp"]["port"] = args.smtp_server_port
+        if args.smtp_server_port:
+            conf["smtp"]["port"] = args.smtp_server_port
 
-    if args.smtp_server_ssl:
-        conf["smtp"]["ssl"] = args.smtp_server_ssl
+        if args.smtp_server_ssl:
+            conf["smtp"]["ssl"] = args.smtp_server_ssl
 
-    if args.smtp_server_starttls:
-        conf["smtp"]["starttls"] = args.smtp_server_starttls
+        if args.smtp_server_starttls:
+            conf["smtp"]["starttls"] = args.smtp_server_starttls
 
-    if args.smtp_server_from:
-        conf["smtp"]["from"] = args.smtp_server_from
+        if args.smtp_server_from:
+            conf["smtp"]["from"] = args.smtp_server_from
 
-    if args.smtp_server_login:
-        conf["smtp"]["login"] = args.smtp_server_login
+        if args.smtp_server_login:
+            conf["smtp"]["login"] = args.smtp_server_login
 
-    if args.smtp_server_password:
-        conf["smtp"]["password"] = args.smtp_server_password
+        if args.smtp_server_password:
+            conf["smtp"]["password"] = args.smtp_server_password
 
     return conf
 

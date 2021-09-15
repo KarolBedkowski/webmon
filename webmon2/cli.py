@@ -10,6 +10,8 @@
 command line commands
 """
 
+import sys
+
 from . import database, sources, filters, common, security
 from webmon2 import model
 
@@ -41,13 +43,15 @@ def show_abilities():
 
 
 def add_user(args):
-    user_pass_adm = args.split(":")
-    if len(user_pass_adm) < 2:
-        print("wrong arguments for --add-user")
+    login = args.login
+    password = args.password
+    admin = args.admin
+    if not login or not password:
+        print("wrong arguments for add user")
         return
-    user = model.User(login=user_pass_adm[0], active=True)
-    user.password = security.hash_password(user_pass_adm[1])
-    user.admin = len(user_pass_adm) > 2 and user_pass_adm[2] == "admin"
+    user = model.User(login=login, active=True)
+    user.password = security.hash_password(password)
+    user.admin = bool(admin)
     with database.DB.get() as db:
         user = database.users.save(db, user)
         db.commit()
@@ -58,24 +62,26 @@ def add_user(args):
 
 
 def change_user_pass(args):
-    user_pass = args.split(":")
-    if len(user_pass) != 2:
-        print("wrong arguments for --reset-password; required login:pass")
+    login = args.login
+    password = args.password
+    if not login or not password:
+        print("wrong arguments for change password")
         return
     with database.DB.get() as db:
-        user = database.users.get(db, login=user_pass[0])
+        user = database.users.get(db, login=login)
         if not user:
             print("user not found")
             return
-        user.password = security.hash_password(user_pass[1])
+        user.password = security.hash_password(password)
         user = database.users.save(db, user)
         db.commit()
         print("password changed")
 
 
-def remove_user_totp(login):
+def remove_user_totp(args):
+    login = args.login
     if not login:
-        print("missing login arguments for --remove-user-totp")
+        print("missing login arguments for remove totp")
         return
     with database.DB.get() as db:
         user = database.users.get(db, login=login)
@@ -89,22 +95,21 @@ def remove_user_totp(login):
 
 
 def process_cli(args) -> bool:
-    if args.add_user:
-        add_user(args.add_user)
-        return True
-
-    if args.change_user_pass:
-        change_user_pass(args.change_user_pass)
-        return True
-
-    if args.remove_user_totp:
-        change_user_pass(args.remove_user_totp)
-        return True
-
-    if args.migrate_filename:
+    if args.cmd == "users":
+        if args.subcmd == "add":
+            add_user(args)
+            return True
+        if args.subcmd == "passwd":
+            change_user_pass(args)
+            return True
+        if args.subcmd == "remove_totp":
+            remove_user_totp(args)
+            return True
+        print("unknown sub command", file=sys.stderr)
+    elif args.cmd == "migrate":
         from . import migrate
 
-        migrate.migrate(args.migrate_filename)
+        migrate.migrate(args)
         return True
 
     return False

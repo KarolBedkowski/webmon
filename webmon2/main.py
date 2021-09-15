@@ -62,90 +62,113 @@ def _parse_options():
         "-d", "--debug", action="store_true", help="print debug informations"
     )
     parser.add_argument("--log", help="log file name")
+
     parser.add_argument(
-        "--abilities",
-        action="store_true",
-        help="show available filters/sources" "comparators",
+        "-c",
+        "--conf",
+        type=argparse.FileType("r"),
+        help="configuration file name",
+        dest="conf",
     )
     parser.add_argument(
         "--database",
         default="postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2",
         help="database connection string",
     )
-    parser.add_argument(
-        "--migrate", help="migrate sources from file", dest="migrate_filename"
+
+    subparsers = parser.add_subparsers(help="Commands", dest="cmd")
+    subparsers.add_parser(
+        "abilities", help="show available filters/sources/comparators"
     )
-    parser.add_argument(
-        "--add-user",
-        help="add user; arguments in form " "<login>:<password>[:admin]",
-        dest="add_user",
+
+    parser_mig = subparsers.add_parser(
+        "migrate", help="migrate sources from file"
     )
-    parser.add_argument(
-        "--change-user-password",
-        help="change user password; arguments in form " "<login>:<password>",
-        dest="change_user_pass",
+    parser_mig.add_argument(
+        "-f",
+        "--filename",
+        help="migrate sources from file",
+        dest="migrate_filename",
     )
-    parser.add_argument(
-        "--remove-user-totp",
-        help="remove 2 factor authentication for user",
-        dest="remove_user_totp",
+
+    parser_users = subparsers.add_parser("users", help="manage users")
+
+    parser_users_sc = parser_users.add_subparsers(
+        help="user commands", dest="subcmd", required=True
     )
-    parser.add_argument(
+
+    parser_users_add = parser_users_sc.add_parser("add", help="add user")
+    parser_users_add.add_argument("-l" "--login", required=True)
+    parser_users_add.add_argument("-p" "--password", required=True)
+    parser_users_add.add_argument(
+        "--admin",
+        action="store_true",
+        default=False,
+        help="set admin role for user",
+    )
+
+    parser_users_cp = parser_users_sc.add_parser(
+        "passwd", help="change user password"
+    )
+    parser_users_cp.add_argument("-l" "--login", required=True)
+    parser_users_cp.add_argument("-p" "--password", required=True)
+
+    parser_users_rtotp = parser_users_sc.add_parser(
+        "remove_totp", help="remove 2 factor authentication for user"
+    )
+    parser_users_rtotp.add_argument("-l" "--login", required=True)
+
+    parser_serve = subparsers.add_parser("serve", help="Start application")
+
+    parser_serve.add_argument(
         "--web-app-root",
         help="root for url patch (for reverse proxy)",
         default="/",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--workers", type=int, default=2, help="number of background workers"
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--web-address",
         type=str,
         default="127.0.0.1:5000",
         help="web interface listen address",
         dest="web_address",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-address",
         help="smtp server address",
         dest="smtp_server_address",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-port", help="smtp server port", dest="smtp_server_port"
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-ssl",
         help="enable ssl for smtp serve",
         action="store_true",
         dest="smtp_server_ssl",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-starttls",
         help="enable starttls for smtp serve",
         action="store_true",
         dest="smtp_server_starttls",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-from",
         help="email address for webmon",
         dest="smtp_server_from",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-login",
         help="login for smtp authentication",
         dest="smtp_server_login",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--smtp-server-password",
         help="password for smtp authentication",
         dest="smtp_server_password",
-    )
-
-    parser.add_argument(
-        "-c",
-        "--conf",
-        help="configuration file name",
-        dest="conf",
     )
 
     return parser.parse_args()
@@ -219,7 +242,7 @@ def main():
     _check_libraries()
     _load_user_classes()
 
-    if args.abilities:
+    if args.cmd == "abilities":
         cli.show_abilities()
         return
 
@@ -244,11 +267,12 @@ def main():
     if cli.process_cli(args):
         return
 
-    if not is_running_from_reloader():
-        cworker = worker.CheckWorker(app_conf, debug=args.debug)
-        cworker.start()
+    if args.cmd == "serve":
+        if not is_running_from_reloader():
+            cworker = worker.CheckWorker(app_conf, debug=args.debug)
+            cworker.start()
 
-    web.start_app(args, app_conf)
+        web.start_app(args, app_conf)
 
 
 if __name__ == "__main__":
