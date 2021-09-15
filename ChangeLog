@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.4.0 2021-09-15
+
+### Features
+
+- Allow define silent hours when mails is not send
+- Add configuration file for global settings
+- Add update-schema command; not update db automaticaly on start
+
+### Refactor
+
+- Reorganize cli arguments, commands
+- Separate address and port in web server configuration
+
+
 ## 2.3.1 2021-09-10
 
 ### Bug Fixes
