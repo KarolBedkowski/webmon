@@ -35,14 +35,15 @@ Global Options
 ^^^^^^^^^^^^^^
 ::
 
-   usage: webmon2.py [-h] [-s] [-v] [-d] [--log LOG] [-c CONF] [--database DATABASE] {abilities,migrate,users,serve} ...
+   usage: webmon2.py [-h] [-s] [-v] [-d] [--log LOG] [-c CONF] [--database DATABASE] {abilities,update-schema,migrate,users,serve} ...
 
    webmon2 2.3.1
 
    positional arguments:
-     {abilities,migrate,users,serve}
+     {abilities,update-schema,migrate,users,serve}
                            Commands
        abilities           show available filters/sources/comparators
+       update-schema       update database schema
        migrate             migrate sources from file
        users               manage users
        serve               Start application
@@ -61,16 +62,17 @@ Start server
 ^^^^^^^^^^^^
 ::
 
-   usage: webmon2.py serve [-h] [--web-app-root WEB_APP_ROOT] [--workers WORKERS] [--web-address WEB_ADDRESS] [--smtp-server-address SMTP_SERVER_ADDRESS] [--smtp-server-port SMTP_SERVER_PORT] [--smtp-server-ssl]
-                           [--smtp-server-starttls] [--smtp-server-from SMTP_SERVER_FROM] [--smtp-server-login SMTP_SERVER_LOGIN] [--smtp-server-password SMTP_SERVER_PASSWORD]
+   usage: webmon2.py serve [-h] [--app-root WEB_APP_ROOT] [--workers WORKERS] [--address WEB_ADDRESS] [--port WEB_PORT] [--smtp-server-address SMTP_SERVER_ADDRESS] [--smtp-server-port SMTP_SERVER_PORT]
+                           [--smtp-server-ssl] [--smtp-server-starttls] [--smtp-server-from SMTP_SERVER_FROM] [--smtp-server-login SMTP_SERVER_LOGIN] [--smtp-server-password SMTP_SERVER_PASSWORD]
 
    optional arguments:
      -h, --help            show this help message and exit
-     --web-app-root WEB_APP_ROOT
+     --app-root WEB_APP_ROOT
                            root for url patch (for reverse proxy)
      --workers WORKERS     number of background workers
-     --web-address WEB_ADDRESS
+     --address WEB_ADDRESS
                            web interface listen address
+     --port WEB_PORT       web interface listen port
      --smtp-server-address SMTP_SERVER_ADDRESS
                            smtp server address
      --smtp-server-port SMTP_SERVER_PORT
@@ -112,6 +114,15 @@ Webmon2 requre Posrgresql database.
 DATABASE - connection string in form:
 `postgresql://<user>:<pass>@<host>:<port>/<database>`
 
+
+Configuration file
+^^^^^^^^^^^^^^^^^^
+
+Some options may be configured globally in configuration file  selected by
+`-c` `--config` argument. When no file is selected application try load
+configuration file from `~/.config/webmon2/webmon2.ini`.
+
+See `webmon2.ini` for example / defaults.
 
 
 Customizations

@@ -28,13 +28,13 @@ root = /
 
 [smtp]
 enabled = False
-address = None
+address = 127.0.0.1
 port = 25
-ssl = False
-starttls = False
-from = None
-login = None
-password = None
+ssl = false
+starttls = false
+login =
+password =
+from = webmon2 <webmon2@localhost>
 """
 
 
