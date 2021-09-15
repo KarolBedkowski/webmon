@@ -28,7 +28,7 @@ from webmon2 import database, common, formatters, model
 _LOG = logging.getLogger(__name__)
 
 
-def process(db, user_id):
+def process(db, user_id, app_conf):
     """Process unread entries for user and send report via mail"""
     conf = database.settings.get_dict(db, user_id)
     if not conf.get("mail_enabled"):
@@ -58,7 +58,7 @@ def process(db, user_id):
         _LOG.error("prepare mail error", err)
         return
 
-    if content and not _send_mail(conf, content):
+    if content and not _send_mail(conf, content, app_conf):
         return
 
     database.users.set_state(
@@ -179,25 +179,35 @@ def _prepare_msg(conf, content):
     return msg
 
 
-def _send_mail(conf, content):
+def _send_mail(conf, content, app_conf):
     _LOG.debug("send mail: %r", conf)
+    if not app_conf.getboolean("smtp", "enabled"):
+        _LOG.debug("mailer disabled")
+        return False
+
     try:
         msg = _prepare_msg(conf, content)
         msg["Subject"] = conf["mail_subject"]
-        msg["From"] = conf["mail_from"]
+        msg["From"] = app_conf.get("smtp", "from")
         msg["To"] = conf["mail_to"]
         msg["Date"] = email.utils.formatdate()
-        smtp = smtplib.SMTP_SSL() if conf.get("smtp_ssl") else smtplib.SMTP()
+        ssl = app_conf.getboolean("smtp", "ssl")
+        smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
         if _LOG.isEnabledFor(logging.DEBUG):
             smtp.set_debuglevel(True)
-        host, port = conf["smtp_host"], conf["smtp_port"]
+
+        host = app_conf.get("smtp", "address")
+        port = app_conf.getint("smtp", "port")
         _LOG.debug("host, port: %r, %r", host, port)
         smtp.connect(host, port)
         smtp.ehlo()
-        if conf.get("smtp_tls") and not conf.get("smtp_ssl"):
+        if app_conf.getboolean("smtp", "starttls") and not ssl:
             smtp.starttls()
-        if conf.get("smtp_login"):
-            smtp.login(conf["smtp_login"], conf["smtp_password"])
+
+        login = app_conf.get("smtp", "login")
+        if login:
+            smtp.login(login, app_conf.get("smtp", "password"))
+
         smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
         _LOG.debug("mail send")
     except Exception:  # pylint: disable=broad-except

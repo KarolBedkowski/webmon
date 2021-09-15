@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2020
+# Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -33,10 +33,11 @@ _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, workers=2, debug=False):
+    def __init__(self, conf, debug=False):
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
-        self._workers = workers
+        self._conf = conf
+        self._workers = conf.getint("main", "workers")
         self.debug = debug
         self.next_cleanup_start = time.time()
 
@@ -65,21 +66,22 @@ class CheckWorker(threading.Thread):
                             worker.join()
 
                     _LOG.debug("CheckWorker check done")
-                    _send_mails(db)
+                    _send_mails(db, self._conf)
             except Exception as err:  # pylint: disable=broad-except
                 _LOG.exception("CheckWorker thread error", err)
 
     def _start_worker(self, idx):
-        worker = FetchWorker(str(idx), self._todo_queue)
+        worker = FetchWorker(str(idx), self._todo_queue, self._conf)
         worker.start()
         return worker
 
 
 class FetchWorker(threading.Thread):
-    def __init__(self, idx, todo_queue):
+    def __init__(self, idx, todo_queue, conf):
         threading.Thread.__init__(self)
         self._idx = idx + ":" + str(id(self))
         self._todo_queue = todo_queue
+        self._conf = conf
 
     def run(self):
         while not self._todo_queue.empty():
@@ -286,13 +288,13 @@ def _delete_old_entries(db):
         _LOG.exception("delete old error: %s", err)
 
 
-def _send_mails(db):
+def _send_mails(db, conf):
     _LOG.debug("_send_mails start")
     users = list(database.users.get_all(db))
     for user in users:
         db.begin()
         try:
-            mailer.process(db, user.id)
+            mailer.process(db, user.id, conf)
         except Exception:  # pylint: disable=broad-except
             _LOG.exception("send mail error")
             db.rollback()
