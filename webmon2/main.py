@@ -254,13 +254,14 @@ def main():
         app_conf = conf.default_conf()
 
     app_conf = conf.update_from_args(app_conf, args)
-    _LOG.debug("app_conf: %r", app_conf)
+    _LOG.debug("app_conf: %r", "  ".join(conf.conf_items(app_conf)))
     if not conf.validate(app_conf):
         _LOG.error("app_conf validation error")
         return
 
     database.DB.initialize(
-        app_conf["database"], update_schema=not is_running_from_reloader()
+        app_conf.get("main", "database"),
+        update_schema=not is_running_from_reloader(),
     )
 
     if cli.process_cli(args):

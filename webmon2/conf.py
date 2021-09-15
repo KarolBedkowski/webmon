@@ -11,72 +11,79 @@ Application configuration.
 """
 import logging
 import typing as ty
-import yaml
+import configparser
 
 _LOG = logging.getLogger("conf")
 
+_DEFAULTS = """
+[main]
+workers = 2
+database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
+
+[web]
+address = 127.0.0.1:5000
+root = /
+
+[smtp]
+enabled = False
+address = None
+port = 25
+ssl = False
+starttls = False
+from = None
+login = None
+password = None
+"""
+
 
 def load_conf(fileobj):
-    with fileobj as fconf:
-        return yaml.safe_load(fconf)
+    conf = configparser.ConfigParser()
+    conf.read_string(_DEFAULTS)
+    conf.read_file(fileobj)
+    return conf
 
 
 def default_conf():
-    return {
-        "web": {
-            "address": "127.0.0.1:5000",
-            "root": "/",
-        },
-        "workers": 2,
-        "database": "postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2",
-        "smtp": {
-            "enabled": False,
-            "address": None,
-            "port": 25,
-            "ssl": False,
-            "starttls": False,
-            "from": None,
-            "login": None,
-            "password": None,
-        },
-    }
+    conf = configparser.ConfigParser()
+    conf.read_string(_DEFAULTS)
+    return conf
 
 
 def update_from_args(conf, args):
     if args.database:
-        conf["database"] = args.database
+        conf.set("main", "database", args.database)
 
     if args.cmd == "serve":
         if args.web_app_root:
-            conf["web"]["root"] = args.web_app_root
+            conf.set("web", "root", args.web_app_root)
 
         if args.web_address:
-            conf["web"]["address"] = args.web_address
+            conf.set("web", "address", args.web_address)
 
         if args.workers:
-            conf["workers"] = args.workers
+            conf.set("main", "workers", str(args.workers))
 
         if args.smtp_server_address:
-            conf["smtp"]["address"] = args.smtp_server_address
-            conf["smtp"]["enabled"] = True
+            conf.set("smtp", "address", args.smtp_server_address)
+            conf.set("smtp", "enabled", str(True))
 
         if args.smtp_server_port:
-            conf["smtp"]["port"] = args.smtp_server_port
+            conf.set("smtp", "port", str(args.smtp_server_port))
 
         if args.smtp_server_ssl:
-            conf["smtp"]["ssl"] = args.smtp_server_ssl
+            conf.set("smtp", "ssl", str(args.smtp_server_ssl))
 
         if args.smtp_server_starttls:
-            conf["smtp"]["starttls"] = args.smtp_server_starttls
+            conf.set("smtp", "starttls", str(args.smtp_server_starttls))
 
         if args.smtp_server_from:
-            conf["smtp"]["from"] = args.smtp_server_from
+            conf.set("smtp", "from", args.smtp_server_from)
 
         if args.smtp_server_login:
-            conf["smtp"]["login"] = args.smtp_server_login
+            conf.set("smtp", "login", args.smtp_server_login)
 
         if args.smtp_server_password:
-            conf["smtp"]["password"] = args.smtp_server_password
+            conf.set("smtp", "password", args.smtp_server_password)
 
     return conf
 
@@ -84,21 +91,21 @@ def update_from_args(conf, args):
 def validate(conf: ty.Dict) -> bool:
     valid = True
 
-    web = conf["web"]
-    if not web["root"]:
+    if not conf.get("web", "root"):
         _LOG.error("Invalid web root")
         valid = False
 
-    if not web["address"] or not ":" in web["address"]:
+    web_address = conf.get("web", "address")
+    if not web_address or not ":" in web_address:
         _LOG.error("Invalid web address")
         valid = False
 
-    if not conf["database"]:
+    if not conf.get("main", "database"):
         _LOG.error("Missing database configuration")
         valid = False
 
     try:
-        workers = int(conf["workers"])
+        workers = int(conf.get("main", "workers"))
     except ValueError:
         _LOG.error("Invalid workers parameter")
         valid = False
@@ -107,14 +114,13 @@ def validate(conf: ty.Dict) -> bool:
             _LOG.error("Invalid workers parameter")
             valid = False
 
-    smtp = conf["smtp"]
-    if smtp["enabled"]:
-        if not smtp.get("address"):
+    if conf.getboolean("smtp", "enabled"):
+        if not conf.get("smtp", "address"):
             _LOG.error("SMTP enabled but SMTP address is missing")
             valid = False
 
         try:
-            port = int(smtp["port"])
+            port = int(conf.get("smtp", "port"))
         except ValueError:
             _LOG.error("Invalid SMTP port")
             valid = False
@@ -123,8 +129,16 @@ def validate(conf: ty.Dict) -> bool:
                 _LOG.error("Invalid SMTP port")
                 valid = False
 
-        if not smtp.get("from"):
+        if not conf.get("smtp", "from"):
             _LOG.error("Missing SMTP 'from' address")
             valid = False
 
     return valid
+
+
+def conf_items(conf):
+    for sec in conf.sections():
+        yield "[" + sec + "]"
+        for key, val in conf.items(sec):
+            yield key + " = '" + val + "'"
+        yield ""

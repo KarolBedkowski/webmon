@@ -37,7 +37,7 @@ class CheckWorker(threading.Thread):
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
         self._conf = conf
-        self._workers = conf["workers"]
+        self._workers = conf.getint("main", "workers")
         self.debug = debug
         self.next_cleanup_start = time.time()
 

@@ -181,30 +181,33 @@ def _prepare_msg(conf, content):
 
 def _send_mail(conf, content, app_conf):
     _LOG.debug("send mail: %r", conf)
-    mailer_conf = app_conf["smtp"]
-    if not mailer_conf["enabled"]:
+    if not app_conf.getboolean("smtp", "enabled"):
         _LOG.debug("mailer disabled")
         return False
 
     try:
         msg = _prepare_msg(conf, content)
         msg["Subject"] = conf["mail_subject"]
-        msg["From"] = mailer_conf["from"]
+        msg["From"] = app_conf.get("smtp", "from")
         msg["To"] = conf["mail_to"]
         msg["Date"] = email.utils.formatdate()
-        ssl = mailer_conf["ssl"]
+        ssl = app_conf.getboolean("smtp", "ssl")
         smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
         if _LOG.isEnabledFor(logging.DEBUG):
             smtp.set_debuglevel(True)
-        host = mailer_conf["address"]
-        port = mailer_conf["port"]
+
+        host = app_conf.get("smtp", "address")
+        port = app_conf.getint("smtp", "port")
         _LOG.debug("host, port: %r, %r", host, port)
         smtp.connect(host, port)
         smtp.ehlo()
-        if mailer_conf["starttls"] and not ssl:
+        if app_conf.getboolean("smtp", "starttls") and not ssl:
             smtp.starttls()
-        if mailer_conf["smtp_login"]:
-            smtp.login(mailer_conf["login"], mailer_conf["password"])
+
+        login = app_conf.get("smtp", "login")
+        if login:
+            smtp.login(login, app_conf.get("smtp", "password"))
+
         smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
         _LOG.debug("mail send")
     except Exception:  # pylint: disable=broad-except
