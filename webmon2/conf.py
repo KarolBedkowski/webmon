@@ -28,7 +28,7 @@ def default_conf():
             "root": "/",
         },
         "workers": 2,
-        "database": None,
+        "database": "postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2",
         "smtp": {
             "enabled": False,
             "address": None,
@@ -109,7 +109,7 @@ def validate(conf: ty.Dict) -> bool:
 
     smtp = conf["smtp"]
     if smtp["enabled"]:
-        if not smtp["address"]:
+        if not smtp.get("address"):
             _LOG.error("SMTP enabled but SMTP address is missing")
             valid = False
 
@@ -123,7 +123,7 @@ def validate(conf: ty.Dict) -> bool:
                 _LOG.error("Invalid SMTP port")
                 valid = False
 
-        if not smtp["from"]:
+        if not smtp.get("from"):
             _LOG.error("Missing SMTP 'from' address")
             valid = False
 

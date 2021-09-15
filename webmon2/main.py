@@ -72,7 +72,6 @@ def _parse_options():
     )
     parser.add_argument(
         "--database",
-        default="postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2",
         help="database connection string",
     )
 
