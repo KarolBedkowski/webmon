@@ -98,7 +98,8 @@ _MIGR_FUNCS = {
 }
 
 
-def migrate(filename):
+def migrate(args):
+    filename = args.migrate_filename
     _LOG.info("migration %s start", filename)
     with database.DB.get() as db:
         users = list(database.users.get_all(db))

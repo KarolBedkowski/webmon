@@ -31,13 +31,13 @@ except ImportError:
         print("no rich.trackback")
 
 
-from . import database, logging_setup, worker, web, cli
+from . import database, logging_setup, worker, web, cli, conf
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.3.1"
+VERSION = "2.4.0"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -62,49 +62,121 @@ def _parse_options():
         "-d", "--debug", action="store_true", help="print debug informations"
     )
     parser.add_argument("--log", help="log file name")
+
     parser.add_argument(
-        "--abilities",
-        action="store_true",
-        help="show available filters/sources" "comparators",
+        "-c",
+        "--conf",
+        type=argparse.FileType("r"),
+        help="configuration file name",
+        dest="conf",
     )
     parser.add_argument(
         "--database",
-        default="postgresql://webmon2:webmon2@" "127.0.0.1:5432/webmon2",
         help="database connection string",
     )
-    parser.add_argument(
-        "--migrate", help="migrate sources from file", dest="migrate_filename"
+
+    subparsers = parser.add_subparsers(help="Commands", dest="cmd")
+    subparsers.add_parser(
+        "abilities", help="show available filters/sources/comparators"
     )
-    parser.add_argument(
-        "--add-user",
-        help="add user; arguments in form " "<login>:<password>[:admin]",
-        dest="add_user",
+
+    subparsers.add_parser("update-schema", help="update database schema")
+
+    parser_mig = subparsers.add_parser(
+        "migrate", help="migrate sources from file"
     )
-    parser.add_argument(
-        "--change-user-password",
-        help="change user password; arguments in form " "<login>:<password>",
-        dest="change_user_pass",
+    parser_mig.add_argument(
+        "-f",
+        "--filename",
+        help="migrate sources from file",
+        dest="migrate_filename",
     )
-    parser.add_argument(
-        "--remove-user-totp",
-        help="remove 2 factor authentication for user",
-        dest="remove_user_totp",
+
+    parser_users = subparsers.add_parser("users", help="manage users")
+
+    parser_users_sc = parser_users.add_subparsers(
+        help="user commands", dest="subcmd", required=True
     )
-    parser.add_argument(
-        "--web-app-root",
+
+    parser_users_add = parser_users_sc.add_parser("add", help="add user")
+    parser_users_add.add_argument("-l" "--login", required=True)
+    parser_users_add.add_argument("-p" "--password", required=True)
+    parser_users_add.add_argument(
+        "--admin",
+        action="store_true",
+        default=False,
+        help="set admin role for user",
+    )
+
+    parser_users_cp = parser_users_sc.add_parser(
+        "passwd", help="change user password"
+    )
+    parser_users_cp.add_argument("-l" "--login", required=True)
+    parser_users_cp.add_argument("-p" "--password", required=True)
+
+    parser_users_rtotp = parser_users_sc.add_parser(
+        "remove_totp", help="remove 2 factor authentication for user"
+    )
+    parser_users_rtotp.add_argument("-l" "--login", required=True)
+
+    parser_serve = subparsers.add_parser("serve", help="Start application")
+
+    parser_serve.add_argument(
+        "--app-root",
         help="root for url patch (for reverse proxy)",
-        default="/",
+        dest="web_app_root",
     )
-    parser.add_argument(
+    parser_serve.add_argument(
         "--workers", type=int, default=2, help="number of background workers"
     )
-    parser.add_argument(
-        "--web-address",
+    parser_serve.add_argument(
+        "--address",
         type=str,
-        default="127.0.0.1:5000",
         help="web interface listen address",
         dest="web_address",
     )
+    parser_serve.add_argument(
+        "--port",
+        type=str,
+        help="web interface listen port",
+        dest="web_port",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-address",
+        help="smtp server address",
+        dest="smtp_server_address",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-port", help="smtp server port", dest="smtp_server_port"
+    )
+    parser_serve.add_argument(
+        "--smtp-server-ssl",
+        help="enable ssl for smtp serve",
+        action="store_true",
+        dest="smtp_server_ssl",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-starttls",
+        help="enable starttls for smtp serve",
+        action="store_true",
+        dest="smtp_server_starttls",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-from",
+        help="email address for webmon",
+        dest="smtp_server_from",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-login",
+        help="login for smtp authentication",
+        dest="smtp_server_login",
+    )
+    parser_serve.add_argument(
+        "--smtp-server-password",
+        help="password for smtp authentication",
+        dest="smtp_server_password",
+    )
+
     return parser.parse_args()
 
 
@@ -176,22 +248,45 @@ def main():
     _check_libraries()
     _load_user_classes()
 
-    if args.abilities:
+    if args.cmd == "abilities":
         cli.show_abilities()
         return
 
-    database.DB.initialize(
-        args.database, update_schema=not is_running_from_reloader()
-    )
+    app_conf = None
+    if args.conf:
+        app_conf = conf.load_conf(args.conf)
+    else:
+        app_conf = conf.try_load_user_conf()
+
+    if not app_conf:
+        _LOG.debug("loading default conf")
+        app_conf = conf.default_conf()
+
+    app_conf = conf.update_from_args(app_conf, args)
+    _LOG.debug("app_conf: %r", "  ".join(conf.conf_items(app_conf)))
+    if not conf.validate(app_conf):
+        _LOG.error("app_conf validation error")
+        return
+
+    if args.cmd == "update-schema":
+        if is_running_from_reloader():
+            _LOG.error("cannot update schema when running from reloader")
+        else:
+            _LOG.info("update schema...")
+            database.DB.initialize(app_conf.get("main", "database"), True)
+        return
+
+    database.DB.initialize(app_conf.get("main", "database"), False)
 
     if cli.process_cli(args):
         return
 
-    if not is_running_from_reloader():
-        cworker = worker.CheckWorker(args.workers, debug=args.debug)
-        cworker.start()
+    if args.cmd == "serve":
+        if not is_running_from_reloader():
+            cworker = worker.CheckWorker(app_conf, debug=args.debug)
+            cworker.start()
 
-    web.start_app(args)
+        web.start_app(args, app_conf)
 
 
 if __name__ == "__main__":
