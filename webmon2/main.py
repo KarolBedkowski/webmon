@@ -80,6 +80,8 @@ def _parse_options():
         "abilities", help="show available filters/sources/comparators"
     )
 
+    subparsers.add_parser("update-schema", help="update database schema")
+
     parser_mig = subparsers.add_parser(
         "migrate", help="migrate sources from file"
     )
@@ -259,10 +261,15 @@ def main():
         _LOG.error("app_conf validation error")
         return
 
-    database.DB.initialize(
-        app_conf.get("main", "database"),
-        update_schema=not is_running_from_reloader(),
-    )
+    if args.cmd == "update-schema":
+        if is_running_from_reloader():
+            _LOG.error("cannot update schema when running from reloader")
+        else:
+            _LOG.info("update schema...")
+            database.DB.initialize(app_conf.get("main", "database"), True)
+        return
+
+    database.DB.initialize(app_conf.get("main", "database"), False)
 
     if cli.process_cli(args):
         return
