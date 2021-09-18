@@ -141,12 +141,15 @@ def create_app(debug, root, conf):
     @app.after_request
     def after_request(response):
         if hasattr(g, "non_action") and not g.non_action:
-            if "Cache-Control" not in response.headers:
+            if not response.headers.get("Cache-Control"):
                 response.headers[
                     "Cache-Control"
                 ] = "no-cache, max-age=0, must-revalidate, no-store"
             response.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
             response.headers["X-CSRF-TOKEN"] = session.get("_csrf_token")
+        else:
+            response.headers["Cache-Control"] = "public, max-age=604800"
+
         response.headers["Content-Security-Policy"] = _CSP
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
