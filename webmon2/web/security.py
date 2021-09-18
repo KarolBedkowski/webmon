@@ -93,7 +93,6 @@ def login_totp():
 
 @BP.route("/logout")
 def logout():
-    del session["user"]
-    del session["user_admin"]
+    session.clear()
     session.modified = True
     return redirect(url_for("root.index"))

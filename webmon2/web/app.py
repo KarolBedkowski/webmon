@@ -144,7 +144,7 @@ def create_app(debug, root, conf):
                     "Cache-Control"
                 ] = "no-cache, max-age=0, must-revalidate, no-store"
             response.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
-            response.headers["X-CSRF-TOKEN"] = session["_csrf_token"]
+            response.headers["X-CSRF-TOKEN"] = session.get("_csrf_token")
         response.headers["Content-Security-Policy"] = _CSP
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
