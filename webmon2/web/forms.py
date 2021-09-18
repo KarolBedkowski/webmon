@@ -253,3 +253,57 @@ class FieldsForm:
 
     def values_map(self) -> ty.Dict[str, ty.Any]:
         return {field.name: field.value for field in self.fields}
+
+
+class UserForm:
+    def __init__(self):
+        self.id = None
+        self.login = None
+        self.active = None
+        self.email = None
+        self.admin = None
+        self.password1 = None
+        self.password2 = None
+        self.disable_totp = None
+        self.has_totp = None
+
+    def validate(self) -> ty.Dict[str, str]:
+        result = {}
+        if self.password1 and self.password1 != self.password2:
+            result["password1"] = "Passwords not match"
+        if not self.login:
+            result["login"] = "Missing login"
+        if not self.id and not self.password1:
+            result["password1"] = "Password is required for new user"
+        return result
+
+    @staticmethod
+    def from_model(user: model.User):
+        form = UserForm()
+        form.id = user.id
+        form.login = user.login or ""
+        form.email = user.email or ""
+        form.active = user.active
+        form.admin = user.active
+        form.has_totp = bool(user.totp)
+        return form
+
+    def update_from_request(self, form):
+        self.login = form["login"].strip()
+        self.email = form["email"].strip()
+        self.active = bool(form.get("active"))
+        self.admin = bool(form.get("admin"))
+        self.password1 = form["password1"]
+        self.password2 = form["password2"]
+        self.disable_totp = bool(form.get("disable_totp"))
+
+    def update_model(self, user: model.User) -> model.User:
+        user = user.clone()
+        if not user.login:
+            user.login = self.login
+        user.email = self.email
+        user.active = self.active
+        user.admin = self.admin
+        if self.disable_totp:
+            user.totp = None
+        return user

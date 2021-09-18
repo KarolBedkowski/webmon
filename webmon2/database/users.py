@@ -142,3 +142,13 @@ DO UPDATE SET value=EXCLUDED.value
 def set_state(db, user_id: int, key: str, value):
     with db.cursor() as cur:
         cur.execute(_SET_STATE_SQL, (user_id, key, value))
+
+
+_DELETE_USER_SQL = """
+    DELETE FROM users WHERE id=%s
+"""
+
+
+def delete(db, user_id: int):
+    with db.cursor() as cur:
+        cur.execute(_DELETE_USER_SQL, (user_id,))

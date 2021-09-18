@@ -288,6 +288,85 @@ def sett_scoring():
     return render_template("system/scoring.html", rules=rules)
 
 
+@BP.route("/settings/system/users", methods=["GET"])
+def sett_sys_users():
+    if not session["user_admin"]:
+        abort(403)
+
+    db = get_db()
+    users = database.users.get_all(db)
+    return render_template("system/sys_users.html", users=users)
+
+
+@BP.route("/settings/system/users/new", methods=["GET", "POST"])
+@BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])
+def sett_sys_user(user_id: int = None):
+    if not session["user_admin"]:
+        abort(403)
+
+    db = get_db()
+    if user_id:
+        user = database.users.get(db, user_id)
+        if not user:
+            flash("User not found")
+            return redirect(url_for("system.sett_sys_users"))
+    else:
+        user = model.User()
+
+    errors = {}
+    form = forms.UserForm.from_model(user)
+
+    if request.method == "POST":
+        form.update_from_request(request.form)
+        errors = form.validate()
+
+        if session["user"] == user_id and not form.active and user.active:
+            errors["active"] = "Can't deactivate current user"
+
+        if not errors:
+            user = form.update_model(user)
+            if form.password1:
+                user.password = security.hash_password(form.password1)
+
+            _LOG.info("save user: %r", user)
+            try:
+                database.users.save(db, user)
+            except database.users.LoginAlreadyExistsError:
+                errors["login"] = "Login already exists"
+            else:
+                db.commit()
+                flash("User saved")
+                return redirect(url_for("system.sett_sys_users"))
+
+        flash("There are errors in form", "error")
+
+    return render_template("system/sys_user.html", form=form, errors=errors)
+
+
+@BP.route(
+    "/settings/system/users/<int:user_id>/delete", methods=["GET", "POST"]
+)
+def sett_sys_user_delete(user_id: int):
+    if not session["user_admin"]:
+        abort(403)
+
+    if user_id == session["user"] or not user_id:
+        # can't delete myself
+        abort(401)
+
+    db = get_db()
+    user = database.users.get(db, user_id)
+    if not user:
+        flash("User not found")
+        return redirect(url_for("system.sett_sys_users"))
+
+    _LOG.info("delete user: %r", user)
+    database.users.delete(db, user_id)
+    db.commit()
+    flash("User deleted")
+    return redirect(url_for("system.sett_sys_users"))
+
+
 @BP.route("/qrcode")
 def sys_qrcode():
     if pyqrcode is None:
