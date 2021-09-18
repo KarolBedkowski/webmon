@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.5.0 2021-09-18
+
+### Features
+
+- Add write-config command for creating initial configuration file
+- Editing users by gui
+- Color invalid inputs
+- Allow filter sources by state
+
+
 ## 2.4.0 2021-09-15
 
 ### Features

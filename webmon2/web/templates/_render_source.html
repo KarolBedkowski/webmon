@@ -23,12 +23,12 @@
 				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Really delete source?">✘ Delete</a></span>
 			</div>
 			{% if source.status == 0 %}
-				<p class="error">Need configure &amp; activate.</p>
+				<p class="error-inl">Need configure &amp; activate.</p>
 			{% elif source.status == 2 %}
-				<p class="warn">Disabled</p>
+				<p class="warn-inl">💤 Disabled</p>
 			{% else %}
 				{% if source.state.status == 'error' %}
-				<p class="error">Error: {{ source.state.error}}</br>at {{ source.state.last_update | format_date }}<br/>times: {{ source.state.error_counter}}</p>
+				<p><span class="error-inl">Error:</span><br/><i>{{ source.state.error}}</br>at {{ source.state.last_update | format_date }}</i><br/>Times: {{ source.state.error_counter}}</p>
 				{% endif %}
 			{% endif %}
 			{% if source.state.state %}

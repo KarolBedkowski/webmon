@@ -10,9 +10,10 @@
 command line commands
 """
 
+import os
 import sys
 
-from . import database, sources, filters, common, security
+from . import database, sources, filters, common, security, conf
 from webmon2 import model
 
 
@@ -94,22 +95,48 @@ def remove_user_totp(args):
         print("user changed")
 
 
-def process_cli(args) -> bool:
+def write_config_file(args, app_conf):
+    filename = args.conf_filename
+    if not filename:
+        print("missing destination filename", file=sys.stderr)
+        return
+
+    filename = os.path.expanduser(filename)
+
+    if os.path.isfile(filename):
+        print(f"missing file '{filename}' already exists", file=sys.stderr)
+        return
+
+    try:
+        conf.save_conf(app_conf, filename)
+    except Exception as err:  # pylint: disable=broad-except
+        print(
+            f"write config file to '{filename}' error: {err}", file=sys.stderr
+        )
+    else:
+        print("Done")
+
+
+def process_cli(args, app_conf) -> bool:
     if args.cmd == "users":
         if args.subcmd == "add":
             add_user(args)
-            return True
-        if args.subcmd == "passwd":
+        elif args.subcmd == "passwd":
             change_user_pass(args)
-            return True
-        if args.subcmd == "remove_totp":
+        elif args.subcmd == "remove_totp":
             remove_user_totp(args)
-            return True
+
         print("unknown sub command", file=sys.stderr)
-    elif args.cmd == "migrate":
+        return True
+
+    if args.cmd == "migrate":
         from . import migrate
 
         migrate.migrate(args)
+        return True
+
+    if args.cmd == "write-config":
+        write_config_file(args, app_conf)
         return True
 
     return False

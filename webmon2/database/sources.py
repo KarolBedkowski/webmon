@@ -46,31 +46,36 @@ from sources s
 left join source_state ss on ss.source_id = s.id
 """
 
-_GET_SOURCES_SQL = (
-    _GET_SOURCES_SQL_BASE
-    + """
-where s.user_id=%(user_id)s
-order by s.name """
-)
-
-_GET_SOURCES_BY_GROUP_SQL = (
-    _GET_SOURCES_SQL_BASE
-    + """
-where group_id = %(group_id)s and s.user_id = %(user_id)s
-order by s.name """
-)
+_GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + "where s.user_id=%(user_id)s"
 
 
-def get_all(db, user_id: int, group_id=None) -> ty.Iterable[model.Source]:
+def get_all(
+    db, user_id: int, group_id=None, status: ty.Optional[str] = None
+) -> ty.Iterable[model.Source]:
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries
     """
     with db.cursor() as cur:
         user_groups = {g.id: g for g in groups.get_all(db, user_id)}
         args = {"user_id": user_id, "group_id": group_id}
-        sql = (
-            _GET_SOURCES_SQL if group_id is None else _GET_SOURCES_BY_GROUP_SQL
-        )
+        sql = _GET_SOURCES_SQL
+        if group_id is not None:
+            sql += " and group_id = %(group_id)s"
+
+        if status == "disabled":
+            sql += " and s.status = 2"
+        elif status == "active":
+            sql += " and s.status = 1"
+        elif status == "notconf":
+            sql += " and s.status = 0"
+        elif status == "error":
+            sql += " and ss.status = 'error' and s.status = 1"
+        elif status == "notupdated":
+            sql += " and ss.last_update is null"
+
+        sql += " order by s.name "
+
+        _LOG.debug("get_all %r %s", args, sql)
         cur.execute(sql, args)
         for row in cur:
             source = model.Source.from_row(row)

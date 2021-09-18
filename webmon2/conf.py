@@ -169,3 +169,8 @@ def conf_items(conf):
         for key, val in conf.items(sec):
             yield key + " = '" + val + "'"
         yield ""
+
+
+def save_conf(conf, filename):
+    with open(filename, "w") as ofile:
+        conf.write(ofile)

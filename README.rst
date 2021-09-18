@@ -1,4 +1,4 @@
-webmon ver 2.4.x
+webmon ver 2.5.x
 ================
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
@@ -35,18 +35,19 @@ Global Options
 ^^^^^^^^^^^^^^
 ::
 
-   usage: webmon2.py [-h] [-s] [-v] [-d] [--log LOG] [-c CONF] [--database DATABASE] {abilities,update-schema,migrate,users,serve} ...
+   usage: webmon2.py [-h] [-s] [-v] [-d] [--log LOG] [-c CONF] [--database DATABASE] {abilities,update-schema,migrate,users,serve,write-config} ...
 
-   webmon2 2.3.1
+   webmon2 2.4.0
 
    positional arguments:
-     {abilities,update-schema,migrate,users,serve}
+     {abilities,update-schema,migrate,users,serve,write-config}
                            Commands
        abilities           show available filters/sources/comparators
        update-schema       update database schema
        migrate             migrate sources from file
        users               manage users
        serve               Start application
+       write-config        write default configuration file
 
    optional arguments:
      -h, --help            show this help message and exit
@@ -56,6 +57,7 @@ Global Options
      --log LOG             log file name
      -c CONF, --conf CONF  configuration file name
      --database DATABASE   database connection string
+
 
 
 Start server
@@ -123,6 +125,8 @@ Some options may be configured globally in configuration file  selected by
 configuration file from `~/.config/webmon2/webmon2.ini`.
 
 See `webmon2.ini` for example / defaults.
+
+See `write-config` for write default configuration file.
 
 
 Customizations

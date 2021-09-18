@@ -600,6 +600,17 @@ class User:
             "user__totp": self.totp,
         }
 
+    def clone(self):
+        user = User()
+        user.id = self.id
+        user.login = self.login
+        user.email = self.email
+        user.password = self.password
+        user.active = self.active
+        user.admin = self.admin
+        user.totp = self.totp
+        return user
+
 
 class ScoringSett:
     __slots__ = (

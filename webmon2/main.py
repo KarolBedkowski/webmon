@@ -37,7 +37,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.4.0"
+VERSION = "2.5.0"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -177,6 +177,18 @@ def _parse_options():
         dest="smtp_server_password",
     )
 
+    parser_wc = subparsers.add_parser(
+        "write-config", help="write default configuration file"
+    )
+    parser_wc.add_argument(
+        "-f",
+        "--filename",
+        help="destination filename",
+        default="~/.config/webmon2/webmon2.ini",
+        dest="conf_filename",
+        required=True,
+    )
+
     return parser.parse_args()
 
 
@@ -278,7 +290,7 @@ def main():
 
     database.DB.initialize(app_conf.get("main", "database"), False)
 
-    if cli.process_cli(args):
+    if cli.process_cli(args, app_conf):
         return
 
     if args.cmd == "serve":

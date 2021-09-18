@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% import '_render_source.html' as rs %}
+{% import '_render_field.html' as rf %}
 <!DOCTYPE html>
 <html>
   <body>
@@ -13,9 +14,33 @@
 {% endblock %}
 
 {% block content %}
+	<p>
+		<form id="form">
+			<label for="filter-state">Show:</label>
+			<select id="form-status" name="status" value="{{ status }}">
+				{{ rf.render_option("all", "All", status) }}
+				{{ rf.render_option("active", "Active", status) }}
+				{{ rf.render_option("disabled", "Disabled", status) }}
+				{{ rf.render_option("notconf", "Not configured", status) }}
+				{{ rf.render_option("error", "With errors", status) }}
+				{{ rf.render_option("notupdated", "Not updated", status) }}
+			</select>
+		</form>
+	</p>
+
 	{% for source in sources %}
 		{{ rs.render_source(source) }}
 	{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script type="text/javascript">
+	(function() {
+		document.getElementById("form-status").onchange = function() {
+			document.getElementById("form").submit();
+		};
+	})();
+</script>
 {% endblock %}
 
   </body>
