@@ -299,6 +299,9 @@ def main():
             cworker.start()
 
         web.start_app(args, app_conf)
+        return
+
+    _LOG.error("missing command")
 
 
 if __name__ == "__main__":
