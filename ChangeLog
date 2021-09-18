@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.1 2021-09-18
+
+### Bug Fixes
+
+- Jamendo - disable force tlsv1
+- Secure+samesite parameters for session cookie
+
 ## 2.5.0 2021-09-18
 
 ### Features
