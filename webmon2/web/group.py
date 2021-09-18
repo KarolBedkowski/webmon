@@ -80,10 +80,15 @@ def group_sources(group_id: int):
     group = database.groups.get(db, group_id, user_id)
     if not group:
         return abort(404)
+
+    status = request.args.get("status", "all")
     return render_template(
         "group_sources.html",
         group=group,
-        sources=list(database.sources.get_all(db, user_id, group_id)),
+        sources=list(
+            database.sources.get_all(db, user_id, group_id, status=status)
+        ),
+        status=status,
     )
 
 

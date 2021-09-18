@@ -55,8 +55,11 @@ def index():
 def sources():
     db = get_db()
     user_id = session["user"]
+    status = request.args.get("status", "all")
     return render_template(
-        "sources.html", sources=database.sources.get_all(db, user_id)
+        "sources.html",
+        sources=database.sources.get_all(db, user_id, status=status),
+        status=status,
     )
 
 
