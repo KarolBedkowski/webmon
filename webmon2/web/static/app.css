@@ -77,3 +77,7 @@ article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star"
 
 .prio-lowest .title {color: #aaa }
 .prio-lowest .title:after{content: " ▼▼";}
+
+
+input:invalid { border: 2px solid red; }
+input[readonly],input:read-only { color: #555; border: 1px solid white;}
