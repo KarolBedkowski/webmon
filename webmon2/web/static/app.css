@@ -42,6 +42,8 @@ span.confirm{color: red; font-weight: bold;}
 .flash:focus {display: none;}
 .error{width: 75%; background-color: #fee; padding: 1em;margin: 0 auto;}
 .warn{width: 75%; background-color: #ffa; padding: 1em;margin: 0 auto;}
+.error-inl{color: red; font-weight: bold;}
+.warn-inl{color: red;}
 
 article[data-state=read] h4>a {color: #335}
 article[data-state=read] {border-style: dashed}
