@@ -49,7 +49,7 @@ class JamendoMixin:
         }
         with requests.Session() as sess:
             try:
-                sess.mount("https://", ForceTLSV1Adapter())
+                # sess.mount("https://", ForceTLSV1Adapter())
                 response = sess.request(url=url, method="GET", headers=headers)
                 response.raise_for_status()
             except requests.exceptions.ReadTimeout:

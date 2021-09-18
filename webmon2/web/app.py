@@ -94,6 +94,8 @@ def create_app(debug, root, conf):
         ENV="debug" if debug else "production",
         SECRET_KEY=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc",
         SECURITY_PASSWORD_SALT=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf",
+        SESSION_COOKIE_SECURE=True,
+        SESSION_COOKIE_SAMESITE="Strict",
         APPLICATION_ROOT=root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
     )
