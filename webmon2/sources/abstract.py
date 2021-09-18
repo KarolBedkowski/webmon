@@ -98,7 +98,7 @@ class AbstractSource:
         """Load data; return list of items (Result)."""
         raise NotImplementedError()
 
-    def _load_binary(self, url):
+    def _load_binary(self, url, only_images=True):
         _LOG.debug("loading binary %s", url)
         try:
             response = requests.request(
@@ -110,6 +110,17 @@ class AbstractSource:
             if response:
                 response.raise_for_status()
                 if response.status_code == 200:
+                    if only_images and not _check_content_type(
+                        response, _IMAGE_TYPES
+                    ):
+                        _LOG.info(
+                            "load binary from %s skipped due not "
+                            "acceptable content type: %s",
+                            url,
+                            response.headers["Content-Type"],
+                        )
+                        return None
+
                     return response.headers["Content-Type"], response.content
                 _LOG.info(
                     "load binary from %s status %s error: %s",
@@ -138,3 +149,17 @@ class AbstractSource:
         cls, opml_node: ty.Dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
+
+
+_IMAGE_TYPES = set(
+    (
+        "image/png",
+        "image/x-icon",
+        "image/vnd.microsoft.icon",
+    )
+)
+
+
+def _check_content_type(response, accepted) -> bool:
+    content_type = response.headers["Content-Type"]
+    return content_type in accepted
