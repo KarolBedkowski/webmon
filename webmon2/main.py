@@ -56,10 +56,10 @@ def _parse_options():
         "-v",
         "--verbose",
         action="store_true",
-        help="show additional informations",
+        help="show additional information",
     )
     parser.add_argument(
-        "-d", "--debug", action="store_true", help="print debug informations"
+        "-d", "--debug", action="store_true", help="print debug information"
     )
     parser.add_argument("--log", help="log file name")
 
@@ -115,7 +115,7 @@ def _parse_options():
     parser_users_cp.add_argument("-p" "--password", required=True)
 
     parser_users_rtotp = parser_users_sc.add_parser(
-        "remove_totp", help="remove 2 factor authentication for user"
+        "remove_totp", help="remove two factor authentication for user"
     )
     parser_users_rtotp.add_argument("-l" "--login", required=True)
 
