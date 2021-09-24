@@ -294,7 +294,7 @@ def _send_mails(db, conf):
     for user in users:
         db.begin()
         try:
-            mailer.process(db, user.id, conf)
+            mailer.process(db, user, conf)
         except Exception:  # pylint: disable=broad-except
             _LOG.exception("send mail error")
             db.rollback()

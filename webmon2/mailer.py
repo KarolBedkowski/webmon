@@ -28,11 +28,11 @@ from webmon2 import database, common, formatters, model
 _LOG = logging.getLogger(__name__)
 
 
-def process(db, user_id, app_conf):
+def process(db, user: model.User, app_conf):
     """Process unread entries for user and send report via mail"""
-    conf = database.settings.get_dict(db, user_id)
+    conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
-        _LOG.debug("mail not enabled for user %d", user_id)
+        _LOG.debug("mail not enabled for user %d", user.id)
         return
 
     if _is_silent_hour(conf):
@@ -40,7 +40,7 @@ def process(db, user_id, app_conf):
 
     last_send = database.users.get_state(
         db,
-        user_id,
+        user.id,
         "mail_last_send",
         conv=lambda x: datetime.fromtimestamp(float(x)),
     )
@@ -53,16 +53,16 @@ def process(db, user_id, app_conf):
             return
 
     try:
-        content = "".join(_process_groups(db, conf, user_id))
+        content = "".join(_process_groups(db, conf, user.id))
     except Exception as err:
         _LOG.error("prepare mail error", err)
         return
 
-    if content and not _send_mail(conf, content, app_conf):
+    if content and not _send_mail(conf, content, app_conf, user):
         return
 
     database.users.set_state(
-        db, user_id, "mail_last_send", datetime.now().timestamp()
+        db, user.id, "mail_last_send", datetime.now().timestamp()
     )
 
 
@@ -179,17 +179,19 @@ def _prepare_msg(conf, content):
     return msg
 
 
-def _send_mail(conf, content, app_conf):
+def _send_mail(conf, content, app_conf, user: model.User):
     _LOG.debug("send mail: %r", conf)
-    if not app_conf.getboolean("smtp", "enabled"):
-        _LOG.debug("mailer disabled")
+    mail_to = conf["mail_to"] or email
+
+    if not mail_to:
+        _LOG.error("email enabled for user %d but no email defined ", user.id)
         return False
 
     try:
         msg = _prepare_msg(conf, content)
         msg["Subject"] = conf["mail_subject"]
         msg["From"] = app_conf.get("smtp", "from")
-        msg["To"] = conf["mail_to"]
+        msg["To"] = mail_to
         msg["Date"] = email.utils.formatdate()
         ssl = app_conf.getboolean("smtp", "ssl")
         smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
@@ -208,7 +210,7 @@ def _send_mail(conf, content, app_conf):
         if login:
             smtp.login(login, app_conf.get("smtp", "password"))
 
-        smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
+        smtp.sendmail(msg["From"], [mail_to], msg.as_string())
         _LOG.debug("mail send")
     except Exception:  # pylint: disable=broad-except
         _LOG.exception("send mail error")
