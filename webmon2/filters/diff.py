@@ -60,7 +60,7 @@ class NDiff(AbstractFilter):
         if not entries:
             return
         try:
-            entry = next(entries)  # type: model.Entry
+            entry = next(iter(entries))  # type: model.Entry
         except StopIteration:
             return
         if not entry.content:
@@ -87,7 +87,7 @@ class NDiff(AbstractFilter):
             return
 
         old_lines = prev_content.split("\n")
-        new_lines = entry.content.split("\n")
+        new_lines = (entry.content or "").split("\n")
         res = list(difflib.ndiff(old_lines, new_lines))
 
         changed_lines = sum(1 for line in res if line[0] != " ")

@@ -180,7 +180,7 @@ def _prepare_msg(conf, content):
 
 def _send_mail(conf, content, app_conf, user: model.User):
     _LOG.debug("send mail: %r", conf)
-    mail_to = conf["mail_to"] or email
+    mail_to = conf["mail_to"] or user.email
 
     if not mail_to:
         _LOG.error("email enabled for user %d but no email defined ", user.id)
@@ -211,11 +211,17 @@ def _send_mail(conf, content, app_conf, user: model.User):
 
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
         _LOG.debug("mail send")
+    except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
+        _LOG.error("smtp connection error: %s", err)
+        return False
     except Exception:  # pylint: disable=broad-except
         _LOG.exception("send mail error")
         return False
     finally:
-        smtp.quit()
+        try:
+            smtp.quit()
+        except:  # pylint: disable=bare-except
+            pass
     return True
 
 
@@ -267,7 +273,7 @@ def _is_silent_hour(conf):
         if hour >= begin or hour < end:
             return True
     else:  # ie 0-6
-        if begin <= hour and hour <= end:
+        if begin <= hour <= end:
             return True
 
     _LOG.debug("not in silent hours")

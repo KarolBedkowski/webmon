@@ -105,7 +105,7 @@ def get(
     with_state=False,
     with_group=True,
     user_id: ty.Optional[int] = None,
-) -> model.Source:
+) -> ty.Optional[model.Source]:
     """Get one source with optionally with state and group info.
     Optionally check is source belong to given user.
     Return none when not found.
@@ -178,6 +178,10 @@ def update_filter(
 ):
     """Append or update filter in given source"""
     source = get(db, source_id, False, False)
+    if not source:
+        _LOG.warning("update_filter: source %d not found", source_id)
+        return
+
     if not source.filters:
         source.filters = [filter_]
     elif 0 <= filter_idx < len(source.filters):

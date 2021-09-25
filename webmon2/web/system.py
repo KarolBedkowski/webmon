@@ -322,13 +322,13 @@ def sett_sys_user(user_id: int = None):
             errors["active"] = "Can't deactivate current user"
 
         if not errors:
-            user = form.update_model(user)
+            uuser = form.update_model(user)  # type: model.User
             if form.password1:
-                user.password = security.hash_password(form.password1)
+                uuser.password = security.hash_password(form.password1)
 
-            _LOG.info("save user: %r", user)
+            _LOG.info("save user: %r", uuser)
             try:
-                database.users.save(db, user)
+                database.users.save(db, uuser)
             except database.users.LoginAlreadyExistsError:
                 errors["login"] = "Login already exists"
             else:

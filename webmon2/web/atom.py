@@ -32,7 +32,7 @@ ItemElement = ty.NewType("ItemElement", DEFAULT_ETREE.Element)
 
 def add_subelement_with_text(
     root: DEFAULT_ETREE.Element, child_tag: str, text: str
-) -> DEFAULT_ETREE.SubElement:
+):
     sub = DEFAULT_ETREE.SubElement(root, child_tag)
     sub.text = text
     return sub
@@ -43,7 +43,7 @@ def gen_item(
     link: ty.Optional[str] = None,
     description: ty.Optional[str] = None,
     comments: ty.Optional[str] = None,
-    pubDate: ty.Optional[str] = None,
+    pub_date: ty.Optional[str] = None,
 ) -> ItemElement:
 
     args = {k: v for k, v in locals().items() if v is not None}
@@ -124,7 +124,7 @@ def group(key):
                 title=entry.title or entry.grp.name,
                 link=url,
                 description=body,
-                pubDate=(
+                pub_date=(
                     entry.updated or entry.created or datetime.now()
                 ).isoformat(),
             )

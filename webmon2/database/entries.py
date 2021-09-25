@@ -304,23 +304,24 @@ def find_fulltext(
     else:
         sql += " and e.user_id=%(user_id)s "
     sql += " order by e.id"
+
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            source_id = entry.source_id  # type: int
-            entry.source = user_sources.get(source_id)
+            e_source_id = entry.source_id  # type: int
+            entry.source = user_sources.get(e_source_id)
             if not entry.source:
-                entry.source = user_sources[source_id] = model.Source.from_row(
-                    row
-                )
-                group_id = entry.source.group_id
-                entry.source.group = user_groups.get(group_id)
+                entry.source = user_sources[
+                    e_source_id
+                ] = model.Source.from_row(row)
+                e_group_id = entry.source.group_id
+                entry.source.group = user_groups.get(e_group_id)
                 if not entry.source.group:
                     entry.source.group = user_groups[
-                        group_id
+                        e_group_id
                     ] = model.SourceGroup.from_row(row)
             yield entry
 

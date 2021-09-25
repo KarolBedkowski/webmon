@@ -105,7 +105,7 @@ def update_from_args(conf, args):
     return conf
 
 
-def validate(conf: ty.Dict) -> bool:
+def validate(conf) -> bool:
     valid = True
 
     if not conf.get("web", "root"):

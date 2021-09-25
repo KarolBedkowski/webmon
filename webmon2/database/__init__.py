@@ -2,7 +2,7 @@
 """
 Cache storage functions.
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -19,7 +19,7 @@ from . import binaries, entries, groups, scoring, settings, sources, users
 from ._dbcommon import NotFound
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 __all__ = (
     "NotFound",
     "DB",
@@ -46,6 +46,7 @@ class DB:
 
     def __init__(self) -> None:
         super().__init__()
+        assert DB.POOL
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         # _LOG.debug("conn: %s", self._conn)

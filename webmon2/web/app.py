@@ -28,7 +28,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 
-
 _LOG = logging.getLogger(__name__)
 
 

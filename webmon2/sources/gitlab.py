@@ -19,7 +19,6 @@ from webmon2 import common, model
 
 from .abstract import AbstractSource
 
-
 _LOG = logging.getLogger(__name__)
 _GITLAB_MAX_AGE = 90  # 90 days
 _GITLAB_DEFAULT_URL = "https://gitlab.com/"
