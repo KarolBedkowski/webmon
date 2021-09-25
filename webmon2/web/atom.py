@@ -15,14 +15,13 @@ Web gui
 import logging
 import typing as ty
 import urllib
-from datetime import datetime
 import xml.etree.ElementTree
+from datetime import datetime
 
-from flask import Blueprint, url_for, request, abort, Response
+from flask import Blueprint, Response, abort, request, url_for
 
-from webmon2.web import get_db
 from webmon2 import database
-
+from webmon2.web import get_db
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("atom", __name__, url_prefix="/atom")

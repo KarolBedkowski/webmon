@@ -15,7 +15,7 @@ import typing as ty
 
 import yaml
 
-from . import model, database
+from . import database, model
 
 _LOG = logging.getLogger(__name__)
 

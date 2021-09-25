@@ -9,10 +9,10 @@
 """
 RSS data loader
 """
-import logging
-import typing as ty
-import time
 import datetime
+import logging
+import time
+import typing as ty
 from urllib.parse import urljoin
 
 import feedparser
@@ -21,7 +21,6 @@ import requests
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 _ = ty

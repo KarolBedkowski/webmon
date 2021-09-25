@@ -16,8 +16,7 @@ import logging
 from lxml import etree
 from lxml.builder import E
 
-from webmon2 import model, database, sources
-
+from webmon2 import database, model, sources
 
 _LOG = logging.getLogger(__name__)
 

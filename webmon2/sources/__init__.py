@@ -13,7 +13,7 @@ Data sources
 import logging
 import typing as ty
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 from .abstract import AbstractSource
 
@@ -27,10 +27,7 @@ __all__ = (
 
 
 def _load_plugins():
-    from . import file_input
-    from . import web
-    from . import jamendo
-    from . import dummy
+    from . import dummy, file_input, jamendo, web
 
     try:
         from . import github

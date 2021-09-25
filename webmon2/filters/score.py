@@ -9,11 +9,11 @@
 """
 Select entries by matching text.
 """
-import typing as ty
-import re
 import logging
+import re
+import typing as ty
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

@@ -8,15 +8,15 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import logging
+import datetime
+import email.utils
 import itertools
+import json
+import logging
 import os.path
 import pathlib
 import time
 import typing as ty
-import datetime
-import email.utils
-import json
 
 from dateutil import tz
 

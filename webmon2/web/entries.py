@@ -15,17 +15,17 @@ import typing as ty
 
 from flask import (
     Blueprint,
-    render_template,
+    flash,
     redirect,
-    url_for,
+    render_template,
     request,
     session,
-    flash,
+    url_for,
 )
 
-from webmon2.web import get_db, _commons as c
 from webmon2 import database
-
+from webmon2.web import _commons as c
+from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)

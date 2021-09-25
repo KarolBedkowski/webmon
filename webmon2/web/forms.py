@@ -10,10 +10,10 @@
 GUI forms
 """
 
-import typing as ty
 import logging
+import typing as ty
 
-from webmon2 import model, sources, common
+from webmon2 import common, model, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)

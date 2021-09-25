@@ -9,11 +9,11 @@
 """
 Jamendo input.
 """
+import datetime
+import logging
 import ssl
 import time
-import datetime
 import typing as ty
-import logging
 import urllib.parse
 
 import requests
@@ -22,7 +22,6 @@ from urllib3 import poolmanager
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days

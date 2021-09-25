@@ -10,13 +10,13 @@
 Models
 """
 
-import os
-import hashlib
-from datetime import datetime, timedelta
-import typing as ty
-import logging
-import json
 import base64
+import hashlib
+import json
+import logging
+import os
+import typing as ty
+from datetime import datetime, timedelta
 from enum import IntEnum
 
 import pyotp

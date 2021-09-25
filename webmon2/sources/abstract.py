@@ -10,12 +10,12 @@
 Abstract source definition
 """
 
-import typing as ty
 import logging
+import typing as ty
 
 import requests
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 _LOG = logging.getLogger(__name__)
 

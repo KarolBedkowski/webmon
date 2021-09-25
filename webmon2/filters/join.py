@@ -10,8 +10,10 @@
 """
 
 import typing as ty
+from functools import reduce
 
 from webmon2 import model
+
 from ._abstract import AbstractFilter
 
 _ = ty

@@ -31,7 +31,7 @@ except ImportError:
         print("no rich.trackback")
 
 
-from . import database, logging_setup, worker, web, cli, conf
+from . import cli, conf, database, logging_setup, web, worker
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"

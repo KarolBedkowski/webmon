@@ -10,20 +10,19 @@
 Sending reports by mail functions
 """
 
-from datetime import datetime, timedelta
 import email.mime.multipart
 import email.mime.text
 import email.utils
-import smtplib
 import logging
+import re
+import smtplib
 import subprocess
 import typing as ty
-import re
+from datetime import datetime, timedelta
 
 import html2text as h2t
 
-from webmon2 import database, common, formatters, model
-
+from webmon2 import common, database, formatters, model
 
 _LOG = logging.getLogger(__name__)
 

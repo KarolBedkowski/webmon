@@ -10,17 +10,17 @@
 Background workers
 """
 
-import queue
-import time
-import threading
-import logging
 import datetime
+import logging
+import queue
 import random
 import re
+import threading
+import time
 
 from prometheus_client import Counter
 
-from . import sources, common, filters, database, model, formatters, mailer
+from . import common, database, filters, formatters, mailer, model, sources
 
 _LOG = logging.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(

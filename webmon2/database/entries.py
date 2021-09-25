@@ -16,8 +16,9 @@ from datetime import datetime
 import psycopg2
 
 from webmon2 import model
+
 from . import _dbcommon as dbc
-from . import sources, binaries
+from . import binaries, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)

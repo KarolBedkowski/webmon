@@ -6,13 +6,14 @@ Copyright (c) Karol Będkowski, 2016-2021
 This file is part of webmon.
 Licence: GPLv2+
 """
-import logging
-import typing as ty
-import random
 import hashlib
+import logging
+import random
+import typing as ty
 from datetime import datetime
 
-from webmon2 import model, common
+from webmon2 import common, model
+
 from . import _dbcommon as dbc
 
 _LOG = logging.getLogger(__name__)

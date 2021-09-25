@@ -1,7 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 from webmon2 import main
 

@@ -9,10 +9,10 @@
 """
 Application configuration.
 """
-import os
-import logging
-import typing as ty
 import configparser
+import logging
+import os
+import typing as ty
 
 _LOG = logging.getLogger("conf")
 

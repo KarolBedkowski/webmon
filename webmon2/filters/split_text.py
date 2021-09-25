@@ -11,13 +11,13 @@ Filters for splitting input text into many entries
 
 """
 import io
-import typing as ty
 import logging
+import typing as ty
 
-from lxml import etree
 from cssselect import GenericTranslator, SelectorError
+from lxml import etree
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 

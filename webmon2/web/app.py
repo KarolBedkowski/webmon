@@ -10,20 +10,21 @@
 Web gui application
 """
 
-import os
 import logging
-import time
+import os
 import random
+import time
 
-from flask import Flask, g, url_for, session, request, redirect, abort
+from flask import Flask, abort, g, redirect, request, session, url_for
 
 try:
     from werkzeug.wsgi import DispatcherMiddleware
 except ImportError:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
+
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 

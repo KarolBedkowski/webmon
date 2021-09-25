@@ -13,24 +13,23 @@ Web gui
 import logging
 import typing as ty
 
+import prometheus_client
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    session,
     Response,
-    json,
     abort,
+    flash,
     g,
+    json,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
-import prometheus_client
 
-from webmon2.web import get_db
 from webmon2 import database
-
+from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)

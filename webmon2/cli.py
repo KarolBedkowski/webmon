@@ -13,8 +13,9 @@ command line commands
 import os
 import sys
 
-from . import database, sources, filters, common, security, conf
 from webmon2 import model
+
+from . import common, conf, database, filters, security, sources
 
 
 def _show_abilities_cls(title, base_cls):

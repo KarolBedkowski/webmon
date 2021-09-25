@@ -9,15 +9,14 @@
 """
 Local file source
 """
-import os
 import datetime
 import logging
+import os
 import typing as ty
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 

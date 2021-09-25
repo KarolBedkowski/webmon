@@ -11,13 +11,12 @@ Dummy source; generate random data
 """
 import datetime
 import logging
-import typing as ty
 import random
+import typing as ty
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 

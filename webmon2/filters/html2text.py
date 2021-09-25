@@ -9,9 +9,9 @@
 """
 Convert html to text.
 """
-import typing as ty
 import logging
 import re
+import typing as ty
 
 import html2text as h2t
 

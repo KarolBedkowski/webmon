@@ -13,13 +13,12 @@ import logging
 import typing as ty
 from datetime import datetime, timedelta
 
-from dateutil import tz
 import github3
+from dateutil import tz
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 _GITHUB_MAX_AGE = 90  # 90 days

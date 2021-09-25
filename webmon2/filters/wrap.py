@@ -9,8 +9,8 @@
 """
 Wrap entry content lines
 """
-import typing as ty
 import textwrap
+import typing as ty
 
 from webmon2 import common, model
 

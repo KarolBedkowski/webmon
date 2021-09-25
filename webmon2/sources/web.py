@@ -9,8 +9,8 @@
 """
 Load data from webpage
 """
-import email.utils
 import datetime
+import email.utils
 import logging
 import typing as ty
 from urllib.parse import urlsplit, urlunsplit
@@ -20,7 +20,6 @@ import requests
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _ = ty
 _LOG = logging.getLogger(__name__)

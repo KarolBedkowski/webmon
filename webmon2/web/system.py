@@ -10,8 +10,8 @@
 Web gui
 """
 
-import logging
 import datetime
+import logging
 from io import BytesIO
 
 try:
@@ -22,20 +22,18 @@ except ImportError:
 
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    session,
-    make_response,
     abort,
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
 
-from webmon2.web import get_db, forms
-from webmon2 import model, common, security
-from webmon2 import database, imp_exp, opml
-
+from webmon2 import common, database, imp_exp, model, opml, security
+from webmon2.web import forms, get_db
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")

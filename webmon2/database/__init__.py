@@ -7,15 +7,15 @@ Copyright (c) Karol Będkowski, 2016-2019
 This file is part of webmon.
 Licence: GPLv2+
 """
-import sys
 import logging
 import os.path
+import sys
 import typing as ty
 
 import psycopg2
-from psycopg2 import pool, extras, extensions
+from psycopg2 import extensions, extras, pool
 
-from . import settings, users, groups, entries, sources, binaries, scoring
+from . import binaries, entries, groups, scoring, settings, sources, users
 from ._dbcommon import NotFound
 
 __author__ = "Karol Będkowski"
