@@ -16,7 +16,7 @@ Dependences
 * yaml
 * html2text (for html2text filter)
 * markdown2 (for HTML output/reports/mails)
-* ElementTree (for get-elements-* filters)
+* defusedxml / ElementTree (for get-elements-* filters)
 * feedparser (for rss input)
 * github3py (for GitHub api; pip install --pre github3.py)
 * cssselect & python3-lxml (for elements filtering)

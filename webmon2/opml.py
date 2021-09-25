@@ -13,8 +13,8 @@ Import/export data in opml format.
 import itertools
 import logging
 
-from lxml import etree
 from lxml.builder import E
+from defusedxml import ElementTree as etree
 
 from webmon2 import database, model, sources
 

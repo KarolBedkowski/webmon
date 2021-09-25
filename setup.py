@@ -37,6 +37,7 @@ REQUIRES = [
     "python-gitlab",
     "pyotp",
     "pyqrcode",
+    "defusedxml",
 ]
 
 

@@ -15,7 +15,9 @@ import logging
 import typing as ty
 
 from cssselect import GenericTranslator, SelectorError
-from lxml import etree
+import defusedxml.ElementTree as etree
+
+# from lxml import etree
 
 from webmon2 import common, model
 
