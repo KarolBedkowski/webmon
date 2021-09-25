@@ -14,12 +14,9 @@ import base64
 import hashlib
 import json
 import logging
-import os
 import typing as ty
 from datetime import datetime, timedelta
 from enum import IntEnum
-
-import pyotp
 
 from webmon2 import common
 

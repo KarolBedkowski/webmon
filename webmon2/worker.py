@@ -106,7 +106,7 @@ class FetchWorker(threading.Thread):
 
         try:
             src = self._get_src(db, source)
-        except sources.UnknownInputException as err:
+        except sources.UnknownInputException:
             _LOG.error("[%s] source %d: unknown input", self._idx, source_id)
             _save_state_error(db, source, "unsupported source")
             return

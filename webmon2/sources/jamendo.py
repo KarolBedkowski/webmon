@@ -295,13 +295,13 @@ def _get_release_date(data) -> datetime.datetime:
         return datetime.datetime.now()
 
 
-class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
-    """Require TLSv1 for the connection"""
+# class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
+#     """Require TLSv1 for the connection"""
 
-    def init_poolmanager(self, connections, maxsize, block=False, **_kwargs):
-        self.poolmanager = poolmanager.PoolManager(
-            num_pools=connections,
-            maxsize=maxsize,
-            block=block,
-            ssl_version=ssl.PROTOCOL_TLSv1,
-        )
+#     def init_poolmanager(self, connections, maxsize, block=False, **_kwargs):
+#         self.poolmanager = poolmanager.PoolManager(
+#             num_pools=connections,
+#             maxsize=maxsize,
+#             block=block,
+#             ssl_version=ssl.PROTOCOL_TLSv1,
+#         )

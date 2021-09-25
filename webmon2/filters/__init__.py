@@ -27,6 +27,7 @@ __all__ = (
 
 
 def _load_filters():
+    # pylint: disable=unused-import,import-outside-toplevel
     from . import (
         diff,
         grep,

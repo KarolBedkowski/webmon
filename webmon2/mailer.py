@@ -220,7 +220,7 @@ def _send_mail(conf, content, app_conf, user: model.User):
     finally:
         try:
             smtp.quit()
-        except:  # pylint: disable=bare-except
+        except:  # noqa: E722; pylint: disable=bare-except
             pass
     return True
 

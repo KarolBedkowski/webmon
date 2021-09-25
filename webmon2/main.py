@@ -212,38 +212,56 @@ def _load_user_classes():
 
 
 def _check_libraries():
+    # pylint: disable=unused-import,import-outside-toplevel
+    # pylint: disable=c-extension-no-member
     try:
         from lxml import etree
+
+        _LOG.debug("etree version: %s", etree.__version__)
     except ImportError:
-        _LOG.warn("missing lxml library")
+        _LOG.warning("missing lxml library")
     try:
         import cssselect
+
+        _LOG.debug("cssselect version: %s", cssselect.__version__)
     except ImportError:
-        _LOG.warn("missing cssselect library")
+        _LOG.warning("missing cssselect library")
     try:
         import html2text
+
+        _LOG.debug("html2text version: %s", html2text.__version__)
     except ImportError:
-        _LOG.warn("missing html2text library")
+        _LOG.warning("missing html2text library")
     try:
         import markdown2
+
+        _LOG.debug("markdown2 version: %s", markdown2.__version__)
     except ImportError:
-        _LOG.warn("missing markdown2 library")
+        _LOG.warning("missing markdown2 library")
     try:
         import yaml
+
+        _LOG.debug("yaml version: %s", yaml.__version__)
     except ImportError:
-        _LOG.warn("missing yaml library")
+        _LOG.warning("missing yaml library")
     try:
         import requests
+
+        _LOG.debug("requests version: %s", requests.__version__)
     except ImportError:
-        _LOG.warn("missing requests library")
+        _LOG.warning("missing requests library")
     try:
         import feedparser
+
+        _LOG.debug("feedparser version: %s", feedparser.__version__)
     except ImportError:
-        _LOG.warn("missing feedparser library")
+        _LOG.warning("missing feedparser library")
     try:
         import github3
+
+        _LOG.debug("github3.py version: %s", github3.__version__)
     except ImportError:
-        _LOG.warn("missing github3 library")
+        _LOG.warning("missing github3 library")
 
 
 def main():

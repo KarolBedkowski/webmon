@@ -12,7 +12,6 @@ Application configuration.
 import configparser
 import logging
 import os
-import typing as ty
 
 _LOG = logging.getLogger("conf")
 
@@ -52,7 +51,7 @@ def try_load_user_conf():
             _LOG.info("loading %s", user_conf)
             with open(user_conf) as fileobj:
                 return load_conf(fileobj)
-        except:
+        except:  # noqa: E722; pylint: disable=bare-except
             _LOG.exception("load file %s error", user_conf)
 
     return None

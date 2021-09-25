@@ -13,8 +13,6 @@ import logging
 import typing as ty
 from datetime import datetime
 
-import psycopg2
-
 from webmon2 import model
 
 from . import _dbcommon as dbc

@@ -16,7 +16,6 @@ import typing as ty
 
 from webmon2 import model
 
-from . import _dbcommon as dbc
 from . import binaries, groups
 
 _ = ty
