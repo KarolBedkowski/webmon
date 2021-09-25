@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.1 2021-09-25
+
+### Bug Fixes
+
+- filter binaries by content type when loading icons
+
+### Miscellaneous Tasks
+
+- Use user email if not provided in user configuration
+- Minor fixes and code cleanup
+
+
 ## 2.3.1 2021-09-18
 
 ### Bug Fixes
