@@ -46,7 +46,9 @@ class DB:
 
     def __init__(self) -> None:
         super().__init__()
-        assert DB.POOL
+        if not DB.POOL:
+            raise RuntimeError("DB.POOL not initialized")
+
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         # _LOG.debug("conn: %s", self._conn)

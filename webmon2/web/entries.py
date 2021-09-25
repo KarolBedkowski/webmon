@@ -40,7 +40,9 @@ def index():
 @BP.route("/<mode>/", defaults={"page": 0})
 @BP.route("/<mode>/<int:page>")
 def entries(mode, page):
-    assert mode in ("unread", "all")
+    if mode not in ("unread", "all"):
+        raise ValueError("invalid mode")
+
     db = get_db()
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
     unread = mode == "unread"

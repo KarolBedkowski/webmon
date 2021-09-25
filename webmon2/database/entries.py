@@ -186,7 +186,9 @@ def _yield_entries(cur):
 
 def get_starred(db, user_id: int) -> model.Entries:
     """Get all starred entries for given user"""
-    assert user_id, "no user_id"
+    if not user_id:
+        raise ValueError("missing user_id")
+
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {"user_id": user_id})
         yield from _yield_entries(cur)
@@ -194,7 +196,9 @@ def get_starred(db, user_id: int) -> model.Entries:
 
 def get_history(db, user_id: int) -> model.Entries:
     """Get all entries manually read (read_mark=2) for given user"""
-    assert user_id, "no user_id"
+    if not user_id:
+        raise ValueError("missing user_id")
+
     with db.cursor() as cur:
         cur.execute(_GET_HISTORY_ENTRIES_SQL, {"user_id": user_id})
         yield from _yield_entries(cur)
@@ -204,7 +208,9 @@ def get_total_count(
     db, user_id: int, source_id=None, group_id=None, unread=True
 ) -> int:
     """Get number of read/all entries for user/source/group"""
-    assert user_id or source_id or group_id
+    if not user_id and not source_id and not group_id:
+        raise ValueError("missing user_id/source_id/group_id")
+
     args = {
         "group_id": group_id,
         "source_id": source_id,
@@ -360,7 +366,9 @@ from entries
 
 
 def get(db, id_=None, oid=None, with_source=False, with_group=False):
-    assert id_ is not None or oid is not None
+    if not id_ and oid is None:
+        raise ValueError("missing id/oid")
+
     with db.cursor() as cur:
         if id_ is not None:
             sql = _GET_ENTRY_SQL + "where id=%(id)s"
@@ -500,7 +508,9 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
-    assert source_id
+    if not source_id:
+        raise ValueError("missing source_id")
+
     with db.cursor() as cur:
         result = set()  # type: ty.Set[str]
         for idx in range(0, len(oids), 100):
@@ -529,9 +539,11 @@ def mark_read(
     db, user_id: int, entry_id=None, min_id=None, max_id=None, read=1, ids=None
 ):
     """Change read mark for given entry"""
-    assert (entry_id or max_id or ids) and user_id
+    if not (entry_id or (user_id and (max_id or ids))):
+        raise ValueError("missing entry_id/max_id/ids/user")
+
     _LOG.debug(
-        "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, " "user_id=%r",
+        "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, user_id=%r",
         entry_id,
         min_id,
         max_id,

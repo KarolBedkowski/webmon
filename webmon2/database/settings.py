@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2019
+# Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -31,11 +31,14 @@ left join user_settings us on us.key = s.key and us.user_id=%s
 
 def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
     """Get all settings for given user."""
-    assert user_id
+    if not user_id:
+        raise ValueError("missing user_id")
+
     cur = db.cursor()
     cur.execute(_GET_ALL_SQL, (user_id,))
     for row in cur:
         yield model.Setting.from_row(row)
+
     cur.close()
 
 
