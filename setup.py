@@ -8,9 +8,13 @@ from webmon2 import main
 
 CLASSIFIERS = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License (GPL)"
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v2 or later "
+    "(GPLv2+)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 
 REQUIRES = [
