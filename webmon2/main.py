@@ -9,7 +9,8 @@ Licence: GPLv2+
 """
 
 import argparse
-import imp
+import importlib.util
+import sys
 import locale
 import logging
 import os.path
@@ -205,8 +206,12 @@ def _load_user_classes():
             and not fname.startswith("_")
         ):
             _LOG.debug("loading %r", fpath)
+            modname = fname[:-3]
             try:
-                imp.load_source(fname[:-3], fpath)
+                spec = importlib.util.spec_from_file_location(modname, fpath)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[modname] = module
+                spec.loader.exec_module(module)
             except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
