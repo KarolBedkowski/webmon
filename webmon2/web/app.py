@@ -189,7 +189,7 @@ def _count_unread(user_id: int):
 
     db = get_db()
     unread = database.entries.get_total_count(db, user_id, unread=True)
-    request.entries_unread_count = unread
+    g.entries_unread_count = unread
 
 
 _REQUEST_COUNT = Counter(
