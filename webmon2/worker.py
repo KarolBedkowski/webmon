@@ -67,8 +67,8 @@ class CheckWorker(threading.Thread):
 
                     _LOG.debug("CheckWorker check done")
                     _send_mails(db, self._conf)
-            except Exception as err:  # pylint: disable=broad-except
-                _LOG.exception("CheckWorker thread error", err)
+            except Exception:  # pylint: disable=broad-except
+                _LOG.exception("CheckWorker thread error")
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)

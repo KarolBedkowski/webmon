@@ -25,9 +25,6 @@ class Sort(AbstractFilter):
     short_info = "Sort elements"
     long_info = "Sort elements by title and content"
 
-    def __init__(self, conf):
-        super().__init__(conf)
-
     def filter(
         self,
         entries: model.Entries,

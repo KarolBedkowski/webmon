@@ -53,8 +53,8 @@ def process(db, user: model.User, app_conf):
 
     try:
         content = "".join(_process_groups(db, conf, user.id))
-    except Exception as err:
-        _LOG.error("prepare mail error", err)
+    except Exception as err:  # pylint: disable=broad-except
+        _LOG.error("prepare mail error: %s", err)
         return
 
     if content and not _send_mail(conf, content, app_conf, user):
@@ -102,8 +102,8 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
     entries = [
         entry
         for entry in database.entries.find(db, user_id, source_id=source_id)
-        if entry.source.mail_report == model.MailReportMode.SEND
-        or entry.source.group.mail_report == model.MailReportMode.SEND
+        if model.MailReportMode.SEND
+        in (entry.source.mail_report, entry.source.group.mail_report)
     ]
 
     if not entries:
@@ -226,17 +226,18 @@ def _send_mail(conf, content, app_conf, user: model.User):
 
 
 def _encrypt(conf, message: str) -> str:
-    subp = subprocess.Popen(
+    with subprocess.Popen(
         ["gpg", "-e", "-a", "-r", conf["mail_to"]],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-    )
-    stdout, stderr = subp.communicate(message.encode("utf-8"))
-    if subp.wait(60) != 0:
-        _LOG.error("EMailOutput: encrypt error: %s", stderr)
-        return stderr.decode("utf-8")
-    return stdout.decode("utf-8")
+    ) as subp:
+        stdout, stderr = subp.communicate(message.encode("utf-8"))
+        if subp.wait(60) != 0:
+            _LOG.error("EMailOutput: encrypt error: %s", stderr)
+            return stderr.decode("utf-8")
+
+        return stdout.decode("utf-8")
 
 
 def _get_entry_score_mark(entry):

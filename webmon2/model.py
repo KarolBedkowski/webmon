@@ -445,7 +445,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             return self.icon
         try:
             self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             _LOG.error("hasing %r error: %s", self.icon_data, err)
         return self.icon
 

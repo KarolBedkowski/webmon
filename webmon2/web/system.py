@@ -252,7 +252,7 @@ def sett_data_mark_all_read():
 
 
 @BP.route("/settings/data/manipulation/mark_all_read_y")
-def sett_data_mark_all_read_yesterday():
+def sett_data_mark_all_old_read():
     user_id = session["user"]
     db = get_db()
     max_date = datetime.date.today() - datetime.timedelta(days=1)

@@ -131,6 +131,7 @@ def process_cli(args, app_conf) -> bool:
         return True
 
     if args.cmd == "migrate":
+        # pylint: disable=import-outside-toplevel
         from . import migrate
 
         migrate.migrate(args)

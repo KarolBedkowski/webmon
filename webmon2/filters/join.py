@@ -7,6 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
+Filter that join many entries into one.
 """
 
 import typing as ty

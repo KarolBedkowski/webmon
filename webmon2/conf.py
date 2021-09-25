@@ -49,7 +49,7 @@ def try_load_user_conf():
     if os.path.isfile(user_conf):
         try:
             _LOG.info("loading %s", user_conf)
-            with open(user_conf) as fileobj:
+            with open(user_conf, encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
         except:  # noqa: E722; pylint: disable=bare-except
             _LOG.exception("load file %s error", user_conf)
@@ -63,6 +63,7 @@ def default_conf():
     return conf
 
 
+# pylint: disable=too-many-branches
 def update_from_args(conf, args):
     if args.database:
         conf.set("main", "database", args.database)
@@ -104,6 +105,7 @@ def update_from_args(conf, args):
     return conf
 
 
+# pylint: disable=too-many-branches
 def validate(conf) -> bool:
     valid = True
 
@@ -171,5 +173,5 @@ def conf_items(conf):
 
 
 def save_conf(conf, filename):
-    with open(filename, "w") as ofile:
+    with open(filename, "w", encoding="UTF-8") as ofile:
         conf.write(ofile)

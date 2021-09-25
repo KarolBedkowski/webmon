@@ -48,8 +48,8 @@ class SelectByRE(AbstractFilter):
             self._re = re.compile(
                 self._conf["sel"], re.IGNORECASE | re.LOCALE | re.MULTILINE
             )
-        except Exception:  # pylint: disable=broad-except
-            raise ValueError("Invalid re selector for filtering")
+        except Exception as err:  # pylint: disable=broad-except
+            raise ValueError("Invalid re selector for filtering") from err
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         for match in self._re.finditer(entry.content):

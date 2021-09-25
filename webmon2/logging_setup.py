@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 """Logging setup.
-Copyright (c) Karol Będkowski, 2014-2019
+Copyright (c) Karol Będkowski, 2014-2021
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -14,14 +14,14 @@ import tempfile
 import time
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 
 
 class ColorFormatter(logging.Formatter):
     """Formatter for logs that color messages according to level."""
 
     FORMAT_MAP = {
-        level: ("\033[1;%dm%-8s\033[0m" % (color, level))
+        level: f"\033[1;{color}m{level:<8}\033[0m"
         for level, color in (
             ("DEBUG", 34),
             ("INFO", 37),

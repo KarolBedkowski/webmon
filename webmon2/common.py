@@ -2,7 +2,7 @@
 """
 Commons elements - errors etc
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -21,7 +21,7 @@ import typing as ty
 from dateutil import tz
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 
 
 _LOG = logging.getLogger("common")
@@ -81,7 +81,7 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
         if instr < 1:
-            raise ValueError("invalid interval '%s'" % instr)
+            raise ValueError(f"invalid interval '{instr!s}'")
         return int(instr)
 
     instr = instr.lower().strip()
@@ -103,8 +103,8 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
         if val < 1:
             raise ValueError("invalid interval - <1")
         return val
-    except ValueError:
-        raise ValueError("invalid interval '%s'" % instr)
+    except ValueError as err:
+        raise ValueError(f"invalid interval '{instr!s}'") from err
 
 
 def apply_defaults(*confs: ConfDict) -> ConfDict:
@@ -126,7 +126,7 @@ def create_missing_dir(path: str):
     if os.path.exists(path):
         if os.path.isdir(path):
             return
-        raise RuntimeError("path {} exists and is not dir".format(path))
+        raise RuntimeError(f"path {path} exists and is not dir")
 
     pathlib.Path(path).mkdir(parents=True)
 
@@ -192,7 +192,8 @@ def check_date_in_timerange(
     return False
 
 
-class SettingDef:  # pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods,too-many-instance-attributes
+class SettingDef:
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -204,7 +205,7 @@ class SettingDef:  # pylint: disable=too-few-public-methods
         options=None,
         value_type=None,
         global_param=False,
-        **kwargs
+        **kwargs,
     ):
         self.name = name
         self.description = description

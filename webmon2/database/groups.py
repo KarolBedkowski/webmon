@@ -47,10 +47,10 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
                 user_id=user_id,
                 feed=feed,
                 unread=unread,
-                sources_count=sources_count,
+                sources_count=srcs_count,
                 mail_report=mail_report,
             )
-            for id, name, user_id, feed, mail_report, unread, sources_count in cur
+            for id, name, user_id, feed, mail_report, unread, srcs_count in cur
         ]
         return groups
 

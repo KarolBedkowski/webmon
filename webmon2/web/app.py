@@ -24,6 +24,8 @@ except ImportError:
 
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
+
+# pylint: disable=ungrouped-imports
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
@@ -31,6 +33,7 @@ from webmon2 import database, worker
 _LOG = logging.getLogger(__name__)
 
 
+# pylint: disable=import-outside-toplevel
 def _register_blueprints(app):
     from . import _filters
 
@@ -105,13 +108,13 @@ def create_app(debug, root, conf):
     _register_blueprints(app)
 
     @app.teardown_appcontext
-    def close_connection(_exception):
+    def close_connection(_exception):  # pylint: disable=unused-variable
         db = getattr(g, "_database", None)
         if db is not None:
             db.close()
 
     @app.before_request
-    def before_request():
+    def before_request():  # pylint: disable=unused-variable
         request.req_start_time = time.time()
         if not _check_csrf_token():
             return abort(400)
@@ -139,7 +142,7 @@ def create_app(debug, root, conf):
         return None
 
     @app.after_request
-    def after_request(response):
+    def after_request(response):  # pylint: disable=unused-variable
         if hasattr(g, "non_action") and not g.non_action:
             if not response.headers.get("Cache-Control"):
                 response.headers[
@@ -184,6 +187,7 @@ def _check_csrf_token():
 
 
 def _count_unread(user_id: int):
+    # pylint: disable=import-outside-toplevel
     from webmon2.web import get_db
 
     db = get_db()

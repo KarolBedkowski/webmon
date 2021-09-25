@@ -38,6 +38,7 @@ def add_subelement_with_text(
     return sub
 
 
+# pylint: disable=unused-argument
 def gen_item(
     title: ty.Optional[str] = None,
     link: ty.Optional[str] = None,
@@ -58,8 +59,8 @@ def start_rss(
     title: str,
     link: str,
     description: str,
-    pubDate: ty.Optional[str] = None,
-    lastBuildDate: ty.Optional[str] = None,
+    pub_date: ty.Optional[str] = None,
+    last_build_date: ty.Optional[str] = None,
     items: ty.Optional[ty.Iterable[ItemElement]] = None,
 ) -> DEFAULT_ETREE.Element:
     args = {
@@ -135,7 +136,7 @@ def group(key):
         description="Webmon2 feed for group " + grp.name,
         link=request.url,
         items=rss_items,
-        pubDate=updated.isoformat(),
+        pub_date=updated.isoformat(),
     )
 
     response = Response(

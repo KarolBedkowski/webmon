@@ -56,11 +56,14 @@ def get_data_files():
     ]
 
 
+with open("README.rst", "r", encoding="UTF-8") as fdesc:
+    description = fdesc.read()
+
 setup(
     name=main.APP_NAME,
     version=main.VERSION,
     description="webmon2 - monitor web page changes.",
-    long_description=open("README.rst").read(),
+    long_description=description,
     classifiers=CLASSIFIERS,
     author="Karol Będkowski",
     author_email="karol.bedkowski at gmail.com",

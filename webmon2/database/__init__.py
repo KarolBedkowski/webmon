@@ -122,7 +122,7 @@ class DB:
             fpath = os.path.join(schema_files, fname)
             try:
                 with self._conn.cursor() as cur:
-                    with open(fpath) as update_file:
+                    with open(fpath, encoding="UTF-8") as update_file:
                         cur.execute(update_file.read())
                     cur.execute(
                         "insert into schema_version(version) values(%s)",

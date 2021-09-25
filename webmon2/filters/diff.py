@@ -49,7 +49,7 @@ class NDiff(AbstractFilter):
             or threshold < 0
             or threshold > 1
         ):
-            raise common.ParamError("invalid threshold : %r" % threshold)
+            raise common.ParamError(f"invalid threshold : {threshold!r}")
 
     def filter(
         self,

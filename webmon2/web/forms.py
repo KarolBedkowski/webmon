@@ -255,6 +255,7 @@ class FieldsForm:
         return {field.name: field.value for field in self.fields}
 
 
+# pylint: disable=too-many-instance-attributes
 class UserForm:
     def __init__(self):
         self.id = None

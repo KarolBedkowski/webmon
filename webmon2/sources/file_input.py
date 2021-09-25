@@ -27,7 +27,7 @@ class FileSource(AbstractSource):
     name = "file"
     short_info = "Data from local file"
     long_info = (
-        'Source check local, text file defined by "Full file patch"' " setting"
+        'Source check local, text file defined by "Full file patch" setting'
     )
     params = AbstractSource.params + [
         common.SettingDef("filename", "Full file patch", required=True),
@@ -55,7 +55,7 @@ class FileSource(AbstractSource):
 
         try:
             content = ""
-            with open(fname, "r") as finput:
+            with open(fname, "r", encoding="UTF-8") as finput:
                 content = finput.read()
 
             _LOG.debug(

@@ -27,7 +27,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
         _LOG.error("loading sources file error: '%s' not found", filename)
         return None
     try:
-        with open(filename) as fin:
+        with open(filename, encoding="UTF-8") as fin:
             inps = [
                 doc
                 for doc in yaml.load_all(fin)
@@ -36,7 +36,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
             _LOG.debug("loading sources - found %d enabled sources", len(inps))
             if not inps:
                 _LOG.error(
-                    "loading sources error: no valid/enabled " "sources found"
+                    "loading sources error: no valid/enabled sources found"
                 )
             return inps
     except IOError as err:

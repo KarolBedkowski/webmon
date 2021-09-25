@@ -30,7 +30,7 @@ class AbstractSource:
     long_info = ""
 
     AGENT = (
-        "Mozilla/5.0 (X11; Linux i686; rv:45.0) " "Gecko/20100101 Firefox/45.0"
+        "Mozilla/5.0 (X11; Linux i686; rv:45.0) Gecko/20100101 Firefox/45.0"
     )
 
     def __init__(
@@ -59,9 +59,7 @@ class AbstractSource:
 
     def validate(self):
         for name, error in self.validate_conf(self._conf):
-            raise common.ParamError(
-                "parameter {} error {}".format(name, error)
-            )
+            raise common.ParamError(f"parameter {name} error {error}")
 
     @property
     def updated_source(self) -> ty.Optional[model.Source]:
@@ -79,17 +77,12 @@ class AbstractSource:
                 conf[param.name] for conf in confs if conf.get(param.name)
             ]
             if not values:
-                yield (
-                    param.name,
-                    'missing parameter "{}"'.format(param.description),
-                )
+                yield (param.name, f'missing parameter "{param.description}"')
                 continue
             if not param.validate_value(values[0]):
                 yield (
                     param.name,
-                    'invalid value {!r} for "{}"'.format(
-                        values[0], param.description
-                    ),
+                    f'invalid value {values[0]!r} for "{param.description}"',
                 )
 
     def load(

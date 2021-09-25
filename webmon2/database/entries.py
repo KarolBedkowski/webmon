@@ -165,15 +165,15 @@ def _get_find_sql(
 
 
 def _yield_entries(cur):
-    sources = {}
+    vis_sources = {}
     groups = {}
     for row in cur:
         entry = model.Entry.from_row(row)
-        entry.source = sources.get(entry.source_id)
+        entry.source = vis_sources.get(entry.source_id)
         if not entry.source:
-            entry.source = sources[entry.source_id] = model.Source.from_row(
-                row
-            )
+            entry.source = vis_sources[
+                entry.source_id
+            ] = model.Source.from_row(row)
         group_id = entry.source.group_id
         if group_id and not entry.source.group:
             entry.source.group = groups.get(group_id)
@@ -493,7 +493,9 @@ def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
 def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
     """Change star mark for given entry"""
     star = 1 if star else 0
-    _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
+    _LOG.info(
+        "mark_star user_id=%d, entry_id=%r,star=%r", user_id, entry_id, star
+    )
     with db.cursor() as cur:
         cur.execute(
             "update entries set star_mark=%s where id=%s and star_mark=%s",

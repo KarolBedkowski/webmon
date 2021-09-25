@@ -74,7 +74,7 @@ class WebSource(AbstractSource):
                 return new_state, []
 
             if response.status_code != 200:
-                msg = "Response code: %d" % response.status_code
+                msg = f"Response code: {response.status_code}"
                 if response.text:
                     msg += "\n" + response.text
                 return state.new_error(msg), []

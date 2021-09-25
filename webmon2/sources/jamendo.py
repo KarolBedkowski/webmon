@@ -11,13 +11,15 @@ Jamendo input.
 """
 import datetime
 import logging
-import ssl
+
+# import ssl
 import time
 import typing as ty
 import urllib.parse
 
 import requests
-from urllib3 import poolmanager
+
+# from urllib3 import poolmanager
 
 from webmon2 import common, model
 
@@ -31,15 +33,18 @@ _JAMENDO_ICON = (
 )
 
 
+# pylint: disable=too-few-public-methods
 class JamendoMixin:
-    def _get_last_update(self, state):
+    def _get_last_update(self, state):  # pylint: disable=no-self-use
         last_update = datetime.datetime.now() - datetime.timedelta(
             days=_JAMENDO_MAX_AGE
         )
         if state.last_update and state.last_update > last_update:
             last_update = state.last_update
+
         return last_update
 
+    # pylint: disable=no-self-use,too-many-return-statements
     def _make_request(self, url):
         _LOG.debug("make request: %s", url)
         headers = {
