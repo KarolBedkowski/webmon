@@ -9,8 +9,8 @@
 """
 Wrap entry content lines
 """
-import typing as ty
 import textwrap
+import typing as ty
 
 from webmon2 import common, model
 
@@ -37,10 +37,11 @@ class Wrap(AbstractFilter):
         super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
-            raise common.ParamError("invalid width: %r" % width)
+            raise common.ParamError(f"invalid width: {width!r}")
+
         max_lines = self._conf.get("max_lines")
         if not isinstance(width, int) or width < 1:
-            raise common.ParamError("invalid max_lines: %r" % max_lines)
+            raise common.ParamError(f"invalid max_lines: {max_lines!r}")
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -54,4 +55,5 @@ class Wrap(AbstractFilter):
                 max_lines=self._conf["max_lines"],
                 width=self._conf["width"],
             )
+
         yield entry

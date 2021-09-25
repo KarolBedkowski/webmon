@@ -12,7 +12,8 @@ Filters that remove white spaces, empty lines etc
 
 import typing as ty
 
-from webmon2 import model, common
+from webmon2 import common, model
+
 from ._abstract import AbstractFilter
 
 _ = ty

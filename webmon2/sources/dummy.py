@@ -11,13 +11,12 @@ Dummy source; generate random data
 """
 import datetime
 import logging
-import typing as ty
 import random
+import typing as ty
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -49,10 +48,9 @@ class DymmySource(AbstractSource):
             entry.status = "new"
             entry.title = self._source.name
             entry.url = "dummy"
-            entry.content = "dummy entry {} on {}".format(
-                idx, datetime.datetime.now()
-            )
+            entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
             entries.append(entry)
+
         new_state = state.new_ok()
         new_state.status = "updated" if state.last_update else "new"
         new_state.next_update = datetime.datetime.now() + datetime.timedelta(

@@ -10,17 +10,17 @@
 Background workers
 """
 
-import queue
-import time
-import threading
-import logging
 import datetime
+import logging
+import queue
 import random
 import re
+import threading
+import time
 
 from prometheus_client import Counter
 
-from . import sources, common, filters, database, model, formatters, mailer
+from . import common, database, filters, formatters, mailer, model, sources
 
 _LOG = logging.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
@@ -67,8 +67,8 @@ class CheckWorker(threading.Thread):
 
                     _LOG.debug("CheckWorker check done")
                     _send_mails(db, self._conf)
-            except Exception as err:  # pylint: disable=broad-except
-                _LOG.exception("CheckWorker thread error", err)
+            except Exception:  # pylint: disable=broad-except
+                _LOG.exception("CheckWorker thread error")
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)
@@ -106,7 +106,7 @@ class FetchWorker(threading.Thread):
 
         try:
             src = self._get_src(db, source)
-        except sources.UnknownInputException as err:
+        except sources.UnknownInputException:
             _LOG.error("[%s] source %d: unknown input", self._idx, source_id)
             _save_state_error(db, source, "unsupported source")
             return
@@ -294,7 +294,7 @@ def _send_mails(db, conf):
     for user in users:
         db.begin()
         try:
-            mailer.process(db, user.id, conf)
+            mailer.process(db, user, conf)
         except Exception:  # pylint: disable=broad-except
             _LOG.exception("send mail error")
             db.rollback()

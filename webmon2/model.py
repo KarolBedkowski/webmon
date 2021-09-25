@@ -10,16 +10,13 @@
 Models
 """
 
-import os
-import hashlib
-from datetime import datetime, timedelta
-import typing as ty
-import logging
-import json
 import base64
+import hashlib
+import json
+import logging
+import typing as ty
+from datetime import datetime, timedelta
 from enum import IntEnum
-
-import pyotp
 
 from webmon2 import common
 
@@ -448,7 +445,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             return self.icon
         try:
             self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
-        except Exception as err:
+        except Exception as err:  # pylint: disable=broad-except
             _LOG.error("hasing %r error: %s", self.icon_data, err)
         return self.icon
 

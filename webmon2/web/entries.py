@@ -15,17 +15,17 @@ import typing as ty
 
 from flask import (
     Blueprint,
-    render_template,
+    flash,
     redirect,
-    url_for,
+    render_template,
     request,
     session,
-    flash,
+    url_for,
 )
 
-from webmon2.web import get_db, _commons as c
 from webmon2 import database
-
+from webmon2.web import _commons as c
+from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -40,7 +40,9 @@ def index():
 @BP.route("/<mode>/", defaults={"page": 0})
 @BP.route("/<mode>/<int:page>")
 def entries(mode, page):
-    assert mode in ("unread", "all")
+    if mode not in ("unread", "all"):
+        raise ValueError("invalid mode")
+
     db = get_db()
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
     unread = mode == "unread"

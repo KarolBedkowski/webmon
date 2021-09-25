@@ -15,10 +15,10 @@ Dependences
 * requests
 * yaml
 * html2text (for html2text filter)
-* markdown2 (for html output/reports/mails)
-* ElementTree (for get-elements-* filters)
+* markdown2 (for HTML output/reports/mails)
+* defusedxml / ElementTree (for get-elements-* filters)
 * feedparser (for rss input)
-* github3py (for github api; pip install --pre github3.py)
+* github3py (for GitHub api; pip install --pre github3.py)
 * cssselect & python3-lxml (for elements filtering)
 * readability-lxml
 * flask, Werkzeug, gevent
@@ -37,7 +37,7 @@ Global Options
 
    usage: webmon2.py [-h] [-s] [-v] [-d] [--log LOG] [-c CONF] [--database DATABASE] {abilities,update-schema,migrate,users,serve,write-config} ...
 
-   webmon2 2.4.0
+   webmon2 2.5.1
 
    positional arguments:
      {abilities,update-schema,migrate,users,serve,write-config}
@@ -52,20 +52,25 @@ Global Options
    optional arguments:
      -h, --help            show this help message and exit
      -s, --silent          show only errors and warnings
-     -v, --verbose         show additional informations
-     -d, --debug           print debug informations
+     -v, --verbose         show additional information
+     -d, --debug           print debug information
      --log LOG             log file name
      -c CONF, --conf CONF  configuration file name
      --database DATABASE   database connection string
-
 
 
 Start server
 ^^^^^^^^^^^^
 ::
 
-   usage: webmon2.py serve [-h] [--app-root WEB_APP_ROOT] [--workers WORKERS] [--address WEB_ADDRESS] [--port WEB_PORT] [--smtp-server-address SMTP_SERVER_ADDRESS] [--smtp-server-port SMTP_SERVER_PORT]
-                           [--smtp-server-ssl] [--smtp-server-starttls] [--smtp-server-from SMTP_SERVER_FROM] [--smtp-server-login SMTP_SERVER_LOGIN] [--smtp-server-password SMTP_SERVER_PASSWORD]
+   usage: webmon2.py serve [-h] [--app-root WEB_APP_ROOT] [--workers WORKERS]
+                           [--address WEB_ADDRESS] [--port WEB_PORT]
+                           [--smtp-server-address SMTP_SERVER_ADDRESS]
+                           [--smtp-server-port SMTP_SERVER_PORT]
+                           [--smtp-server-ssl] [--smtp-server-starttls]
+                           [--smtp-server-from SMTP_SERVER_FROM]
+                           [--smtp-server-login SMTP_SERVER_LOGIN]
+                           [--smtp-server-password SMTP_SERVER_PASSWORD]
 
    optional arguments:
      -h, --help            show this help message and exit
@@ -101,11 +106,10 @@ Manage users
                            user commands
        add                 add user
        passwd              change user password
-       remove_totp         remove 2 factor authentication for user
+       remove_totp         remove two factor authentication for user
 
    optional arguments:
      -h, --help            show this help message and exit
-
 
 
 Database

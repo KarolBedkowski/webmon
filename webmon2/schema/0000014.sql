@@ -7,7 +7,7 @@
 
 CREATE TABLE scoring_sett (
     id              serial PRIMARY KEY,
-    user_id         integer 
+    user_id         integer
                     REFERENCES users(id) ON DELETE CASCADE,
     pattern         text,
     active          boolean default true,

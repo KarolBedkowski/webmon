@@ -13,7 +13,7 @@ Data sources
 import logging
 import typing as ty
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 from .abstract import AbstractSource
 
@@ -27,25 +27,24 @@ __all__ = (
 
 
 def _load_plugins():
-    from . import file_input
-    from . import web
-    from . import jamendo
-    from . import dummy
+    # pylint: disable=unused-import,import-outside-toplevel
+
+    from . import dummy, file_input, jamendo, web
 
     try:
         from . import github
     except ImportError:
-        _LOG.warn("github3 module not found")
+        _LOG.warning("github3 module not found")
 
     try:
         from . import rss
     except ImportError:
-        _LOG.warn("feedparser module not found")
+        _LOG.warning("feedparser module not found")
 
     try:
         from . import gitlab
-    except ImportError as err:
-        _LOG.warn("gitlab load error: {}", err)
+    except ImportError:
+        _LOG.warning("gitlab module not found")
 
 
 _load_plugins()

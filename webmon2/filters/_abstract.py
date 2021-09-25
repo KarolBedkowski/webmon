@@ -41,9 +41,7 @@ class AbstractFilter:
     def validate(self):
         """Validate filter parameters"""
         for name, error in self.validate_conf(self._conf):
-            raise common.ParamError(
-                "parameter {} error {}".format(name, error)
-            )
+            raise common.ParamError(f"parameter {name} error {error}")
 
     @classmethod
     def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
@@ -57,19 +55,15 @@ class AbstractFilter:
                 conf[param.name] for conf in confs if conf.get(param.name)
             ]
             if not values:
-                yield (
-                    param.name,
-                    'missing parameter "{}"'.format(param.description),
-                )
+                yield (param.name, f'missing parameter "{param.description}"')
                 continue
             if not param.validate_value(values[0]):
                 yield (
                     param.name,
-                    'invalid value {!r} for "{}"'.format(
-                        values[0], param.description
-                    ),
+                    f'invalid value {values[0]!r} for "{param.description}"',
                 )
 
+    # pylint: disable=unused-argument
     def filter(
         self,
         entries: model.Entries,

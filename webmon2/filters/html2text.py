@@ -9,9 +9,9 @@
 """
 Convert html to text.
 """
-import typing as ty
 import logging
 import re
+import typing as ty
 
 import html2text as h2t
 
@@ -40,7 +40,7 @@ class Html2Text(AbstractFilter):
         super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
-            raise common.ParamError("invalid width: %r" % width)
+            raise common.ParamError(r"invalid width: {width!r}")
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:

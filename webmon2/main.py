@@ -9,7 +9,8 @@ Licence: GPLv2+
 """
 
 import argparse
-import imp
+import importlib.util
+import sys
 import locale
 import logging
 import os.path
@@ -31,13 +32,13 @@ except ImportError:
         print("no rich.trackback")
 
 
-from . import database, logging_setup, worker, web, cli, conf
+from . import cli, conf, database, logging_setup, web, worker
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.1"
+VERSION = "2.5.2"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -56,10 +57,10 @@ def _parse_options():
         "-v",
         "--verbose",
         action="store_true",
-        help="show additional informations",
+        help="show additional information",
     )
     parser.add_argument(
-        "-d", "--debug", action="store_true", help="print debug informations"
+        "-d", "--debug", action="store_true", help="print debug information"
     )
     parser.add_argument("--log", help="log file name")
 
@@ -115,7 +116,7 @@ def _parse_options():
     parser_users_cp.add_argument("-p" "--password", required=True)
 
     parser_users_rtotp = parser_users_sc.add_parser(
-        "remove_totp", help="remove 2 factor authentication for user"
+        "remove_totp", help="remove two factor authentication for user"
     )
     parser_users_rtotp.add_argument("-l" "--login", required=True)
 
@@ -205,45 +206,67 @@ def _load_user_classes():
             and not fname.startswith("_")
         ):
             _LOG.debug("loading %r", fpath)
+            modname = fname[:-3]
             try:
-                imp.load_source(fname[:-3], fpath)
+                spec = importlib.util.spec_from_file_location(modname, fpath)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[modname] = module
+                spec.loader.exec_module(module)
             except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
 def _check_libraries():
+    # pylint: disable=unused-import,import-outside-toplevel
+    # pylint: disable=c-extension-no-member
     try:
         from lxml import etree
+
+        _LOG.debug("etree version: %s", etree.__version__)
     except ImportError:
-        _LOG.warn("missing lxml library")
+        _LOG.warning("missing lxml library")
     try:
         import cssselect
+
+        _LOG.debug("cssselect version: %s", cssselect.__version__)
     except ImportError:
-        _LOG.warn("missing cssselect library")
+        _LOG.warning("missing cssselect library")
     try:
         import html2text
+
+        _LOG.debug("html2text version: %s", html2text.__version__)
     except ImportError:
-        _LOG.warn("missing html2text library")
+        _LOG.warning("missing html2text library")
     try:
         import markdown2
+
+        _LOG.debug("markdown2 version: %s", markdown2.__version__)
     except ImportError:
-        _LOG.warn("missing markdown2 library")
+        _LOG.warning("missing markdown2 library")
     try:
         import yaml
+
+        _LOG.debug("yaml version: %s", yaml.__version__)
     except ImportError:
-        _LOG.warn("missing yaml library")
+        _LOG.warning("missing yaml library")
     try:
         import requests
+
+        _LOG.debug("requests version: %s", requests.__version__)
     except ImportError:
-        _LOG.warn("missing requests library")
+        _LOG.warning("missing requests library")
     try:
         import feedparser
+
+        _LOG.debug("feedparser version: %s", feedparser.__version__)
     except ImportError:
-        _LOG.warn("missing feedparser library")
+        _LOG.warning("missing feedparser library")
     try:
         import github3
+
+        _LOG.debug("github3.py version: %s", github3.__version__)
     except ImportError:
-        _LOG.warn("missing github3 library")
+        _LOG.warning("missing github3 library")
 
 
 def main():
@@ -299,6 +322,9 @@ def main():
             cworker.start()
 
         web.start_app(args, app_conf)
+        return
+
+    _LOG.error("missing command")
 
 
 if __name__ == "__main__":

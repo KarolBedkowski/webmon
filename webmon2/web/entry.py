@@ -13,10 +13,10 @@ Web gui
 import logging
 import typing as ty
 
-from flask import Blueprint, render_template, request, abort, session
+from flask import Blueprint, abort, render_template, request, session
 
-from webmon2.web import get_db
 from webmon2 import database
+from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)

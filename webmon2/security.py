@@ -10,8 +10,8 @@
 Security related functions.
 """
 
-import os
 import hashlib
+import os
 import socket
 
 try:

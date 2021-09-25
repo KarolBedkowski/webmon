@@ -13,11 +13,10 @@ Import/export data in opml format.
 import itertools
 import logging
 
-from lxml import etree
-from lxml.builder import E
+from lxml.builder import E  # pylint: disable=no-name-in-module
+from defusedxml import ElementTree as etree
 
-from webmon2 import model, database, sources
-
+from webmon2 import database, model, sources
 
 _LOG = logging.getLogger(__name__)
 
@@ -58,9 +57,11 @@ def dump_data(db, user_id: int):
             _dump_source(source)
             for source in database.sources.get_all(db, user_id, group.id)
         )
-        items = list(filter(lambda x: x is not None, items))
-        if items:
-            gnodes.append(E.outline(*items, text=group.name, title=group.name))
+        items_filtered = list(filter(lambda x: x is not None, items))
+        if items_filtered:
+            gnodes.append(
+                E.outline(*items_filtered, text=group.name, title=group.name)
+            )
     root = E.opml(E.head(E.title("subscriptions")), E.body(*gnodes))
     return etree.tostring(root)
 

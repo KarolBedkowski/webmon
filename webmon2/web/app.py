@@ -10,27 +10,30 @@
 Web gui application
 """
 
-import os
 import logging
-import time
+import os
 import random
+import time
 
-from flask import Flask, g, url_for, session, request, redirect, abort
+from flask import Flask, abort, g, redirect, request, session, url_for
 
 try:
     from werkzeug.wsgi import DispatcherMiddleware
 except ImportError:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
+
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 
-from webmon2 import database, worker
+# pylint: disable=ungrouped-imports
+from werkzeug.middleware.proxy_fix import ProxyFix
 
+from webmon2 import database, worker
 
 _LOG = logging.getLogger(__name__)
 
 
+# pylint: disable=import-outside-toplevel
 def _register_blueprints(app):
     from . import _filters
 
@@ -105,13 +108,13 @@ def create_app(debug, root, conf):
     _register_blueprints(app)
 
     @app.teardown_appcontext
-    def close_connection(_exception):
+    def close_connection(_exception):  # pylint: disable=unused-variable
         db = getattr(g, "_database", None)
         if db is not None:
             db.close()
 
     @app.before_request
-    def before_request():
+    def before_request():  # pylint: disable=unused-variable
         request.req_start_time = time.time()
         if not _check_csrf_token():
             return abort(400)
@@ -139,14 +142,17 @@ def create_app(debug, root, conf):
         return None
 
     @app.after_request
-    def after_request(response):
+    def after_request(response):  # pylint: disable=unused-variable
         if hasattr(g, "non_action") and not g.non_action:
-            if "Cache-Control" not in response.headers:
+            if not response.headers.get("Cache-Control"):
                 response.headers[
                     "Cache-Control"
                 ] = "no-cache, max-age=0, must-revalidate, no-store"
             response.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
             response.headers["X-CSRF-TOKEN"] = session.get("_csrf_token")
+        else:
+            response.headers["Cache-Control"] = "public, max-age=604800"
+
         response.headers["Content-Security-Policy"] = _CSP
         resp_time = time.time() - request.req_start_time
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
@@ -181,11 +187,12 @@ def _check_csrf_token():
 
 
 def _count_unread(user_id: int):
+    # pylint: disable=import-outside-toplevel
     from webmon2.web import get_db
 
     db = get_db()
     unread = database.entries.get_total_count(db, user_id, unread=True)
-    request.entries_unread_count = unread
+    g.entries_unread_count = unread
 
 
 _REQUEST_COUNT = Counter(

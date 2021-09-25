@@ -10,10 +10,10 @@
 GUI forms
 """
 
-import typing as ty
 import logging
+import typing as ty
 
-from webmon2 import model, sources, common
+from webmon2 import common, model, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -255,6 +255,7 @@ class FieldsForm:
         return {field.name: field.value for field in self.fields}
 
 
+# pylint: disable=too-many-instance-attributes
 class UserForm:
     def __init__(self):
         self.id = None

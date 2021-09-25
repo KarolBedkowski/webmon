@@ -6,13 +6,14 @@ Copyright (c) Karol Będkowski, 2016-2021
 This file is part of webmon.
 Licence: GPLv2+
 """
-import logging
-import typing as ty
-import random
 import hashlib
+import logging
+import random
+import typing as ty
 from datetime import datetime
 
-from webmon2 import model, common
+from webmon2 import common, model
+
 from . import _dbcommon as dbc
 
 _LOG = logging.getLogger(__name__)
@@ -34,7 +35,9 @@ order by sg.name
 
 def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
     """Get all groups for user with number of unread entries"""
-    assert user_id
+    if not user_id:
+        raise ValueError("missing user_id")
+
     with db.cursor() as cur:
         cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id,))
         groups = [
@@ -44,10 +47,10 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
                 user_id=user_id,
                 feed=feed,
                 unread=unread,
-                sources_count=sources_count,
+                sources_count=srcs_count,
                 mail_report=mail_report,
             )
-            for id, name, user_id, feed, mail_report, unread, sources_count in cur
+            for id, name, user_id, feed, mail_report, unread, srcs_count in cur
         ]
         return groups
 
@@ -197,11 +200,20 @@ WHERE id=ANY(%(ids)s) AND read_mark=0 AND user_id=%(user_id)s
 
 
 def mark_read(
-    db, user_id: int, group_id: int, max_id=None, min_id=None, ids=None
+    db,
+    user_id: int,
+    group_id: int,
+    max_id: ty.Optional[int] = None,
+    min_id: ty.Optional[int] = None,
+    ids: ty.Optional[ty.List[int]] = None,
 ) -> int:
     """Mark entries in given group read."""
-    assert group_id, "no group id"
-    assert (min_id and max_id) or ids
+    if not group_id:
+        raise ValueError("missing group_id")
+
+    if not ((min_id and max_id) or ids):
+        raise ValueError("missing min/max id or ids")
+
     args = {
         "group_id": group_id,
         "min_id": min_id,

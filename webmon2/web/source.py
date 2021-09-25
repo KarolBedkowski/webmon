@@ -15,17 +15,19 @@ import typing as ty
 
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    session,
     abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
 
-from webmon2.web import get_db, _commons as c
-from webmon2 import sources, model, filters, database
+from webmon2 import database, filters, model, sources
+from webmon2.web import _commons as c
+from webmon2.web import get_db
+
 from . import forms
 
 _ = ty

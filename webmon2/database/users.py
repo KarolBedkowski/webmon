@@ -9,11 +9,10 @@
 """
 Access & manage users in db
 """
-import typing as ty
 import logging
+import typing as ty
 
 from webmon2 import model
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -127,7 +126,6 @@ def get_state(db, user_id: int, key: str, default=None, conv=None):
         if not row:
             return default
         value = row[0]
-        _LOG.debug("value: %r, %r", value, conv)
         return conv(value) if conv else value
 
 

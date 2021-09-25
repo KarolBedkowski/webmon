@@ -2,24 +2,24 @@
 """
 Cache storage functions.
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+
 """
-import sys
 import logging
 import os.path
+import sys
 import typing as ty
 
 import psycopg2
-from psycopg2 import pool, extras, extensions
+from psycopg2 import extensions, extras, pool
 
-from . import settings, users, groups, entries, sources, binaries, scoring
+from . import binaries, entries, groups, scoring, settings, sources, users
 from ._dbcommon import NotFound
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2019"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 __all__ = (
     "NotFound",
     "DB",
@@ -46,6 +46,9 @@ class DB:
 
     def __init__(self) -> None:
         super().__init__()
+        if not DB.POOL:
+            raise RuntimeError("DB.POOL not initialized")
+
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         # _LOG.debug("conn: %s", self._conn)
@@ -119,7 +122,7 @@ class DB:
             fpath = os.path.join(schema_files, fname)
             try:
                 with self._conn.cursor() as cur:
-                    with open(fpath) as update_file:
+                    with open(fpath, encoding="UTF-8") as update_file:
                         cur.execute(update_file.read())
                     cur.execute(
                         "insert into schema_version(version) values(%s)",

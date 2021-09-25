@@ -10,11 +10,11 @@
 Split entry by regexp
 
 """
-import typing as ty
 import logging
 import re
+import typing as ty
 
-from webmon2 import model, common
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 
@@ -48,8 +48,8 @@ class SelectByRE(AbstractFilter):
             self._re = re.compile(
                 self._conf["sel"], re.IGNORECASE | re.LOCALE | re.MULTILINE
             )
-        except Exception:  # pylint: disable=broad-except
-            raise ValueError("Invalid re selector for filtering")
+        except Exception as err:  # pylint: disable=broad-except
+            raise ValueError("Invalid re selector for filtering") from err
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         for match in self._re.finditer(entry.content):

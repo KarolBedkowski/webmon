@@ -9,20 +9,21 @@
 """
 Jamendo input.
 """
-import ssl
-import time
 import datetime
-import typing as ty
 import logging
+
+# import ssl
+import time
+import typing as ty
 import urllib.parse
 
 import requests
-from urllib3 import poolmanager
+
+# from urllib3 import poolmanager
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
@@ -32,15 +33,18 @@ _JAMENDO_ICON = (
 )
 
 
+# pylint: disable=too-few-public-methods
 class JamendoMixin:
-    def _get_last_update(self, state):
+    def _get_last_update(self, state):  # pylint: disable=no-self-use
         last_update = datetime.datetime.now() - datetime.timedelta(
             days=_JAMENDO_MAX_AGE
         )
         if state.last_update and state.last_update > last_update:
             last_update = state.last_update
+
         return last_update
 
+    # pylint: disable=no-self-use,too-many-return-statements
     def _make_request(self, url):
         _LOG.debug("make request: %s", url)
         headers = {
@@ -296,13 +300,13 @@ def _get_release_date(data) -> datetime.datetime:
         return datetime.datetime.now()
 
 
-class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
-    """Require TLSv1 for the connection"""
+# class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):
+#     """Require TLSv1 for the connection"""
 
-    def init_poolmanager(self, connections, maxsize, block=False, **_kwargs):
-        self.poolmanager = poolmanager.PoolManager(
-            num_pools=connections,
-            maxsize=maxsize,
-            block=block,
-            ssl_version=ssl.PROTOCOL_TLSv1,
-        )
+#     def init_poolmanager(self, connections, maxsize, block=False, **_kwargs):
+#         self.poolmanager = poolmanager.PoolManager(
+#             num_pools=connections,
+#             maxsize=maxsize,
+#             block=block,
+#             ssl_version=ssl.PROTOCOL_TLSv1,
+#         )

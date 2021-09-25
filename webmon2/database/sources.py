@@ -9,14 +9,14 @@
 """
 Access & manage sources
 """
+import datetime
 import json
 import logging
 import typing as ty
-import datetime
 
 from webmon2 import model
-from . import _dbcommon as dbc
-from . import groups, binaries
+
+from . import binaries, groups
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ def get(
     with_state=False,
     with_group=True,
     user_id: ty.Optional[int] = None,
-) -> model.Source:
+) -> ty.Optional[model.Source]:
     """Get one source with optionally with state and group info.
     Optionally check is source belong to given user.
     Return none when not found.
@@ -177,6 +177,10 @@ def update_filter(
 ):
     """Append or update filter in given source"""
     source = get(db, source_id, False, False)
+    if not source:
+        _LOG.warning("update_filter: source %d not found", source_id)
+        return
+
     if not source.filters:
         source.filters = [filter_]
     elif 0 <= filter_idx < len(source.filters):
@@ -200,7 +204,9 @@ def move_filter(
     db, user_id: int, source_id: int, filter_idx: int, direction: str
 ):
     """Change position of given filter in source"""
-    assert direction in ("up", "down")
+    if direction not in ("up", "down"):
+        raise ValueError("invalid direction")
+
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
         return
@@ -325,7 +331,9 @@ where (last_update is null or last_update < now() - '-1 minutes'::interval)
 
 def refresh(db, user_id, source_id=None, group_id=None) -> int:
     """Mark source to refresh; return founded sources"""
-    assert user_id or source_id or group_id
+    if not (user_id or source_id or group_id):
+        raise ValueError("missing user_id/source_id/group_id")
+
     sql = _REFRESH_SQL
     if group_id:
         sql += (
@@ -334,6 +342,7 @@ def refresh(db, user_id, source_id=None, group_id=None) -> int:
         )
     elif source_id:
         sql += "and source_id=%(source_id)s"
+
     cur = db.cursor()
     cur.execute(
         sql, {"group_id": group_id, "source_id": source_id, "user_id": user_id}

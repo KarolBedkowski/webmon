@@ -13,8 +13,9 @@ command line commands
 import os
 import sys
 
-from . import database, sources, filters, common, security, conf
 from webmon2 import model
+
+from . import common, conf, database, filters, security, sources
 
 
 def _show_abilities_cls(title, base_cls):
@@ -130,6 +131,7 @@ def process_cli(args, app_conf) -> bool:
         return True
 
     if args.cmd == "migrate":
+        # pylint: disable=import-outside-toplevel
         from . import migrate
 
         migrate.migrate(args)

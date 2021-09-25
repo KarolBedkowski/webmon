@@ -10,29 +10,28 @@
 Sending reports by mail functions
 """
 
-from datetime import datetime, timedelta
 import email.mime.multipart
 import email.mime.text
 import email.utils
-import smtplib
 import logging
+import re
+import smtplib
 import subprocess
 import typing as ty
-import re
+from datetime import datetime, timedelta
 
 import html2text as h2t
 
-from webmon2 import database, common, formatters, model
-
+from webmon2 import common, database, formatters, model
 
 _LOG = logging.getLogger(__name__)
 
 
-def process(db, user_id, app_conf):
+def process(db, user: model.User, app_conf):
     """Process unread entries for user and send report via mail"""
-    conf = database.settings.get_dict(db, user_id)
+    conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
-        _LOG.debug("mail not enabled for user %d", user_id)
+        _LOG.debug("mail not enabled for user %d", user.id)
         return
 
     if _is_silent_hour(conf):
@@ -40,7 +39,7 @@ def process(db, user_id, app_conf):
 
     last_send = database.users.get_state(
         db,
-        user_id,
+        user.id,
         "mail_last_send",
         conv=lambda x: datetime.fromtimestamp(float(x)),
     )
@@ -53,16 +52,16 @@ def process(db, user_id, app_conf):
             return
 
     try:
-        content = "".join(_process_groups(db, conf, user_id))
-    except Exception as err:
-        _LOG.error("prepare mail error", err)
+        content = "".join(_process_groups(db, conf, user.id))
+    except Exception as err:  # pylint: disable=broad-except
+        _LOG.error("prepare mail error: %s", err)
         return
 
-    if content and not _send_mail(conf, content, app_conf):
+    if content and not _send_mail(conf, content, app_conf, user):
         return
 
     database.users.set_state(
-        db, user_id, "mail_last_send", datetime.now().timestamp()
+        db, user.id, "mail_last_send", datetime.now().timestamp()
     )
 
 
@@ -103,8 +102,8 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
     entries = [
         entry
         for entry in database.entries.find(db, user_id, source_id=source_id)
-        if entry.source.mail_report == model.MailReportMode.SEND
-        or entry.source.group.mail_report == model.MailReportMode.SEND
+        if model.MailReportMode.SEND
+        in (entry.source.mail_report, entry.source.group.mail_report)
     ]
 
     if not entries:
@@ -179,17 +178,19 @@ def _prepare_msg(conf, content):
     return msg
 
 
-def _send_mail(conf, content, app_conf):
+def _send_mail(conf, content, app_conf, user: model.User):
     _LOG.debug("send mail: %r", conf)
-    if not app_conf.getboolean("smtp", "enabled"):
-        _LOG.debug("mailer disabled")
+    mail_to = conf["mail_to"] or user.email
+
+    if not mail_to:
+        _LOG.error("email enabled for user %d but no email defined ", user.id)
         return False
 
     try:
         msg = _prepare_msg(conf, content)
         msg["Subject"] = conf["mail_subject"]
         msg["From"] = app_conf.get("smtp", "from")
-        msg["To"] = conf["mail_to"]
+        msg["To"] = mail_to
         msg["Date"] = email.utils.formatdate()
         ssl = app_conf.getboolean("smtp", "ssl")
         smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
@@ -208,28 +209,35 @@ def _send_mail(conf, content, app_conf):
         if login:
             smtp.login(login, app_conf.get("smtp", "password"))
 
-        smtp.sendmail(msg["From"], [msg["To"]], msg.as_string())
+        smtp.sendmail(msg["From"], [mail_to], msg.as_string())
         _LOG.debug("mail send")
+    except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
+        _LOG.error("smtp connection error: %s", err)
+        return False
     except Exception:  # pylint: disable=broad-except
         _LOG.exception("send mail error")
         return False
     finally:
-        smtp.quit()
+        try:
+            smtp.quit()
+        except:  # noqa: E722; pylint: disable=bare-except
+            pass
     return True
 
 
 def _encrypt(conf, message: str) -> str:
-    subp = subprocess.Popen(
+    with subprocess.Popen(
         ["gpg", "-e", "-a", "-r", conf["mail_to"]],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-    )
-    stdout, stderr = subp.communicate(message.encode("utf-8"))
-    if subp.wait(60) != 0:
-        _LOG.error("EMailOutput: encrypt error: %s", stderr)
-        return stderr.decode("utf-8")
-    return stdout.decode("utf-8")
+    ) as subp:
+        stdout, stderr = subp.communicate(message.encode("utf-8"))
+        if subp.wait(60) != 0:
+            _LOG.error("EMailOutput: encrypt error: %s", stderr)
+            return stderr.decode("utf-8")
+
+        return stdout.decode("utf-8")
 
 
 def _get_entry_score_mark(entry):
@@ -266,7 +274,7 @@ def _is_silent_hour(conf):
         if hour >= begin or hour < end:
             return True
     else:  # ie 0-6
-        if begin <= hour and hour <= end:
+        if begin <= hour <= end:
             return True
 
     _LOG.debug("not in silent hours")

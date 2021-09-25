@@ -10,8 +10,8 @@
 Web gui
 """
 
-import logging
 import datetime
+import logging
 from io import BytesIO
 
 try:
@@ -22,20 +22,18 @@ except ImportError:
 
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    session,
-    make_response,
     abort,
+    flash,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
 
-from webmon2.web import get_db, forms
-from webmon2 import model, common, security
-from webmon2 import database, imp_exp, opml
-
+from webmon2 import common, database, imp_exp, model, opml, security
+from webmon2.web import forms, get_db
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")
@@ -254,7 +252,7 @@ def sett_data_mark_all_read():
 
 
 @BP.route("/settings/data/manipulation/mark_all_read_y")
-def sett_data_mark_all_read_yesterday():
+def sett_data_mark_all_old_read():
     user_id = session["user"]
     db = get_db()
     max_date = datetime.date.today() - datetime.timedelta(days=1)
@@ -324,13 +322,13 @@ def sett_sys_user(user_id: int = None):
             errors["active"] = "Can't deactivate current user"
 
         if not errors:
-            user = form.update_model(user)
+            uuser = form.update_model(user)  # type: model.User
             if form.password1:
-                user.password = security.hash_password(form.password1)
+                uuser.password = security.hash_password(form.password1)
 
-            _LOG.info("save user: %r", user)
+            _LOG.info("save user: %r", uuser)
             try:
-                database.users.save(db, user)
+                database.users.save(db, uuser)
             except database.users.LoginAlreadyExistsError:
                 errors["login"] = "Login already exists"
             else:

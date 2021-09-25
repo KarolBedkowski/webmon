@@ -13,17 +13,16 @@ import logging
 
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
     flash,
+    redirect,
+    render_template,
+    request,
     session,
+    url_for,
 )
 
 from webmon2 import database, security
 from webmon2.web import get_db
-
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("sec", __name__, url_prefix="/sec")

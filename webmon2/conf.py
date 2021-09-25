@@ -9,10 +9,9 @@
 """
 Application configuration.
 """
-import os
-import logging
-import typing as ty
 import configparser
+import logging
+import os
 
 _LOG = logging.getLogger("conf")
 
@@ -50,9 +49,9 @@ def try_load_user_conf():
     if os.path.isfile(user_conf):
         try:
             _LOG.info("loading %s", user_conf)
-            with open(user_conf) as fileobj:
+            with open(user_conf, encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
-        except:
+        except:  # noqa: E722; pylint: disable=bare-except
             _LOG.exception("load file %s error", user_conf)
 
     return None
@@ -64,6 +63,7 @@ def default_conf():
     return conf
 
 
+# pylint: disable=too-many-branches
 def update_from_args(conf, args):
     if args.database:
         conf.set("main", "database", args.database)
@@ -105,7 +105,8 @@ def update_from_args(conf, args):
     return conf
 
 
-def validate(conf: ty.Dict) -> bool:
+# pylint: disable=too-many-branches
+def validate(conf) -> bool:
     valid = True
 
     if not conf.get("web", "root"):
@@ -172,5 +173,5 @@ def conf_items(conf):
 
 
 def save_conf(conf, filename):
-    with open(filename, "w") as ofile:
+    with open(filename, "w", encoding="UTF-8") as ofile:
         conf.write(ofile)

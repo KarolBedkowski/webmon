@@ -5,6 +5,7 @@
 # Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
 #
 # Distributed under terms of the GPLv3 license.
+# pylint: disable=protected-access
 
 """
 Tests for formattes module

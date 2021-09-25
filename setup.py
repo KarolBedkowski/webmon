@@ -1,38 +1,24 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 from webmon2 import main
 
 CLASSIFIERS = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License (GPL)"
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v2 or later "
+    "(GPLv2+)",
+    "Programming Language :: Python :: 3 :: Only",
+    "Environment :: Web Environment",
+    "Framework :: Flask",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 
-REQUIRES = [
-    "setuptools",
-    "requests",
-    "markdown2",
-    "lxml",
-    "PyYAML",
-    "html2text",
-    "feedparser",
-    "github3.py",
-    "flask",
-    "cssselect",
-    "prometheus_client",
-    "Werkzeug",
-    "gevent",
-    "readability-lxml",
-    "psycopg2",
-    "python-dateutil",
-    "python-gitlab",
-    "pyotp",
-    "pyqrcode",
-]
+with open("requirements.txt", "r", encoding="utf-8") as freq:
+    REQUIRES = [line for line in freq if line and not line.startswith("#")]
 
 
 def get_data_files():
@@ -50,11 +36,14 @@ def get_data_files():
     ]
 
 
+with open("README.rst", "r", encoding="UTF-8") as fdesc:
+    description = fdesc.read()
+
 setup(
     name=main.APP_NAME,
     version=main.VERSION,
     description="webmon2 - monitor web page changes.",
-    long_description=open("README.rst").read(),
+    long_description=description,
     classifiers=CLASSIFIERS,
     author="Karol Będkowski",
     author_email="karol.bedkowski at gmail.com",

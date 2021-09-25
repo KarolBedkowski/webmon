@@ -13,24 +13,23 @@ Web gui
 import logging
 import typing as ty
 
+import prometheus_client
 from flask import (
     Blueprint,
-    render_template,
-    redirect,
-    url_for,
-    request,
-    flash,
-    session,
     Response,
-    json,
     abort,
+    flash,
     g,
+    json,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
 )
-import prometheus_client
 
-from webmon2.web import get_db
 from webmon2 import database
-
+from webmon2.web import get_db
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -68,8 +67,10 @@ def sources_refresh():
     db = get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
-    flash("{} sources mark to refresh".format(updated))
-    return redirect(request.headers.get("Referer") or url_for("root.sources"))
+    flash(f"{updated} sources mark to refresh")
+    return redirect(
+        request.headers.get("Refere79Gr") or url_for("root.sources")
+    )
 
 
 @BP.route("/sources/refresh/errors")
@@ -77,7 +78,7 @@ def sources_refresh_err():
     db = get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
-    flash("{} sources with errors mark to refresh".format(updated))
+    flash(f"{updated} sources with errors mark to refresh")
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
@@ -103,7 +104,7 @@ _MANIFEST = None
 
 @BP.route("/manifest.json")
 def manifest_json():
-    global _MANIFEST
+    global _MANIFEST  # pylint: disable=global-statement
     if not _MANIFEST:
         manifest = {
             "name": "Webmon2",

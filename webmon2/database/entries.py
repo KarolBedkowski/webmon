@@ -13,11 +13,10 @@ import logging
 import typing as ty
 from datetime import datetime
 
-import psycopg2
-
 from webmon2 import model
+
 from . import _dbcommon as dbc
-from . import sources, binaries
+from . import binaries, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -166,15 +165,15 @@ def _get_find_sql(
 
 
 def _yield_entries(cur):
-    sources = {}
+    vis_sources = {}
     groups = {}
     for row in cur:
         entry = model.Entry.from_row(row)
-        entry.source = sources.get(entry.source_id)
+        entry.source = vis_sources.get(entry.source_id)
         if not entry.source:
-            entry.source = sources[entry.source_id] = model.Source.from_row(
-                row
-            )
+            entry.source = vis_sources[
+                entry.source_id
+            ] = model.Source.from_row(row)
         group_id = entry.source.group_id
         if group_id and not entry.source.group:
             entry.source.group = groups.get(group_id)
@@ -187,7 +186,9 @@ def _yield_entries(cur):
 
 def get_starred(db, user_id: int) -> model.Entries:
     """Get all starred entries for given user"""
-    assert user_id, "no user_id"
+    if not user_id:
+        raise ValueError("missing user_id")
+
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {"user_id": user_id})
         yield from _yield_entries(cur)
@@ -195,7 +196,9 @@ def get_starred(db, user_id: int) -> model.Entries:
 
 def get_history(db, user_id: int) -> model.Entries:
     """Get all entries manually read (read_mark=2) for given user"""
-    assert user_id, "no user_id"
+    if not user_id:
+        raise ValueError("missing user_id")
+
     with db.cursor() as cur:
         cur.execute(_GET_HISTORY_ENTRIES_SQL, {"user_id": user_id})
         yield from _yield_entries(cur)
@@ -205,7 +208,9 @@ def get_total_count(
     db, user_id: int, source_id=None, group_id=None, unread=True
 ) -> int:
     """Get number of read/all entries for user/source/group"""
-    assert user_id or source_id or group_id
+    if not user_id and not source_id and not group_id:
+        raise ValueError("missing user_id/source_id/group_id")
+
     args = {
         "group_id": group_id,
         "source_id": source_id,
@@ -303,23 +308,24 @@ def find_fulltext(
     else:
         sql += " and e.user_id=%(user_id)s "
     sql += " order by e.id"
+
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            source_id = entry.source_id  # type: int
-            entry.source = user_sources.get(source_id)
+            e_source_id = entry.source_id  # type: int
+            entry.source = user_sources.get(e_source_id)
             if not entry.source:
-                entry.source = user_sources[source_id] = model.Source.from_row(
-                    row
-                )
-                group_id = entry.source.group_id
-                entry.source.group = user_groups.get(group_id)
+                entry.source = user_sources[
+                    e_source_id
+                ] = model.Source.from_row(row)
+                e_group_id = entry.source.group_id
+                entry.source.group = user_groups.get(e_group_id)
                 if not entry.source.group:
                     entry.source.group = user_groups[
-                        group_id
+                        e_group_id
                     ] = model.SourceGroup.from_row(row)
             yield entry
 
@@ -360,7 +366,9 @@ from entries
 
 
 def get(db, id_=None, oid=None, with_source=False, with_group=False):
-    assert id_ is not None or oid is not None
+    if not id_ and oid is None:
+        raise ValueError("missing id/oid")
+
     with db.cursor() as cur:
         if id_ is not None:
             sql = _GET_ENTRY_SQL + "where id=%(id)s"
@@ -485,7 +493,9 @@ def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
 def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
     """Change star mark for given entry"""
     star = 1 if star else 0
-    _LOG.info("mark_star entry_id=%r,star=%r", entry_id, star)
+    _LOG.info(
+        "mark_star user_id=%d, entry_id=%r,star=%r", user_id, entry_id, star
+    )
     with db.cursor() as cur:
         cur.execute(
             "update entries set star_mark=%s where id=%s and star_mark=%s",
@@ -500,7 +510,9 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
-    assert source_id
+    if not source_id:
+        raise ValueError("missing source_id")
+
     with db.cursor() as cur:
         result = set()  # type: ty.Set[str]
         for idx in range(0, len(oids), 100):
@@ -529,9 +541,11 @@ def mark_read(
     db, user_id: int, entry_id=None, min_id=None, max_id=None, read=1, ids=None
 ):
     """Change read mark for given entry"""
-    assert (entry_id or max_id or ids) and user_id
+    if not (entry_id or (user_id and (max_id or ids))):
+        raise ValueError("missing entry_id/max_id/ids/user")
+
     _LOG.debug(
-        "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, " "user_id=%r",
+        "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, user_id=%r",
         entry_id,
         min_id,
         max_id,

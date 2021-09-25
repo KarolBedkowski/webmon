@@ -16,7 +16,6 @@ from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 
-
 _LOG = logging.getLogger(__name__)
 __all__ = (
     "UnknownFilterException",
@@ -28,16 +27,19 @@ __all__ = (
 
 
 def _load_filters():
-    from . import html2text
-    from . import strip
-    from . import diff
-    from . import grep
-    from . import history
-    from . import join
-    from . import sort
-    from . import wrap
-    from . import split_re
-    from . import score
+    # pylint: disable=unused-import,import-outside-toplevel
+    from . import (
+        diff,
+        grep,
+        history,
+        html2text,
+        join,
+        score,
+        sort,
+        split_re,
+        strip,
+        wrap,
+    )
 
     try:
         from . import split_text

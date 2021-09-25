@@ -9,11 +9,10 @@
 """
 Access & manage users in db
 """
-import typing as ty
 import logging
+import typing as ty
 
 from webmon2 import model
-
 
 _LOG = logging.getLogger(__name__)
 

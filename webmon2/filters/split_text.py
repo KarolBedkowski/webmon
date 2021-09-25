@@ -11,13 +11,15 @@ Filters for splitting input text into many entries
 
 """
 import io
-import typing as ty
 import logging
+import typing as ty
 
-from lxml import etree
 from cssselect import GenericTranslator, SelectorError
+import defusedxml.ElementTree as etree
 
-from webmon2 import model, common
+# from lxml import etree
+
+from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 
@@ -61,8 +63,8 @@ class GetElementsByCss(AbstractFilter):
         sel = self._conf["sel"]
         try:
             self._expression = GenericTranslator().css_to_xpath(sel)
-        except SelectorError:
-            raise ValueError("Invalid CSS selector for filtering")
+        except SelectorError as err:
+            raise ValueError("Invalid CSS selector for filtering") from err
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         yield from _get_elements_by_xpath(entry, self._expression)
@@ -74,7 +76,7 @@ class GetElementsByXpath(AbstractFilter):
     name = "get-elements-by-xpath"
     short_info = "Extract elements by xpath"
     long_info = (
-        "Search and extract elements from html/xml content " "by given xpath"
+        "Search and extract elements from html/xml content by given xpath"
     )
     params = [
         common.SettingDef("xpath", "selector", required=True, multiline=True),

@@ -7,14 +7,27 @@
 # Distributed under terms of the GPLv3 license.
 
 """
+Filter that join many entries into one.
 """
 
 import typing as ty
+from functools import reduce
 
 from webmon2 import model
+
 from ._abstract import AbstractFilter
 
 _ = ty
+
+
+def _join_entries(
+    first_entry: model.Entry, next_entry: model.Entry
+) -> model.Entry:
+    first_entry.content = (
+        (first_entry.content or "") + "\n\n" + (next_entry.content or "")
+    )
+    first_entry.status = "new"
+    return first_entry
 
 
 class Join(AbstractFilter):
@@ -23,7 +36,7 @@ class Join(AbstractFilter):
     name = "join"
     short_info = "Join elements"
     long_info = (
-        "Join content from all elements loaded by source to one " "element"
+        "Join content from all elements loaded by source to one element"
     )
 
     def filter(
@@ -32,14 +45,7 @@ class Join(AbstractFilter):
         prev_state: model.SourceState,
         curr_state: model.SourceState,
     ) -> model.Entries:
-        try:
-            first_entry = next(entries)
-        except StopIteration:
-            return
-        for entry in entries:
-            first_entry.content = first_entry.content + "\n\n" + entry.content
-            first_entry.status = "new"
-        yield first_entry
+        yield reduce(_join_entries, entries)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass
