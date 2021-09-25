@@ -10,10 +10,10 @@ Licence: GPLv2+
 
 import argparse
 import importlib.util
-import sys
 import locale
 import logging
 import os.path
+import sys
 import typing as ty
 
 from werkzeug.serving import is_running_from_reloader

@@ -16,7 +16,8 @@ import typing as ty
 from flask import Blueprint, abort, render_template, request, session
 
 from webmon2 import database
-from webmon2.web import get_db
+
+from . import _commons as c
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -25,7 +26,7 @@ BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 @BP.route("/<int:entry_id>")
 def entry(entry_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     entry_ = database.entries.get(
         db, entry_id, with_source=True, with_group=True
@@ -55,7 +56,7 @@ def entry(entry_id):
 
 @BP.route("/mark/read", methods=["POST"])
 def entry_mark_read_api():
-    db = get_db()
+    db = c.get_db()
     entry_id = int(request.form["entry_id"])
     state = request.form["value"]
     user_id = session["user"]
@@ -68,7 +69,7 @@ def entry_mark_read_api():
 
 @BP.route("/mark/star", methods=["POST"])
 def entry_mark_star_api():
-    db = get_db()
+    db = c.get_db()
     entry_id = int(request.form["entry_id"])
     user_id = session["user"]
     state = request.form["value"]

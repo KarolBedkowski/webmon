@@ -30,6 +30,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 
+from . import _commons as c
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -187,10 +189,7 @@ def _check_csrf_token():
 
 
 def _count_unread(user_id: int):
-    # pylint: disable=import-outside-toplevel
-    from webmon2.web import get_db
-
-    db = get_db()
+    db = c.get_db()
     unread = database.entries.get_total_count(db, user_id, unread=True)
     g.entries_unread_count = unread
 

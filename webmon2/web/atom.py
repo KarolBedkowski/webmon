@@ -21,7 +21,8 @@ from datetime import datetime
 from flask import Blueprint, Response, abort, request, url_for
 
 from webmon2 import database
-from webmon2.web import get_db
+
+from . import _commons as c
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("atom", __name__, url_prefix="/atom")
@@ -90,7 +91,7 @@ def group(key):
     if key == "off":
         return abort(404)
 
-    db = get_db()
+    db = c.get_db()
 
     try:
         grp = database.groups.get_by_feed(db, key)

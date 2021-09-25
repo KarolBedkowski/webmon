@@ -29,7 +29,8 @@ from flask import (
 )
 
 from webmon2 import database
-from webmon2.web import get_db
+
+from . import _commons as c
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ BP = Blueprint("root", __name__, url_prefix="/")
 
 @BP.route("/")
 def index():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     if database.settings.get_value(
         db, "start_at_unread_group", user_id, False
@@ -52,7 +53,7 @@ def index():
 
 @BP.route("/sources")
 def sources():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     status = request.args.get("status", "all")
     return render_template(
@@ -64,7 +65,7 @@ def sources():
 
 @BP.route("/sources/refresh")
 def sources_refresh():
-    db = get_db()
+    db = c.get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
     flash(f"{updated} sources mark to refresh")
@@ -75,7 +76,7 @@ def sources_refresh():
 
 @BP.route("/sources/refresh/errors")
 def sources_refresh_err():
-    db = get_db()
+    db = c.get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
     flash(f"{updated} sources with errors mark to refresh")
@@ -84,7 +85,7 @@ def sources_refresh_err():
 
 @BP.route("/groups")
 def groups():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     return render_template(
         "groups.html", groups=database.groups.get_all(db, user_id)
@@ -149,7 +150,7 @@ def manifest_json():
 
 @BP.route("/binary/<datahash>")
 def binary(datahash):
-    db = get_db()
+    db = c.get_db()
     data_content_type = database.binaries.get(db, datahash, session["user"])
     if not data_content_type:
         return abort(404)

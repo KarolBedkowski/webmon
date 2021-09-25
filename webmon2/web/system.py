@@ -33,7 +33,9 @@ from flask import (
 )
 
 from webmon2 import common, database, imp_exp, model, opml, security
-from webmon2.web import forms, get_db
+
+from . import _commons as c
+from . import forms
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")
@@ -46,7 +48,7 @@ def sett_index():
 
 @BP.route("/settings/globals", methods=["POST", "GET"])
 def sett_globals():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     settings = list(database.settings.get_all(db, user_id))
     form = forms.FieldsForm(
@@ -69,7 +71,7 @@ def sett_globals():
 
 @BP.route("/settings/user", methods=["POST", "GET"])
 def sett_user():
-    db = get_db()
+    db = c.get_db()
     user = database.users.get(db, id_=session["user"])
 
     if request.method == "POST":
@@ -106,7 +108,7 @@ def sett_user_totp_del():
     if not security.otp_available():
         return abort(404)
 
-    db = get_db()
+    db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     if not user.totp:
         return abort(400)
@@ -120,7 +122,7 @@ def sett_user_totp_del():
 
 @BP.route("/settings/user/totp", methods=["GET"])
 def sett_user_totp_get():
-    db = get_db()
+    db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     if user.totp:
         return abort(400)
@@ -149,7 +151,7 @@ def sett_user_totp_post():
     if not secret:
         return abort(400)
 
-    db = get_db()
+    db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     if user.totp:
         return abort(400)
@@ -177,7 +179,7 @@ def sett_data():
 
 @BP.route("/settings/data/export")
 def sett_data_export():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     content = imp_exp.dump_export(db, user_id)
     headers = {"Content-Disposition": "attachment; filename=dump.json"}
@@ -186,7 +188,7 @@ def sett_data_export():
 
 @BP.route("/settings/data/export/opml")
 def sett_data_export_opml():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     content = opml.dump_data(db, user_id)
     headers = {"Content-Disposition": "attachment; filename=dump.opml"}
@@ -205,7 +207,7 @@ def sett_data_import():
         flash("No file to import", "error")
         return redirect(url_for("system.sett_data"))
 
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     try:
         imp_exp.dump_import(db, user_id, data)
@@ -229,7 +231,7 @@ def sett_data_import_opml():
         flash("No file to import", "error")
         return redirect(url_for("system.sett_data"))
 
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     try:
         opml.load_data(db, data, user_id)
@@ -244,7 +246,7 @@ def sett_data_import_opml():
 @BP.route("/settings/data/manipulation/mark_all_read")
 def sett_data_mark_all_read():
     user_id = session["user"]
-    db = get_db()
+    db = c.get_db()
     updated = database.entries.mark_all_read(db, user_id)
     db.commit()
     flash(f"{updated} entries mark read")
@@ -254,7 +256,7 @@ def sett_data_mark_all_read():
 @BP.route("/settings/data/manipulation/mark_all_read_y")
 def sett_data_mark_all_old_read():
     user_id = session["user"]
-    db = get_db()
+    db = c.get_db()
     max_date = datetime.date.today() - datetime.timedelta(days=1)
     updated = database.entries.mark_all_read(db, user_id, max_date)
     db.commit()
@@ -265,7 +267,7 @@ def sett_data_mark_all_old_read():
 @BP.route("/settings/scoring", methods=["GET", "POST"])
 def sett_scoring():
     user_id = session["user"]
-    db = get_db()
+    db = c.get_db()
     if request.method == "POST":
         scs = [
             model.ScoringSett(
@@ -291,7 +293,7 @@ def sett_sys_users():
     if not session["user_admin"]:
         abort(403)
 
-    db = get_db()
+    db = c.get_db()
     users = database.users.get_all(db)
     return render_template("system/sys_users.html", users=users)
 
@@ -302,7 +304,7 @@ def sett_sys_user(user_id: int = None):
     if not session["user_admin"]:
         abort(403)
 
-    db = get_db()
+    db = c.get_db()
     if user_id:
         user = database.users.get(db, user_id)
         if not user:
@@ -352,7 +354,7 @@ def sett_sys_user_delete(user_id: int):
         # can't delete myself
         abort(401)
 
-    db = get_db()
+    db = c.get_db()
     user = database.users.get(db, user_id)
     if not user:
         flash("User not found")

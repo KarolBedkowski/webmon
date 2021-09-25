@@ -25,9 +25,8 @@ from flask import (
 )
 
 from webmon2 import database, filters, model, sources
-from webmon2.web import _commons as c
-from webmon2.web import get_db
 
+from . import _commons as c
 from . import forms
 
 _ = ty
@@ -37,7 +36,7 @@ BP = Blueprint("source", __name__, url_prefix="/source")
 
 @BP.route("/<int:source_id>/refresh")
 def source_refresh(source_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     database.sources.refresh(db, user_id, source_id=source_id)
     db.commit()
@@ -47,7 +46,7 @@ def source_refresh(source_id):
 
 @BP.route("/<int:source_id>/delete")
 def source_delete(source_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
@@ -66,7 +65,7 @@ def source_new():
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])
 @BP.route("/new/<kind>", methods=["POST", "GET"])
 def source_edit(source_id=None, kind=None):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     if source_id:
         source = database.sources.get(
@@ -123,7 +122,7 @@ def source_edit(source_id=None, kind=None):
 @BP.route("/<int:source_id>/entries/<mode>")
 @BP.route("/<int:source_id>/entries/<mode>/<int:page>")
 def source_entries(source_id, mode="unread", page=0):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(
         db, source_id, with_group=True, user_id=user_id
@@ -159,7 +158,7 @@ def source_entries(source_id, mode="unread", page=0):
 
 @BP.route("/<int:source_id>/mark/read")
 def source_mark_read(source_id):
-    db = get_db()
+    db = c.get_db()
     min_id = int(request.args.get("min_id", -1))
     max_id = int(request.args["max_id"])
     user_id = session["user"]
@@ -192,7 +191,7 @@ def source_mark_read(source_id):
 
 @BP.route("/<int:source_id>/filters")
 def source_filters(source_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
@@ -216,7 +215,7 @@ def source_filter_add(source_id):
 
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])
 def source_filter_edit(source_id, idx):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
@@ -287,7 +286,7 @@ def _save_filter(db, source_id, idx, conf):
 
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")
 def source_filter_move(source_id, idx, move):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     database.sources.move_filter(db, user_id, source_id, idx, move)
     db.commit()
@@ -296,7 +295,7 @@ def source_filter_move(source_id, idx, move):
 
 @BP.route("/<int:source_id>/filter/<int:idx>/delete")
 def source_filter_delete(source_id, idx):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     database.sources.delete_filter(db, user_id, source_id, idx)
     db.commit()
@@ -305,7 +304,7 @@ def source_filter_delete(source_id, idx):
 
 @BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
 def source_entry(source_id, mode, entry_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     src = database.sources.get(db, source_id, user_id=user_id)
     if not src:
@@ -339,7 +338,7 @@ def source_entry(source_id, mode, entry_id):
 
 @BP.route("/source/<int:source_id>/next_unread")
 def source_next_unread(source_id):
-    db = get_db()
+    db = c.get_db()
     source_id = database.sources.find_next_unread(db, session["user"])
     if source_id:
         return redirect(url_for("source.source_entries", source_id=source_id))

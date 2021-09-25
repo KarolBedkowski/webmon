@@ -24,8 +24,8 @@ from flask import (
 )
 
 from webmon2 import database
-from webmon2.web import _commons as c
-from webmon2.web import get_db
+
+from . import _commons as c
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def entries(mode, page):
     if mode not in ("unread", "all"):
         raise ValueError("invalid mode")
 
-    db = get_db()
+    db = c.get_db()
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
     unread = mode == "unread"
     user_id = session["user"]
@@ -61,7 +61,7 @@ def entries(mode, page):
 
 @BP.route("/starred")
 def entries_starred():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     entries_ = list(database.entries.get_starred(db, user_id))
     return render_template("starred.html", entries=entries_)
@@ -69,7 +69,7 @@ def entries_starred():
 
 @BP.route("/history")
 def entries_history():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     entries_ = list(database.entries.get_history(db, user_id))
     return render_template("history.html", entries=entries_)
@@ -107,7 +107,7 @@ def _get_req_group(db, user_id):
 
 @BP.route("/search")
 def entries_search():
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     query = request.args.get("query")
     query = query.strip() if query else ""
@@ -145,7 +145,7 @@ def entries_search():
 
 @BP.route("/<mode>/mark/read")
 def entries_mark_read(mode):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     r_ids = request.args.get("ids")
     ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
