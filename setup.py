@@ -17,28 +17,8 @@ CLASSIFIERS = [
     "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 
-REQUIRES = [
-    "setuptools",
-    "requests",
-    "markdown2",
-    "lxml",
-    "PyYAML",
-    "html2text",
-    "feedparser",
-    "github3.py",
-    "flask",
-    "cssselect",
-    "prometheus_client",
-    "Werkzeug",
-    "gevent",
-    "readability-lxml",
-    "psycopg2",
-    "python-dateutil",
-    "python-gitlab",
-    "pyotp",
-    "pyqrcode",
-    "defusedxml",
-]
+with open("requirements.txt", "r", encoding="utf-8") as freq:
+    REQUIRES = [line for line in freq if line and not line.startswith("#")]
 
 
 def get_data_files():
