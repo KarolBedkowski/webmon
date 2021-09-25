@@ -31,46 +31,30 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from webmon2 import database, worker
 
 from . import _commons as c
+from . import (
+    _filters,
+    atom,
+    entries,
+    entry,
+    group,
+    root,
+    security,
+    source,
+    system,
+)
 
 _LOG = logging.getLogger(__name__)
 
 
-# pylint: disable=import-outside-toplevel
 def _register_blueprints(app):
-    from . import _filters
-
     _filters.register(app)
-
-    from . import root
-
     app.register_blueprint(root.BP)
-
-    from . import entries
-
     app.register_blueprint(entries.BP)
-
-    from . import source
-
     app.register_blueprint(source.BP)
-
-    from . import group
-
     app.register_blueprint(group.BP)
-
-    from . import entry
-
     app.register_blueprint(entry.BP)
-
-    from . import system
-
     app.register_blueprint(system.BP)
-
-    from . import security
-
     app.register_blueprint(security.BP)
-
-    from . import atom
-
     app.register_blueprint(atom.BP)
 
 
@@ -87,7 +71,7 @@ _CSP = (
 )
 
 
-def create_app(debug, root, conf):
+def create_app(debug, web_root, conf):
     template_folder = os.path.join(os.path.dirname(__file__), "templates")
     # create and configure the app
     app = Flask(
@@ -101,7 +85,7 @@ def create_app(debug, root, conf):
         SECURITY_PASSWORD_SALT=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf",
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="Strict",
-        APPLICATION_ROOT=root,
+        APPLICATION_ROOT=web_root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
     )
     app.config["app_conf"] = conf
@@ -213,12 +197,12 @@ def simple_not_found(_env, resp):
 
 
 def start_app(args, conf):
-    root = conf.get("web", "root")
-    app = create_app(args.debug, root, conf)
+    web_root = conf.get("web", "root")
+    app = create_app(args.debug, web_root, conf)
     host = conf.get("web", "address")
     port = conf.getint("web", "port")
 
-    if root != "/":
+    if web_root != "/":
         app.wsgi_app = DispatcherMiddleware(
             simple_not_found, {root: app.wsgi_app}
         )
