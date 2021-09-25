@@ -58,3 +58,23 @@ class DymmySource(AbstractSource):
         )
         new_state.set_state("last_check", datetime.datetime.now().timestamp())
         return new_state, entries
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        return {
+            "text": source.name,
+            "title": source.name,
+            "type": cls.name,
+            "xmlUrl": "dummy://",
+            "htmlUrl": "dummy://",
+        }
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        name = opml_node.get("text") or opml_node["title"]
+        if not name:
+            raise ValueError("missing text/title")
+
+        return model.Source(kind=cls.name, name=name, settings={})
