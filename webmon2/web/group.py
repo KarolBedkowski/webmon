@@ -25,8 +25,7 @@ from flask import (
 )
 
 from webmon2 import common, database, model
-from webmon2.web import _commons as c
-
+from . import _commons as c
 from . import forms
 
 _ = ty
