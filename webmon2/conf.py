@@ -24,7 +24,7 @@ database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
 address = 127.0.0.1
 port = 5000
 root = /
-minify = true
+minify = false
 
 [smtp]
 enabled = False
