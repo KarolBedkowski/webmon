@@ -387,6 +387,7 @@ WHERE source_id=%(source_id)s
 """
 
 
+# pylint: disable=too-many-arguments
 def mark_read(
     db,
     user_id: int,

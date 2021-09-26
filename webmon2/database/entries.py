@@ -234,6 +234,7 @@ def get_total_count(
         return result
 
 
+# pylint: disable=too-many-arguments
 def find(
     db,
     user_id: int,
@@ -278,6 +279,7 @@ def find(
             yield entry
 
 
+# pylint: disable=too-many-arguments
 def find_fulltext(
     db,
     user_id: int,
@@ -537,6 +539,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     return set(new_oids)
 
 
+# pylint: disable=too-many-arguments
 def mark_read(
     db, user_id: int, entry_id=None, min_id=None, max_id=None, read=1, ids=None
 ):

@@ -26,7 +26,6 @@ from .abstract import AbstractSource
 # from urllib3 import poolmanager
 
 
-
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
 _JAMENDO_ICON = (

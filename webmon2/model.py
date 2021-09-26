@@ -5,6 +5,7 @@
 # Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
+# pylint: disable=too-many-arguments
 
 """
 Models

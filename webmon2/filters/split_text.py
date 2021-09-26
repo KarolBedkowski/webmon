@@ -24,7 +24,6 @@ from ._abstract import AbstractFilter
 # from lxml import etree
 
 
-
 _ = ty
 _LOG = logging.getLogger(__name__)
 

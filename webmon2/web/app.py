@@ -22,11 +22,10 @@ try:
 except ImportError:
     minify = None
 
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
-
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 
