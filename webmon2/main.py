@@ -91,6 +91,14 @@ def _parse_options():
         "--filename",
         help="migrate sources from file",
         dest="migrate_filename",
+        required=True,
+    )
+    parser_mig.add_argument(
+        "-u",
+        "--user",
+        help="target user login",
+        dest="migrate_user",
+        required=True,
     )
 
     parser_users = subparsers.add_parser("users", help="manage users")
