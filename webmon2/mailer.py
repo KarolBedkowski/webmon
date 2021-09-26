@@ -227,7 +227,7 @@ def _send_mail(conf, content, app_conf, user: model.User):
 
 def _encrypt(conf, message: str) -> str:
     with subprocess.Popen(
-        ["gpg", "-e", "-a", "-r", conf["mail_to"]],
+        ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
