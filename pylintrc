@@ -49,7 +49,7 @@ good-names=i,j,k,ex,Run,_,db,err,ok,x,y,id
 # checks for similarities and duplicated code. This computation may be
 # memory / CPU intensive, so you should disable it if you experiments some
 # problems.
-# 
+#
 [SIMILARITIES]
 
 # Minimum lines number of a similarity.
@@ -60,4 +60,3 @@ ignore-comments=yes
 
 # Ignore docstrings when computing similarities.
 ignore-docstrings=yes
-

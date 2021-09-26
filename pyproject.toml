@@ -58,4 +58,4 @@ line_length = 79
 webmon2 = "webmon2.main:main"
 
 [tool.bandit]
-skips = ["B101"]
+skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
