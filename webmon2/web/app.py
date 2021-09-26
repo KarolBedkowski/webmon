@@ -42,6 +42,7 @@ from . import (
     system,
 )
 
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -210,7 +211,7 @@ def start_app(args, conf):
 
     if web_root != "/":
         app.wsgi_app = DispatcherMiddleware(
-            simple_not_found, {root: app.wsgi_app}
+            simple_not_found, {web_root: app.wsgi_app}
         )
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0

@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.4 2021-09-26
+
+### Bug Fixes
+
+- Not working gui when web_root != '/'
+
+
 ## 2.5.3 2021-09-26
 
 ### Bug Fixes
