@@ -268,6 +268,13 @@ def _check_libraries():
     except ImportError:
         _LOG.warning("missing github3 library")
 
+    try:
+        import flask_minify
+
+        _LOG.debug("flask_minify version: %s", flask_minify.__version__)
+    except ImportError:
+        _LOG.warning("missing optional flask_minify library")
+
 
 def main():
     """Main function."""

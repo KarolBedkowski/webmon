@@ -18,6 +18,11 @@ import time
 from flask import Flask, abort, g, redirect, request, session, url_for
 
 try:
+    from flask_minify import minify
+except ImportError:
+    minify = None
+
+try:
     from werkzeug.wsgi import DispatcherMiddleware
 except ImportError:
     from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -79,6 +84,13 @@ def create_app(debug, web_root, conf):
         instance_relative_config=True,
         template_folder=template_folder,
     )
+
+    if conf.getboolean("web", "minify"):
+        if minify:
+            minify(app=app, html=True, js=True, cssless=True)
+        else:
+            _LOG.warning("minifi enabled but flask_minifi is not installed!")
+
     app.config.from_mapping(
         ENV="debug" if debug else "production",
         SECRET_KEY=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf\xdf\xcc",

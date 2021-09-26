@@ -18,3 +18,4 @@ python-gitlab>=2.10.0,<3.0.0
 pyotp>=2.6.0,<3.0.0
 pyqrcode>=1.2.0,<2.0.0
 defusedxml>=0.6.0,<1.0.0
+Flask-Minify>=0.32,<1.0.0
