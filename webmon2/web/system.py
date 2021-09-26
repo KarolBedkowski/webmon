@@ -16,9 +16,11 @@ from io import BytesIO
 
 try:
     import pyqrcode
+
+    _HAS_PYQRCODE = True
 except ImportError:
     print("pyqrcode not available")
-    pyqrcode = None
+    _HAS_PYQRCODE = False
 
 from flask import (
     Blueprint,
@@ -138,7 +140,7 @@ def sett_user_totp_get():
         "system/user.totp.html",
         totp=totp,
         otp_url=otp_url,
-        qrcode_available=pyqrcode is not None,
+        qrcode_available=_HAS_PYQRCODE,
     )
 
 
@@ -369,7 +371,7 @@ def sett_sys_user_delete(user_id: int):
 
 @BP.route("/qrcode")
 def sys_qrcode():
-    if pyqrcode is None:
+    if not _HAS_PYQRCODE:
         return abort(404)
 
     url = request.args["url"]
