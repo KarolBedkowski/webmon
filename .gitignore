@@ -20,3 +20,4 @@ Doxyfile
 Makefile
 /log
 /.gtm/
+poetry.lock
