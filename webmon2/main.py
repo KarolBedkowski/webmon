@@ -212,6 +212,7 @@ def _load_user_classes():
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[modname] = module
                 spec.loader.exec_module(module)
+
             except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
@@ -316,6 +317,7 @@ def main():
         else:
             _LOG.info("update schema...")
             database.DB.initialize(app_conf.get("main", "database"), True)
+
         return
 
     database.DB.initialize(app_conf.get("main", "database"), False)

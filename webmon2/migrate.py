@@ -26,6 +26,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
     if not os.path.isfile(filename):
         _LOG.error("loading sources file error: '%s' not found", filename)
         return None
+
     try:
         with open(filename, encoding="UTF-8") as fin:
             inps = [
@@ -37,14 +38,19 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
             if not inps:
                 _LOG.error(
                     "loading sources error: no valid/enabled sources found"
+                    "file: %s",
+                    filename,
                 )
+
             return inps
+
     except IOError as err:
         _LOG.error("loading sources from file %s error: %s", filename, err)
     except yaml.error.YAMLError as err:
         _LOG.error(
             "loading sources from file %s - invalid YAML: %s", filename, err
         )
+
     return None
 
 
@@ -98,14 +104,16 @@ _MIGR_FUNCS = {
 }
 
 
+# TODO: select user
 def migrate(args):
     filename = args.migrate_filename
     _LOG.info("migration %s start", filename)
     with database.DB.get() as db:
         users = list(database.users.get_all(db))
         if not users:
-            _LOG.error("error migrating - no users")
+            _LOG.error("error migrating - no users in database")
             return
+
         user_id = users[0].id
         group_id = database.groups.get_all(db, user_id)[0].id
 
@@ -118,14 +126,17 @@ def migrate(args):
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("error migrating %r: %s", inp, err)
                     continue
+
                 if not source:
                     _LOG.error("wrong source: %s", source)
                     continue
+
                 source.filters = inp.get("filters")
                 source.group_id = group_id
                 source.user_id = user_id
-                _LOG.info("new source: %s", source)
+                _LOG.info("new source: %r", source)
                 database.sources.save(db, source)
+
         db.commit()
 
     _LOG.info("migration %s finished", filename)

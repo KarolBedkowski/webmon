@@ -445,19 +445,23 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def validate(self):
         if not isinstance(self.updated, datetime):
-            _LOG.error("wrong entry.updated:  %r (%s)", self.updated, self)
+            _LOG.error("wrong entry.updated:  %r (%r)", self.updated, self)
+
         if not isinstance(self.created, datetime):
-            _LOG.error("wrong entry.created:  %r (%s)", self.created, self)
+            _LOG.error("wrong entry.created:  %r (%r)", self.created, self)
+
         if not self.title:
             _LOG.error("missing title %s", self)
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
         if not self.icon_data:
             return self.icon
+
         try:
             self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
         except Exception as err:  # pylint: disable=broad-except
             _LOG.error("hasing %r error: %s", self.icon_data, err)
+
         return self.icon
 
     def to_row(self) -> ty.Dict[str, ty.Any]:

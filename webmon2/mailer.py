@@ -54,7 +54,7 @@ def process(db, user: model.User, app_conf):
     try:
         content = "".join(_process_groups(db, conf, user.id))
     except Exception as err:  # pylint: disable=broad-except
-        _LOG.error("prepare mail error: %s", err)
+        _LOG.error("prepare mail for user %d error: %s", user.id, err)
         return
 
     if content and not _send_mail(conf, content, app_conf, user):
@@ -212,7 +212,7 @@ def _send_mail(conf, content, app_conf, user: model.User):
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
         _LOG.debug("mail send")
     except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
-        _LOG.error("smtp connection error: %s", err)
+        _LOG.error("smtp connection error: %s; user %d", err, user.id)
         return False
     except Exception:  # pylint: disable=broad-except
         _LOG.exception("send mail error")
@@ -234,7 +234,11 @@ def _encrypt(conf, message: str) -> str:
     ) as subp:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:
-            _LOG.error("EMailOutput: encrypt error: %s", stderr)
+            _LOG.error(
+                "EMailOutput: encrypt error: %s; mail_to: %r",
+                stderr,
+                conf["mail_to"],
+            )
             return stderr.decode("utf-8")
 
         return stdout.decode("utf-8")
