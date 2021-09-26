@@ -35,6 +35,10 @@ starttls = false
 login =
 password =
 from = webmon2 <webmon2@localhost>
+
+[metrics]
+# comma separated accepted client ip
+allow_from = 127.0.0.1
 """
 
 

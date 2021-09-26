@@ -26,6 +26,7 @@ from flask import (
     request,
     session,
     url_for,
+    current_app,
 )
 
 from webmon2 import database
@@ -92,8 +93,22 @@ def groups():
     )
 
 
+_METRICS_REMOTES = None
+
+
 @BP.route("/metrics")
 def metrics():
+    global _METRICS_REMOTES  # pylint: disable=global-statement
+    if _METRICS_REMOTES is None:
+        conf = current_app.config["app_conf"]
+        _METRICS_REMOTES = [
+            ip.strip()
+            for ip in conf.get("metrics", "allow_from", fallback="").split(",")
+        ]
+
+    if request.remote_addr not in _METRICS_REMOTES:
+        abort(401)
+
     return Response(
         prometheus_client.generate_latest(),
         mimetype="text/plain; version=0.0.4; charset=utf-8",
