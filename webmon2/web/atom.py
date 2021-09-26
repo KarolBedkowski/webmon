@@ -45,10 +45,9 @@ def gen_item(
     link: ty.Optional[str] = None,
     description: ty.Optional[str] = None,
     comments: ty.Optional[str] = None,
-    pub_date: ty.Optional[str] = None,
+    args: ty.Optional[ty.Dict[str, ty.Any]] = None,
 ) -> ItemElement:
-
-    args = {k: v for k, v in locals().items() if v is not None}
+    args = args or {}
     item = DEFAULT_ETREE.Element("item")
     for tag_name, tag_value in args.items():
         add_subelement_with_text(item, tag_name, tag_value)
@@ -60,16 +59,10 @@ def start_rss(
     title: str,
     link: str,
     description: str,
-    pub_date: ty.Optional[str] = None,
-    last_build_date: ty.Optional[str] = None,
     items: ty.Optional[ty.Iterable[ItemElement]] = None,
+    args: ty.Optional[ty.Dict[str, ty.Any]] = None,
 ) -> DEFAULT_ETREE.Element:
-    args = {
-        k: v
-        for k, v in locals().items()
-        if v is not None and k not in ("items", "title", "link", "description")
-    }
-
+    args = args or {}
     rss = DEFAULT_ETREE.Element("rss", version="2.0")
     channel = DEFAULT_ETREE.SubElement(rss, "channel")
 
@@ -126,9 +119,11 @@ def group(key):
                 title=entry.title or entry.grp.name,
                 link=url,
                 description=body,
-                pub_date=(
-                    entry.updated or entry.created or datetime.now()
-                ).isoformat(),
+                args={
+                    "pubDate": (
+                        entry.updated or entry.created or datetime.now()
+                    ).isoformat()
+                },
             )
         )
 
@@ -137,7 +132,7 @@ def group(key):
         description="Webmon2 feed for group " + grp.name,
         link=request.url,
         items=rss_items,
-        pub_date=updated.isoformat(),
+        args={"pubDate": updated.isoformat()},
     )
 
     response = Response(
