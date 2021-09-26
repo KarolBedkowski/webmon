@@ -22,16 +22,11 @@ try:
 except ImportError:
     minify = None
 
-try:
-    from werkzeug.wsgi import DispatcherMiddleware
-except ImportError:
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 
-# pylint: disable=ungrouped-imports
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 
