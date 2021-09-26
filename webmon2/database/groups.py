@@ -199,6 +199,7 @@ WHERE id=ANY(%(ids)s) AND read_mark=0 AND user_id=%(user_id)s
 """
 
 
+# pylint: disable=too-many-arguments
 def mark_read(
     db,
     user_id: int,

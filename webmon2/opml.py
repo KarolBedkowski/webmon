@@ -13,8 +13,8 @@ Import/export data in opml format.
 import itertools
 import logging
 
-from lxml.builder import E  # pylint: disable=no-name-in-module
 from defusedxml import ElementTree as etree
+from lxml.builder import E  # pylint: disable=no-name-in-module
 
 from webmon2 import database, model, sources
 

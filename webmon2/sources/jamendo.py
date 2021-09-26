@@ -19,11 +19,12 @@ import urllib.parse
 
 import requests
 
-# from urllib3 import poolmanager
-
 from webmon2 import common, model
 
 from .abstract import AbstractSource
+
+# from urllib3 import poolmanager
+
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
@@ -183,6 +184,16 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
         if not artist_id and not artist:
             yield ("artist_id", "artist name or id is required")
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
 
 def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
     for result in results:
@@ -267,6 +278,16 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
         artist = any(conf.get("artist") for conf in confs)
         if not artist_id and not artist:
             yield ("artist_id", "artist name or id is required")
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
 
 def _jamendo_track_format(source: model.Source, results) -> model.Entries:

@@ -89,6 +89,16 @@ class AbstractGitLabSource(AbstractSource):
             url += "/"
         return url + _FAVICON
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
 
 def _build_entry(source: model.Source, project, content: str) -> model.Entry:
     entry = model.Entry.for_source(source)
@@ -161,6 +171,16 @@ class GitLabCommits(AbstractGitLabSource):
         entry = _build_entry(self._source, project, content)
         entry.icon = new_state.icon
         return new_state, [entry]
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
 
 def _format_gl_commit_short(commit, _full_message: bool) -> str:
@@ -239,6 +259,16 @@ class GitLabTagsSource(AbstractGitLabSource):
         if not new_state.icon:
             new_state.set_icon(self._load_binary(self._get_favicon()))
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
 
 def _format_gl_tag(tag) -> str:
     res = tag.name
@@ -303,6 +333,16 @@ class GitLabReleasesSource(AbstractGitLabSource):
         for entry in entries:
             entry.icon = new_state.icon
         return new_state, entries
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
 
 def _build_gl_release_entry(

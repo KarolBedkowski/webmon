@@ -12,7 +12,10 @@ Common gui api functions
 import math
 import typing as ty
 
+from flask import g
+
 from webmon2 import model
+from webmon2.database import DB
 
 PAGE_LIMIT = 25
 
@@ -37,3 +40,10 @@ def preprate_entries_list(
         "last_page": last_page,
     }
     return info
+
+
+def get_db():
+    database = getattr(g, "_database", None)
+    if database is None:
+        database = g._database = DB.get()
+    return database

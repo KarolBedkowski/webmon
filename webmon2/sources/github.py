@@ -153,6 +153,16 @@ class GithubInput(AbstractSource, GitHubMixin):
         entry.icon = new_state.icon
         return new_state, [entry]
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
 
 def _format_gh_commit_short(commit, _full_message: bool) -> str:
     cmt = commit.commit
@@ -238,6 +248,16 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
     def _state_update_icon(self, new_state):
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
 
 def _filter_tags(tags, repository, min_date: datetime):
@@ -340,6 +360,16 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         for entry in entries:
             entry.icon = new_state.icon
         return new_state, entries
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
 
 def _build_gh_release_entry(

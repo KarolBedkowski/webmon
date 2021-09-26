@@ -10,10 +10,10 @@ Licence: GPLv2+
 
 import argparse
 import importlib.util
-import sys
 import locale
 import logging
 import os.path
+import sys
 import typing as ty
 
 from werkzeug.serving import is_running_from_reloader
@@ -38,7 +38,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.2"
+VERSION = "2.5.3"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -212,6 +212,7 @@ def _load_user_classes():
                 module = importlib.util.module_from_spec(spec)
                 sys.modules[modname] = module
                 spec.loader.exec_module(module)
+
             except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
@@ -268,6 +269,13 @@ def _check_libraries():
     except ImportError:
         _LOG.warning("missing github3 library")
 
+    try:
+        import flask_minify
+
+        _LOG.debug("flask_minify version: %s", flask_minify.__version__)
+    except ImportError:
+        _LOG.warning("missing optional flask_minify library")
+
 
 def main():
     """Main function."""
@@ -309,6 +317,7 @@ def main():
         else:
             _LOG.info("update schema...")
             database.DB.initialize(app_conf.get("main", "database"), True)
+
         return
 
     database.DB.initialize(app_conf.get("main", "database"), False)

@@ -22,7 +22,8 @@ from flask import (
 )
 
 from webmon2 import database, security
-from webmon2.web import get_db
+
+from . import _commons as c
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("sec", __name__, url_prefix="/sec")
@@ -40,7 +41,7 @@ def login():
     if request.method == "POST":
         flogin = request.form["login"]
         fpassword = request.form["password"]
-        db = get_db()
+        db = c.get_db()
         user = database.users.get(db, login=flogin)
         if (
             user
@@ -70,7 +71,7 @@ def login():
 @BP.route("/login/totp", methods=["POST", "GET"])
 def login_totp():
     if request.method == "POST":
-        db = get_db()
+        db = c.get_db()
         user = database.users.get(db, session["temp_user_id"])
         ftotp = request.form["otp"]
         if user and user.active and security.verify_totp(user.totp, ftotp):

@@ -21,7 +21,7 @@ Dependences
 * github3py (for GitHub api; pip install --pre github3.py)
 * cssselect & python3-lxml (for elements filtering)
 * readability-lxml
-* flask, Werkzeug, gevent
+* flask, Werkzeug, gevent and optional Flask_Minify
 * python-gitlab (for gitlab api; pip install python-gitlab)
 * pyotp, pyqrcode for TOTP 2FA
 

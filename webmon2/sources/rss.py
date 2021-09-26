@@ -57,10 +57,12 @@ class RssSource(AbstractSource):
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("source %d load error: %s", state.source_id, err)
             new_state, entries = state.new_error(str(err)), []
+
         if new_state.status != "error":
             if entries and new_state.icon:
                 for entry in entries:
                     entry.icon = new_state.icon
+
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -68,6 +70,7 @@ class RssSource(AbstractSource):
             new_state.next_update = max(
                 new_state.next_update or next_update, next_update
             )
+
         return new_state, entries
 
     def _load(
@@ -249,7 +252,7 @@ class RssSource(AbstractSource):
 def _fail_error(
     state: model.SourceState, doc, status: int
 ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
-    _LOG.error("load document error %s: %s", status, doc)
+    _LOG.error("load document error %d: state: %r %r", status, state, doc)
     summary = f"Loading page error: {status}"
     feed = doc.get("feed")
     if feed:

@@ -80,3 +80,30 @@ class FileSource(AbstractSource):
             return new_state, [entry]
         except IOError as err:
             return state.new_error(str(err)), []
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        return {
+            "text": source.name,
+            "title": source.name,
+            "type": cls.name,
+            "xmlUrl": "file://" + source.settings["filename"],
+            "htmlUrl": "file://" + source.settings["filename"],
+        }
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
+        if not url or not url.startswith("file://"):
+            raise ValueError("missing xmlUrl")
+
+        name = opml_node.get("text") or opml_node["title"]
+        if not name:
+            raise ValueError("missing text/title")
+
+        filename = url[7:]
+        return model.Source(
+            kind=cls.name, name=name, settings={"filename": filename}
+        )

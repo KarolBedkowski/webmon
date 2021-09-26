@@ -16,8 +16,10 @@ import socket
 
 try:
     import pyotp
+
+    _HAS_PYOTP = True
 except ImportError:
-    pyotp = None
+    _HAS_PYOTP = False
     print("pyotp module not found - TOTP unavailable!")
 
 
@@ -43,18 +45,18 @@ def verify_password(hashed, password):
 
 
 def otp_available():
-    return pyotp is not None
+    return _HAS_PYOTP
 
 
 def generate_totp():
-    if pyotp is None:
+    if not _HAS_PYOTP:
         raise NotAvaliable()
 
     return pyotp.random_base32()
 
 
 def generate_totp_url(secret, name):
-    if pyotp is None:
+    if not _HAS_PYOTP:
         raise NotAvaliable()
 
     my_name = "webmon2." + socket.gethostname()
@@ -64,7 +66,7 @@ def generate_totp_url(secret, name):
 
 
 def verify_totp(secret, totp):
-    if pyotp is None:
+    if not _HAS_PYOTP:
         raise NotAvaliable()
 
     if not secret:

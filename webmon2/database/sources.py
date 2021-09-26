@@ -294,7 +294,7 @@ def save_state(
             "delete from source_state where source_id=%s", (state.source_id,)
         )
         cur.execute(_INSERT_STATE_SQL, row)
-    if state.icon_data:
+    if state.icon_data and state.icon:
         content_type, data = state.icon_data
         binaries.save(db, user_id, content_type, state.icon, data)
     return state
@@ -387,6 +387,7 @@ WHERE source_id=%(source_id)s
 """
 
 
+# pylint: disable=too-many-arguments
 def mark_read(
     db,
     user_id: int,

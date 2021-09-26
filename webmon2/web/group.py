@@ -25,9 +25,8 @@ from flask import (
 )
 
 from webmon2 import common, database, model
-from webmon2.web import _commons as c
-from webmon2.web import get_db
 
+from . import _commons as c
 from . import forms
 
 _ = ty
@@ -37,7 +36,7 @@ BP = Blueprint("group", __name__, url_prefix="/group")
 
 @BP.route("/group/<int:group_id>/refresh")
 def refresh_group(group_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     marked = database.sources.refresh(db, user_id, group_id=group_id)
     db.commit()
@@ -48,7 +47,7 @@ def refresh_group(group_id):
 @BP.route("/group/new", methods=["GET", "POST"])
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
 def group_edit(group_id=0):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     if group_id:
         sgroup = database.groups.get(db, group_id, user_id)
@@ -76,7 +75,7 @@ def group_edit(group_id=0):
 
 @BP.route("/group/<int:group_id>/sources")
 def group_sources(group_id: int):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     group = database.groups.get(db, group_id, user_id)
     if not group:
@@ -97,7 +96,7 @@ def group_sources(group_id: int):
 @BP.route("/group/<int:group_id>/entries/<mode>")
 @BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
 def group_entries(group_id, mode="unread", page=0):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     sgroup = database.groups.get(db, group_id, user_id)
     if not sgroup:
@@ -131,7 +130,7 @@ def group_entries(group_id, mode="unread", page=0):
 
 @BP.route("/group/<int:group_id>/mark/read")
 def group_mark_read(group_id):
-    db = get_db()
+    db = c.get_db()
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
     user_id = session["user"]
@@ -163,7 +162,7 @@ def group_mark_read(group_id):
 
 @BP.route("/group/<int:group_id>/next_unread")
 def group_next_unread(group_id):
-    db = get_db()
+    db = c.get_db()
     # go to next unread group
     group_id = database.groups.get_next_unread_group(db, session["user"])
     _LOG.debug("next group: %r", group_id)
@@ -175,7 +174,7 @@ def group_next_unread(group_id):
 
 @BP.route("/group/<int:group_id>/delete")
 def group_delete(group_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     try:
         group_ = database.groups.get(db, group_id, user_id)
@@ -193,7 +192,7 @@ def group_delete(group_id):
 
 @BP.route("/group/<int:group_id>/entry/<mode>/<int:entry_id>")
 def group_entry(group_id, mode, entry_id):
-    db = get_db()
+    db = c.get_db()
     user_id = session["user"]
     group = database.groups.get(db, group_id, user_id)
     if not group:

@@ -5,6 +5,7 @@
 # Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
+# pylint: disable=too-many-arguments
 
 """
 Models
@@ -42,14 +43,14 @@ class SourceGroup:
     )
 
     def __init__(self, **args):
-        self.id = args.get("id")
-        self.name = args.get("name")
-        self.user_id = args.get("user_id")
-        self.feed = args.get("feed", "")
-        self.mail_report = args.get("mail_report")
+        self.id = args.get("id")  # type: int
+        self.name = args.get("name")  # type: str
+        self.user_id = args.get("user_id")  # type: int
+        self.feed = args.get("feed", "")  # type: str
+        self.mail_report = args.get("mail_report")  # type: int
 
-        self.unread = args.get("unread")
-        self.sources_count = args.get("sources_count")
+        self.unread = args.get("unread")  # type: bool
+        self.sources_count = args.get("sources_count")  # type: int
 
     def __str__(self):
         return common.obj2str(self)
@@ -94,17 +95,19 @@ class Source:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, **args):
-        self.id = args.get("id")
-        self.group_id = args.get("group_id")
-        self.kind = args.get("kind")
-        self.name = args.get("name")
-        self.interval = args.get("interval")
-        self.settings = args.get("settings")
-        self.filters = args.get("filters")
-        self.user_id = args.get("user_id")
-        self.status = args.get("status", 1)
-        self.mail_report = args.get("mail_report")
-        self.default_score = args.get("default_score")
+        self.id = args.get("id")  # type: int
+        self.group_id = args.get("group_id")  # type: int
+        self.kind = args.get("kind")  # type: str
+        self.name = args.get("name")  # type: str
+        self.interval = args.get("interval")  # type: str
+        self.settings = args.get("settings")  # type: ty.Dict[str, ty.Any]
+        self.filters = args.get(
+            "filters"
+        )  # type: ty.List[ty.Dict[str, ty.Any]]
+        self.user_id = args.get("user_id")  # type: int
+        self.status = args.get("status", 1)  # type: int
+        self.mail_report = args.get("mail_report")  # type: int
+        self.default_score = args.get("default_score")  # type: int
 
         self.group = None  # type: SourceGroup
         self.state = None
@@ -186,17 +189,25 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, **args):
-        self.source_id = args.get("source_id")
-        self.next_update = args.get("next_update")
-        self.last_update = args.get("last_update")
-        self.last_error = args.get("last_error")
-        self.error_counter = args.get("error_counter")
-        self.success_counter = args.get("success_counter")
-        self.status = args.get("status")
-        self.error = args.get("error")
-        self.state = args.get("state")
-        self.icon = args.get("icon")
-        self.icon_data = args.get("icon_data")
+        self.source_id = args.get("source_id")  # type: int
+        self.next_update = args.get(
+            "next_update"
+        )  # type: ty.Optional[datetime.datetime]
+        self.last_update = args.get(
+            "last_update"
+        )  # type: ty.Optional[datetime.datetime]
+        self.last_error = args.get(
+            "last_error"
+        )  # type: ty.Optional[datetime.datetime]
+        self.error_counter = args.get("error_counter")  # type: int
+        self.success_counter = args.get("success_counter")  # type: int
+        self.status = args.get("status")  # type: ty.Optional[str]
+        self.error = args.get("error")  # type: ty.Optional[str]
+        self.state = args.get(
+            "state"
+        )  # type: ty.Optional[ty.Dict[str, ty.Any]]
+        self.icon = args.get("icon")  # type: ty.Optional[str]
+        self.icon_data = args.get("icon_data")  # type: ty.Tuple[str, str]
 
     @staticmethod
     def new(source_id):
@@ -339,7 +350,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, id_=None, source_id=None):
-        self.id = id_  # type: ty.Optional[int]
+        self.id = id_  # type: int
         self.source_id = source_id  # type: int
         self.updated = None  # type: ty.Optional[datetime]
         self.created = None  # type: ty.Optional[datetime]
@@ -434,19 +445,23 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def validate(self):
         if not isinstance(self.updated, datetime):
-            _LOG.error("wrong entry.updated:  %r (%s)", self.updated, self)
+            _LOG.error("wrong entry.updated:  %r (%r)", self.updated, self)
+
         if not isinstance(self.created, datetime):
-            _LOG.error("wrong entry.created:  %r (%s)", self.created, self)
+            _LOG.error("wrong entry.created:  %r (%r)", self.created, self)
+
         if not self.title:
             _LOG.error("missing title %s", self)
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
         if not self.icon_data:
             return self.icon
+
         try:
             self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
         except Exception as err:  # pylint: disable=broad-except
             _LOG.error("hasing %r error: %s", self.icon_data, err)
+
         return self.icon
 
     def to_row(self) -> ty.Dict[str, ty.Any]:
@@ -511,12 +526,12 @@ class Setting:
         description=None,
         user_id=None,
     ):
-        self.key = key
-        self.value = value
-        self.value_type = value_type
-        self.description = description
-        self.user_id = user_id
-        self.parameters = None
+        self.key = key  # type: str
+        self.value = value  # type: ty.Any
+        self.value_type = value_type  # type: str
+        self.description = description  # type: str
+        self.user_id = user_id  # ty.Optional[int]
+        self.parameters = None  # ty.Optional[ty.Dict[str, ty.Any]]
 
     def set_value(self, value):
         if self.value_type == "int":
@@ -566,13 +581,13 @@ class User:
     )
 
     def __init__(self, **args):
-        self.id = args.get("id")
-        self.login = args.get("login")
-        self.email = args.get("email")
-        self.password = args.get("password")
-        self.active = args.get("active")
-        self.admin = args.get("admin")
-        self.totp = args.get("totp")
+        self.id = args.get("id")  # type: int
+        self.login = args.get("login")  # type: str
+        self.email = args.get("email")  # type: str
+        self.password = args.get("password")  # type: str
+        self.active = args.get("active")  # type: bool
+        self.admin = args.get("admin")  # type: bool
+        self.totp = args.get("totp")  # type: ty.Optional[str]
 
     @classmethod
     def from_row(cls, row):
@@ -619,11 +634,11 @@ class ScoringSett:
     )
 
     def __init__(self, **args):
-        self.id = args.get("id")
-        self.user_id = args.get("user_id")
-        self.pattern = args.get("pattern")
-        self.active = args.get("active")
-        self.score_change = args.get("score_change")
+        self.id = args.get("id")  # type: int
+        self.user_id = args.get("user_id")  # type: int
+        self.pattern = args.get("pattern")  # type: str
+        self.active = args.get("active")  # type: bool
+        self.score_change = args.get("score_change")  # type: int
 
     def __str__(self):
         return common.obj2str(self)

@@ -24,6 +24,7 @@ database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
 address = 127.0.0.1
 port = 5000
 root = /
+minify = true
 
 [smtp]
 enabled = False
@@ -110,18 +111,18 @@ def validate(conf) -> bool:
     valid = True
 
     if not conf.get("web", "root"):
-        _LOG.error("Invalid web root")
+        _LOG.error("Missing web root")
         valid = False
 
     web_address = conf.get("web", "address")
     if not web_address:
-        _LOG.error("Invalid web address")
+        _LOG.error("Missing web address")
         valid = False
 
     try:
         web_port = int(conf.get("web", "port"))
     except ValueError:
-        _LOG.error("Invalid web port")
+        _LOG.error("Invalid or missing web port")
         valid = False
     else:
         if web_port < 1 or web_port > 65535:

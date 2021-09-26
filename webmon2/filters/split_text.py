@@ -14,14 +14,15 @@ import io
 import logging
 import typing as ty
 
-from cssselect import GenericTranslator, SelectorError
 import defusedxml.ElementTree as etree
-
-# from lxml import etree
+from cssselect import GenericTranslator, SelectorError
 
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
+
+# from lxml import etree
+
 
 _ = ty
 _LOG = logging.getLogger(__name__)

@@ -29,12 +29,9 @@ def _show_abilities_cls(title, base_cls):
             print("    Parameters:")
             for param in cls.params:
                 print(
-                    "     - {:<15s}\t{:<20s}\tdefault={!r:<10}\t{}".format(
-                        param.name,
-                        param.description,
-                        param.default,
-                        "Required" if param.required else "",
-                    )
+                    f"     - {param.name:<17}\t{param.description:<32s}"
+                    "\tdefault={param.default!r:<10}\t"
+                    + ("Required" if param.required else "")
                 )
     print()
 

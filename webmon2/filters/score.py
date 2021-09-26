@@ -89,5 +89,5 @@ class Score(AbstractFilter):
             )
             entry.score += add
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.error("apply score error: %s; %s", err, entry)
+            _LOG.error("apply score error: %s; entry %s", err, entry)
         return [entry]
