@@ -12,6 +12,7 @@ Web gui
 
 import logging
 import typing as ty
+import functools
 
 import prometheus_client
 from flask import (
@@ -29,7 +30,7 @@ from flask import (
     current_app,
 )
 
-from webmon2 import database
+from webmon2 import database, common
 
 from . import _commons as c
 
@@ -93,20 +94,18 @@ def groups():
     )
 
 
-_METRICS_REMOTES = None
+@functools.cache
+def _metrics_accesslist():
+    conf = current_app.config["app_conf"]
+    return [
+        ip.strip()
+        for ip in conf.get("metrics", "allow_from", fallback="").split(",")
+    ]
 
 
 @BP.route("/metrics")
 def metrics():
-    global _METRICS_REMOTES  # pylint: disable=global-statement
-    if _METRICS_REMOTES is None:
-        conf = current_app.config["app_conf"]
-        _METRICS_REMOTES = [
-            ip.strip()
-            for ip in conf.get("metrics", "allow_from", fallback="").split(",")
-        ]
-
-    if request.remote_addr not in _METRICS_REMOTES:
+    if request.remote_addr not in _metrics_accesslist():
         abort(401)
 
     return Response(
@@ -115,52 +114,51 @@ def metrics():
     )
 
 
-_MANIFEST = None
+@functools.cache
+def _build_manifest():
+    manifest = {
+        "name": "Webmon2",
+        "short_name": "Webmon2",
+        "start_url": url_for("root.index"),
+        "display": "browser",
+        "background_color": "#fff",
+        "description": "Web monitoring application.",
+        "lang": "en-EN",
+        "scope": url_for("root.index"),
+        "icons": [
+            {
+                "src": url_for("static", filename="favicon-16.png"),
+                "sizes": "16x16",
+                "type": "image/png",
+            },
+            {
+                "src": url_for("static", filename="favicon-32.png"),
+                "sizes": "32x32",
+                "type": "image/png",
+            },
+            {
+                "src": url_for("static", filename="icon-128.png"),
+                "sizes": "128x128",
+                "type": "image/png",
+            },
+            {
+                "src": url_for("static", filename="icon-192.png"),
+                "sizes": "192x192",
+                "type": "image/png",
+            },
+            {
+                "src": url_for("static", filename="icon.svg"),
+                "sizes": "192x192",
+                "type": "image/svg+xml",
+            },
+        ],
+    }
+    return json.dumps(manifest)
 
 
 @BP.route("/manifest.json")
 def manifest_json():
-    global _MANIFEST  # pylint: disable=global-statement
-    if not _MANIFEST:
-        manifest = {
-            "name": "Webmon2",
-            "short_name": "Webmon2",
-            "start_url": url_for("root.index"),
-            "display": "browser",
-            "background_color": "#fff",
-            "description": "Web monitoring application.",
-            "lang": "en-EN",
-            "scope": url_for("root.index"),
-            "icons": [
-                {
-                    "src": url_for("static", filename="favicon-16.png"),
-                    "sizes": "16x16",
-                    "type": "image/png",
-                },
-                {
-                    "src": url_for("static", filename="favicon-32.png"),
-                    "sizes": "32x32",
-                    "type": "image/png",
-                },
-                {
-                    "src": url_for("static", filename="icon-128.png"),
-                    "sizes": "128x128",
-                    "type": "image/png",
-                },
-                {
-                    "src": url_for("static", filename="icon-192.png"),
-                    "sizes": "192x192",
-                    "type": "image/png",
-                },
-                {
-                    "src": url_for("static", filename="icon.svg"),
-                    "sizes": "192x192",
-                    "type": "image/svg+xml",
-                },
-            ],
-        }
-        _MANIFEST = json.dumps(manifest)
-    return Response(_MANIFEST, mimetype="application/manifest+json")
+    return Response(_build_manifest(), mimetype="application/manifest+json")
 
 
 @BP.route("/binary/<datahash>")
