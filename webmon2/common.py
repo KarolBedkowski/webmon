@@ -10,6 +10,7 @@ Licence: GPLv2+
 
 import datetime
 import email.utils
+import functools
 import itertools
 import json
 import logging
@@ -303,3 +304,22 @@ def parse_form_list_data(form, prefix):
             values[kidx][kname] = val
     for _, val in sorted(values.items()):
         yield val
+
+
+def _cache(func):
+    """Run function once and cache results."""
+
+    def wrapper(*args, **kwargs):
+        if not wrapper.has_run:
+            wrapper.has_run = True
+            wrapper.result = func(*args, **kwargs)
+            return wrapper.result
+
+        return wrapper.result
+
+    wrapper.has_run = False
+    return wrapper
+
+
+# functools.cache is available in 3.9+
+cache = functools.cache if hasattr(functools, "cache") else _cache

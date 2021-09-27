@@ -10,7 +10,6 @@
 Web gui
 """
 
-import functools
 import logging
 import typing as ty
 
@@ -94,7 +93,7 @@ def groups():
     )
 
 
-@functools.cache
+@common.cache
 def _metrics_accesslist():
     conf = current_app.config["app_conf"]
     return [
@@ -114,7 +113,7 @@ def metrics():
     )
 
 
-@functools.cache
+@common.cache
 def _build_manifest():
     manifest = {
         "name": "Webmon2",
