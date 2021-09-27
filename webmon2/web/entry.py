@@ -25,15 +25,16 @@ BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 
 @BP.route("/<int:entry_id>")
-def entry(entry_id):
+def entry(entry_id: int):
     db = c.get_db()
-    user_id = session["user"]
+    user_id = session["user"]  # type: int
     entry_ = database.entries.get(
         db, entry_id, with_source=True, with_group=True
     )
     unread = entry_.read_mark == 0
     if user_id != entry_.user_id:
         return abort(404)
+
     if not entry_.read_mark:
         database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
         entry_.read_mark = 2

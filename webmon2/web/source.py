@@ -35,7 +35,7 @@ BP = Blueprint("source", __name__, url_prefix="/source")
 
 
 @BP.route("/<int:source_id>/refresh")
-def source_refresh(source_id):
+def source_refresh(source_id: int):
     db = c.get_db()
     user_id = session["user"]
     database.sources.refresh(db, user_id, source_id=source_id)
@@ -45,12 +45,13 @@ def source_refresh(source_id):
 
 
 @BP.route("/<int:source_id>/delete")
-def source_delete(source_id):
+def source_delete(source_id: int):
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
         return abort(404)
+
     database.sources.delete(db, source_id)
     db.commit()
     flash("Source deleted")
@@ -64,7 +65,9 @@ def source_new():
 
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])
 @BP.route("/new/<kind>", methods=["POST", "GET"])
-def source_edit(source_id=None, kind=None):
+def source_edit(
+    source_id: ty.Optional[int] = None, kind: ty.Optional[str] = None
+):
     db = c.get_db()
     user_id = session["user"]
     if source_id:
@@ -73,10 +76,12 @@ def source_edit(source_id=None, kind=None):
         )
         if not source or source.user_id != user_id:
             return abort(404)
+
     elif kind:
         source = model.Source(kind=kind, user_id=user_id, name="", status=0)
     else:
         return abort(400)
+
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
     source_form = forms.SourceForm.from_model(source)
@@ -92,20 +97,21 @@ def source_edit(source_id=None, kind=None):
     if request.method == "POST":
         source_form.update_from_request(request.form)
         errors = source_form.validate()
-        source = source_form.update_model(source)
-        errors.update(src.validate_conf(source.settings, user_settings))
+        u_source = source_form.update_model(source)
+        errors.update(src.validate_conf(u_source.settings, user_settings))
         if not errors:
             next_action = request.form.get("next_action")
             if next_action == "save_activate":
-                source.status = 1
+                u_source.status = 1
 
-            source = database.sources.save(db, source)
+            u_source = database.sources.save(db, u_source)
             db.commit()
             flash("Source saved")
             if next_action == "edit_filters":
                 return redirect(
-                    url_for("source.source_filters", source_id=source.id)
+                    url_for("source.source_filters", source_id=u_source.id)
                 )
+
             return redirect(url_for("root.sources"))
 
     return render_template(
@@ -121,7 +127,7 @@ def source_edit(source_id=None, kind=None):
 @BP.route("/<int:source_id>/entries")
 @BP.route("/<int:source_id>/entries/<mode>")
 @BP.route("/<int:source_id>/entries/<mode>/<int:page>")
-def source_entries(source_id, mode="unread", page=0):
+def source_entries(source_id: int, mode: str = "unread", page: int = 0):
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(
@@ -157,7 +163,7 @@ def source_entries(source_id, mode="unread", page=0):
 
 
 @BP.route("/<int:source_id>/mark/read")
-def source_mark_read(source_id):
+def source_mark_read(source_id: int):
     db = c.get_db()
     min_id = int(request.args.get("min_id", -1))
     max_id = int(request.args["max_id"])
@@ -170,11 +176,12 @@ def source_mark_read(source_id):
     )
     db.commit()
     if request.args.get("go") == "next":
-        source_id = database.sources.find_next_unread(db, user_id)
-        if source_id:
+        n_source_id = database.sources.find_next_unread(db, user_id)
+        if n_source_id:
             return redirect(
-                url_for("source.source_entries", source_id=source_id)
+                url_for("source.source_entries", source_id=n_source_id)
             )
+
         flash("No more unread sources...")
 
     if min_id:
@@ -186,16 +193,18 @@ def source_mark_read(source_id):
                 mode=request.args.get("mode"),
             )
         )
+
     return redirect(url_for("root.sources"))
 
 
 @BP.route("/<int:source_id>/filters")
-def source_filters(source_id):
+def source_filters(source_id: int):
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
         return abort(404)
+
     _LOG.debug("source.filters: %s", source.filters)
     filter_fields = [
         forms.Filter(fltr["name"]) for fltr in source.filters or []
@@ -206,7 +215,7 @@ def source_filters(source_id):
 
 
 @BP.route("/<int:source_id>/filter/add")
-def source_filter_add(source_id):
+def source_filter_add(source_id: int):
     filters_info = filters.filters_info()
     return render_template(
         "filter_new.html", source_id=source_id, filters_info=filters_info
@@ -214,26 +223,34 @@ def source_filter_add(source_id):
 
 
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])
-def source_filter_edit(source_id, idx):
+def source_filter_edit(source_id: int, idx: int):
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
     if not source:
         return abort(404)
+
     is_new = idx == "new"
     if not is_new:
         idx = int(idx)
         is_new = idx < 0 or idx >= len(source.filters or [])
+
     if is_new:  # new filter
         name = request.args.get("name")
         if not name:
             return redirect(url_for("source_filter_add", source_id=source_id))
+
         conf = {"name": request.args["name"]}
         idx = -1
     else:
         conf = source.filters[idx]
 
     fltr = filters.get_filter(conf)
+    if not fltr:
+        _LOG.warning(
+            "invalid filter for source %d [%d]: %r", source_id, idx, conf
+        )
+        abort(400)
 
     # for new filters without parameters, save it
     if is_new and not fltr.params:
@@ -274,10 +291,11 @@ def _build_filter_conf_from_req(fltr, conf):
                 conf[param_name] = param_type(val)
             else:
                 conf[param_name] = None
+
     return conf
 
 
-def _save_filter(db, source_id, idx, conf):
+def _save_filter(db, source_id: int, idx: int, conf):
     database.sources.update_filter(db, source_id, idx, conf)
     db.commit()
     flash("Filter saved")
@@ -285,7 +303,7 @@ def _save_filter(db, source_id, idx, conf):
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")
-def source_filter_move(source_id, idx, move):
+def source_filter_move(source_id: int, idx: int, move: str):
     db = c.get_db()
     user_id = session["user"]
     database.sources.move_filter(db, user_id, source_id, idx, move)
@@ -294,7 +312,7 @@ def source_filter_move(source_id, idx, move):
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/delete")
-def source_filter_delete(source_id, idx):
+def source_filter_delete(source_id: int, idx: int):
     db = c.get_db()
     user_id = session["user"]
     database.sources.delete_filter(db, user_id, source_id, idx)
@@ -303,21 +321,24 @@ def source_filter_delete(source_id, idx):
 
 
 @BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
-def source_entry(source_id, mode, entry_id):
+def source_entry(source_id: int, mode: str, entry_id: int):
     db = c.get_db()
     user_id = session["user"]
     src = database.sources.get(db, source_id, user_id=user_id)
     if not src:
         return abort(404)
+
     entry = database.entries.get(
         db, entry_id, with_source=True, with_group=True
     )
     if user_id != entry.user_id or source_id != entry.source_id:
         return abort(404)
+
     if not entry.read_mark:
         database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
         entry.read_mark = 2
         db.commit()
+
     unread = mode != "all"
     next_entry = database.sources.find_next_entry_id(
         db, source_id, entry.id, unread
@@ -337,10 +358,13 @@ def source_entry(source_id, mode, entry_id):
 
 
 @BP.route("/source/<int:source_id>/next_unread")
-def source_next_unread(source_id):
+def source_next_unread(source_id: int):  # pylint: disable=unused-argument
     db = c.get_db()
-    source_id = database.sources.find_next_unread(db, session["user"])
-    if source_id:
-        return redirect(url_for("source.source_entries", source_id=source_id))
+    n_source_id = database.sources.find_next_unread(db, session["user"])
+    if n_source_id:
+        return redirect(
+            url_for("source.source_entries", source_id=n_source_id)
+        )
+
     flash("No more unread sources...")
     return redirect(url_for("root.sources"))

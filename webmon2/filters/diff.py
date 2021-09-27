@@ -59,10 +59,12 @@ class NDiff(AbstractFilter):
     ) -> model.Entries:
         if not entries:
             return
+
         try:
             entry = next(iter(entries))  # type: model.Entry
         except StopIteration:
             return
+
         if not entry.content:
             return
 
@@ -113,7 +115,10 @@ class NDiff(AbstractFilter):
 
 
 def _check_changes(
-    changed_lines: int, old_lines: int, changes_th, min_changed
+    changed_lines: int,
+    old_lines: int,
+    changes_th: ty.Optional[float],
+    min_changed: ty.Optional[int],
 ) -> bool:
     if not changed_lines:
         return False

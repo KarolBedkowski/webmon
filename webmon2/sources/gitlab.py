@@ -79,14 +79,17 @@ class AbstractGitLabSource(AbstractSource):
                 )
                 _LOG.debug("gitlab: %r", gitl)
                 return gitl.projects.get(conf["project"])
+
             except Exception as err:
                 raise common.InputError(self, "Gitlab auth error: " + str(err))
+
         return None
 
     def _get_favicon(self):
         url = self._conf["gitlab_url"]
         if not url.endswith("/"):
             url += "/"
+
         return url + _FAVICON
 
     @classmethod
@@ -149,6 +152,7 @@ class GitLabCommits(AbstractGitLabSource):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(self._get_favicon()))
+
             return new_state, []
 
         short_list = self._conf.get("short_list")
@@ -199,6 +203,7 @@ def _format_gl_commit_long(commit, full_message: bool) -> str:
     msg = commit.message.strip().split("\n")
     if not full_message:
         msg = msg[:1]
+
     result.extend(msg)
     return "\n".join(result)
 
@@ -275,8 +280,10 @@ def _format_gl_tag(tag) -> str:
     commit_date = tag.commit.get("committed_date")
     if commit_date:
         res += " " + commit_date
+
     if tag.message:
         res += " " + tag.message
+
     return res
 
 
@@ -319,6 +326,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(self._get_favicon()))
+
             return new_state, []
 
         entries = [
@@ -332,6 +340,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
 
         for entry in entries:
             entry.icon = new_state.icon
+
         return new_state, entries
 
     @classmethod
@@ -361,11 +370,13 @@ def _build_gl_release_entry(
         slink = links.get("self")
         if slink:
             res.extend(("\n", slink))
+
     if release.description:
         res.append("\n")
         res.extend(
             line.strip() + "\n"
             for line in release.description.strip().split("\n")
         )
+
     content = "".join(map(str, res))
     return _build_entry(source, project, content)

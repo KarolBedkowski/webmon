@@ -122,6 +122,7 @@ def get(
 
     if with_state:
         source.state = get_state(db, source.id)
+
     if with_group and source.group_id:
         source.group = groups.get(db, source.group_id)
 
@@ -161,6 +162,7 @@ def save(db, source: model.Source) -> model.Source:
             save_state(db, state, source.user_id)
         else:
             cur.execute(_UPDATE_SOURCE_SQL, row)
+
     return source
 
 
@@ -174,7 +176,7 @@ def delete(db, source_id: int) -> int:
 
 def update_filter(
     db, source_id: int, filter_idx: int, filter_: ty.Dict[str, ty.Any]
-):
+) -> None:
     """Append or update filter in given source"""
     source = get(db, source_id, False, False)
     if not source:
@@ -187,14 +189,16 @@ def update_filter(
         source.filters[filter_idx] = filter_
     else:
         source.filters.append(filter_)
+
     save(db, source)
 
 
-def delete_filter(db, user_id: int, source_id: int, filter_idx: int):
+def delete_filter(db, user_id: int, source_id: int, filter_idx: int) -> None:
     """Delete filter in source"""
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
         return
+
     if source.filters and filter_idx < len(source.filters):
         del source.filters[filter_idx]
         save(db, source)
@@ -202,7 +206,7 @@ def delete_filter(db, user_id: int, source_id: int, filter_idx: int):
 
 def move_filter(
     db, user_id: int, source_id: int, filter_idx: int, direction: str
-):
+) -> None:
     """Change position of given filter in source"""
     if direction not in ("up", "down"):
         raise ValueError("invalid direction")
@@ -210,15 +214,18 @@ def move_filter(
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
         return
+
     if (
         not source.filters
         or filter_idx >= len(source.filters)
         or len(source.filters) == 1
     ):
         return
+
     if direction == "up":
         if filter_idx <= 0:
             return
+
         source.filters[filter_idx - 1], source.filters[filter_idx] = (
             source.filters[filter_idx],
             source.filters[filter_idx - 1],
@@ -227,6 +234,7 @@ def move_filter(
     elif direction == "down":
         if filter_idx >= len(source.filters) - 2:
             return
+
         source.filters[filter_idx + 1], source.filters[filter_idx] = (
             source.filters[filter_idx],
             source.filters[filter_idx + 1],
@@ -297,6 +305,7 @@ def save_state(
     if state.icon_data and state.icon:
         content_type, data = state.icon_data
         binaries.save(db, user_id, content_type, state.icon, data)
+
     return state
 
 
@@ -329,7 +338,12 @@ where (last_update is null or last_update < now() - '-1 minutes'::interval)
 """
 
 
-def refresh(db, user_id, source_id=None, group_id=None) -> int:
+def refresh(
+    db,
+    user_id: int,
+    source_id: ty.Optional[int] = None,
+    group_id: ty.Optional[int] = None,
+) -> int:
     """Mark source to refresh; return founded sources"""
     if not (user_id or source_id or group_id):
         raise ValueError("missing user_id/source_id/group_id")
@@ -409,6 +423,7 @@ def mark_read(
             cur.execute(_MARK_READ_BY_IDS_SQL, args)
         else:
             cur.execute(_MARK_READ_SQL, args)
+
         changed = cur.rowcount
         return changed
 
@@ -426,10 +441,13 @@ def get_filter_state(
         row = cur.fetchone()
     if not row:
         return None
+
     return json.loads(row[0]) if isinstance(row[0], str) and row[0] else row[0]
 
 
-def put_filter_state(db, source_id: int, filter_name: str, state):
+def put_filter_state(
+    db, source_id: int, filter_name: str, state: ty.Dict[str, ty.Any]
+) -> None:
     """Save source filter state"""
     with db.cursor() as cur:
         cur.execute(
@@ -438,16 +456,16 @@ def put_filter_state(db, source_id: int, filter_name: str, state):
             (source_id, filter_name),
         )
         if state is not None:
-            state = json.dumps(state)
+            s_state = json.dumps(state)
             cur.execute(
                 "insert into filters_state (source_id, filter_name, state) "
                 "values(%s, %s, %s)",
-                (source_id, filter_name, state),
+                (source_id, filter_name, s_state),
             )
 
 
 def find_next_entry_id(
-    db, source_id: int, entry_id: int, unread=True
+    db, source_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -464,12 +482,13 @@ def find_next_entry_id(
                 "where e.id > %s and e.source_id=%s",
                 (entry_id, source_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None
 
 
 def find_prev_entry_id(
-    db, source_id: int, entry_id: int, unread=True
+    db, source_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -486,6 +505,7 @@ def find_prev_entry_id(
                 "where e.id < %s and e.source_id=%s",
                 (entry_id, source_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None
 

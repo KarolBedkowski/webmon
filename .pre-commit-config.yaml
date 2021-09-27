@@ -9,6 +9,8 @@ repos:
       - id: check-added-large-files
       - id: check-toml
       - id: debug-statements
+      - id: mixed-line-ending
+      - id: requirements-txt-fixer
 
   - repo: https://github.com/psf/black
     rev: 20.8b1

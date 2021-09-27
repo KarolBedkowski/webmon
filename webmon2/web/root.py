@@ -10,15 +10,16 @@
 Web gui
 """
 
+import functools
 import logging
 import typing as ty
-import functools
 
 import prometheus_client
 from flask import (
     Blueprint,
     Response,
     abort,
+    current_app,
     flash,
     g,
     json,
@@ -27,10 +28,9 @@ from flask import (
     request,
     session,
     url_for,
-    current_app,
 )
 
-from webmon2 import database, common
+from webmon2 import common, database
 
 from . import _commons as c
 
@@ -162,7 +162,7 @@ def manifest_json():
 
 
 @BP.route("/binary/<datahash>")
-def binary(datahash):
+def binary(datahash: str):
     db = c.get_db()
     data_content_type = database.binaries.get(db, datahash, session["user"])
     if not data_content_type:

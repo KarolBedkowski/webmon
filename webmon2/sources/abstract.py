@@ -38,7 +38,7 @@ class AbstractSource:
     ) -> None:
         super().__init__()
         self._source = source
-        self._updated_source = None
+        self._updated_source = None  # type: ty.Optional[model.Source]
         self._conf = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings,
@@ -73,12 +73,14 @@ class AbstractSource:
         for param in cls.params or []:
             if not param.required:
                 continue
+
             values = [
                 conf[param.name] for conf in confs if conf.get(param.name)
             ]
             if not values:
                 yield (param.name, f'missing parameter "{param.description}"')
                 continue
+
             if not param.validate_value(values[0]):
                 yield (
                     param.name,
@@ -91,7 +93,9 @@ class AbstractSource:
         """Load data; return list of items (Result)."""
         raise NotImplementedError()
 
-    def _load_binary(self, url, only_images=True):
+    def _load_binary(
+        self, url, only_images=True
+    ) -> ty.Optional[ty.Tuple[str, bytes]]:
         _LOG.debug("loading binary %s", url)
         try:
             response = requests.request(
@@ -115,6 +119,7 @@ class AbstractSource:
                         return None
 
                     return response.headers["Content-Type"], response.content
+
                 _LOG.info(
                     "load binary from %s status %s error: %s",
                     url,
@@ -123,6 +128,7 @@ class AbstractSource:
                 )
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("load binary from %s error: %s", url, err)
+
         return None
 
     @classmethod
@@ -153,6 +159,6 @@ _IMAGE_TYPES = set(
 )
 
 
-def _check_content_type(response, accepted) -> bool:
+def _check_content_type(response, accepted: ty.Iterable[str]) -> bool:
     content_type = response.headers["Content-Type"]
     return content_type in accepted

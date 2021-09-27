@@ -155,18 +155,21 @@ def _get_find_sql(
         if unread:
             return _GET_UNREAD_ENTRIES_BY_SOURCE_SQL
         return _GET_ENTRIES_BY_SOURCE_SQL
+
     if group_id:
         if unread:
             return _GET_UNREAD_ENTRIES_BY_GROUP_SQL
         return _GET_ENTRIES_BY_GROUP_SQL
+
     if unread:
         return _GET_UNREAD_ENTRIES_SQL
+
     return _GET_ENTRIES_SQL
 
 
-def _yield_entries(cur):
-    vis_sources = {}
-    groups = {}
+def _yield_entries(cur) -> ty.Iterator[model.Entry]:
+    vis_sources = {}  # type: ty.Dict[int, model.Source]
+    vis_groups = {}  # type: ty.Dict[int, model.SourceGroup]
     for row in cur:
         entry = model.Entry.from_row(row)
         entry.source = vis_sources.get(entry.source_id)
@@ -174,11 +177,12 @@ def _yield_entries(cur):
             entry.source = vis_sources[
                 entry.source_id
             ] = model.Source.from_row(row)
+
         group_id = entry.source.group_id
         if group_id and not entry.source.group:
-            entry.source.group = groups.get(group_id)
+            entry.source.group = vis_groups.get(group_id)
             if not entry.source.group:
-                entry.source.group = groups[
+                entry.source.group = vis_groups[
                     group_id
                 ] = model.SourceGroup.from_row(row)
         yield entry
@@ -205,7 +209,11 @@ def get_history(db, user_id: int) -> model.Entries:
 
 
 def get_total_count(
-    db, user_id: int, source_id=None, group_id=None, unread=True
+    db,
+    user_id: int,
+    source_id: ty.Optional[int] = None,
+    group_id: ty.Optional[int] = None,
+    unread: bool = True,
 ) -> int:
     """Get number of read/all entries for user/source/group"""
     if not user_id and not source_id and not group_id:
@@ -216,6 +224,7 @@ def get_total_count(
         "source_id": source_id,
         "user_id": user_id,
     }
+
     if source_id:
         sql = "select count(1) from entries where source_id=%(source_id)s "
     elif group_id:
@@ -226,6 +235,7 @@ def get_total_count(
         )
     else:
         sql = "select count(1) from entries where user_id=%(user_id)s"
+
     if unread:
         sql += " and read_mark=0"
     with db.cursor() as cur:
@@ -238,11 +248,11 @@ def get_total_count(
 def find(
     db,
     user_id: int,
-    source_id=None,
-    group_id=None,
-    unread=True,
-    offset=None,
-    limit=None,
+    source_id: ty.Optional[int] = None,
+    group_id: ty.Optional[int] = None,
+    unread: bool = True,
+    offset: ty.Optional[int] = None,
+    limit: ty.Optional[int] = None,
 ) -> model.Entries:
     """Find entries for user/source/group unread or all.
     Limit and offset work only for getting all entries.
@@ -258,24 +268,24 @@ def find(
     if limit:
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
+
     with db.cursor() as cur:
         cur.execute(sql, args)
         user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            source_id = entry.source_id
-            entry.source = user_sources.get(source_id)
+            entry.source = user_sources.get(entry.source_id)
             if not entry.source:
-                entry.source = user_sources[source_id] = model.Source.from_row(
-                    row
-                )
-                group_id = entry.source.group_id
-                entry.source.group = user_groups.get(group_id)
+                entry.source = user_sources[
+                    entry.source_id
+                ] = model.Source.from_row(row)
+                entry.source.group = user_groups.get(entry.source.group_id)
                 if not entry.source.group:
                     entry.source.group = user_groups[
-                        group_id
+                        entry.source.group_id
                     ] = model.SourceGroup.from_row(row)
+
             yield entry
 
 
@@ -303,12 +313,14 @@ def find_fulltext(
         if title_only
         else _GET_ENTRIES_FULLTEXT_SQL
     )
+
     if source_id:
         sql += " and e.source_id=%(source_id)s "
     elif group_id:
         sql += " and s.group_id=%(group_id)s "
     else:
         sql += " and e.user_id=%(user_id)s "
+
     sql += " order by e.id"
 
     with db.cursor() as cur:
@@ -317,11 +329,10 @@ def find_fulltext(
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            e_source_id = entry.source_id  # type: int
-            entry.source = user_sources.get(e_source_id)
+            entry.source = user_sources.get(entry.source_id)
             if not entry.source:
                 entry.source = user_sources[
-                    e_source_id
+                    entry.source_id
                 ] = model.Source.from_row(row)
                 e_group_id = entry.source.group_id
                 entry.source.group = user_groups.get(e_group_id)
@@ -329,6 +340,7 @@ def find_fulltext(
                     entry.source.group = user_groups[
                         e_group_id
                     ] = model.SourceGroup.from_row(row)
+
             yield entry
 
 
@@ -342,6 +354,7 @@ def find_for_feed(db, group_id: int) -> model.Entries:
             entry.source = model.Source.from_row(row)
             if not group:
                 group = model.SourceGroup.from_row(row)
+
             entry.source.group = group
             yield entry
 
@@ -367,7 +380,13 @@ from entries
 """
 
 
-def get(db, id_=None, oid=None, with_source=False, with_group=False):
+def get(
+    db,
+    id_: ty.Optional[int] = None,
+    oid: ty.Optional[str] = None,
+    with_source: bool = False,
+    with_group: bool = False,
+) -> model.Entry:
     if not id_ and oid is None:
         raise ValueError("missing id/oid")
 
@@ -376,15 +395,18 @@ def get(db, id_=None, oid=None, with_source=False, with_group=False):
             sql = _GET_ENTRY_SQL + "where id=%(id)s"
         else:
             sql = _GET_ENTRY_SQL + "where oid=%(oid)s"
+
         cur.execute(sql, {"oid": oid, "id": id_})
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
+
         entry = model.Entry.from_row(row)
         if with_source:
             entry.source = sources.get(
                 db, entry.source_id, with_group=with_group
             )
+
         return entry
 
 
@@ -429,6 +451,7 @@ def save(db, entry: model.Entry) -> model.Entry:
             entry.id = cur.fetchone()[0]
         else:
             cur.execute(_UPDATE_ENTRY_SQL, row)
+
     _save_entry_icon(db, (entry,))
     return entry
 
@@ -458,16 +481,18 @@ def save_many(db, entries: model.Entries):
                 for entry in entries:
                     if entry.oid in marked_oids:
                         entry.star_mark = True
+
         rows = map(model.Entry.to_row, entries)
         cur.executemany(_INSERT_ENTRY_SQL, rows)
     _save_entry_icon(db, entries)
 
 
-def _save_entry_icon(db, entries):
+def _save_entry_icon(db, entries: model.Entries):
     saved = set()
     for entry in entries:
         if not entry.icon or entry.icon in saved or not entry.icon_data:
             continue
+
         content_type, data = entry.icon_data
         binaries.save(db, entry.user_id, content_type, entry.icon, data)
         saved.add(entry.icon)
@@ -504,6 +529,7 @@ def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
             (star, entry_id, 1 - star),
         )
         changed = cur.rowcount
+
     _LOG.debug("changed: %d", changed)
     return changed
 
@@ -525,6 +551,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
                 (source_id, part_oids),
             )
             result.update(row[0] for row in cur)
+
         new_oids = [oid for oid in oids if oid not in result]
         _LOG.debug(
             "check_oids: check=%r, found=%d new=%d",
@@ -536,13 +563,20 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
             "insert into history_oids(source_id, oid) values (%s, %s)",
             [(source_id, oid) for oid in new_oids],
         )
+
     return set(new_oids)
 
 
 # pylint: disable=too-many-arguments
 def mark_read(
-    db, user_id: int, entry_id=None, min_id=None, max_id=None, read=1, ids=None
-):
+    db,
+    user_id: int,
+    entry_id: ty.Optional[int] = None,
+    min_id: ty.Optional[int] = None,
+    max_id: ty.Optional[int] = None,
+    read: int = 1,
+    ids: ty.Optional[ty.List[int]] = None,
+) -> int:
     """Change read mark for given entry"""
     if not (entry_id or (user_id and (max_id or ids))):
         raise ValueError("missing entry_id/max_id/ids/user")
@@ -573,10 +607,13 @@ def mark_read(
                 (read, max_id, min_id or 0, user_id),
             )
         changed = cur.rowcount
+
     return changed
 
 
-def mark_all_read(db, user_id: int, max_date=None):
+def mark_all_read(
+    db, user_id: int, max_date: ty.Optional[datetime] = None
+) -> int:
     with db.cursor() as cur:
         if max_date:
             cur.execute(
@@ -590,11 +627,12 @@ def mark_all_read(db, user_id: int, max_date=None):
                 "and read_mark=0",
                 (user_id,),
             )
+
         return cur.rowcount
 
 
 def find_next_entry_id(
-    db, user_id: int, entry_id: int, unread=True
+    db, user_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -611,6 +649,7 @@ def find_next_entry_id(
                 "where e.id > %s and e.user_id=%s",
                 (entry_id, user_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None
 
@@ -633,5 +672,6 @@ def find_prev_entry_id(
                 "where e.id < %s and e.user_id=%s",
                 (entry_id, user_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None

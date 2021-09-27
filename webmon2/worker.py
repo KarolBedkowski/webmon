@@ -187,7 +187,7 @@ class FetchWorker(threading.Thread):
             entry.calculate_icon_hash()
             if entry.content:
                 if not entry.content_type:
-                    _LOG.warning("no conent type for entry: %s", entry)
+                    _LOG.warning("no content type for entry: %s", entry)
                     entry.content_type = "html"
                 (
                     entry.content,

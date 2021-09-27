@@ -36,7 +36,8 @@ _JAMENDO_ICON = (
 
 # pylint: disable=too-few-public-methods
 class JamendoMixin:
-    def _get_last_update(self, state):  # pylint: disable=no-self-use
+    # pylint: disable=no-self-use
+    def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
         last_update = datetime.datetime.now() - datetime.timedelta(
             days=_JAMENDO_MAX_AGE
         )
@@ -46,7 +47,7 @@ class JamendoMixin:
         return last_update
 
     # pylint: disable=no-self-use,too-many-return-statements
-    def _make_request(self, url):
+    def _make_request(self, url: str) -> ty.Tuple[int, ty.Any]:
         _LOG.debug("make request: %s", url)
         headers = {
             "User-agent": "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
@@ -69,12 +70,14 @@ class JamendoMixin:
                 msg = f"Response code: {response.status_code}"
                 if response.text:
                     msg += "\n" + response.text
+
                 return 500, msg
 
             res = response.json()
             try:
                 if res["headers"]["status"] != "success":
                     return 500, res["headers"]["error_message"]
+
             except KeyError:
                 return 500, "wrong answer"
 
@@ -84,7 +87,7 @@ class JamendoMixin:
             return 200, res
 
 
-def _build_request_url(url, **params):
+def _build_request_url(url: str, **params) -> str:
     return url + "&".join(
         key + "=" + urllib.parse.quote_plus(str(val))
         for key, val in params.items()
@@ -92,13 +95,13 @@ def _build_request_url(url, **params):
     )
 
 
-def _jamendo_track_to_url(track_id) -> str:
+def _jamendo_track_to_url(track_id: int) -> str:
     if not track_id:
         return ""
     return f"https://www.jamendo.com/track/{track_id}/"
 
 
-def _jamendo_album_to_url(album_id):
+def _jamendo_album_to_url(album_id: int) -> str:
     if not album_id:
         return ""
     return f"https://www.jamendo.com/album/{album_id}/"
@@ -255,7 +258,9 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_JAMENDO_ICON))
+
             return new_state, []
+
         if status != 200:
             return state.new_error(res), []
 

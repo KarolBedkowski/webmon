@@ -80,7 +80,7 @@ def start_rss(
 
 
 @BP.route("/group/<key>")
-def group(key):
+def group(key: str):
     if key == "off":
         return abort(404)
 
@@ -90,6 +90,7 @@ def group(key):
         grp = database.groups.get_by_feed(db, key)
     except database.NotFound:
         return abort(404)
+
     updated_etag = database.groups.get_state(db, grp.id)
     _LOG.debug("updated_etag %r", updated_etag)
     if not updated_etag:
@@ -116,7 +117,7 @@ def group(key):
 
         rss_items.append(
             gen_item(
-                title=entry.title or entry.grp.name,
+                title=entry.title or entry.source.group.name,
                 link=url,
                 description=body,
                 args={

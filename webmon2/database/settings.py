@@ -69,7 +69,7 @@ values (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
 """
 
 
-def save_all(db, settings: ty.List[model.Setting]):
+def save_all(db, settings: ty.List[model.Setting]) -> None:
     """Save all settings"""
     cur = db.cursor()
     rows = [setting.to_row() for setting in settings]

@@ -35,6 +35,7 @@ class History(AbstractFilter):
         entries = list(entries)
         if not entries:
             return
+
         oids = [entry.calculate_oid() for entry in entries]
         new_oids = set()  # type: ty.Set[str]
         new_oids = database.entries.check_oids(

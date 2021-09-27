@@ -33,6 +33,7 @@ BP = Blueprint("sec", __name__, url_prefix="/sec")
 def login():
     if "temp_user_id" in session:
         del session["temp_user_id"]
+
     if "user" in session:
         del session["user"]
 
