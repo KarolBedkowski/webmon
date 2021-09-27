@@ -53,6 +53,7 @@ line-length = 79
 [tool.isort]
 profile = "black"
 line_length = 79
+multi_line_output = 3
 
 [tool.poetry.scripts]
 webmon2 = "webmon2.main:main"
