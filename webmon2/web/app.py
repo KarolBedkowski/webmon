@@ -170,11 +170,14 @@ def _check_csrf_token() -> bool:
         if req_token != sess_token:
             _LOG.info("bad csrf token")
             return False
+
         session["_csrf_token"] = _generate_csrf_token()
-        session.updated = True
+        session.modified = True
+
     elif "_csrf_token" not in session:
         session["_csrf_token"] = _generate_csrf_token()
-        session.updated = True
+        session.modified = True
+
     return True
 
 
