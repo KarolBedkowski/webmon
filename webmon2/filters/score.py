@@ -60,10 +60,11 @@ class Score(AbstractFilter):
         else:
             self._re = []
             _LOG.warning("no patterns!")
+
         self._match_many = conf.get("match_many")
         self._score = int(conf.get("score_change", 0))
 
-    def _score_for_content(self, *content) -> int:
+    def _score_for_content(self, *content: ty.Optional[str]) -> int:
         add = 0
         if self._match_many:
             add = sum(
@@ -76,6 +77,7 @@ class Score(AbstractFilter):
             for pattern in self._re
         ):
             add = self._score
+
         return add
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -90,4 +92,5 @@ class Score(AbstractFilter):
             entry.score += add
         except Exception as err:  # pylint: disable=broad-except
             _LOG.error("apply score error: %s; entry %s", err, entry)
+
         return [entry]

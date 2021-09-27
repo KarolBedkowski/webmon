@@ -272,6 +272,7 @@ def _filter_tags(tags, repository, min_date: datetime):
                 if commit_date and commit_date > min_date:
                     tag.ex_commit_date = commit_date
                     yield tag
+
         except github3.exceptions.NotFoundError:
             pass
 
@@ -279,12 +280,14 @@ def _filter_tags(tags, repository, min_date: datetime):
 def _load_tags(repository, max_items, etag):
     if hasattr(repository, "tags"):
         return repository.tags(max_items, etag=etag)
+
     return repository.iter_tags(max_items, etag=etag)
 
 
 def _format_gh_tag(tag) -> str:
     if hasattr(tag, "ex_commit_date"):
         return tag.name + " " + str(tag.ex_commit_date)
+
     return tag.name
 
 
@@ -342,6 +345,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             new_state = state.new_not_modified(etag=repository.etag)
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_GITHUB_ICON))
+
             return new_state, []
 
         try:
@@ -359,6 +363,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
         for entry in entries:
             entry.icon = new_state.icon
+
         return new_state, entries
 
     @classmethod
@@ -385,10 +390,12 @@ def _build_gh_release_entry(
     ]
     if release.html_url:
         res.extend(("\n", release.html_url))
+
     if release.body:
         res.append("\n")
         res.extend(
             line.strip() + "\n" for line in release.body.strip().split("\n")
         )
+
     content = "".join(map(str, res))
     return _build_entry(source, repository, content)

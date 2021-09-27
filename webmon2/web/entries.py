@@ -23,7 +23,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import database
+from webmon2 import database, model
 
 from . import _commons as c
 
@@ -39,7 +39,7 @@ def index():
 
 @BP.route("/<mode>/", defaults={"page": 0})
 @BP.route("/<mode>/<int:page>")
-def entries(mode, page):
+def entries(mode: str, page: int):
     if mode not in ("unread", "all"):
         raise ValueError("invalid mode")
 
@@ -75,44 +75,40 @@ def entries_history():
     return render_template("history.html", entries=entries_)
 
 
-def _get_req_source(db, user_id):
-    source_id = request.args.get("source_id")
-    if not source_id:
-        return None
+def _get_req_source(db, user_id: int) -> ty.Optional[model.Source]:
     try:
-        source_id = int(source_id)
+        source_id = int(request.args.get("source_id", "0"))
         if not source_id:
             return None
-    except ValueError as err:
+
+    except (ValueError, TypeError, KeyError) as err:
         _LOG.debug("req source error: %s", err)
         return None
+
     return database.sources.get(
         db, source_id, with_state=False, with_group=False, user_id=user_id
     )
 
 
-def _get_req_group(db, user_id):
-    group_id = request.args.get("group_id")
-    if not group_id:
-        return None
+def _get_req_group(db, user_id: int) -> ty.Optional[model.SourceGroup]:
     try:
-        group_id = int(group_id)
+        group_id = int(request.args.get("group_id", "0"))
         if not group_id:
             return None
-    except ValueError as err:
+
+    except (ValueError, TypeError, KeyError) as err:
         _LOG.debug("req group error: %s", err)
         return None
+
     return database.groups.get(db, group_id, user_id)
 
 
 @BP.route("/search")
 def entries_search():
     db = c.get_db()
-    user_id = session["user"]
-    query = request.args.get("query")
-    query = query.strip() if query else ""
+    user_id = session["user"]  # type: int
+    query = request.args.get("query", "").strip()
     title_only = bool(request.args.get("title-only"))
-
     search_ctx = ""
     source = _get_req_source(db, user_id)
     source_id, group_id = None, None
@@ -132,6 +128,7 @@ def entries_search():
                 db, user_id, query, title_only, group_id, source_id
             )
         )
+
     return render_template(
         "entries_search.html",
         entries=entries_,
@@ -146,9 +143,8 @@ def entries_search():
 @BP.route("/<mode>/mark/read")
 def entries_mark_read(mode):
     db = c.get_db()
-    user_id = session["user"]
-    r_ids = request.args.get("ids")
-    ids = [int(id_) for id_ in r_ids.split(",")] if r_ids else None
+    user_id = session["user"]  # type: int
+    ids = [int(id_) for id_ in request.args.get("ids", "").split(",")] or None
     marked = database.entries.mark_read(
         db,
         user_id,

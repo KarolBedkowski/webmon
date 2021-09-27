@@ -173,6 +173,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
         }
 
 
+Sources = ty.Iterable[Source]
+
+
 class SourceState:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "source_id",
@@ -362,7 +365,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.url = None  # type: ty.Optional[str]
         self.content = None  # type: ty.Optional[str]
         self.opts = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
-        self.user_id = None  # type: ty.Optional[int]
+        self.user_id = None  # type: int
         self.icon = None  # type: ty.Optional[str]
         self.score = 0  # type; int
 

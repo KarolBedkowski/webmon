@@ -52,8 +52,10 @@ class Grep(AbstractFilter):
     ) -> model.Entries:
         if not self._re:
             return entries
+
         if self._conf["invert"]:
             return filter(lambda x: not self._re.match(x.content), entries)
+
         return filter(lambda x: self._re.match(x.content), entries)
 
     def _filter(self, entry: model.Entry) -> model.Entries:

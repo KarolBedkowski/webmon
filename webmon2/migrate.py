@@ -104,18 +104,22 @@ _MIGR_FUNCS = {
 }
 
 
-# TODO: select user
 def migrate(args):
     filename = args.migrate_filename
-    _LOG.info("migration %s start", filename)
+    user_login = args.migrate_user
+    _LOG.info("migration from %s to user %s start", filename, user_login)
     with database.DB.get() as db:
-        users = list(database.users.get_all(db))
-        if not users:
-            _LOG.error("error migrating - no users in database")
+        user = database.users.get(db, login=user_login)
+        if not user:
+            _LOG.error(
+                "error migrating - users %s not found in database", user_login
+            )
             return
 
-        user_id = users[0].id
+        user_id = user.id
         group_id = database.groups.get_all(db, user_id)[0].id
+
+        _LOG.debug("migrate to user_id: %d group: %d", user_id, group_id)
 
         for inp in _load_sources(filename):
             _LOG.info("migrating %r", inp)

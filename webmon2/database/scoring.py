@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2019
+# Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -59,7 +59,9 @@ values (%(scoring_sett__user_id)s, %(scoring_sett__pattern)s,
 """
 
 
-def save(db, user_id: int, scoring_settings: ty.List[model.ScoringSett]):
+def save(
+    db, user_id: int, scoring_settings: ty.List[model.ScoringSett]
+) -> None:
     """Save / update scoring settings for user"""
     with db.cursor() as cur:
         cur.execute("delete from scoring_sett where user_id=%s", (user_id,))

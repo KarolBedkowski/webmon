@@ -66,9 +66,11 @@ def get(db, id_=None, login=None) -> ty.Optional[model.User]:
             cur.execute(_GET_BY_LOGIN_SQL, (login,))
         else:
             return None
+
         row = cur.fetchone()
         if not row:
             return None
+
         user = model.User.from_row(row)
         return user
 
@@ -105,7 +107,7 @@ def save(db, user: model.User) -> model.User:
     return user
 
 
-def _create_new_user_data(cur, user_id: int):
+def _create_new_user_data(cur, user_id: int) -> None:
     cur.execute(
         "select count(1) from source_groups where user_id=%s", (user_id,)
     )
@@ -125,6 +127,7 @@ def get_state(db, user_id: int, key: str, default=None, conv=None):
         row = cur.fetchone()
         if not row:
             return default
+
         value = row[0]
         return conv(value) if conv else value
 
@@ -137,7 +140,7 @@ DO UPDATE SET value=EXCLUDED.value
 """
 
 
-def set_state(db, user_id: int, key: str, value):
+def set_state(db, user_id: int, key: str, value) -> None:
     with db.cursor() as cur:
         cur.execute(_SET_STATE_SQL, (user_id, key, value))
 
@@ -147,6 +150,6 @@ _DELETE_USER_SQL = """
 """
 
 
-def delete(db, user_id: int):
+def delete(db, user_id: int) -> None:
     with db.cursor() as cur:
         cur.execute(_DELETE_USER_SQL, (user_id,))

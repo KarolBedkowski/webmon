@@ -93,10 +93,12 @@ class RssSource(AbstractSource):
             entries = list(
                 _filter_entries_updated(entries, state.last_update.timestamp())
             )
+
         if status == 304 or not entries:
             new_state = state.new_not_modified(etag=doc.get("etag"))
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
+
             return new_state, []
 
         new_state = state.new_ok(etag=doc.get("etag"))
@@ -132,6 +134,7 @@ class RssSource(AbstractSource):
             max_items = int(max_items)
             if max_items and len(entries) > max_items:
                 entries = entries[:max_items]
+
         return entries
 
     def _load_entry(
@@ -156,6 +159,7 @@ class RssSource(AbstractSource):
                 else entry.get("value")
             )
             result.set_opt("content-type", "html")
+
         return result
 
     # pylint: disable=no-self-use
@@ -183,8 +187,10 @@ class RssSource(AbstractSource):
                         )
                 else:
                     entry.content = "Loading article error: " + response.text
+
         except Exception as err:  # pylint: disable=broad-except
             entry.content = "Loading article error: " + str(err)
+
         return entry
 
     @classmethod
@@ -203,9 +209,11 @@ class RssSource(AbstractSource):
         url = opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
+
         name = opml_node.get("text") or opml_node["title"]
         if not name:
             raise ValueError("missing text/title")
+
         return model.Source(kind="rss", name=name, settings={"url": url})
 
     def _load_image(self, doc):
@@ -223,13 +231,15 @@ class RssSource(AbstractSource):
 
         return self._load_binary(image_href) if image_href else None
 
-    def _check_sy_updateperiod(self, feed):
+    def _check_sy_updateperiod(self, feed) -> None:
         if self._source.interval:
             return
+
         sy_updateperiod = feed.get("sy_updateperiod")
         sy_updatefrequency = feed.get("sy_updatefrequency")
         if not sy_updatefrequency or not sy_updateperiod:
             return
+
         interval = sy_updateperiod + sy_updatefrequency[0]
         try:
             if common.parse_interval(interval):
@@ -239,11 +249,16 @@ class RssSource(AbstractSource):
                 "wrong sy_update*: %r %r", sy_updateperiod, sy_updatefrequency
             )
 
-    def _update_source(self, new_url=None, interval=None):
-        if not self._updated_source:
-            self._updated_source = self._source.clone()
+    def _update_source(
+        self,
+        new_url: ty.Optional[str] = None,
+        interval: ty.Optional[str] = None,
+    ) -> None:
+        self._updated_source = self._updated_source or self._source.clone()
+
         if new_url:
             self._updated_source.settings["url"] = new_url
+
         if interval:
             _LOG.debug("interval updated: %s", interval)
             self._updated_source.interval = interval
@@ -257,6 +272,7 @@ def _fail_error(
     feed = doc.get("feed")
     if feed:
         summary = feed.get("summary") or summary
+
     return state.new_error(summary), []
 
 
@@ -264,11 +280,13 @@ def _get_val(entry, key: str, default=None):
     val = entry.get(key)
     if val is None:
         return default
+
     if isinstance(val, time.struct_time):
         try:
             return datetime.datetime.fromtimestamp(time.mktime(val))
         except ValueError:
             return default
+
     return str(val).strip()
 
 
@@ -279,6 +297,7 @@ def _filter_entries_updated(entries, timestamp):
         if not updated_parsed:
             entry["updated_parsed"] = now
             yield entry
+
         try:
             if time.mktime(updated_parsed) > timestamp:
                 yield entry

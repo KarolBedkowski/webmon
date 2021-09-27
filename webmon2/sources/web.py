@@ -49,6 +49,7 @@ class WebSource(AbstractSource):
             new_state.next_update = max(
                 new_state.next_update or next_update, next_update
             )
+
         return new_state, entries
 
     def _load(self, state: model.SourceState):
@@ -71,12 +72,14 @@ class WebSource(AbstractSource):
                 new_state = state.new_not_modified()
                 if not new_state.icon:
                     new_state.set_icon(self._load_image(url))
+
                 return new_state, []
 
             if response.status_code != 200:
                 msg = f"Response code: {response.status_code}"
                 if response.text:
                     msg += "\n" + response.text
+
                 return state.new_error(msg), []
 
             url = self._check_redirects(response) or url
@@ -104,6 +107,7 @@ class WebSource(AbstractSource):
                 new_state.set_state("expires", str(expires))
 
             return new_state, [entry]
+
         except requests.exceptions.ReadTimeout:
             return state.new_error("timeout"), []
         except Exception as err:  # pylint: disable=broad-except
@@ -113,26 +117,28 @@ class WebSource(AbstractSource):
             if response:
                 response.close()
 
-    def _check_redirects(self, response):
+    def _check_redirects(self, response) -> ty.Optional[str]:
         if not response.history:
             return None
+
         for hist in response.history:
             if hist.is_permanent_redirect:
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
                     return href
+
         for hist in response.history:
             if hist.is_redirect:
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
                     return href
+
         return None
 
-    def _update_source(self, new_url=None):
-        if not self._updated_source:
-            self._updated_source = self._source.clone()
+    def _update_source(self, new_url: ty.Optional[str] = None):
+        self._updated_source = self._updated_source or self._source.clone()
         if new_url:
             self._updated_source.settings["url"] = new_url
 
@@ -161,20 +167,24 @@ class WebSource(AbstractSource):
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
+
         name = opml_node.get("text") or opml_node["title"]
         if not name:
             raise ValueError("missing text/title")
+
         return model.Source(kind="rss", name=name, settings={"url": url})
 
 
-def _prepare_headers(state):
+def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
     headers = {"User-agent": AbstractSource.AGENT}
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()
         )
+
     if state.state:
         etag = state.state.get("etag")
         if etag:
             headers["If-None-Match"] = etag
+
     return headers

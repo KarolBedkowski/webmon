@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -14,9 +14,10 @@ import psycopg2
 _LOG = logging.getLogger(__name__)
 
 
-def get(db, datahash: str, user_id: int):
+def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[str, str]]:
     if not datahash:
         return None
+
     with db.cursor() as cur:
         cur.execute(
             "select data, content_type from binaries "
@@ -27,7 +28,7 @@ def get(db, datahash: str, user_id: int):
         return row
 
 
-def save(db, user_id: int, content_type: str, datahash: str, data):
+def save(db, user_id: int, content_type: str, datahash: str, data) -> None:
     _LOG.debug(
         "save binary: %r, %r, %r, %s",
         user_id,

@@ -30,6 +30,7 @@ class Strip(AbstractFilter):
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
             entry.content = entry.content.strip()
+
         yield entry
 
 
@@ -45,6 +46,7 @@ class Compact(AbstractFilter):
             entry.content = "\n".join(
                 filter(None, map(str.rstrip, entry.content.split("\n")))
             )
+
         yield entry
 
 
@@ -64,4 +66,5 @@ class Head(AbstractFilter):
         if entry.content:
             cnt = self._conf["count"]
             entry.content = "\n".join(entry.content.split("\n", cnt + 1)[:cnt])
+
         yield entry

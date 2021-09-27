@@ -11,6 +11,7 @@ Template filters
 """
 import datetime
 import logging
+import typing as ty
 import urllib
 
 from flask import request
@@ -20,26 +21,31 @@ from webmon2 import formatters
 _LOG = logging.getLogger(__name__)
 
 
-def _age_filter(date):
+def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
     if date is None:
         return ""
+
     diff = (datetime.datetime.now() - date).total_seconds()
     if diff < 60:
         return "<1m"
+
     if diff < 3600:  # < 1h
         return str(int(diff // 60)) + "m"
+
     if diff < 86400:  # < 1d
         return str(int(diff // 3600)) + "h"
+
     return str(int(diff // 86400)) + "d"
 
 
-def _format_date(date):
+def _format_date(date) -> str:
     if isinstance(date, datetime.datetime):
         return date.strftime("%x %X")
+
     return date
 
 
-def _absoute_url(url):
+def _absoute_url(url: str) -> str:
     return urllib.parse.urljoin(request.url_root, url)
 
 

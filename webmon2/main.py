@@ -38,7 +38,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.4"
+VERSION = "2.5.5"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -91,6 +91,14 @@ def _parse_options():
         "--filename",
         help="migrate sources from file",
         dest="migrate_filename",
+        required=True,
+    )
+    parser_mig.add_argument(
+        "-u",
+        "--user",
+        help="target user login",
+        dest="migrate_user",
+        required=True,
     )
 
     parser_users = subparsers.add_parser("users", help="manage users")

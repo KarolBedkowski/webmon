@@ -22,6 +22,7 @@ try:
 except ImportError:
     minify = None
 
+from gevent.pool import Pool
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -41,7 +42,6 @@ from . import (
     source,
     system,
 )
-
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ _CSP = (
 )
 
 
-def create_app(debug, web_root, conf):
+def create_app(debug: bool, web_root: str, conf) -> Flask:
     template_folder = os.path.join(os.path.dirname(__file__), "templates")
     # create and configure the app
     app = Flask(
@@ -159,23 +159,26 @@ def create_app(debug, web_root, conf):
     return app
 
 
-def _generate_csrf_token():
+def _generate_csrf_token() -> str:
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     return "".join(random.SystemRandom().choice(chars) for _ in range(32))
 
 
-def _check_csrf_token():
+def _check_csrf_token() -> bool:
     if request.method == "POST":
         req_token = request.form.get("_csrf_token")
         sess_token = session.get("_csrf_token")
         if req_token != sess_token:
             _LOG.info("bad csrf token")
             return False
+
         session["_csrf_token"] = _generate_csrf_token()
-        session.updated = True
+        session.modified = True
+
     elif "_csrf_token" not in session:
         session["_csrf_token"] = _generate_csrf_token()
-        session.updated = True
+        session.modified = True
+
     return True
 
 
@@ -213,11 +216,13 @@ def start_app(args, conf):
         app.wsgi_app = DispatcherMiddleware(
             simple_not_found, {web_root: app.wsgi_app}
         )
+
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0
     )
     if args.debug:
         app.run(host=host, port=port, debug=True)
     else:
-        http_server = WSGIServer((host, port), app)
+        pool = Pool(100)
+        http_server = WSGIServer((host, port), app, spawn=pool)
         http_server.serve_forever()

@@ -55,6 +55,7 @@ class SelectByRE(AbstractFilter):
         for match in self._re.finditer(entry.content):
             if not match:
                 continue
+
             groupdict = match.groupdict()
             if groupdict:
                 content = groupdict.get("content") or match.groups()[0]
@@ -64,10 +65,13 @@ class SelectByRE(AbstractFilter):
                 yield _new_entry(entry, match.group())
 
 
-def _new_entry(entry, content, title=None):
+def _new_entry(
+    entry: model.Entry, content: str, title: ty.Optional[str] = None
+) -> model.Entry:
     new_entry = entry.clone()
     new_entry.status = "new"
     if title:
         new_entry.title = title
+
     new_entry.content = content
     return new_entry

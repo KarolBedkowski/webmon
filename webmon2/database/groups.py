@@ -52,6 +52,7 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
             )
             for id, name, user_id, feed, mail_report, unread, srcs_count in cur
         ]
+
         return groups
 
 
@@ -67,7 +68,7 @@ where id= %s
 
 
 def get(
-    db, group_id, user_id: ty.Optional[int] = None
+    db, group_id: int, user_id: ty.Optional[int] = None
 ) -> ty.Optional[model.SourceGroup]:
     """Get one group. Optionally check is group belong to user.
     Return None if not found.
@@ -77,9 +78,11 @@ def get(
         row = cur.fetchone()
         if not row:
             return None
+
         source = model.SourceGroup.from_row(row)
         if user_id and source.user_id != user_id:
             return None
+
         return source
 
 
@@ -117,11 +120,13 @@ def get_by_feed(db, feed: str) -> model.SourceGroup:
     """Get group by feed"""
     if feed == "off":
         raise dbc.NotFound()
+
     with db.cursor() as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
+
         return model.SourceGroup.from_row(row)
 
 
@@ -156,14 +161,16 @@ def save(db, group: model.SourceGroup) -> model.SourceGroup:
                 "where id=%s",
                 (group.name, group.feed, group.mail_report, group.id),
             )
+
         return group
 
 
-def _generate_group_feed(cur):
+def _generate_group_feed(cur) -> str:
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     while True:
         feed = "".join(random.SystemRandom().choice(chars) for _ in range(32))
 
+        # check for duplicates
         cur.execute("select 1 from source_groups where feed= %s", (feed,))
         if not cur.fetchone():
             return feed
@@ -227,6 +234,7 @@ def mark_read(
             cur.execute(_MARK_READ_BY_IDS_SQL, args)
         else:
             cur.execute(_MARK_READ_SQL, args)
+
         changed = cur.rowcount
         return changed
 
@@ -247,6 +255,7 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
         if row:
             if row[0] > last_modified:
                 return row[1]
+
             cur.execute(
                 "update source_group_state "
                 "set last_modified= %s, etag=%s "
@@ -260,6 +269,7 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
                 "values (%s, %s, %s)",
                 (group_id, last_modified, etag),
             )
+
         return etag
 
 
@@ -278,12 +288,14 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
             last_updated = get_last_update(db, group_id)
             if not last_updated:
                 return None
+
             etag = update_state(db, group_id, last_updated)
             return (last_updated, etag)
+
         return row[0], row[1]
 
 
-def delete(db, user_id: int, group_id: int):
+def delete(db, user_id: int, group_id: int) -> None:
     """Delete group; move existing sources to main (or first) group"""
     with db.cursor() as cur:
         cur.execute(
@@ -309,7 +321,7 @@ def delete(db, user_id: int, group_id: int):
         cur.close()
 
 
-def _find_dst_group(db, user_id: int, group_id: int):
+def _find_dst_group(db, user_id: int, group_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(
             "select id from source_groups where user_id= %s and name='main' "
@@ -328,6 +340,7 @@ def _find_dst_group(db, user_id: int, group_id: int):
         row = cur.fetchone()
         if row:
             return row[0]
+
         raise common.OperationError("can't find destination group for sources")
 
 
@@ -349,6 +362,7 @@ def find_next_entry_id(
                 "where e.id > %s and s.group_id=%s",
                 (entry_id, group_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None
 
@@ -371,5 +385,6 @@ def find_prev_entry_id(
                 "where e.id < %s and s.group_id=%s",
                 (entry_id, group_id),
             )
+
         row = cur.fetchone()
         return row[0] if row else None
