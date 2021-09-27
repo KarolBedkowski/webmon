@@ -22,6 +22,7 @@ try:
 except ImportError:
     minify = None
 
+from gevent.pool import Pool
 from gevent.pywsgi import WSGIServer
 from prometheus_client import Counter, Histogram
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
@@ -222,5 +223,6 @@ def start_app(args, conf):
     if args.debug:
         app.run(host=host, port=port, debug=True)
     else:
-        http_server = WSGIServer((host, port), app)
+        pool = Pool(100)
+        http_server = WSGIServer((host, port), app, spawn=pool)
         http_server.serve_forever()
