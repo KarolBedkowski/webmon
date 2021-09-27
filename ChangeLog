@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.5 2021-09-27
+
+### Bug Fixes
+
+- Fix session modifications save
+- Fix Last-modified header value in atom
+
+### Features
+
+- Migration allow choice target user by login
+
+### Miscellaneous Tasks
+
+- Clean, reformat code; add types
+
+
 ## 2.5.4 2021-09-26
 
 ### Bug Fixes
