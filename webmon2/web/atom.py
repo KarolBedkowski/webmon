@@ -141,5 +141,5 @@ def group(key: str):
         mimetype="application/atom+xml",
     )
     response.headers["ETag"] = etag
-    response.headers["Last-Modified"] = updated
+    response.headers["Last-Modified"] = updated.isoformat()
     return response
