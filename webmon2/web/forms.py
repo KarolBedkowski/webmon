@@ -9,14 +9,19 @@
 """
 GUI forms
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
+
+from werkzeug.datastructures import ImmutableMultiDict
 
 from webmon2 import common, model, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)
+
+Form = ImmutableMultiDict[str, str]
 
 
 class InvalidValue(RuntimeError):
@@ -54,7 +59,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         values: ty.Optional[ty.Dict[str, ty.Any]] = None,
         prefix: str = "",
         sett_value=None,
-    ):
+    ) -> Field:
         field = Field()
         field.name = param.name
         field.description = param.description
@@ -77,7 +82,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         return field
 
     @staticmethod
-    def from_setting(setting: model.Setting, prefix: str):
+    def from_setting(setting: model.Setting, prefix: str) -> Field:
         field = Field()
         field.name = setting.key
         field.description = setting.description
@@ -97,7 +102,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field.parameters = setting.parameters
         return field
 
-    def update_from_request(self, form):
+    def update_from_request(self, form: Form) -> None:
         form_value = form.get(self.fieldname)
         if self.type == "checkbox":
             self.value = bool(form_value)
@@ -118,9 +123,10 @@ class Field:  # pylint: disable=too-many-instance-attributes
 
         self.value = form_value
 
-    def get_parameter(self, key, default=None):
+    def get_parameter(self, key: str, default=None):
         if self.parameters:
             return self.parameters.get(key, default)
+
         return default
 
 
@@ -160,7 +166,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         return result
 
     @staticmethod
-    def from_model(source: model.Source):
+    def from_model(source: model.Source) -> SourceForm:
         form = SourceForm()
         form.id = source.id
         form.group_id = source.group_id
@@ -173,14 +179,14 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         form.default_score = source.default_score or 0
         return form
 
-    def update_from_request(self, form):
+    def update_from_request(self, form: Form) -> None:
         group_id = form["group_id"].strip()
-        self.group_id = int(group_id) if group_id else None
+        self.group_id = int(group_id)
         self.name = form["name"].strip()
         self.interval = form["interval"].strip()
         self.status = int(form.get("status", 0))
-        self.mail_report = int(form.get("mail_report"))
-        self.default_score = int(form.get("default_score"))
+        self.mail_report = int(form.get("mail_report", "0"))
+        self.default_score = int(form.get("default_score", "0"))
         for sett in self.settings or []:
             sett.update_from_request(form)
 
@@ -203,7 +209,7 @@ class GroupForm:
     def __init__(self):
         self.id = None  # type: int
         self.name = None  # type: str
-        self.feed = None  # type: str
+        self.feed = None  # type: ty.Optional[str]
         self.feed_enabled = None  # type: bool
         self.mail_report = None  # type: int
 
@@ -211,7 +217,7 @@ class GroupForm:
         return common.obj2str(self)
 
     @staticmethod
-    def from_model(group: model.SourceGroup):
+    def from_model(group: model.SourceGroup) -> GroupForm:
         form = GroupForm()
         form.id = group.id
         form.name = group.name
@@ -220,9 +226,9 @@ class GroupForm:
         form.mail_report = group.mail_report
         return form
 
-    def update_from_request(self, form):
+    def update_from_request(self, form: Form) -> None:
         self.name = form["name"].strip()
-        self.feed_enabled = form.get("feed_enabled")
+        self.feed_enabled = bool(form.get("feed_enabled", None))
         if self.feed_enabled:
             if self.feed == "off":
                 self.feed = None
@@ -231,7 +237,7 @@ class GroupForm:
 
         self.mail_report = int(form.get("mail_report", 1))
 
-    def update_model(self, group: model.SourceGroup):
+    def update_model(self, group: model.SourceGroup) -> model.SourceGroup:
         group = group.clone()
         group.name = self.name
         group.feed = self.feed
@@ -256,7 +262,7 @@ class FieldsForm:
     def __init__(self, fields: ty.Optional[ty.List[Field]] = None):
         self.fields = fields or []  # type: ty.List[Field]
 
-    def update_from_request(self, request_form) -> bool:
+    def update_from_request(self, request_form: Form) -> bool:
         """Update fields from request; return True if no errors"""
         no_errors = True
         for field in self.fields:
@@ -299,7 +305,7 @@ class UserForm:
         return result
 
     @staticmethod
-    def from_model(user: model.User):
+    def from_model(user: model.User) -> UserForm:
         form = UserForm()
         form.id = user.id
         form.login = user.login or ""
@@ -309,7 +315,7 @@ class UserForm:
         form.has_totp = bool(user.totp)
         return form
 
-    def update_from_request(self, form):
+    def update_from_request(self, form: Form):
         self.login = form["login"].strip()
         self.email = form["email"].strip()
         self.active = bool(form.get("active"))

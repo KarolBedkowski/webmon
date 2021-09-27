@@ -10,7 +10,7 @@ ignore=CVS, .git, build, dist
 jobs=4
 
 # Minimum supported python version
-py-version = 3.6
+py-version = 3.7
 
 [MESSAGES CONTROL]
 disable=

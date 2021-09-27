@@ -10,6 +10,7 @@
 """
 Models
 """
+from __future__ import annotations
 
 import base64
 import hashlib
@@ -31,6 +32,9 @@ class MailReportMode(IntEnum):
     SEND = 2
 
 
+Row = ty.Dict[str, ty.Any]
+
+
 class SourceGroup:
     __slots__ = (
         "id",
@@ -46,7 +50,7 @@ class SourceGroup:
         self.id = args.get("id")  # type: int
         self.name = args.get("name")  # type: str
         self.user_id = args.get("user_id")  # type: int
-        self.feed = args.get("feed", "")  # type: str
+        self.feed = args.get("feed")  # type: ty.Optional[str]
         self.mail_report = args.get("mail_report")  # type: int
 
         self.unread = args.get("unread")  # type: bool
@@ -55,7 +59,7 @@ class SourceGroup:
     def __str__(self):
         return common.obj2str(self)
 
-    def clone(self):
+    def clone(self) -> SourceGroup:
         sgr = SourceGroup()
         sgr.id = self.id
         sgr.name = self.name
@@ -66,7 +70,7 @@ class SourceGroup:
         return sgr
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -117,7 +121,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
     def __str__(self):
         return common.obj2str(self)
 
-    def clone(self):
+    def clone(self) -> Source:
         src = Source()
         src.id = self.id
         src.group_id = self.group_id
@@ -133,7 +137,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         return src
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> Source:
         source = Source()
         source.id = row["source__id"]
         source.group_id = row["source__group_id"]
@@ -153,7 +157,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.default_score = row["source__default_score"]
         return source
 
-    def to_row(self) -> ty.Dict[str, ty.Any]:
+    def to_row(self) -> Row:
         return {
             "source__group_id": self.group_id,
             "source__kind": self.kind,
@@ -213,7 +217,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.icon_data = args.get("icon_data")  # type: ty.Tuple[str, str]
 
     @staticmethod
-    def new(source_id):
+    def new(source_id: int) -> SourceState:
         source = SourceState()
         source.source_id = source_id
         source.next_update = datetime.now() + timedelta(minutes=15)
@@ -222,7 +226,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.status = "new"
         return source
 
-    def create_new(self):
+    def create_new(self) -> SourceState:
         new_state = SourceState()
         new_state.source_id = self.source_id
         new_state.error_counter = self.error_counter
@@ -230,7 +234,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.icon = self.icon
         return new_state
 
-    def new_ok(self, **states):
+    def new_ok(self, **states) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -244,7 +248,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_error(self, error: str, **states):
+    def new_error(self, error: str, **states) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.error = error
@@ -258,7 +262,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_not_modified(self, **states):
+    def new_not_modified(self, **states) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -272,25 +276,28 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def set_state(self, key, value):
+    def set_state(self, key: str, value):
         if self.state is None:
             self.state = {key: value}
         else:
             self.state[key] = value
 
-    def get_state(self, key, default=None):
+    def get_state(self, key: str, default=None):
         return self.state.get(key, default) if self.state else default
 
-    def update_state(self, states):
+    def update_state(self, states: ty.Optional[ty.Dict[str, ty.Any]]):
         if not states:
             return
+
         if not self.state:
             self.state = {}
+
         self.state.update(states)
 
-    def set_icon(self, content_type_data):
+    def set_icon(self, content_type_data) -> ty.Optional[str]:
         if not content_type_data:
             return self.icon
+
         self.icon = hashlib.sha1(content_type_data[1]).hexdigest()
         self.icon_data = content_type_data
         return self.icon
@@ -298,7 +305,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     def __str__(self):
         return common.obj2str(self)
 
-    def to_row(self) -> ty.Dict[str, ty.Any]:
+    def to_row(self) -> Row:
         return {
             "source_state__source_id": self.source_id,
             "source_state__next_update": self.next_update,
@@ -313,7 +320,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -376,7 +383,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def __str__(self):
         return common.obj2str(self)
 
-    def clone(self):
+    def clone(self) -> Entry:
         entry = Entry(source_id=self.source_id)
         entry.updated = self.updated
         entry.created = self.created
@@ -395,13 +402,13 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return entry
 
     @staticmethod
-    def for_source(source: Source):
+    def for_source(source: Source) -> Entry:
         entry = Entry(source_id=source.id)
         entry.user_id = source.user_id
         entry.score = source.default_score or 0
         return entry
 
-    def calculate_oid(self):
+    def calculate_oid(self) -> str:
         data = "".join(
             map(str, (self.source_id, self.title, self.url, self.content))
         )
@@ -409,21 +416,25 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.oid = base64.b64encode(csum.digest()).decode("ascii")
         return self.oid
 
-    def get_opt(self, key, default=None):
+    def get_opt(self, key: str, default=None):
         return self.opts.get(key, default) if self.opts else default
 
-    def set_opt(self, key, value):
+    def set_opt(self, key: str, value):
         if self.opts is None:
             self.opts = {}
+
         self.opts[key] = value
 
-    def human_title(self):
+    def human_title(self) -> str:
         if self.title:
             return self.title
+
         if not self.content:
             return "<no title>"
+
         if len(self.content) > 50:
             return self.content[:50] + "…"
+
         return self.content
 
     def is_long_content(self) -> bool:
@@ -431,19 +442,24 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             lines = self.content.count("\n")
             characters = len(self.content)
             return lines > 10 or characters > 400
+
         return False
 
-    def _get_content_type(self):
+    def _get_content_type(self) -> ty.Optional[str]:
         return self.get_opt("content-type")
 
-    def _set_content_type(self, content_type):
+    def _set_content_type(self, content_type: str):
         if self.opts is None:
             self.opts = {}
+
         self.opts["content-type"] = content_type
 
     content_type = property(_get_content_type, _set_content_type)
 
-    def get_summary(self):
+    def get_summary(self) -> ty.Optional[str]:
+        if not self.content:
+            return None
+
         return "\n".join(self.content.split("\n", 21)[:20])[:400] + "\n…"
 
     def validate(self):
@@ -467,7 +483,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
         return self.icon
 
-    def to_row(self) -> ty.Dict[str, ty.Any]:
+    def to_row(self) -> Row:
         return {
             "entry__source_id": self.source_id,
             "entry__updated": self.updated,
@@ -487,7 +503,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -502,6 +518,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.opts = common.get_json_if_exists(row_keys, "entry__opts", row)
         if "entry__content" in row_keys:
             entry.content = row["entry__content"]
+
         entry.user_id = row["entry__user_id"]
         entry.icon = row["entry__icon"]
         entry.score = row["entry__score"]
@@ -523,11 +540,11 @@ class Setting:
 
     def __init__(
         self,
-        key=None,
-        value=None,
-        value_type=None,
-        description=None,
-        user_id=None,
+        key: str,
+        value: ty.Any,
+        value_type: str,
+        description: str,
+        user_id: ty.Optional[int] = None,
     ):
         self.key = key  # type: str
         self.value = value  # type: ty.Any
@@ -550,10 +567,11 @@ class Setting:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
+
         return Setting(
             key=row["setting__key"],
             value=value,
@@ -562,7 +580,7 @@ class Setting:
             user_id=row["setting__user_id"],
         )
 
-    def to_row(self) -> ty.Dict[str, ty.Any]:
+    def to_row(self) -> Row:
         return {
             "setting__key": self.key,
             "setting__value": json.dumps(self.value),
@@ -593,7 +611,7 @@ class User:
         self.totp = args.get("totp")  # type: ty.Optional[str]
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -604,7 +622,7 @@ class User:
             totp=row["user__totp"],
         )
 
-    def to_row(self):
+    def to_row(self) -> Row:
         return {
             "user__id": self.id,
             "user__login": self.login,
@@ -615,7 +633,7 @@ class User:
             "user__totp": self.totp,
         }
 
-    def clone(self):
+    def clone(self) -> User:
         user = User()
         user.id = self.id
         user.login = self.login
@@ -636,12 +654,19 @@ class ScoringSett:
         "score_change",
     )
 
-    def __init__(self, **args):
-        self.id = args.get("id")  # type: int
-        self.user_id = args.get("user_id")  # type: int
-        self.pattern = args.get("pattern")  # type: str
-        self.active = args.get("active")  # type: bool
-        self.score_change = args.get("score_change")  # type: int
+    def __init__(
+        self,
+        user_id: int,
+        pattern: ty.Optional[str],
+        active: bool,
+        score_change: int,
+        id: ty.Optional[int] = None,  # pylint: disable=redefined-builtin
+    ):
+        self.id = id
+        self.user_id = user_id
+        self.pattern = pattern
+        self.active = active
+        self.score_change = score_change
 
     def __str__(self):
         return common.obj2str(self)
@@ -650,7 +675,7 @@ class ScoringSett:
         return self.user_id and self.pattern and self.pattern.strip()
 
     @classmethod
-    def from_row(cls, row):
+    def from_row(cls, row: Row) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],
@@ -659,7 +684,7 @@ class ScoringSett:
             score_change=row["scoring_sett__score_change"],
         )
 
-    def to_row(self):
+    def to_row(self) -> Row:
         return {
             "scoring_sett__id": self.id,
             "scoring_sett__user_id": self.user_id,
