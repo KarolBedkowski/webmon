@@ -38,6 +38,11 @@ repos:
     hooks:
       - id: gitleaks
 
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: master
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
 #  - repo: https://gitlab.com/pycqa/flake8
 #    rev: 3.8.3
 #    hooks:
