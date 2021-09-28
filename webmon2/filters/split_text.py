@@ -16,6 +16,7 @@ import typing as ty
 
 import defusedxml.ElementTree as etree
 from cssselect import GenericTranslator, SelectorError
+from lxml.etree import HTMLParser  # pylint: disable=no-name-in-module
 
 from webmon2 import common, model
 
@@ -30,9 +31,7 @@ _LOG = logging.getLogger(__name__)
 
 def _get_elements_by_xpath(entry: model.Entry, expression: str):
     # pylint: disable=no-member
-    html_parser = etree.HTMLParser(
-        encoding="utf-8", recover=True, strip_cdata=True
-    )
+    html_parser = HTMLParser(encoding="utf-8", recover=True, strip_cdata=True)
     if not entry.content:
         return
     document = etree.parse(io.StringIO(entry.content), html_parser)
@@ -100,7 +99,7 @@ class GetElementsById(AbstractFilter):
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         # pylint: disable=no-member
-        html_parser = etree.HTMLParser(
+        html_parser = HTMLParser(
             encoding="utf-8", recover=True, strip_cdata=True
         )
         if not entry.content:
