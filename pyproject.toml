@@ -54,6 +54,7 @@ line-length = 79
 profile = "black"
 line_length = 79
 multi_line_output = 3
+skip = "migrations"
 
 [tool.poetry.scripts]
 webmon2 = "webmon2.main:main"
