@@ -90,11 +90,16 @@ class FetchWorker(threading.Thread):
                 try:
                     self._process_source(db, source_id)
                     db.commit()
-                except Exception:  # pylint: disable=broad-except
+                except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
                         "[%s] process source %d error", self._idx, source_id
                     )
                     db.rollback()
+                    source = database.sources.get(
+                        db, id_=source_id, with_state=True
+                    )
+                    _save_state_error(db, source, err)
+                    db.commit()
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
@@ -114,14 +119,7 @@ class FetchWorker(threading.Thread):
         if not src:
             return
 
-        try:
-            new_state, entries = src.load(source.state)
-        except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception(
-                "[%s] load source id=%d error: %s", self._idx, source_id, err
-            )
-            _save_state_error(db, source, err)
-            return
+        new_state, entries = src.load(source.state)
 
         if new_state.status == "error":
             _SOURCES_PROCESSED_ERRORS.inc()
