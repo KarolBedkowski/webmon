@@ -10,13 +10,11 @@
 Filters for splitting input text into many entries
 
 """
-import io
 import logging
 import typing as ty
 
-import defusedxml.ElementTree as etree
 from cssselect import GenericTranslator, SelectorError
-from lxml.etree import HTMLParser  # pylint: disable=no-name-in-module
+from lxml import etree
 
 from webmon2 import common, model
 
@@ -31,10 +29,13 @@ _LOG = logging.getLogger(__name__)
 
 def _get_elements_by_xpath(entry: model.Entry, expression: str):
     # pylint: disable=no-member
-    html_parser = HTMLParser(encoding="utf-8", recover=True, strip_cdata=True)
+    html_parser = etree.HTMLParser(
+        encoding="utf-8", recover=True, strip_cdata=True
+    )
     if not entry.content:
         return
-    document = etree.parse(io.StringIO(entry.content), html_parser)
+
+    document = etree.fromstring(entry.content, html_parser)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
         if isinstance(elem, etree._Element):
@@ -54,8 +55,8 @@ class GetElementsByCss(AbstractFilter):
         common.SettingDef("sel", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
-    def __init__(self, conf):
-        super().__init__(conf)
+    def __init__(self, config):
+        super().__init__(config)
         self._expression = None
 
     def validate(self):
@@ -99,13 +100,13 @@ class GetElementsById(AbstractFilter):
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         # pylint: disable=no-member
-        html_parser = HTMLParser(
+        html_parser = etree.HTMLParser(
             encoding="utf-8", recover=True, strip_cdata=True
         )
         if not entry.content:
             return
-        document = etree.parse(io.StringIO(entry.content), html_parser)
-        for elem in document.findall(".//*[@id='" + self._conf["sel"] + "']"):
+        document = etree.fromstring(entry.content, html_parser)
+        for elem in document.xpath(".//*[@id=$id]", id=self._conf["sel"]):
             # pylint: disable=protected-access
             if isinstance(elem, etree._Element):
                 text = etree.tostring(elem).decode("utf-8")
