@@ -9,6 +9,12 @@ ignore=CVS, .git, build, dist
 # Use multiple processes to speed up Pylint.
 jobs=4
 
+# A comma-separated list of package or module names from where C extensions may
+# be loaded. Extensions are loading into the active Python interpreter and may
+# run arbitrary code
+extension-pkg-allow-list=lxml
+extension-pkg-whitelist=lxml
+
 # Minimum supported python version
 py-version = 3.7
 
