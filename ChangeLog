@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.5.7 2021-09-29
+
+### Bug Fixes
+
+- Fix split text filter
+- More broad error handling in worker thread
+
+### Miscellaneous Tasks
+
+- Clean code & minor bugfixes
+
+
 ## 2.5.6 2021-09-27
 
 ### Bug Fixes
