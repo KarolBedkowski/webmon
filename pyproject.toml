@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webmon2"
-version = "2.5.6"
+version = "2.5.7"
 description = ""
 authors = ["Karol Będkowski <karol.bedkowski@gmail.com>"]
 license = "GPL-2.0-or-later"
@@ -54,9 +54,13 @@ line-length = 79
 profile = "black"
 line_length = 79
 multi_line_output = 3
+skip = "migrations"
 
 [tool.poetry.scripts]
 webmon2 = "webmon2.main:main"
 
 [tool.bandit]
 skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
+
+[mypy]
+python_version = 3.7

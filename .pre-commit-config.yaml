@@ -21,9 +21,11 @@ repos:
     rev: 5.9.3
     hooks:
       - id: isort
+        stages: [commit, push]
+        args: ["--filter-files"]
 
   - repo: https://github.com/myint/rstcheck
-    rev: ''
+    rev: master
     hooks:
       - id: rstcheck
 
@@ -34,12 +36,12 @@ repos:
         args: ['--baseline', '.secrets.baseline']
 
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v7.6.1
+    rev: v.7.6.1
     hooks:
       - id: gitleaks
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: master
+    rev: v2.19.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
