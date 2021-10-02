@@ -49,6 +49,9 @@ class DB:
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
+        self.connect()
+
+    def connect(self):
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         # _LOG.debug("conn: %s", self._conn)
@@ -58,6 +61,10 @@ class DB:
         return DB()
 
     def cursor(self):
+        if self._conn.closed:
+            self.close()
+            self.connect()
+
         return self._conn.cursor(cursor_factory=extras.DictCursor)
 
     def begin(self):
