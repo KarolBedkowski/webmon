@@ -81,9 +81,7 @@ def get_all(
             source = model.Source.from_row(row)
             source.state = model.SourceState.from_row(row)
             source.unread = row["unread"]
-            source.group = (
-                user_groups.get(source.group_id) if source.group_id else None
-            )
+            source.group = user_groups[source.group_id]
             yield source
 
 
@@ -124,7 +122,11 @@ def get(
         source.state = get_state(db, source.id)
 
     if with_group and source.group_id:
-        source.group = groups.get(db, source.group_id)
+        group = groups.get(db, source.group_id)
+        if not group:
+            _LOG.error("invalid group in source: %s", source)
+        else:
+            source.group = group
 
     return source
 

@@ -172,19 +172,20 @@ def _yield_entries(cur) -> ty.Iterator[model.Entry]:
     vis_groups = {}  # type: ty.Dict[int, model.SourceGroup]
     for row in cur:
         entry = model.Entry.from_row(row)
-        entry.source = vis_sources.get(entry.source_id)
-        if not entry.source:
-            entry.source = vis_sources[
-                entry.source_id
-            ] = model.Source.from_row(row)
+        source = vis_sources.get(entry.source_id)
+        if not source:
+            source = vis_sources[entry.source_id] = model.Source.from_row(row)
 
-        group_id = entry.source.group_id
-        if group_id and not entry.source.group:
-            entry.source.group = vis_groups.get(group_id)
-            if not entry.source.group:
-                entry.source.group = vis_groups[
-                    group_id
-                ] = model.SourceGroup.from_row(row)
+            group_id = source.group_id
+            if not source.group:
+                group = vis_groups.get(group_id)
+                if not group:
+                    group = vis_groups[group_id] = model.SourceGroup.from_row(
+                        row
+                    )
+                source.group = group
+
+        entry.source = source
         yield entry
 
 
@@ -244,7 +245,7 @@ def get_total_count(
         return result
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-locals
 def find(
     db,
     user_id: int,
@@ -275,21 +276,24 @@ def find(
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            entry.source = user_sources.get(entry.source_id)
-            if not entry.source:
-                entry.source = user_sources[
-                    entry.source_id
-                ] = model.Source.from_row(row)
-                entry.source.group = user_groups.get(entry.source.group_id)
-                if not entry.source.group:
-                    entry.source.group = user_groups[
-                        entry.source.group_id
+            source = user_sources.get(entry.source_id)
+            if not source:
+                source = user_sources[entry.source_id] = model.Source.from_row(
+                    row
+                )
+                group = user_groups.get(source.group_id)
+                if not group:
+                    group = user_groups[
+                        source.group_id
                     ] = model.SourceGroup.from_row(row)
 
+                source.group = group
+
+            entry.source = source
             yield entry
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-locals
 def find_fulltext(
     db,
     user_id: int,
@@ -329,18 +333,20 @@ def find_fulltext(
         user_sources = {}  # type: ty.Dict[int, model.Source]
         for row in cur:
             entry = model.Entry.from_row(row)
-            entry.source = user_sources.get(entry.source_id)
-            if not entry.source:
-                entry.source = user_sources[
-                    entry.source_id
-                ] = model.Source.from_row(row)
-                e_group_id = entry.source.group_id
-                entry.source.group = user_groups.get(e_group_id)
-                if not entry.source.group:
-                    entry.source.group = user_groups[
-                        e_group_id
+            source = user_sources.get(entry.source_id)
+            if not source:
+                source = user_sources[entry.source_id] = model.Source.from_row(
+                    row
+                )
+                group = user_groups.get(source.group_id)
+                if not group:
+                    group = user_groups[
+                        source.group_id
                     ] = model.SourceGroup.from_row(row)
 
+                source.group = group
+
+            entry.source = source
             yield entry
 
 
@@ -403,9 +409,11 @@ def get(
 
         entry = model.Entry.from_row(row)
         if with_source:
-            entry.source = sources.get(
-                db, entry.source_id, with_group=with_group
-            )
+            source = sources.get(db, entry.source_id, with_group=with_group)
+            if not source:
+                _LOG.error("invalid source in entry: %s", entry)
+            else:
+                entry.source = source
 
         return entry
 
