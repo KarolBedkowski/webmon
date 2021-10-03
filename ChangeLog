@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.5.8 2021-10-03
+
+### Bug Fixes
+
+- Reconnect closed database connection
+- Handle more errors in web source
+- Join filter not fail on empty results
+
+### Features
+
+- Database pool (min/max connection) configuration
+- Allow to configure web workers pool for incoming requests
+
+### Miscellaneous Tasks
+
+- Massive code cleanup & minor bugfixes
+
+
 ## 2.5.7 2021-09-29
 
 ### Bug Fixes
