@@ -114,8 +114,8 @@ class WebSource(AbstractSource):
 
             return new_state, [entry]
 
-        except requests.exceptions.ReadTimeout:
-            return state.new_error("timeout"), []
+        except requests.exceptions.RequestException as err:
+            return state.new_error(f"request error: {err}"), []
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("WebInput error %s", err)
             return state.new_error(str(err)), []
