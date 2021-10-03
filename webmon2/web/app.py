@@ -223,6 +223,6 @@ def start_app(args, conf):
     if args.debug:
         app.run(host=host, port=port, debug=True)
     else:
-        pool = Pool(100)
+        pool = Pool(conf.getint("web", "pool", fallback=10))
         http_server = WSGIServer((host, port), app, spawn=pool)
         http_server.serve_forever()
