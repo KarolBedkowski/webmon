@@ -10,6 +10,7 @@
 Filter that join many entries into one.
 """
 
+import logging
 import typing as ty
 from functools import reduce
 
@@ -18,6 +19,7 @@ from webmon2 import model
 from ._abstract import AbstractFilter
 
 _ = ty
+_LOG = logging.getLogger(__name__)
 
 
 def _join_entries(
@@ -45,7 +47,11 @@ class Join(AbstractFilter):
         prev_state: model.SourceState,
         curr_state: model.SourceState,
     ) -> model.Entries:
-        yield reduce(_join_entries, entries)
+        try:
+            yield reduce(_join_entries, entries)
+        except TypeError as err:
+            # empty collection
+            _LOG.debug("join error: %s", err)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass
