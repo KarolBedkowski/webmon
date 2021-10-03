@@ -38,7 +38,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.7"
+VERSION = "2.5.8"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
@@ -324,11 +324,18 @@ def main():
             _LOG.error("cannot update schema when running from reloader")
         else:
             _LOG.info("update schema...")
-            database.DB.initialize(app_conf.get("main", "database"), True)
+            database.DB.initialize(
+                app_conf.get("main", "database"), True, 1, 5
+            )
 
         return
 
-    database.DB.initialize(app_conf.get("main", "database"), False)
+    database.DB.initialize(
+        app_conf.get("main", "database"),
+        False,
+        app_conf.getint("main", "db_pool_min", fallback=2),
+        app_conf.getint("main", "db_pool_max", fallback=20),
+    )
 
     if cli.process_cli(args, app_conf):
         return

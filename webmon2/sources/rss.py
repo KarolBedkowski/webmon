@@ -50,7 +50,7 @@ class RssSource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return rss items as one or many parts; each part is on article."""
         try:
             new_state, entries = self._load(state)
@@ -58,7 +58,7 @@ class RssSource(AbstractSource):
             _LOG.exception("source %d load error: %s", state.source_id, err)
             new_state, entries = state.new_error(str(err)), []
 
-        if new_state.status != "error":
+        if new_state.status != model.SourceStateStatus.ERROR:
             if entries and new_state.icon:
                 for entry in entries:
                     entry.icon = new_state.icon
@@ -149,7 +149,7 @@ class RssSource(AbstractSource):
         result.title = _get_val(entry, "title")
         result.updated = _get_val(entry, "updated_parsed", now)
         result.created = _get_val(entry, "published_parsed", now)
-        result.status = "new"
+        result.status = model.EntryStatus.NEW
         if load_article:
             result = self._load_article(result)
         elif load_content:

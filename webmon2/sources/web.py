@@ -38,10 +38,10 @@ class WebSource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
         new_state, entries = self._load(state)
-        if new_state.status != "error":
+        if new_state.status != model.SourceStateStatus.ERROR:
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -52,7 +52,9 @@ class WebSource(AbstractSource):
 
         return new_state, entries
 
-    def _load(self, state: model.SourceState):
+    def _load(
+        self, state: model.SourceState
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
         headers = _prepare_headers(state)
         response = None
@@ -86,7 +88,11 @@ class WebSource(AbstractSource):
 
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
-            entry.status = "updated" if state.last_update else "new"
+            entry.status = (
+                model.EntryStatus.UPDATED
+                if state.last_update
+                else model.EntryStatus.NEW
+            )
             entry.title = self._source.name
             entry.url = url
             entry.content = response.text
@@ -108,8 +114,8 @@ class WebSource(AbstractSource):
 
             return new_state, [entry]
 
-        except requests.exceptions.ReadTimeout:
-            return state.new_error("timeout"), []
+        except requests.exceptions.RequestException as err:
+            return state.new_error(f"request error: {err}"), []
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("WebInput error %s", err)
             return state.new_error(str(err)), []

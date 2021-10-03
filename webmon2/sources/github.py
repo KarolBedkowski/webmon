@@ -71,7 +71,7 @@ def _build_entry(
     entry = model.Entry.for_source(source)
     entry.url = repository.html_url
     entry.title = source.name
-    entry.status = "new"
+    entry.status = model.EntryStatus.NEW
     entry.content = content
     entry.created = entry.updated = datetime.now()
     entry.set_opt("content-type", "markdown")
@@ -109,7 +109,7 @@ class GithubInput(AbstractSource, GitHubMixin):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
         repository = self._github_get_repository(self._conf)
         data_since = self._github_check_repo_updated(
@@ -179,6 +179,7 @@ def _format_gh_commit_long(commit, full_message: bool) -> str:
     msg = cmt.message.strip().split("\n")
     if not full_message:
         msg = msg[:1]
+
     result.extend(msg)
     return "\n".join(result)
 
@@ -211,7 +212,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
         conf = self._conf
         repository = self._github_get_repository(conf)
@@ -319,7 +320,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(repository, state.last_update):

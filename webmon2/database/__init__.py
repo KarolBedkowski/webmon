@@ -44,11 +44,17 @@ class DB:
     INSTANCE = None
     POOL = None
 
+    __slots__ = ("_conn",)
+
     def __init__(self) -> None:
         super().__init__()
+        self._conn = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
+        self.connect()
+
+    def connect(self):
         self._conn = DB.POOL.getconn()
         self._conn.initialize(_LOG)
         # _LOG.debug("conn: %s", self._conn)
@@ -58,6 +64,10 @@ class DB:
         return DB()
 
     def cursor(self):
+        if self._conn.closed:
+            self.close()
+            self.connect()
+
         return self._conn.cursor(cursor_factory=extras.DictCursor)
 
     def begin(self):
@@ -70,11 +80,16 @@ class DB:
         return self._conn.rollback()
 
     @classmethod
-    def initialize(cls, conn_str: str, update_schema: bool):
+    def initialize(
+        cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
+    ):
         _LOG.info("initializing database")
         conn_str = extensions.parse_dsn(conn_str)
         cls.POOL = pool.ThreadedConnectionPool(
-            1, 20, connection_factory=extras.LoggingConnection, **conn_str
+            min_conn,
+            max_conn,
+            connection_factory=extras.LoggingConnection,
+            **conn_str
         )
         # common.create_missing_dir(os.path.dirname(filename))
         with DB() as db:

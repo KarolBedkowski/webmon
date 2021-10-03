@@ -142,25 +142,36 @@ def get_last_update(db, group_id: int) -> ty.Optional[datetime]:
         return datetime.fromisoformat(row[0]) if row and row[0] else None
 
 
+_INSERT_GROUP_SQL = """
+insert into source_groups (name, user_id, feed, mail_report)
+values (
+    %(source_group__name)s, %(source_group__user_id)s,
+    %(source_group__feed)s, %(source_group__mail_report)s
+)
+returning id
+"""
+
+_UPDATE_GROUP_SQL = """
+update source_groups
+set name=%(source_group__name)s, feed=%(source_group__feed)s,
+    mail_report=%(source_group__mail_report)s
+where id=%(source_group__user_id)s
+"""
+
+
 def save(db, group: model.SourceGroup) -> model.SourceGroup:
     """Save / update group"""
     with db.cursor() as cur:
         if not group.feed:
             group.feed = _generate_group_feed(cur)
 
+        row = group.to_row()
+
         if group.id is None:
-            cur.execute(
-                "insert into source_groups (name, user_id, feed, mail_report) "
-                "values (%s, %s, %s, %s) returning id",
-                (group.name, group.user_id, group.feed, group.mail_report),
-            )
+            cur.execute(_INSERT_GROUP_SQL, row)
             group.id = cur.fetchone()[0]
         else:
-            cur.execute(
-                "update source_groups set name= %s, feed=%s, mail_report=%s "
-                "where id=%s",
-                (group.name, group.feed, group.mail_report, group.id),
-            )
+            cur.execute(_UPDATE_GROUP_SQL, row)
 
         return group
 

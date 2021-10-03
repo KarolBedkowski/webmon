@@ -18,7 +18,7 @@ import json
 import logging
 import typing as ty
 from datetime import datetime, timedelta
-from enum import IntEnum
+from enum import Enum, IntEnum
 
 from webmon2 import common
 
@@ -27,8 +27,7 @@ _LOG = logging.getLogger(__name__)
 
 class MailReportMode(IntEnum):
     NO_SEND = 0
-    AS_GROUP = 1
-    AS_ENTRY = 1
+    AS_GROUP_SOURCE = 1
     SEND = 2
 
 
@@ -47,13 +46,19 @@ class SourceGroup:
     )
 
     def __init__(self, **args):
+        # id of source group
         self.id = args.get("id")  # type: int
+        # name of group
         self.name = args.get("name")  # type: str
         self.user_id = args.get("user_id")  # type: int
+        # feed url - hash part
         self.feed = args.get("feed")  # type: ty.Optional[str]
-        self.mail_report = args.get("mail_report")  # type: int
+        # configuration of mail sending for this group
+        self.mail_report = args.get("mail_report")  # type: MailReportMode
 
+        # number of unread entries in group / not in source_groups table
         self.unread = args.get("unread")  # type: bool
+        # number of sources in group / not in source_groups table
         self.sources_count = args.get("sources_count")  # type: int
 
     def __str__(self):
@@ -76,8 +81,26 @@ class SourceGroup:
             name=row["source_group__name"],
             user_id=row["source_group__user_id"],
             feed=row["source_group__feed"],
-            mail_report=row["source_group__mail_report"],
+            mail_report=MailReportMode(row["source_group__mail_report"]),
         )
+
+    def to_row(self) -> Row:
+        return {
+            "source_group__id": self.id,
+            "source_group__name": self.name,
+            "source_group__user_id": self.user_id,
+            "source_group__feed": self.feed,
+            "source_group__mail_report": self.mail_report.value,
+        }
+
+
+class SourceStatus(IntEnum):
+    # source not activated after configuration
+    NOT_ACTIVATED = 0
+    # source is active
+    ACTIVE = 1
+    # source disabled by user
+    DISABLED = 2
 
 
 class Source:  # pylint: disable=too-many-instance-attributes
@@ -101,22 +124,31 @@ class Source:  # pylint: disable=too-many-instance-attributes
     def __init__(self, **args):
         self.id = args.get("id")  # type: int
         self.group_id = args.get("group_id")  # type: int
+        # source kind name - using to select class supported this source
         self.kind = args.get("kind")  # type: str
         self.name = args.get("name")  # type: str
+        # update interval
         self.interval = args.get("interval")  # type: str
+        # additional settings
         self.settings = args.get("settings")  # type: ty.Dict[str, ty.Any]
+        # filters configuration
         self.filters = args.get(
             "filters"
         )  # type: ty.List[ty.Dict[str, ty.Any]]
         self.user_id = args.get("user_id")  # type: int
-        self.status = args.get("status", 1)  # type: int
-        self.mail_report = args.get("mail_report")  # type: int
+        # status of source
+        self.status = args.get(
+            "status", SourceStatus.NOT_ACTIVATED
+        )  # type: SourceStatus
+        # mail sending setting
+        self.mail_report = args.get("mail_report")  # type: MailReportMode
+        # default score given for entries this source
         self.default_score = args.get("default_score")  # type: int
 
         self.group = None  # type: SourceGroup
-        self.state = None
-
-        self.unread = None
+        self.state = None  # type: ty.Optional[SourceState]
+        # is source has unread entries
+        self.unread = None  # type: ty.Optional[int]
 
     def __str__(self):
         return common.obj2str(self)
@@ -151,9 +183,13 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.filters = common.get_json_if_exists(
             row_keys, "source__filters", row
         )
-        source.status = row["source__status"]
+        source.status = SourceStatus(row["source__status"])
         source.user_id = row["source__user_id"]
-        source.mail_report = row["source__mail_report"]
+        mail_report = row["source__mail_report"]
+        if mail_report is None:
+            source.mail_report = MailReportMode.AS_GROUP_SOURCE
+        else:
+            source.mail_report = MailReportMode(mail_report)
         source.default_score = row["source__default_score"]
         return source
 
@@ -170,14 +206,27 @@ class Source:  # pylint: disable=too-many-instance-attributes
                 json.dumps(self.filters) if self.filters else None
             ),
             "source__user_id": self.user_id,
-            "source__status": self.status,
+            "source__status": self.status.value,
             "source__id": self.id,
-            "source__mail_report": self.mail_report,
+            "source__mail_report": self.mail_report.value
+            if self.mail_report
+            else None,
             "source__default_score": self.default_score,
         }
 
 
 Sources = ty.Iterable[Source]
+
+
+class SourceStateStatus(Enum):
+    # new source stare; not jet updated
+    NEW = "new"
+    # source update error
+    ERROR = "error"
+    # source not modified
+    NOT_MODIFIED = "not modified"
+    # source updated
+    OK = "ok"
 
 
 class SourceState:  # pylint: disable=too-many-instance-attributes
@@ -197,23 +246,35 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self, **args):
         self.source_id = args.get("source_id")  # type: int
+        # next source update time
         self.next_update = args.get(
             "next_update"
         )  # type: ty.Optional[datetime.datetime]
+        # last source update time
         self.last_update = args.get(
             "last_update"
         )  # type: ty.Optional[datetime.datetime]
+        # last source update failed time
         self.last_error = args.get(
             "last_error"
         )  # type: ty.Optional[datetime.datetime]
+        # number of failed updates since last success update
         self.error_counter = args.get("error_counter")  # type: int
+        # number of success updated since last failure
         self.success_counter = args.get("success_counter")  # type: int
-        self.status = args.get("status")  # type: ty.Optional[str]
+        # source updates status
+        self.status = args.get(
+            "status"
+        )  # type: ty.Optional[SourceStateStatus]
         self.error = args.get("error")  # type: ty.Optional[str]
+        # additional informations stored by source loader
         self.state = args.get(
             "state"
         )  # type: ty.Optional[ty.Dict[str, ty.Any]]
+        # icon hash
         self.icon = args.get("icon")  # type: ty.Optional[str]
+
+        # icon as binary data; loaded from binaries
         self.icon_data = args.get("icon_data")  # type: ty.Tuple[str, str]
 
     @staticmethod
@@ -223,7 +284,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.next_update = datetime.now() + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
-        source.status = "new"
+        source.status = SourceStateStatus.NEW
         return source
 
     def create_new(self) -> SourceState:
@@ -238,7 +299,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
-        state.status = "ok"
+        state.status = SourceStateStatus.OK
         state.success_counter = self.success_counter + 1
         state.last_error = None
         state.error = None
@@ -253,7 +314,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.source_id = self.source_id
         state.error = error
         state.last_update = self.last_update
-        state.status = "error"
+        state.status = SourceStateStatus.ERROR
         state.success_counter = self.success_counter
         state.error_counter = self.error_counter + 1
         state.last_error = datetime.now()
@@ -266,7 +327,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
-        state.status = "not modified"
+        state.status = SourceStateStatus.NOT_MODIFIED
         state.last_error = None
         state.error = None
         state.error_counter = 0
@@ -313,7 +374,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             "source_state__last_error": self.last_error,
             "source_state__error_counter": self.error_counter,
             "source_state__success_counter": self.success_counter,
-            "source_state__status": self.status,
+            "source_state__status": self.status.value if self.status else None,
             "source_state__error": self.error,
             "source_state__state": json.dumps(self.state),
             "source_state__icon": self.icon,
@@ -328,7 +389,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.last_error = row["source_state__last_error"]
         state.error_counter = row["source_state__error_counter"]
         state.success_counter = row["source_state__success_counter"]
-        state.status = row["source_state__status"]
+        state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
         row_keys = row.keys()
         state.state = common.get_json_if_exists(
@@ -336,6 +397,13 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         )
         state.icon = row["source_state__icon"]
         return state
+
+
+class EntryStatus(Enum):
+    # entry is new
+    NEW = "new"
+    # entry was updated
+    UPDATED = "updated"
 
 
 class Entry:  # pylint: disable=too-many-instance-attributes
@@ -362,21 +430,30 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def __init__(self, id_=None, source_id=None):
         self.id = id_  # type: int
         self.source_id = source_id  # type: int
+        # time of entry updated
         self.updated = None  # type: ty.Optional[datetime]
+        # time of entry created
         self.created = None  # type: ty.Optional[datetime]
+        # is entry is read
         self.read_mark = 0  # type: int
+        # is entry is marked
         self.star_mark = 0  # type: int
-        self.status = None  # type: ty.Optional[str]
+        # entry status, new or updated for changed entries (not used)
+        self.status = None  # type: EntryStatus
+        # unique hash for entry
         self.oid = None  # type: ty.Optional[str]
         self.title = None  # type: ty.Optional[str]
+        # url associated to entry
         self.url = None  # type: ty.Optional[str]
         self.content = None  # type: ty.Optional[str]
+        # additional information about entry; ie. content type
         self.opts = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
         self.user_id = None  # type: int
+        # hash of icon, from binaries table
         self.icon = None  # type: ty.Optional[str]
         self.score = 0  # type; int
 
-        # tuple(content type, data)
+        # icon as data - tuple(content type, data)
         self.icon_data = None  # type: ty.Optional[ty.Tuple[str, ty.Any]]
         self.source = None  # type: Source
 
@@ -490,7 +567,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             "entry__created": self.created,
             "entry__read_mark": self.read_mark,
             "entry__star_mark": self.star_mark,
-            "entry__status": self.status,
+            "entry__status": self.status.value,
             "entry__oid": self.oid,
             "entry__title": self.title,
             "entry__url": self.url,
@@ -535,7 +612,6 @@ class Setting:
         "value_type",
         "description",
         "user_id",
-        "parameters",
     )
 
     def __init__(
@@ -550,8 +626,8 @@ class Setting:
         self.value = value  # type: ty.Any
         self.value_type = value_type  # type: str
         self.description = description  # type: str
+        # user id if settings is for given user
         self.user_id = user_id  # ty.Optional[int]
-        self.parameters = None  # ty.Optional[ty.Dict[str, ty.Any]]
 
     def set_value(self, value):
         if self.value_type == "int":
@@ -608,6 +684,7 @@ class User:
         self.password = args.get("password")  # type: str
         self.active = args.get("active")  # type: bool
         self.admin = args.get("admin")  # type: bool
+        # totp token if user configure totp
         self.totp = args.get("totp")  # type: ty.Optional[str]
 
     @classmethod
@@ -662,11 +739,11 @@ class ScoringSett:
         score_change: int,
         id: ty.Optional[int] = None,  # pylint: disable=redefined-builtin
     ):
-        self.id = id
-        self.user_id = user_id
-        self.pattern = pattern
-        self.active = active
-        self.score_change = score_change
+        self.id = id  # type: ty.Optional[int]
+        self.user_id = user_id  # type: int
+        self.pattern = pattern  # type: ty.Optional[str]
+        self.active = active  # type: bool
+        self.score_change = score_change  # type: int
 
     def __str__(self):
         return common.obj2str(self)

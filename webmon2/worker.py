@@ -121,10 +121,16 @@ class FetchWorker(threading.Thread):
 
         new_state, entries = src.load(source.state)
 
-        if new_state.status == "error":
+        if new_state.status == model.SourceStateStatus.ERROR:
             _SOURCES_PROCESSED_ERRORS.inc()
             new_state.next_update = _calc_next_check_on_error(source)
             database.sources.save_state(db, new_state, source.user_id)
+            _LOG.info(
+                "[%s] process source %d error: %s",
+                self._idx,
+                source_id,
+                new_state.error,
+            )
             return
 
         last_update = source.state.last_update or datetime.datetime.now()
@@ -312,6 +318,7 @@ def _calc_next_check_on_error(source: model.Source):
 
 def _save_state_error(db, source: model.Source, err: str):
     _SOURCES_PROCESSED_ERRORS.inc()
+    assert source.state
 
     new_state = source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)

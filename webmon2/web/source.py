@@ -102,7 +102,7 @@ def source_edit(
         if not errors:
             next_action = request.form.get("next_action")
             if next_action == "save_activate":
-                u_source.status = 1
+                u_source.status = model.SourceStatus.ACTIVE
 
             u_source = database.sources.save(db, u_source)
             db.commit()
@@ -250,7 +250,7 @@ def source_filter_edit(source_id: int, idx: int):
         _LOG.warning(
             "invalid filter for source %d [%d]: %r", source_id, idx, conf
         )
-        abort(400)
+        return abort(400)
 
     # for new filters without parameters, save it
     if is_new and not fltr.params:

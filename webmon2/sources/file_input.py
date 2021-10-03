@@ -35,7 +35,7 @@ class FileSource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
 
         fname = self._conf["filename"]
@@ -64,13 +64,16 @@ class FileSource(AbstractSource):
 
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
-            entry.status = "updated" if state.last_update else "new"
+            entry.status = (
+                model.EntryStatus.UPDATED
+                if state.last_update
+                else model.EntryStatus.NEW
+            )
             entry.title = self._source.name
             entry.url = fname
             entry.content = content
             entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
-            new_state.status = "updated" if state.last_update else "new"
             new_state.next_update = (
                 datetime.datetime.now()
                 + datetime.timedelta(
