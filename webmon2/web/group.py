@@ -207,6 +207,7 @@ def group_entry(group_id: int, mode: str, entry_id: int):
     entry = database.entries.get(
         db, entry_id, with_source=True, with_group=True
     )
+
     if user_id != entry.user_id or group_id != entry.source.group_id:
         return abort(404)
 

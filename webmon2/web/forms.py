@@ -14,14 +14,12 @@ from __future__ import annotations
 import logging
 import typing as ty
 
-from werkzeug.datastructures import ImmutableMultiDict
-
 from webmon2 import common, model, sources
 
 _ = ty
 _LOG = logging.getLogger(__name__)
 
-Form = ImmutableMultiDict[str, str]
+Form = ty.Dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 
 
 class InvalidValue(RuntimeError):
@@ -48,6 +46,8 @@ class Field:  # pylint: disable=too-many-instance-attributes
         self.default_value = None
         # error messge
         self.error = None  # type: ty.Optional[str]
+
+        # additional setting for field; i.e. multiline
         self.parameters = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
 
     def __str__(self):
@@ -78,7 +78,6 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field.type_class = param.type
         field.fieldname = prefix + param.name
         field.default_value = sett_value or param.default or ""
-        field.parameters = param.parameters
         return field
 
     @staticmethod
@@ -99,7 +98,6 @@ class Field:  # pylint: disable=too-many-instance-attributes
         field.value = setting.value
         field.fieldname = prefix + setting.key
         field.default_value = ""
-        field.parameters = setting.parameters
         return field
 
     def update_from_request(self, form: Form) -> None:
@@ -174,8 +172,8 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         form.name = source.name
         form.interval = source.interval or ""
         form.filters = source.filters
-        form.status = source.status
-        form.mail_report = source.mail_report
+        form.status = source.status.value
+        form.mail_report = source.mail_report.value
         form.default_score = source.default_score or 0
         return form
 
@@ -199,8 +197,8 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.settings = {
             field.name: field.value for field in self.settings or []
         }
-        src.status = self.status
-        src.mail_report = self.mail_report
+        src.status = model.SourceStatus(self.status)
+        src.mail_report = model.MailReportMode(self.mail_report)
         src.default_score = self.default_score
         return src
 
@@ -223,7 +221,7 @@ class GroupForm:
         form.name = group.name
         form.feed = group.feed
         form.feed_enabled = bool(group.feed) and group.feed != "off"
-        form.mail_report = group.mail_report
+        form.mail_report = group.mail_report.value
         return form
 
     def update_from_request(self, form: Form) -> None:
@@ -241,7 +239,7 @@ class GroupForm:
         group = group.clone()
         group.name = self.name
         group.feed = self.feed
-        group.mail_report = self.mail_report
+        group.mail_report = model.MailReportMode(self.mail_report)
         return group
 
     def validate(self) -> ty.Dict[str, str]:

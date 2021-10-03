@@ -26,7 +26,7 @@ def _join_entries(
     first_entry.content = (
         (first_entry.content or "") + "\n\n" + (next_entry.content or "")
     )
-    first_entry.status = "new"
+    first_entry.status = model.EntryStatus.NEW
     return first_entry
 
 

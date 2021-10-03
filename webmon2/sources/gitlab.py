@@ -107,7 +107,7 @@ def _build_entry(source: model.Source, project, content: str) -> model.Entry:
     entry = model.Entry.for_source(source)
     entry.url = project.web_url
     entry.title = source.name
-    entry.status = "new"
+    entry.status = model.EntryStatus.NEW
     entry.content = content
     entry.created = entry.updated = datetime.now()
     entry.set_opt("content-type", "markdown")
@@ -134,7 +134,7 @@ class GitLabCommits(AbstractGitLabSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
@@ -225,7 +225,7 @@ class GitLabTagsSource(AbstractGitLabSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
@@ -304,7 +304,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
 
         project = self._gitlab_get_project()

@@ -89,7 +89,7 @@ class AbstractSource:
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Load data; return list of items (Result)."""
         raise NotImplementedError()
 

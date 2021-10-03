@@ -31,7 +31,7 @@ class DymmySource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> ty.Tuple[model.SourceState, model.Entries]:
 
         last_check = state.get_state("last_check")
 
@@ -45,14 +45,13 @@ class DymmySource(AbstractSource):
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
-            entry.status = "new"
+            entry.status = model.EntryStatus.NEW
             entry.title = self._source.name
             entry.url = "dummy"
             entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
             entries.append(entry)
 
         new_state = state.new_ok()
-        new_state.status = "updated" if state.last_update else "new"
         new_state.next_update = datetime.datetime.now() + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )

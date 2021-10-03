@@ -69,7 +69,7 @@ def _new_entry(
     entry: model.Entry, content: str, title: ty.Optional[str] = None
 ) -> model.Entry:
     new_entry = entry.clone()
-    new_entry.status = "new"
+    new_entry.status = model.EntryStatus.NEW
     if title:
         new_entry.title = title
 

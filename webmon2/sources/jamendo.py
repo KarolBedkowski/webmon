@@ -110,7 +110,7 @@ def _jamendo_album_to_url(album_id: int) -> str:
 def _create_entry(source: model.Source, content: str, date) -> model.Entry:
     entry = model.Entry.for_source(source)
     entry.title = source.name
-    entry.status = "new"
+    entry.status = model.EntryStatus.NEW
     entry.content = content
     entry.set_opt("content-type", "plain")
     entry.updated = entry.created = date

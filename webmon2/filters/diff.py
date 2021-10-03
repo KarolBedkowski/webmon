@@ -82,7 +82,7 @@ class NDiff(AbstractFilter):
         if not prev_content:
             _LOG.debug("no prev_content")
             entry = entry.clone()
-            entry.status = "new"
+            entry.status = model.EntryStatus.NEW
             entry.set_opt("preformated", True)
             entry.set_opt("content-type", "plain")
             yield entry
@@ -103,7 +103,7 @@ class NDiff(AbstractFilter):
             return
 
         entry = entry.clone()
-        entry.status = "new"
+        entry.status = model.EntryStatus.NEW
         entry.content = "\n".join(res)
         entry.set_opt("content-type", "preformated")
         entry.set_opt("_ndiff_changed_lines", changed_lines)
