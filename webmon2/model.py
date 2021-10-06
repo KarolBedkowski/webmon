@@ -54,7 +54,9 @@ class SourceGroup:
         # feed url - hash part
         self.feed = args.get("feed")  # type: ty.Optional[str]
         # configuration of mail sending for this group
-        self.mail_report = args.get("mail_report")  # type: MailReportMode
+        self.mail_report = args.get(
+            "mail_report", MailReportMode.AS_GROUP_SOURCE
+        )  # type: MailReportMode
 
         # number of unread entries in group / not in source_groups table
         self.unread = args.get("unread")  # type: bool
@@ -141,7 +143,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
             "status", SourceStatus.NOT_ACTIVATED
         )  # type: SourceStatus
         # mail sending setting
-        self.mail_report = args.get("mail_report")  # type: MailReportMode
+        self.mail_report = args.get(
+            "mail_report", MailReportMode.AS_GROUP_SOURCE
+        )  # type: MailReportMode
         # default score given for entries this source
         self.default_score = args.get("default_score")  # type: int
 
@@ -264,7 +268,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.success_counter = args.get("success_counter")  # type: int
         # source updates status
         self.status = args.get(
-            "status"
+            "status", SourceStateStatus.NEW
         )  # type: ty.Optional[SourceStateStatus]
         self.error = args.get("error")  # type: ty.Optional[str]
         # additional informations stored by source loader
@@ -284,7 +288,6 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.next_update = datetime.now() + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
-        source.status = SourceStateStatus.NEW
         return source
 
     def create_new(self) -> SourceState:

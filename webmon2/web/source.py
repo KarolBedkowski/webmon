@@ -78,7 +78,7 @@ def source_edit(
             return abort(404)
 
     elif kind:
-        source = model.Source(kind=kind, user_id=user_id, name="", status=0)
+        source = model.Source(kind=kind, user_id=user_id)
     else:
         return abort(400)
 

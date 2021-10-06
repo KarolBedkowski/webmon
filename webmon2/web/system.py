@@ -313,7 +313,7 @@ def sett_sys_user(user_id: int = None):
             flash("User not found")
             return redirect(url_for("system.sett_sys_users"))
     else:
-        user = model.User()
+        user = model.User(active=True)
 
     errors = {}
     form = forms.UserForm.from_model(user)
