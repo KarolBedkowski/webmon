@@ -8,11 +8,14 @@
 
 """
 GUI forms
+
+TODO: Python3.10: use slots in dataclass
 """
 from __future__ import annotations
 
 import logging
 import typing as ty
+from dataclasses import dataclass
 
 from webmon2 import common, model, sources
 
@@ -26,29 +29,28 @@ class InvalidValue(RuntimeError):
     pass
 
 
+@dataclass()
 class Field:  # pylint: disable=too-many-instance-attributes
-    def __init__(self):
-        # internal (system) field name
-        self.name: str = None
-        # field description
-        self.description: str = None
-        # field type name
-        self.type: str = None
-        # field value
-        self.value = None
-        self.required: bool = False
-        self.options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
-        # field value class
-        self.type_class = None
-        # field name used in form
-        self.fieldname: str = None
-        # default value
-        self.default_value = None
-        # error messge
-        self.error: ty.Optional[str] = None
-
-        # additional setting for field; i.e. multiline
-        self.parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
+    # internal (system) field name
+    name: str
+    # field description
+    description: str
+    # field type name
+    type: str
+    # field name used in form
+    fieldname: str
+    # field value class
+    type_class: ty.Any = None
+    # field value
+    value: ty.Any = None
+    required: bool = False
+    options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
+    # default value
+    default_value: ty.Any = None
+    # error messge
+    error: ty.Optional[str] = None
+    # additional setting for field; i.e. multiline
+    parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -60,44 +62,50 @@ class Field:  # pylint: disable=too-many-instance-attributes
         prefix: str = "",
         sett_value=None,
     ) -> Field:
-        field = Field()
-        field.name = param.name
-        field.description = param.description
         if param.options:
-            field.type = "select"
+            field_type = "select"
         elif param.type == int:
-            field.type = "number"
+            field_type = "number"
         elif param.type == bool:
-            field.type = "checkbox"
+            field_type = "checkbox"
         else:
-            field.type = "str"
+            field_type = "str"
 
-        field.required = param.required and not sett_value
-        field.options = [(val, val) for val in param.options or []]
-        field.value = values.get(field.name, param.default) if values else None
-        field.type_class = param.type
-        field.fieldname = prefix + param.name
-        field.default_value = sett_value or param.default or ""
+        field = Field(
+            name=param.name,
+            description=param.description,
+            type=field_type,
+            fieldname=prefix + param.name,
+            type_class=param.type,
+            required=param.required and not sett_value,
+            options=[(val, val) for val in param.options or []],
+            value=values.get(param.name, param.default) if values else None,
+            default_value=sett_value or param.default or "",
+        )
         return field
 
     @staticmethod
     def from_setting(setting: model.Setting, prefix: str) -> Field:
-        field = Field()
-        field.name = setting.key
-        field.description = setting.description
+        field_type_class: ty.Any
         if setting.value_type == "int":
-            field.type = "number"
-            field.type_class = int
+            field_type = "number"
+            field_type_class = int
         elif setting.value_type == "bool":
-            field.type = "checkbox"
-            field.type_class = bool
+            field_type = "checkbox"
+            field_type_class = bool
         else:
-            field.type = "str"
-            field.type_class = str
+            field_type = "str"
+            field_type_class = str
 
-        field.value = setting.value
-        field.fieldname = prefix + setting.key
-        field.default_value = ""
+        field = Field(
+            name=setting.key,
+            description=setting.description,
+            value=setting.value,
+            fieldname=prefix + setting.key,
+            default_value="",
+            type=field_type,
+            type_class=field_type_class,
+        )
         return field
 
     def update_from_request(self, form: Form) -> None:
@@ -128,18 +136,18 @@ class Field:  # pylint: disable=too-many-instance-attributes
         return default
 
 
+@dataclass
 class SourceForm:  # pylint: disable=too-many-instance-attributes
-    def __init__(self):
-        self.id: int = None
-        self.group_id: int = None
-        self.kind: str = None
-        self.name: str = None
-        self.interval: str = None
-        self.settings: ty.List[str, ty.Any] = None
-        self.filters: ty.List[ty.Dict[str, ty.Any]] = None
-        self.status: int = None
-        self.mail_report: int = None
-        self.default_score: int = 0
+    id: ty.Optional[int]
+    group_id: int
+    kind: str
+    name: str
+    interval: str
+    status: int
+    mail_report: int
+    default_score: int
+    settings: ty.Optional[ty.List[Field]] = None
+    filters: ty.Optional[ty.List[ty.Dict[str, ty.Any]]] = None
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -165,16 +173,17 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def from_model(source: model.Source) -> SourceForm:
-        form = SourceForm()
-        form.id = source.id
-        form.group_id = source.group_id
-        form.kind = source.kind
-        form.name = source.name
-        form.interval = source.interval or ""
-        form.filters = source.filters
-        form.status = source.status.value
-        form.mail_report = source.mail_report.value
-        form.default_score = source.default_score or 0
+        form = SourceForm(
+            id=source.id,
+            group_id=source.group_id,
+            kind=source.kind,
+            name=source.name or "",
+            interval=source.interval or "",
+            filters=source.filters,
+            status=source.status.value,
+            mail_report=source.mail_report.value,
+            default_score=source.default_score or 0,
+        )
         return form
 
     def update_from_request(self, form: Form) -> None:
@@ -193,7 +202,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.group_id = self.group_id
         src.name = self.name
         src.interval = self.interval
-        src.filters = self.filters
+        src.filters = self.filters  # type: ignore
         src.settings = {
             field.name: field.value for field in self.settings or []
         }
@@ -203,25 +212,26 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         return src
 
 
+@dataclass
 class GroupForm:
-    def __init__(self):
-        self.id: int = None
-        self.name: str = None
-        self.feed: ty.Optional[str] = None
-        self.feed_enabled: bool = None
-        self.mail_report: int = None
+    id: ty.Optional[int] = None
+    name: ty.Optional[str] = None
+    feed: ty.Optional[str] = None
+    feed_enabled: bool = True
+    mail_report: int = 1
 
     def __str__(self):
         return common.obj2str(self)
 
     @staticmethod
     def from_model(group: model.SourceGroup) -> GroupForm:
-        form = GroupForm()
-        form.id = group.id
-        form.name = group.name
-        form.feed = group.feed
-        form.feed_enabled = bool(group.feed) and group.feed != "off"
-        form.mail_report = group.mail_report.value
+        form = GroupForm(
+            id=group.id,
+            name=group.name,
+            feed=group.feed,
+            feed_enabled=bool(group.feed) and group.feed != "off",
+            mail_report=group.mail_report.value,
+        )
         return form
 
     def update_from_request(self, form: Form) -> None:
@@ -237,7 +247,7 @@ class GroupForm:
 
     def update_model(self, group: model.SourceGroup) -> model.SourceGroup:
         group = group.clone()
-        group.name = self.name
+        group.name = self.name  # type: ignore
         group.feed = self.feed
         group.mail_report = model.MailReportMode(self.mail_report)
         return group
@@ -251,12 +261,16 @@ class GroupForm:
 
 
 class Filter:  # pylint: disable=too-few-public-methods
+    __slots__ = ("name", "parameters")
+
     def __init__(self, name=None):
         self.name: str = name
         self.parameters = []
 
 
 class FieldsForm:
+    __slots__ = ("fields",)
+
     def __init__(self, fields: ty.Optional[ty.List[Field]] = None):
         self.fields: ty.List[Field] = fields or []
 
@@ -277,17 +291,17 @@ class FieldsForm:
 
 
 # pylint: disable=too-many-instance-attributes
+@dataclass
 class UserForm:
-    def __init__(self):
-        self.id: int = None
-        self.login: str = None
-        self.active: bool = None
-        self.email: str = None
-        self.admin: bool = None
-        self.password1: str = None
-        self.password2: str = None
-        self.disable_totp: bool = None
-        self.has_totp: bool = None
+    id: ty.Optional[int]
+    login: str
+    active: bool
+    admin: bool
+    email: str
+    password1: ty.Optional[str] = None
+    password2: ty.Optional[str] = None
+    has_totp: bool = False
+    disable_totp: bool = False
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -304,13 +318,14 @@ class UserForm:
 
     @staticmethod
     def from_model(user: model.User) -> UserForm:
-        form = UserForm()
-        form.id = user.id
-        form.login = user.login or ""
-        form.email = user.email or ""
-        form.active = user.active
-        form.admin = user.admin
-        form.has_totp = bool(user.totp)
+        form = UserForm(
+            id=user.id,
+            login=user.login or "",
+            email=user.email or "",
+            active=user.active,
+            admin=user.admin,
+            has_totp=bool(user.totp),
+        )
         return form
 
     def update_from_request(self, form: Form):
@@ -325,7 +340,7 @@ class UserForm:
     def update_model(self, user: model.User) -> model.User:
         user = user.clone()
         if not user.login:
-            user.login = self.login
+            user.login = self.login  # type: ignore
 
         user.email = self.email
         user.active = self.active
