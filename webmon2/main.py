@@ -82,6 +82,7 @@ def _parse_options():
     )
 
     subparsers.add_parser("update-schema", help="update database schema")
+    subparsers.add_parser("shell", help="launch IPython shell")
 
     parser_mig = subparsers.add_parser(
         "migrate", help="migrate sources from file"
