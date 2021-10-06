@@ -309,7 +309,7 @@ class UserForm:
         form.login = user.login or ""
         form.email = user.email or ""
         form.active = user.active
-        form.admin = user.active
+        form.admin = user.admin
         form.has_totp = bool(user.totp)
         return form
 
