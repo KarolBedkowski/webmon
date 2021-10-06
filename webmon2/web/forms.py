@@ -29,26 +29,26 @@ class InvalidValue(RuntimeError):
 class Field:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         # internal (system) field name
-        self.name = None  # type: str
+        self.name: str = None
         # field description
-        self.description = None  # type: str
+        self.description: str = None
         # field type name
-        self.type = None  # type: str
+        self.type: str = None
         # field value
         self.value = None
-        self.required = False  # type: bool
-        self.options = None  # type: ty.Optional[ty.Tuple(ty.Any, str)]
+        self.required: bool = False
+        self.options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
         # field value class
         self.type_class = None
         # field name used in form
-        self.fieldname = None  # type: str
+        self.fieldname: str = None
         # default value
         self.default_value = None
         # error messge
-        self.error = None  # type: ty.Optional[str]
+        self.error: ty.Optional[str] = None
 
         # additional setting for field; i.e. multiline
-        self.parameters = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
+        self.parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -130,16 +130,16 @@ class Field:  # pylint: disable=too-many-instance-attributes
 
 class SourceForm:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
-        self.id = None  # type: int
-        self.group_id = None  # type: int
-        self.kind = None  # type: str
-        self.name = None  # type: str
-        self.interval = None  # type: str
-        self.settings = None  # type: ty.List[str, ty.Any]
-        self.filters = None  # type: ty.List[ty.Dict[str, ty.Any]]
-        self.status = None  # type: int
-        self.mail_report = None  # type: int
-        self.default_score = 0  # type: int
+        self.id: int = None
+        self.group_id: int = None
+        self.kind: str = None
+        self.name: str = None
+        self.interval: str = None
+        self.settings: ty.List[str, ty.Any] = None
+        self.filters: ty.List[ty.Dict[str, ty.Any]] = None
+        self.status: int = None
+        self.mail_report: int = None
+        self.default_score: int = 0
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
@@ -205,11 +205,11 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
 class GroupForm:
     def __init__(self):
-        self.id = None  # type: int
-        self.name = None  # type: str
-        self.feed = None  # type: ty.Optional[str]
-        self.feed_enabled = None  # type: bool
-        self.mail_report = None  # type: int
+        self.id: int = None
+        self.name: str = None
+        self.feed: ty.Optional[str] = None
+        self.feed_enabled: bool = None
+        self.mail_report: int = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -252,13 +252,13 @@ class GroupForm:
 
 class Filter:  # pylint: disable=too-few-public-methods
     def __init__(self, name=None):
-        self.name = name  # type: str
+        self.name: str = name
         self.parameters = []
 
 
 class FieldsForm:
     def __init__(self, fields: ty.Optional[ty.List[Field]] = None):
-        self.fields = fields or []  # type: ty.List[Field]
+        self.fields: ty.List[Field] = fields or []
 
     def update_from_request(self, request_form: Form) -> bool:
         """Update fields from request; return True if no errors"""
@@ -279,15 +279,15 @@ class FieldsForm:
 # pylint: disable=too-many-instance-attributes
 class UserForm:
     def __init__(self):
-        self.id = None  # type: int
-        self.login = None  # type: str
-        self.active = None  # type: bool
-        self.email = None  # type: str
-        self.admin = None  # type: bool
-        self.password1 = None  # type: str
-        self.password2 = None  # type: str
-        self.disable_totp = None  # type: bool
-        self.has_totp = None  # type: bool
+        self.id: int = None
+        self.login: str = None
+        self.active: bool = None
+        self.email: str = None
+        self.admin: bool = None
+        self.password1: str = None
+        self.password2: str = None
+        self.disable_totp: bool = None
+        self.has_totp: bool = None
 
     def validate(self) -> ty.Dict[str, str]:
         result = {}
