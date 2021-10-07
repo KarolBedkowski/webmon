@@ -17,6 +17,7 @@ import hashlib
 import json
 import logging
 import typing as ty
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
@@ -34,46 +35,34 @@ class MailReportMode(IntEnum):
 Row = ty.Dict[str, ty.Any]
 
 
+@dataclass
 class SourceGroup:
-    __slots__ = (
-        "id",
-        "name",
-        "user_id",
-        "feed",
-        "mail_report",
-        "unread",
-        "sources_count",
-    )
-
-    def __init__(self, **args):
-        # id of source group
-        self.id = args.get("id")  # type: int
-        # name of group
-        self.name = args.get("name")  # type: str
-        self.user_id = args.get("user_id")  # type: int
-        # feed url - hash part
-        self.feed = args.get("feed")  # type: ty.Optional[str]
-        # configuration of mail sending for this group
-        self.mail_report = args.get(
-            "mail_report", MailReportMode.AS_GROUP_SOURCE
-        )  # type: MailReportMode
-
-        # number of unread entries in group / not in source_groups table
-        self.unread = args.get("unread")  # type: bool
-        # number of sources in group / not in source_groups table
-        self.sources_count = args.get("sources_count")  # type: int
+    # id of source group
+    id: int
+    # name of group
+    name: str
+    user_id: int
+    # feed url - hash part
+    feed: ty.Optional[str] = None
+    # configuration of mail sending for this group
+    mail_report: MailReportMode = MailReportMode.AS_GROUP_SOURCE
+    # number of unread entries in group / not in source_groups table
+    unread: bool = False
+    # number of sources in group / not in source_groups table
+    sources_count: int = 0
 
     def __str__(self):
         return common.obj2str(self)
 
     def clone(self) -> SourceGroup:
-        sgr = SourceGroup()
-        sgr.id = self.id
-        sgr.name = self.name
-        sgr.user_id = self.user_id
-        sgr.feed = self.feed
-        sgr.mail_report = self.mail_report
-        sgr.sources_count = self.sources_count
+        sgr = SourceGroup(
+            id=self.id,
+            name=self.name,
+            user_id=self.user_id,
+            feed=self.feed,
+            mail_report=self.mail_report,
+            sources_count=self.sources_count,
+        )
         return sgr
 
     @classmethod
@@ -124,35 +113,33 @@ class Source:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, **args):
-        self.id = args.get("id")  # type: int
-        self.group_id = args.get("group_id")  # type: int
+        self.id: int = args.get("id")
+        self.group_id: int = args.get("group_id")
         # source kind name - using to select class supported this source
-        self.kind = args.get("kind")  # type: str
-        self.name = args.get("name")  # type: str
+        self.kind: str = args.get("kind")
+        self.name: str = args.get("name")
         # update interval
-        self.interval = args.get("interval")  # type: str
+        self.interval: str = args.get("interval")
         # additional settings
-        self.settings = args.get("settings")  # type: ty.Dict[str, ty.Any]
+        self.settings: ty.Dict[str, ty.Any] = args.get("settings")
         # filters configuration
-        self.filters = args.get(
-            "filters"
-        )  # type: ty.List[ty.Dict[str, ty.Any]]
-        self.user_id = args.get("user_id")  # type: int
+        self.filters: ty.List[ty.Dict[str, ty.Any]] = args.get("filters")
+        self.user_id: int = args.get("user_id")
         # status of source
-        self.status = args.get(
+        self.status: SourceStatus = args.get(
             "status", SourceStatus.NOT_ACTIVATED
-        )  # type: SourceStatus
+        )
         # mail sending setting
-        self.mail_report = args.get(
+        self.mail_report: MailReportMode = args.get(
             "mail_report", MailReportMode.AS_GROUP_SOURCE
-        )  # type: MailReportMode
+        )
         # default score given for entries this source
-        self.default_score = args.get("default_score")  # type: int
+        self.default_score: int = args.get("default_score")
 
-        self.group = None  # type: SourceGroup
-        self.state = None  # type: ty.Optional[SourceState]
+        self.group: SourceGroup = None
+        self.state: ty.Optional[SourceState] = None
         # is source has unread entries
-        self.unread = None  # type: ty.Optional[int]
+        self.unread: ty.Optional[int] = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -249,37 +236,35 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, **args):
-        self.source_id = args.get("source_id")  # type: int
+        self.source_id: int = args.get("source_id")
         # next source update time
-        self.next_update = args.get(
+        self.next_update: ty.Optional[datetime.datetime] = args.get(
             "next_update"
-        )  # type: ty.Optional[datetime.datetime]
+        )
         # last source update time
-        self.last_update = args.get(
+        self.last_update: ty.Optional[datetime.datetime] = args.get(
             "last_update"
-        )  # type: ty.Optional[datetime.datetime]
+        )
         # last source update failed time
-        self.last_error = args.get(
+        self.last_error: ty.Optional[datetime.datetime] = args.get(
             "last_error"
-        )  # type: ty.Optional[datetime.datetime]
+        )
         # number of failed updates since last success update
-        self.error_counter = args.get("error_counter")  # type: int
+        self.error_counter: int = args.get("error_counter")
         # number of success updated since last failure
-        self.success_counter = args.get("success_counter")  # type: int
+        self.success_counter: int = args.get("success_counter")
         # source updates status
-        self.status = args.get(
+        self.status: ty.Optional[SourceStateStatus] = args.get(
             "status", SourceStateStatus.NEW
-        )  # type: ty.Optional[SourceStateStatus]
-        self.error = args.get("error")  # type: ty.Optional[str]
+        )
+        self.error: ty.Optional[str] = args.get("error")
         # additional informations stored by source loader
-        self.state = args.get(
-            "state"
-        )  # type: ty.Optional[ty.Dict[str, ty.Any]]
+        self.state: ty.Optional[ty.Dict[str, ty.Any]] = args.get("state")
         # icon hash
-        self.icon = args.get("icon")  # type: ty.Optional[str]
+        self.icon: ty.Optional[str] = args.get("icon")
 
         # icon as binary data; loaded from binaries
-        self.icon_data = args.get("icon_data")  # type: ty.Tuple[str, str]
+        self.icon_data: ty.Tuple[str, str] = args.get("icon_data")
 
     @staticmethod
     def new(source_id: int) -> SourceState:
@@ -431,34 +416,34 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     )
 
     def __init__(self, id_=None, source_id=None):
-        self.id = id_  # type: int
-        self.source_id = source_id  # type: int
+        self.id: int = id_
+        self.source_id: int = source_id
         # time of entry updated
-        self.updated = None  # type: ty.Optional[datetime]
+        self.updated: ty.Optional[datetime] = None
         # time of entry created
-        self.created = None  # type: ty.Optional[datetime]
+        self.created: ty.Optional[datetime] = None
         # is entry is read
-        self.read_mark = 0  # type: int
+        self.read_mark: int = 0
         # is entry is marked
-        self.star_mark = 0  # type: int
+        self.star_mark: int = 0
         # entry status, new or updated for changed entries (not used)
-        self.status = None  # type: EntryStatus
+        self.status: EntryStatus = None
         # unique hash for entry
-        self.oid = None  # type: ty.Optional[str]
-        self.title = None  # type: ty.Optional[str]
+        self.oid: ty.Optional[str] = None
+        self.title: ty.Optional[str] = None
         # url associated to entry
-        self.url = None  # type: ty.Optional[str]
-        self.content = None  # type: ty.Optional[str]
+        self.url: ty.Optional[str] = None
+        self.content: ty.Optional[str] = None
         # additional information about entry; ie. content type
-        self.opts = None  # type: ty.Optional[ty.Dict[str, ty.Any]]
-        self.user_id = None  # type: int
+        self.opts: ty.Optional[ty.Dict[str, ty.Any]] = None
+        self.user_id: int = None
         # hash of icon, from binaries table
-        self.icon = None  # type: ty.Optional[str]
+        self.icon: ty.Optional[str] = None
         self.score = 0  # type; int
 
         # icon as data - tuple(content type, data)
-        self.icon_data = None  # type: ty.Optional[ty.Tuple[str, ty.Any]]
-        self.source = None  # type: Source
+        self.icon_data: ty.Optional[ty.Tuple[str, ty.Any]] = None
+        self.source: Source = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -608,39 +593,14 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 Entries = ty.Iterable[Entry]
 
 
+@dataclass
 class Setting:
-    __slots__ = (
-        "key",
-        "value",
-        "value_type",
-        "description",
-        "user_id",
-    )
-
-    def __init__(
-        self,
-        key: str,
-        value: ty.Any,
-        value_type: str,
-        description: str,
-        user_id: ty.Optional[int] = None,
-    ):
-        self.key = key  # type: str
-        self.value = value  # type: ty.Any
-        self.value_type = value_type  # type: str
-        self.description = description  # type: str
-        # user id if settings is for given user
-        self.user_id = user_id  # ty.Optional[int]
-
-    def set_value(self, value):
-        if self.value_type == "int":
-            self.value = int(value)
-        elif self.value_type == "float":
-            self.value = float(value)
-        elif self.value_type == "bool":
-            self.value = value.lower() in ("true", "yes")
-        else:
-            self.value = str(value)
+    key: str
+    value: ty.Any
+    value_type: str
+    description: str
+    # user id if settings is for given user
+    user_id: ty.Optional[int] = None
 
     def __str__(self):
         return common.obj2str(self)
@@ -669,26 +629,16 @@ class Setting:
         }
 
 
+@dataclass
 class User:
-    __slots__ = (
-        "id",
-        "login",
-        "email",
-        "password",
-        "active",
-        "admin",
-        "totp",
-    )
-
-    def __init__(self, **args):
-        self.id = args.get("id")  # type: int
-        self.login = args.get("login")  # type: str
-        self.email = args.get("email")  # type: str
-        self.password = args.get("password")  # type: str
-        self.active = args.get("active")  # type: bool
-        self.admin = args.get("admin")  # type: bool
-        # totp token if user configure totp
-        self.totp = args.get("totp")  # type: ty.Optional[str]
+    id: ty.Optional[int] = None
+    login: ty.Optional[str] = None
+    email: ty.Optional[str] = None
+    password: ty.Optional[str] = None
+    active: bool = True
+    admin: bool = False
+    # totp token if user configure totp
+    totp: ty.Optional[str] = None
 
     @classmethod
     def from_row(cls, row: Row) -> User:
@@ -714,39 +664,25 @@ class User:
         }
 
     def clone(self) -> User:
-        user = User()
-        user.id = self.id
-        user.login = self.login
-        user.email = self.email
-        user.password = self.password
-        user.active = self.active
-        user.admin = self.admin
-        user.totp = self.totp
+        user = User(
+            id=self.id,
+            login=self.login,
+            email=self.email,
+            password=self.password,
+            active=self.active,
+            admin=self.admin,
+            totp=self.totp,
+        )
         return user
 
 
+@dataclass
 class ScoringSett:
-    __slots__ = (
-        "id",
-        "user_id",
-        "pattern",
-        "active",
-        "score_change",
-    )
-
-    def __init__(
-        self,
-        user_id: int,
-        pattern: ty.Optional[str],
-        active: bool,
-        score_change: int,
-        id: ty.Optional[int] = None,  # pylint: disable=redefined-builtin
-    ):
-        self.id = id  # type: ty.Optional[int]
-        self.user_id = user_id  # type: int
-        self.pattern = pattern  # type: ty.Optional[str]
-        self.active = active  # type: bool
-        self.score_change = score_change  # type: int
+    user_id: int
+    pattern: str
+    active: bool = True
+    score_change: int = 0
+    id: ty.Optional[int] = None  # pylint: disable=redefined-builtin
 
     def __str__(self):
         return common.obj2str(self)
