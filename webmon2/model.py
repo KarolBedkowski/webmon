@@ -37,11 +37,11 @@ Row = ty.Dict[str, ty.Any]
 
 @dataclass
 class SourceGroup:
-    # id of source group
-    id: int
     # name of group
     name: str
     user_id: int
+    # id of source group
+    id: ty.Optional[int] = None
     # feed url - hash part
     feed: ty.Optional[str] = None
     # configuration of mail sending for this group

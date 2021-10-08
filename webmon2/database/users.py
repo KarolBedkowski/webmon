@@ -100,8 +100,9 @@ def save(db, user: model.User) -> model.User:
             cur.close()
             raise LoginAlreadyExistsError()
         cur.execute(_INSERT_USER_SQL, user.to_row())
-        user.id = cur.fetchone()[0]
-        _create_new_user_data(cur, user.id)
+        user_id = cur.fetchone()[0]
+        user.id = user_id
+        _create_new_user_data(cur, user_id)
 
     cur.close()
     return user

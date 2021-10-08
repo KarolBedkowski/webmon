@@ -91,6 +91,7 @@ def group(key: str):
     except database.NotFound:
         return abort(404)
 
+    assert grp and grp.id
     updated_etag = database.groups.get_state(db, grp.id)
     _LOG.debug("updated_etag %r", updated_etag)
     if not updated_etag:
