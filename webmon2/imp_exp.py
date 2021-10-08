@@ -12,6 +12,7 @@ Import/Export sources & groups.
 
 import json
 import logging
+import typing as ty
 
 from webmon2 import database, model
 
@@ -71,14 +72,19 @@ def dump_import(db, user_id: int, data_str: str):
     if not data:
         raise RuntimeError("no data")
 
-    groups_map = {}
+    groups_map: ty.Dict[int, int] = {}
     for group in data.get("groups") or []:
         grp = database.groups.find(db, user_id, group["name"])
         if not grp:
-            grp = model.SourceGroup()
-            fill_object(grp, group)
-            grp.user_id = user_id
+            grp = model.SourceGroup(
+                user_id=user_id,
+                name=group["name"],
+                feed=group.get("feed"),
+                mail_report=group.get("mail_report"),
+            )
             grp = database.groups.save(db, grp)
+
+        assert grp.id
         groups_map[group["id"]] = grp.id
 
     sources_map = {}

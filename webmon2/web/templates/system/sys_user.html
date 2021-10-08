@@ -28,7 +28,7 @@
 		<p>
 	{% endif %}
 	<section>
-		<form method="POST">
+		<form method="POST" autocomplete="off">
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<div class="form-wrapper">
 				<label for="user-login" class="field-required">Login</label>
@@ -36,22 +36,22 @@
 					{% if form.id %}readonly="readonly"{% endif %} />
 
 				<label for="user-email">Email</label>
-				<input type="email" name="email" id="user-email" value="{{ form.email }}" />
+				<input type="email" name="email" id="user-email" value="{{ form.email }}" autocomplete="off" />
 
 				<label for="user-active">Active</label>
 				<input type="checkbox" name="active" id="user-active" {% if form.active %}checked="checked"{% endif %} />
 
 				<label for="user-admin">Admin</label>
-				<input type="checkbox" name="admin" id="user-admin" {% if form.active %}checked="checked"{% endif %} />
+				<input type="checkbox" name="admin" id="user-admin" {% if form.admin %}checked="checked"{% endif %} />
 			</div>
 			<h4>Authentication</h4>
 			<div class="form-wrapper">
 				<label for="user-password1" {% if not form.id %}class="field-required"{% endif %}>Password</label>
-				<input type="password" name="password1" id="user-password1" value=""
+				<input type="password" name="password1" id="user-password1" value="" autocomplete="off"
 						{% if not form.id %}required="required"{% endif %} />
 
 				<label for="user-password2">Confirm</label>
-				<input type="password" name="password2" id="user-password2" value=""
+				<input type="password" name="password2" id="user-password2" value="" autocomplete="off"
 						{% if not form.id %}required="required"{% endif %} />
 
 				{% if form.has_totp %}

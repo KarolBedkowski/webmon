@@ -54,7 +54,7 @@ def group_edit(group_id: int = 0):
         if not sgroup:
             return abort(404)
     else:
-        sgroup = model.SourceGroup(user_id=user_id)
+        sgroup = model.SourceGroup(user_id=user_id, name="")
 
     form = forms.GroupForm.from_model(sgroup)
     errors = {}

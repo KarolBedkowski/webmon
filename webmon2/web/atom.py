@@ -91,6 +91,7 @@ def group(key: str):
     except database.NotFound:
         return abort(404)
 
+    assert grp and grp.id
     updated_etag = database.groups.get_state(db, grp.id)
     _LOG.debug("updated_etag %r", updated_etag)
     if not updated_etag:
@@ -109,7 +110,7 @@ def group(key: str):
 
     rss_items = []
 
-    for entry in database.entries.find_for_feed(db, grp.id):
+    for entry in database.entries.find_for_feed(db, gpr.user_id, grp.id):
         body = entry.content
         url = urllib.parse.urljoin(
             request.url_root, url_for("entry.entry", entry_id=entry.id)

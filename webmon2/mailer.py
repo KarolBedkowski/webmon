@@ -29,6 +29,9 @@ _LOG = logging.getLogger(__name__)
 
 def process(db, user: model.User, app_conf):
     """Process unread entries for user and send report via mail"""
+    if not user.id:
+        raise ValueError("require existing user")
+
     conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
         _LOG.debug("mail not enabled for user %d", user.id)

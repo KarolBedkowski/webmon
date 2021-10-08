@@ -115,6 +115,26 @@ def write_config_file(args, app_conf):
         print("Done")
 
 
+# pylint: disable=import-outside-toplevel
+def shell(args, app_conf):
+    try:
+        import IPython
+        from IPython.terminal.ipapp import load_default_config
+    except ImportError:
+        print("IPython not available", file=sys.stderr)
+        return
+
+    from webmon2.web import app as web_app
+
+    app = web_app.create_app(args, app_conf)
+    config = load_default_config()
+    IPython.start_ipython(
+        user_ns=app.make_shell_context(),
+        config=config,
+        argv=[],
+    )
+
+
 def process_cli(args, app_conf) -> bool:
     if args.cmd == "users":
         if args.subcmd == "add":
@@ -136,6 +156,10 @@ def process_cli(args, app_conf) -> bool:
 
     if args.cmd == "write-config":
         write_config_file(args, app_conf)
+        return True
+
+    if args.cmd == "shell":
+        shell(args, app_conf)
         return True
 
     return False

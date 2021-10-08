@@ -43,6 +43,8 @@ from . import (
     system,
 )
 
+__all__ = ("create_app", "start_app")
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -71,7 +73,7 @@ _CSP = (
 )
 
 
-def create_app(debug: bool, web_root: str, conf) -> Flask:
+def _create_app(debug: bool, web_root: str, conf) -> Flask:
     template_folder = os.path.join(os.path.dirname(__file__), "templates")
     # create and configure the app
     app = Flask(
@@ -206,11 +208,9 @@ def simple_not_found(_env, resp):
     return [b"Not found"]
 
 
-def start_app(args, conf):
+def create_app(args, conf):
     web_root = conf.get("web", "root")
-    app = create_app(args.debug, web_root, conf)
-    host = conf.get("web", "address")
-    port = conf.getint("web", "port")
+    app = _create_app(args.debug, web_root, conf)
 
     if web_root != "/":
         app.wsgi_app = DispatcherMiddleware(
@@ -220,6 +220,13 @@ def start_app(args, conf):
     app.wsgi_app = ProxyFix(
         app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0
     )
+    return app
+
+
+def start_app(args, conf):
+    app = create_app(args, conf)
+    host = conf.get("web", "address")
+    port = conf.getint("web", "port")
     if args.debug:
         app.run(host=host, port=port, debug=True)
     else:

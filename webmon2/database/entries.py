@@ -38,24 +38,8 @@ select
     e.content as entry__content,
     e.user_id as entry__user_id,
     e.icon as entry__icon,
-    e.score as entry__score,
-    s.id as source__id,
-    s.group_id as source__group_id,
-    s.kind as source__kind,
-    s.name as source__name,
-    s.interval as source__interval,
-    s.user_id as source__user_id,
-    s.status as source__status,
-    s.mail_report as source__mail_report,
-    s.default_score as source__default_score,
-    sg.id as source_group__id,
-    sg.name as source_group__name,
-    sg.user_id as source_group__user_id,
-    sg.feed as source_group__feed,
-    sg.mail_report as source_group__mail_report
+    e.score as entry__score
 from entries e
-join sources s on s.id = e.source_id
-left join source_groups sg on sg.id = s.group_id
 """
 
 _GET_ENTRIES_SQL = (
@@ -93,6 +77,7 @@ order by e.id
 _GET_UNREAD_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
+join sources s on s.id = e.source_id
 where read_mark = 0 and s.group_id=%(group_id)s and e.user_id=%(user_id)s
 order by e.id
 """
@@ -101,6 +86,7 @@ order by e.id
 _GET_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
+join sources s on s.id = e.source_id
 where s.group_id=%(group_id)s and e.user_id=%(user_id)s
 order by e.id
 """
@@ -117,6 +103,7 @@ order by e.id
 _GET_ENTRIES_BY_GROUP_FEED_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
+join sources s on s.id = e.source_id
 where s.group_id=%(group_id)s
 order by e.id desc
 limit 100
@@ -167,24 +154,11 @@ def _get_find_sql(
     return _GET_ENTRIES_SQL
 
 
-def _yield_entries(cur) -> ty.Iterator[model.Entry]:
-    vis_sources = {}  # type: ty.Dict[int, model.Source]
-    vis_groups = {}  # type: ty.Dict[int, model.SourceGroup]
+def _yield_entries(cur, user_sources) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
-        source = vis_sources.get(entry.source_id)
-        if not source:
-            source = vis_sources[entry.source_id] = model.Source.from_row(row)
-
-            group_id = source.group_id
-            if not source.group:
-                group = vis_groups.get(group_id)
-                if not group:
-                    group = vis_groups[group_id] = model.SourceGroup.from_row(
-                        row
-                    )
-                source.group = group
-
+        source = user_sources.get(entry.source_id)
+        assert source
         entry.source = source
         yield entry
 
@@ -194,9 +168,11 @@ def get_starred(db, user_id: int) -> model.Entries:
     if not user_id:
         raise ValueError("missing user_id")
 
+    user_sources = {src.id: src for src in sources.get_all(db, user_id)}
+
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {"user_id": user_id})
-        yield from _yield_entries(cur)
+        yield from _yield_entries(cur, user_sources)
 
 
 def get_history(db, user_id: int) -> model.Entries:
@@ -204,9 +180,11 @@ def get_history(db, user_id: int) -> model.Entries:
     if not user_id:
         raise ValueError("missing user_id")
 
+    user_sources = {src.id: src for src in sources.get_all(db, user_id)}
+
     with db.cursor() as cur:
         cur.execute(_GET_HISTORY_ENTRIES_SQL, {"user_id": user_id})
-        yield from _yield_entries(cur)
+        yield from _yield_entries(cur, user_sources)
 
 
 def get_total_count(
@@ -239,6 +217,7 @@ def get_total_count(
 
     if unread:
         sql += " and read_mark=0"
+
     with db.cursor() as cur:
         cur.execute(sql, args)
         result = cur.fetchone()[0]
@@ -270,27 +249,13 @@ def find(
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
 
+    user_sources = {
+        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
+    }
+
     with db.cursor() as cur:
         cur.execute(sql, args)
-        user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
-        user_sources = {}  # type: ty.Dict[int, model.Source]
-        for row in cur:
-            entry = model.Entry.from_row(row)
-            source = user_sources.get(entry.source_id)
-            if not source:
-                source = user_sources[entry.source_id] = model.Source.from_row(
-                    row
-                )
-                group = user_groups.get(source.group_id)
-                if not group:
-                    group = user_groups[
-                        source.group_id
-                    ] = model.SourceGroup.from_row(row)
-
-                source.group = group
-
-            entry.source = source
-            yield entry
+        yield from _yield_entries(cur, user_sources)
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -327,42 +292,23 @@ def find_fulltext(
 
     sql += " order by e.id"
 
+    user_sources = {
+        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
+    }
+
     with db.cursor() as cur:
         cur.execute(sql, args)
-        user_groups = {}  # type: ty.Dict[int, model.SourceGroup]
-        user_sources = {}  # type: ty.Dict[int, model.Source]
-        for row in cur:
-            entry = model.Entry.from_row(row)
-            source = user_sources.get(entry.source_id)
-            if not source:
-                source = user_sources[entry.source_id] = model.Source.from_row(
-                    row
-                )
-                group = user_groups.get(source.group_id)
-                if not group:
-                    group = user_groups[
-                        source.group_id
-                    ] = model.SourceGroup.from_row(row)
-
-                source.group = group
-
-            entry.source = source
-            yield entry
+        yield from _yield_entries(cur, user_sources)
 
 
-def find_for_feed(db, group_id: int) -> model.Entries:
+def find_for_feed(db, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
+    user_sources = {
+        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
+    }
     with db.cursor() as cur:
         cur.execute(_GET_ENTRIES_BY_GROUP_FEED_SQL, {"group_id": group_id})
-        group = None  # model.SourceGroup
-        for row in cur:
-            entry = model.Entry.from_row(row)
-            entry.source = model.Source.from_row(row)
-            if not group:
-                group = model.SourceGroup.from_row(row)
-
-            entry.source.group = group
-            yield entry
+        yield from _yield_entries(cur, user_sources)
 
 
 _GET_ENTRY_SQL = """
