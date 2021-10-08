@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.5.9 2021-10-08
+
+### Bug Fixes
+
+- Fix invalid form for user -> admin checkbox
+- Fix forms default values and other minor errors
+
+### Features
+
+- Add shell command - launch IPython shell with application context
+
+### Miscellaneous Tasks
+
+- Clean code
+- Preload sources & groups when loading entries
+
+
 ## 2.5.8 2021-10-03
 
 ### Bug Fixes
