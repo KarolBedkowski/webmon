@@ -26,20 +26,24 @@ BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 @BP.route("/<int:entry_id>")
 def entry(entry_id: int):
+    """Display entry and mark it as read."""
     db = c.get_db()
     user_id = session["user"]  # type: int
     entry_ = database.entries.get(
         db, entry_id, with_source=True, with_group=True
     )
-    unread = entry_.read_mark == 0
+    unread = entry_.read_mark == model.EntryReadMark.UNREAD
     if user_id != entry_.user_id:
         return abort(404)
 
-    if not entry_.read_mark:
+    if entry_.read_mark == model.EntryReadMark.UNREAD:
         database.entries.mark_read(
-            db, user_id, entry_id=entry_id, read=model.EntryReadMark.READ
+            db,
+            user_id,
+            entry_id=entry_id,
+            read=model.EntryReadMark.MANUAL_READ,
         )
-        entry_.read_mark = model.EntryReadMark.READ
+        entry_.read_mark = model.EntryReadMark.MANUAL_READ
         db.commit()
 
     next_entry = database.entries.find_next_entry_id(
@@ -59,6 +63,7 @@ def entry(entry_id: int):
 
 @BP.route("/mark/read", methods=["POST"])
 def entry_mark_read_api():
+    """Mark entry read (by clicking on read mark)"""
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
     state = request.form["value"]
@@ -68,7 +73,7 @@ def entry_mark_read_api():
         user_id,
         entry_id=entry_id,
         read=(
-            model.EntryReadMark.READ
+            model.EntryReadMark.MANUAL_READ
             if state == "read"
             else model.EntryReadMark.UNREAD
         ),

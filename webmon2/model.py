@@ -395,9 +395,12 @@ class EntryStatus(Enum):
 
 
 class EntryReadMark(IntEnum):
+    # unread entry
     UNREAD = 0
-    SENT = 1
-    READ = 2
+    # send or mark read without read
+    READ = 1
+    # opened and read
+    MANUAL_READ = 2
 
 
 class Entry:  # pylint: disable=too-many-instance-attributes

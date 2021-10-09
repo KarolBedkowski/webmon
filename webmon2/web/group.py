@@ -134,11 +134,16 @@ def group_mark_read(group_id: int):
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
     user_id = session["user"]
-    ids = list(map(int, request.args.get("ids", "").split(","))) or None
+    ids: ty.Optional[ty.List[int]] = None
+    r_ids = request.args.get("ids", "")
+    if r_ids:
+        ids = list(map(int, r_ids.split(","))) or None
+
     database.groups.mark_read(
         db, user_id, group_id, min_id=min_id, max_id=max_id, ids=ids
     )
     db.commit()
+
     if request.args.get("go") == "next":
         # go to next unread group
         next_group_id = database.groups.get_next_unread_group(db, user_id)
@@ -198,6 +203,11 @@ def group_delete(group_id: int):
 
 @BP.route("/group/<int:group_id>/entry/<mode>/<int:entry_id>")
 def group_entry(group_id: int, mode: str, entry_id: int):
+    """Get entry by group view.
+    Mark displayed items as manually read.
+
+    @param mode: unread/all
+    """
     db = c.get_db()
     user_id = session["user"]
     group = database.groups.get(db, group_id, user_id)
@@ -211,11 +221,15 @@ def group_entry(group_id: int, mode: str, entry_id: int):
     if user_id != entry.user_id or group_id != entry.source.group_id:
         return abort(404)
 
-    if not entry.read_mark:
+    if entry.read_mark == model.EntryReadMark.UNREAD:
+        # mark entry as read
         database.entries.mark_read(
-            db, user_id, entry_id=entry_id, read=model.EntryReadMark.READ
+            db,
+            user_id,
+            entry_id=entry_id,
+            read=model.EntryReadMark.MANUAL_READ,
         )
-        entry.read_mark = model.EntryReadMark.READ
+        entry.read_mark = model.EntryReadMark.MANUAL_READ
         db.commit()
 
     unread = mode != "all"
