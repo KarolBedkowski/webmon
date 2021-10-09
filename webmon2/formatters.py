@@ -110,13 +110,18 @@ def cleanup_html(content: str) -> str:
     return _clean_html_brutal(content)
 
 
-def entry_summary(content: str, content_type: str) -> str:
+def entry_summary(
+    content: ty.Optional[str], content_type: ty.Optional[str]
+) -> str:
+    if not content:
+        return ""
+
     if content_type not in ("markdown", "plain"):
         document = lxml.html.document_fromstring(content)
         # pylint: disable=c-extension-no-member
         content = "\n".join(lxml.etree.XPath("//text()")(document))
 
     if len(content) > 400:
-        content = content[:400] + "\n…"
+        content = "\n".join(content.split("\n", 21)[:20])[:400] + "\n…"
 
     return content

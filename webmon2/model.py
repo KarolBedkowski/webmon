@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
-from webmon2 import common
+from webmon2 import common, formatters
 
 _LOG = logging.getLogger(__name__)
 
@@ -528,10 +528,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     content_type = property(_get_content_type, _set_content_type)
 
     def get_summary(self) -> ty.Optional[str]:
-        if not self.content:
-            return None
-
-        return "\n".join(self.content.split("\n", 21)[:20])[:400] + "\n…"
+        return formatters.entry_summary(self.content, self._get_content_type())
 
     def validate(self):
         if not isinstance(self.updated, datetime):

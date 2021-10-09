@@ -46,7 +46,7 @@
 		{% set content_type = entry.get_opt('content-type') %}
  		{% if entry.is_long_content() and mode == 'summary' %}
 			<section>
-				{{ entry.content|summary(content_type) }}
+				{{ entry.get_summary()|cleanup_html|safe }}
 			</section>
 			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
 		{% elif entry.content %}
