@@ -110,7 +110,7 @@ def group(key: str):
 
     rss_items = []
 
-    for entry in database.entries.find_for_feed(db, gpr.user_id, grp.id):
+    for entry in database.entries.find_for_feed(db, grp.user_id, grp.id):
         body = entry.content
         url = urllib.parse.urljoin(
             request.url_root, url_for("entry.entry", entry_id=entry.id)
