@@ -6,18 +6,7 @@
 			{% if entry.icon %}
 			<img src="{{ url_for("root.binary", datahash=entry.icon )}}" width="32" height="32"/>
 			{% endif %}
-			{% if entry.score < -5 %}
-				{% set priority_cls = "prio-lowest" %}
-			{% elif entry.score < 0 %}
-				{% set priority_cls = "prio-low" %}
-			{% elif entry.score > 5 %}
-				{% set priority_cls = "prio-highest" %}
-			{% elif entry.score > 0 %}
-				{% set priority_cls = "prio-high" %}
-			{% else %}
-				{% set priority_cls = "" %}
-			{% endif %}
-			<h4 class="{{ priority_cls }}">
+			<h4 class="{{ entry.score | entry_score_class }}">
 				{% if onlist %}
 					{% if openlink %}
 					<a href="{{ openlink }}" class="title">{{ entry.human_title() }}</a>
