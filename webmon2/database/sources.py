@@ -21,7 +21,7 @@ from . import binaries, groups
 _ = ty
 _LOG = logging.getLogger(__name__)
 
-_GET_SOURCES_SQL_BASE = """
+_GET_SOURCES_SQL = """
 select s.id as source__id, s.group_id as source__group_id,
     s.kind as source__kind, s.name as source__name,
     s.interval as source__interval, s.settings as source__settings,
@@ -44,9 +44,7 @@ select s.id as source__id, s.group_id as source__group_id,
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
 left join source_state ss on ss.source_id = s.id
-"""
-
-_GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + "where s.user_id=%(user_id)s"
+where s.user_id=%(user_id)s"""
 
 
 def get_all(
@@ -55,8 +53,12 @@ def get_all(
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries
     """
+    if group_id:
+        user_groups = {group_id: groups.get(db, group_id)}
+    else:
+        user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}
+
     with db.cursor() as cur:
-        user_groups = {g.id: g for g in groups.get_all(db, user_id)}
         args = {"user_id": user_id, "group_id": group_id}
         sql = _GET_SOURCES_SQL
         if group_id is not None:
@@ -81,7 +83,9 @@ def get_all(
             source = model.Source.from_row(row)
             source.state = model.SourceState.from_row(row)
             source.unread = row["unread"]
-            source.group = user_groups[source.group_id]
+            group = user_groups[source.group_id]
+            assert group
+            source.group = group
             yield source
 
 
