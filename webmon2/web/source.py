@@ -335,8 +335,10 @@ def source_entry(source_id: int, mode: str, entry_id: int):
         return abort(404)
 
     if not entry.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
-        entry.read_mark = 2
+        database.entries.mark_read(
+            db, user_id, entry_id=entry_id, read=model.EntryReadMark.READ
+        )
+        entry.read_mark = model.EntryReadMark.READ
         db.commit()
 
     unread = mode != "all"

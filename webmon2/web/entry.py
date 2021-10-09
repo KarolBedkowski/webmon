@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import Blueprint, abort, render_template, request, session
 
-from webmon2 import database
+from webmon2 import database, model
 
 from . import _commons as c
 
@@ -36,8 +36,10 @@ def entry(entry_id: int):
         return abort(404)
 
     if not entry_.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
-        entry_.read_mark = 2
+        database.entries.mark_read(
+            db, user_id, entry_id=entry_id, read=model.EntryReadMark.READ
+        )
+        entry_.read_mark = model.EntryReadMark.READ
         db.commit()
 
     next_entry = database.entries.find_next_entry_id(
@@ -62,7 +64,14 @@ def entry_mark_read_api():
     state = request.form["value"]
     user_id = session["user"]
     updated = database.entries.mark_read(
-        db, user_id, entry_id=entry_id, read=(1 if state == "read" else 0)
+        db,
+        user_id,
+        entry_id=entry_id,
+        read=(
+            model.EntryReadMark.READ
+            if state == "read"
+            else model.EntryReadMark.UNREAD
+        ),
     )
     db.commit()
     return state if updated else ""

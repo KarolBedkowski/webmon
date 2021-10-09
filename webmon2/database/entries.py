@@ -122,6 +122,7 @@ _GET_ENTRIES_FULLTEXT_TITLE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
+    and e.user_id=%(user_id)s
 """
 )
 
@@ -528,7 +529,7 @@ def mark_read(
     entry_id: ty.Optional[int] = None,
     min_id: ty.Optional[int] = None,
     max_id: ty.Optional[int] = None,
-    read: int = 1,
+    read: model.EntryReadMark = model.EntryReadMark.SENT,
     ids: ty.Optional[ty.List[int]] = None,
 ) -> int:
     """Change read mark for given entry"""
@@ -546,19 +547,20 @@ def mark_read(
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s", (read, entry_id)
+                "update entries set read_mark=%s where id=%s",
+                (read.value, entry_id),
             )
         elif ids:
             cur.execute(
                 "UPDATE Entries SET read_mark=%s "
                 "WHERE id=ANY(%s) AND user_id=%s",
-                (read, ids, user_id),
+                (read.value, ids, user_id),
             )
         elif max_id:
             cur.execute(
                 "update entries set read_mark=%s "
                 "where id<=%s and id>=%s and user_id=%s",
-                (read, max_id, min_id or 0, user_id),
+                (read.value, max_id, min_id or 0, user_id),
             )
         changed = cur.rowcount
 

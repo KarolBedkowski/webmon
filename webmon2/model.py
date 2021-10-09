@@ -394,6 +394,12 @@ class EntryStatus(Enum):
     UPDATED = "updated"
 
 
+class EntryReadMark(IntEnum):
+    UNREAD = 0
+    SENT = 1
+    READ = 2
+
+
 class Entry:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "id",
@@ -423,7 +429,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         # time of entry created
         self.created: ty.Optional[datetime] = None
         # is entry is read
-        self.read_mark: int = 0
+        self.read_mark: EntryReadMark = EntryReadMark.UNREAD
         # is entry is marked
         self.star_mark: int = 0
         # entry status, new or updated for changed entries (not used)
@@ -553,7 +559,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             "entry__source_id": self.source_id,
             "entry__updated": self.updated,
             "entry__created": self.created,
-            "entry__read_mark": self.read_mark,
+            "entry__read_mark": self.read_mark.value,
             "entry__star_mark": self.star_mark,
             "entry__status": self.status.value,
             "entry__oid": self.oid,
@@ -573,7 +579,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
         entry.created = row["entry__created"]
-        entry.read_mark = row["entry__read_mark"]
+        entry.read_mark = EntryReadMark(row["entry__read_mark"])
         entry.star_mark = row["entry__star_mark"]
         entry.status = row["entry__status"]
         entry.oid = row["entry__oid"]
