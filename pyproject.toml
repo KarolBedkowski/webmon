@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webmon2"
-version = "2.5.9"
+version = "2.5.10"
 description = ""
 authors = ["Karol Będkowski <karol.bedkowski@gmail.com>"]
 license = "GPL-2.0-or-later"
