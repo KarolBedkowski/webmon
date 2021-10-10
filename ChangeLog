@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.5.10 2021-10-10
+
+### Bug Fixes
+
+- Make sure to commit all errors states when source fail
+
+### Features
+
+- Refresh unread entries counter after mark entry read
+- Join filter also join titles to max 80 characters
+
+### Miscellaneous Tasks
+
+- Performance improvements & minor bug fixes
+
+
 ## 2.5.9 2021-10-08
 
 ### Bug Fixes
