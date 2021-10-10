@@ -1,6 +1,6 @@
 /*
  * app.js
- * Copyright (C) 2019 Karol Będkowski
+ * Copyright (C) 2019-2021 Karol Będkowski
  *
  * Distributed under terms of the GPLv3 license.
  */
@@ -56,7 +56,7 @@
 			if (csrf) {
 				document.querySelector("meta[name=_app_csrf]").setAttribute("value", csrf);
 			}
-			return resp.text();
+			return resp.json();
 		}).then((data) => {
 			if (onDataCallback) onDataCallback(data);
 			if (onFinishCallback) onFinishCallback();
@@ -85,8 +85,15 @@
 				formData.append("value", (article.dataset["state"] == "read") ? "unread": "read");
 
 				executeEntryAction(mark_read_url, formData, (data) => {
-					if (data == "read" || data == "unread") {
-						article.dataset["state"] = data;
+					if (data.result == "read" || data.result == "unread") {
+						article.dataset["state"] = data.result;
+					}
+					let num_count = data.unread;
+					let num_field = document.getElementById("entries_unread_cnt");
+					if (num_count > 0) {
+						num_field.innerHTML = "(" + num_count + ")";
+					} else {
+						num_field.innerHTML = "";
 					}
 				}, () => {
 					element.attributes.processing = false;
@@ -106,8 +113,8 @@
 				formData.append("value", (article.dataset["starred"] == "star") ? "unstar" : "star");
 
 				executeEntryAction(mark_star_url, formData, (data) => {
-					if (data == "star" || data == "unstar") {
-						article.dataset["starred"] = data;
+					if (data.result == "star" || data.result == "unstar") {
+						article.dataset["starred"] = data.result;
 					}
 				}, () => {
 					element.attributes.processing = false;

@@ -79,7 +79,13 @@ def entry_mark_read_api():
         ),
     )
     db.commit()
-    return state if updated else ""
+
+    res = {
+        "result": state if updated else "",
+        "unread": database.entries.get_total_count(db, user_id, unread=True),
+    }
+
+    return res
 
 
 @BP.route("/mark/star", methods=["POST"])
@@ -92,4 +98,4 @@ def entry_mark_star_api():
         db, user_id, entry_id, star=state == "star"
     )
     db.commit()
-    return state if updated else ""
+    return {"result": state if updated else ""}
