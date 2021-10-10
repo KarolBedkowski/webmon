@@ -15,7 +15,7 @@ import typing as ty
 
 from flask import Blueprint, abort, render_template, request, session
 
-from webmon2 import database
+from webmon2 import database, model
 
 from . import _commons as c
 
@@ -26,18 +26,24 @@ BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 @BP.route("/<int:entry_id>")
 def entry(entry_id: int):
+    """Display entry and mark it as read."""
     db = c.get_db()
     user_id = session["user"]  # type: int
     entry_ = database.entries.get(
         db, entry_id, with_source=True, with_group=True
     )
-    unread = entry_.read_mark == 0
+    unread = entry_.read_mark == model.EntryReadMark.UNREAD
     if user_id != entry_.user_id:
         return abort(404)
 
-    if not entry_.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
-        entry_.read_mark = 2
+    if entry_.read_mark == model.EntryReadMark.UNREAD:
+        database.entries.mark_read(
+            db,
+            user_id,
+            entry_id=entry_id,
+            read=model.EntryReadMark.MANUAL_READ,
+        )
+        entry_.read_mark = model.EntryReadMark.MANUAL_READ
         db.commit()
 
     next_entry = database.entries.find_next_entry_id(
@@ -57,15 +63,29 @@ def entry(entry_id: int):
 
 @BP.route("/mark/read", methods=["POST"])
 def entry_mark_read_api():
+    """Mark entry read (by clicking on read mark)"""
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
     state = request.form["value"]
     user_id = session["user"]
     updated = database.entries.mark_read(
-        db, user_id, entry_id=entry_id, read=(1 if state == "read" else 0)
+        db,
+        user_id,
+        entry_id=entry_id,
+        read=(
+            model.EntryReadMark.MANUAL_READ
+            if state == "read"
+            else model.EntryReadMark.UNREAD
+        ),
     )
     db.commit()
-    return state if updated else ""
+
+    res = {
+        "result": state if updated else "",
+        "unread": database.entries.get_total_count(db, user_id, unread=True),
+    }
+
+    return res
 
 
 @BP.route("/mark/star", methods=["POST"])
@@ -78,4 +98,4 @@ def entry_mark_star_api():
         db, user_id, entry_id, star=state == "star"
     )
     db.commit()
-    return state if updated else ""
+    return {"result": state if updated else ""}

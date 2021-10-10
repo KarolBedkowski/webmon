@@ -73,6 +73,8 @@ def _process_groups(db, conf, user_id: int):
         if group.mail_report == model.MailReportMode.NO_SEND:
             _LOG.debug("group %s skipped", group.name)
             continue
+
+        assert group.id
         yield from _process_group(db, conf, user_id, group.id)
 
 

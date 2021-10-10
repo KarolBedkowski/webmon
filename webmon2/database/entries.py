@@ -45,7 +45,7 @@ from entries e
 _GET_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.user_id=%(user_id)s
+where e.user_id = %(user_id)s
 order by e.id
 """
 )
@@ -53,7 +53,7 @@ order by e.id
 _GET_UNREAD_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where read_mark = 0 and e.user_id=%(user_id)s
+where read_mark = %(unread)s and e.user_id=%(user_id)s
 order by e.id
 """
 )
@@ -61,7 +61,9 @@ order by e.id
 _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where read_mark = 0 and e.source_id=%(source_id)s and e.user_id=%(user_id)s
+where read_mark = %(unread)s
+    and e.source_id=%(source_id)s
+    and e.user_id=%(user_id)s
 order by e.id
 """
 )
@@ -69,7 +71,7 @@ order by e.id
 _GET_ENTRIES_BY_SOURCE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.source_id=%(source_id)s and e.user_id=%(user_id)s
+where e.source_id = %(source_id)s and e.user_id=%(user_id)s
 order by e.id
 """
 )
@@ -78,7 +80,9 @@ _GET_UNREAD_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 join sources s on s.id = e.source_id
-where read_mark = 0 and s.group_id=%(group_id)s and e.user_id=%(user_id)s
+where read_mark = %(unread)s
+    and s.group_id = %(group_id)s
+    and e.user_id = %(user_id)s
 order by e.id
 """
 )
@@ -87,7 +91,8 @@ _GET_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 join sources s on s.id = e.source_id
-where s.group_id=%(group_id)s and e.user_id=%(user_id)s
+where s.group_id = %(group_id)s
+    and e.user_id=%(user_id)s
 order by e.id
 """
 )
@@ -104,7 +109,7 @@ _GET_ENTRIES_BY_GROUP_FEED_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 join sources s on s.id = e.source_id
-where s.group_id=%(group_id)s
+where s.group_id = %(group_id)s
 order by e.id desc
 limit 100
 """
@@ -113,7 +118,7 @@ limit 100
 _GET_HISTORY_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.read_mark = 2 and e.user_id=%(user_id)s
+where e.read_mark = %(read)s and e.user_id=%(user_id)s
 order by e.id
 """
 )
@@ -122,6 +127,7 @@ _GET_ENTRIES_FULLTEXT_TITLE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
+    and e.user_id=%(user_id)s
 """
 )
 
@@ -183,7 +189,10 @@ def get_history(db, user_id: int) -> model.Entries:
     user_sources = {src.id: src for src in sources.get_all(db, user_id)}
 
     with db.cursor() as cur:
-        cur.execute(_GET_HISTORY_ENTRIES_SQL, {"user_id": user_id})
+        cur.execute(
+            _GET_HISTORY_ENTRIES_SQL,
+            {"user_id": user_id, "read": model.EntryReadMark.MANUAL_READ},
+        )
         yield from _yield_entries(cur, user_sources)
 
 
@@ -202,6 +211,7 @@ def get_total_count(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
+        "unread": model.EntryReadMark.UNREAD,
     }
 
     if source_id:
@@ -216,7 +226,7 @@ def get_total_count(
         sql = "select count(1) from entries where user_id=%(user_id)s"
 
     if unread:
-        sql += " and read_mark=0"
+        sql += " and read_mark=%(unread)s"
 
     with db.cursor() as cur:
         cur.execute(sql, args)
@@ -243,6 +253,7 @@ def find(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
+        "unread": model.EntryReadMark.UNREAD,
     }
     sql = _get_find_sql(source_id, group_id, unread)
     if limit:
@@ -456,9 +467,9 @@ def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
     """Delete old entries for given user"""
     with db.cursor() as cur:
         cur.execute(
-            "delete from entries where star_mark=0 and read_mark=0 "
+            "delete from entries where star_mark=0 and read_mark=%s "
             "and updated<%s and user_id=%s",
-            (max_datetime, user_id),
+            (model.EntryReadMark.UNREAD, max_datetime, user_id),
         )
         deleted_entries = cur.rowcount
         cur.execute(
@@ -528,7 +539,7 @@ def mark_read(
     entry_id: ty.Optional[int] = None,
     min_id: ty.Optional[int] = None,
     max_id: ty.Optional[int] = None,
-    read: int = 1,
+    read: model.EntryReadMark = model.EntryReadMark.READ,
     ids: ty.Optional[ty.List[int]] = None,
 ) -> int:
     """Change read mark for given entry"""
@@ -546,19 +557,20 @@ def mark_read(
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s", (read, entry_id)
+                "update entries set read_mark=%s where id=%s",
+                (read.value, entry_id),
             )
         elif ids:
             cur.execute(
                 "UPDATE Entries SET read_mark=%s "
                 "WHERE id=ANY(%s) AND user_id=%s",
-                (read, ids, user_id),
+                (read.value, ids, user_id),
             )
         elif max_id:
             cur.execute(
                 "update entries set read_mark=%s "
                 "where id<=%s and id>=%s and user_id=%s",
-                (read, max_id, min_id or 0, user_id),
+                (read.value, max_id, min_id or 0, user_id),
             )
         changed = cur.rowcount
 
@@ -571,15 +583,24 @@ def mark_all_read(
     with db.cursor() as cur:
         if max_date:
             cur.execute(
-                "update entries set read_mark=1 where user_id=%s "
-                "and read_mark=0 and updated<%s",
-                (user_id, max_date),
+                "update entries set read_mark=%s where user_id=%s "
+                "and read_mark=%s and updated<%s",
+                (
+                    model.EntryReadMark.READ,
+                    user_id,
+                    model.EntryReadMark.UNREAD,
+                    max_date,
+                ),
             )
         else:
             cur.execute(
-                "update entries set read_mark=1 where user_id=%s "
-                "and read_mark=0",
-                (user_id,),
+                "update entries set read_mark=%s where user_id=%s "
+                "and read_mark=%s",
+                (
+                    model.EntryReadMark.READ,
+                    user_id,
+                    model.EntryReadMark.UNREAD,
+                ),
             )
 
         return cur.rowcount
@@ -593,8 +614,8 @@ def find_next_entry_id(
             cur.execute(
                 "select min(e.id) "
                 "from entries e "
-                "where e.id > %s and e.read_mark=0 and e.user_id=%s",
-                (entry_id, user_id),
+                "where e.id > %s and e.read_mark=%s and e.user_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, user_id),
             )
         else:
             cur.execute(
@@ -616,8 +637,8 @@ def find_prev_entry_id(
             cur.execute(
                 "select max(e.id) "
                 "from entries e "
-                "where e.id < %s and e.read_mark=0 and e.user_id=%s",
-                (entry_id, user_id),
+                "where e.id < %s and e.read_mark=%s and e.user_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, user_id),
             )
         else:
             cur.execute(

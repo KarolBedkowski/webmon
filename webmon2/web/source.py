@@ -164,6 +164,7 @@ def source_entries(source_id: int, mode: str = "unread", page: int = 0):
 
 @BP.route("/<int:source_id>/mark/read")
 def source_mark_read(source_id: int):
+    """Mark all entries in source read."""
     db = c.get_db()
     min_id = int(request.args.get("min_id", -1))
     max_id = int(request.args["max_id"])
@@ -322,6 +323,7 @@ def source_filter_delete(source_id: int, idx: int):
 
 @BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
 def source_entry(source_id: int, mode: str, entry_id: int):
+    """Display entry with marking as read."""
     db = c.get_db()
     user_id = session["user"]
     src = database.sources.get(db, source_id, user_id=user_id)
@@ -334,9 +336,14 @@ def source_entry(source_id: int, mode: str, entry_id: int):
     if user_id != entry.user_id or source_id != entry.source_id:
         return abort(404)
 
-    if not entry.read_mark:
-        database.entries.mark_read(db, user_id, entry_id=entry_id, read=2)
-        entry.read_mark = 2
+    if entry.read_mark == model.EntryReadMark.UNREAD:
+        database.entries.mark_read(
+            db,
+            user_id,
+            entry_id=entry_id,
+            read=model.EntryReadMark.MANUAL_READ,
+        )
+        entry.read_mark = model.EntryReadMark.MANUAL_READ
         db.commit()
 
     unread = mode != "all"

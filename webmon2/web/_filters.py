@@ -49,6 +49,20 @@ def _absoute_url(url: str) -> str:
     return urllib.parse.urljoin(request.url_root, url)
 
 
+def _entry_score_class(score: int) -> str:
+    """Get class name for entry score."""
+    if score < -5:
+        return "prio-lowest"
+    if score < 0:
+        return "prio-low"
+    if score > 5:
+        return "prio-highest"
+    if score > 0:
+        return "prio-high"
+
+    return ""
+
+
 def register(app):
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
@@ -57,3 +71,4 @@ def register(app):
     app.jinja_env.filters["format_html"] = formatters.format_html
     app.jinja_env.filters["cleanup_html"] = formatters.cleanup_html
     app.jinja_env.filters["summary"] = formatters.entry_summary
+    app.jinja_env.filters["entry_score_class"] = _entry_score_class

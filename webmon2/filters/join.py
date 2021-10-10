@@ -28,6 +28,17 @@ def _join_entries(
     first_entry.content = (
         (first_entry.content or "") + "\n\n" + (next_entry.content or "")
     )
+
+    if next_entry.title:
+        if not first_entry.title:
+            title = "… | " + next_entry.title
+        elif len(first_entry.title) < 80:
+            title = first_entry.title + " | " + next_entry.title
+            if len(title) > 80:
+                title = title[:80] + "…"
+
+        first_entry.title = title
+
     first_entry.status = model.EntryStatus.NEW
     return first_entry
 

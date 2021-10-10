@@ -23,12 +23,12 @@ select sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
     (select count(1)
         from entries e
         join sources s on e.source_id = s.id
-        where e.read_mark = 0 and s.group_id = sg.id
+        where e.read_mark = %(read_mark)s and s.group_id = sg.id
     ) as unread,
     (select count(1) from sources s where s.group_id = sg.id)
         as sources_count
 from source_groups sg
-where sg.user_id= %s
+where sg.user_id= %(user_id)s
 order by sg.name
 """
 
@@ -39,7 +39,10 @@ def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
         raise ValueError("missing user_id")
 
     with db.cursor() as cur:
-        cur.execute(_GET_SOURCE_GROUPS_SQL, (user_id,))
+        cur.execute(
+            _GET_SOURCE_GROUPS_SQL,
+            {"user_id": user_id, "read_mark": model.EntryReadMark.UNREAD},
+        )
         groups = [
             model.SourceGroup(
                 id=id,
@@ -188,32 +191,37 @@ def _generate_group_feed(cur) -> str:
 
 
 _GET_NEXT_UNREAD_GROUP_SQL = """
-select group_id
-from sources s join entries e on e.source_id = s.id
-where e.read_mark = 0 and s.user_id= %s
-order by e.id limit 1
+SELECT group_id
+FROM sources s
+JOIN entries e ON e.source_id = s.id
+WHERE e.read_mark = %s
+    AND s.user_id = %s
+ORDER BY e.id
+LIMIT 1
 """
 
 
 def get_next_unread_group(db, user_id: int) -> ty.Optional[int]:
     """Find group id with unread entries"""
     with db.cursor() as cur:
-        cur.execute(_GET_NEXT_UNREAD_GROUP_SQL, (user_id,))
+        cur.execute(
+            _GET_NEXT_UNREAD_GROUP_SQL, (model.EntryReadMark.UNREAD, user_id)
+        )
         row = cur.fetchone()
         return row[0] if row else None
 
 
 _MARK_READ_SQL = """
 update entries
-set read_mark=1
+set read_mark=%(read_mark)s
 where source_id in (select id from sources where group_id=%(group_id)s)
     and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
-    and read_mark=0 and user_id=%(user_id)s
+    and read_mark=%(unread)s and user_id=%(user_id)s
 """
 _MARK_READ_BY_IDS_SQL = """
 UPDATE entries
-SET read_mark=1
-WHERE id=ANY(%(ids)s) AND read_mark=0 AND user_id=%(user_id)s
+SET read_mark=%(read_mark)s
+WHERE id=ANY(%(ids)s) AND read_mark=%(unread)s AND user_id=%(user_id)s
 """
 
 
@@ -239,6 +247,8 @@ def mark_read(
         "max_id": max_id,
         "user_id": user_id,
         "ids": ids,
+        "read_mark": model.EntryReadMark.READ,
+        "unread": model.EntryReadMark.UNREAD,
     }
     with db.cursor() as cur:
         if ids:
@@ -363,8 +373,8 @@ def find_next_entry_id(
             cur.execute(
                 "select min(e.id) "
                 "from entries e join sources s on s.id = e.source_id "
-                "where e.id > %s and e.read_mark=0 and s.group_id=%s",
-                (entry_id, group_id),
+                "where e.id > %s and e.read_mark=%s and s.group_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, group_id),
             )
         else:
             cur.execute(
@@ -386,8 +396,8 @@ def find_prev_entry_id(
             cur.execute(
                 "select max(e.id) "
                 "from entries e join sources s on s.id = e.source_id "
-                "where e.id < %s and e.read_mark=0 and s.group_id=%s",
-                (entry_id, group_id),
+                "where e.id < %s and e.read_mark=%s and s.group_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, group_id),
             )
         else:
             cur.execute(

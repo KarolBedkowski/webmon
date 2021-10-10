@@ -89,7 +89,6 @@ class FetchWorker(threading.Thread):
             with database.DB.get() as db:
                 try:
                     self._process_source(db, source_id)
-                    db.commit()
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
                         "[%s] process source %d error", self._idx, source_id
@@ -99,6 +98,7 @@ class FetchWorker(threading.Thread):
                         db, id_=source_id, with_state=True
                     )
                     _save_state_error(db, source, err)
+                finally:
                     db.commit()
 
     def _process_source(self, db, source_id):  # pylint: disable=no-self-use

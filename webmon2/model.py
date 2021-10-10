@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
-from webmon2 import common
+from webmon2 import common, formatters
 
 _LOG = logging.getLogger(__name__)
 
@@ -394,6 +394,15 @@ class EntryStatus(Enum):
     UPDATED = "updated"
 
 
+class EntryReadMark(IntEnum):
+    # unread entry
+    UNREAD = 0
+    # send or mark read without read
+    READ = 1
+    # opened and read
+    MANUAL_READ = 2
+
+
 class Entry:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "id",
@@ -423,9 +432,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         # time of entry created
         self.created: ty.Optional[datetime] = None
         # is entry is read
-        self.read_mark: int = 0
+        self.read_mark: EntryReadMark = EntryReadMark.UNREAD
         # is entry is marked
-        self.star_mark: int = 0
+        self.star_mark: bool = False
         # entry status, new or updated for changed entries (not used)
         self.status: EntryStatus = None
         # unique hash for entry
@@ -522,10 +531,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     content_type = property(_get_content_type, _set_content_type)
 
     def get_summary(self) -> ty.Optional[str]:
-        if not self.content:
-            return None
-
-        return "\n".join(self.content.split("\n", 21)[:20])[:400] + "\n…"
+        return formatters.entry_summary(self.content, self._get_content_type())
 
     def validate(self):
         if not isinstance(self.updated, datetime):
@@ -553,8 +559,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             "entry__source_id": self.source_id,
             "entry__updated": self.updated,
             "entry__created": self.created,
-            "entry__read_mark": self.read_mark,
-            "entry__star_mark": self.star_mark,
+            "entry__read_mark": self.read_mark.value,
+            "entry__star_mark": 1 if self.star_mark else 0,
             "entry__status": self.status.value,
             "entry__oid": self.oid,
             "entry__title": self.title,
@@ -573,8 +579,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
         entry.created = row["entry__created"]
-        entry.read_mark = row["entry__read_mark"]
-        entry.star_mark = row["entry__star_mark"]
+        entry.read_mark = EntryReadMark(row["entry__read_mark"])
+        entry.star_mark = bool(row["entry__star_mark"])
         entry.status = row["entry__status"]
         entry.oid = row["entry__oid"]
         entry.title = row["entry__title"]

@@ -21,7 +21,7 @@ from . import binaries, groups
 _ = ty
 _LOG = logging.getLogger(__name__)
 
-_GET_SOURCES_SQL_BASE = """
+_GET_SOURCES_SQL = """
 select s.id as source__id, s.group_id as source__group_id,
     s.kind as source__kind, s.name as source__name,
     s.interval as source__interval, s.settings as source__settings,
@@ -44,9 +44,7 @@ select s.id as source__id, s.group_id as source__group_id,
         from entries where source_id=s.id and read_mark=0) as unread
 from sources s
 left join source_state ss on ss.source_id = s.id
-"""
-
-_GET_SOURCES_SQL = _GET_SOURCES_SQL_BASE + "where s.user_id=%(user_id)s"
+where s.user_id=%(user_id)s"""
 
 
 def get_all(
@@ -55,8 +53,12 @@ def get_all(
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries
     """
+    if group_id:
+        user_groups = {group_id: groups.get(db, group_id)}
+    else:
+        user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}
+
     with db.cursor() as cur:
-        user_groups = {g.id: g for g in groups.get_all(db, user_id)}
         args = {"user_id": user_id, "group_id": group_id}
         sql = _GET_SOURCES_SQL
         if group_id is not None:
@@ -81,7 +83,9 @@ def get_all(
             source = model.Source.from_row(row)
             source.state = model.SourceState.from_row(row)
             source.unread = row["unread"]
-            source.group = user_groups[source.group_id]
+            group = user_groups[source.group_id]
+            assert group
+            source.group = group
             yield source
 
 
@@ -389,18 +393,18 @@ def refresh_errors(db, user_id: int) -> int:
 
 _MARK_READ_SQL = """
 update entries
-set read_mark=1
+set read_mark=%(read_mark)s
 where source_id=%(source_id)s
     and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
-    and read_mark=0 and user_id=%(user_id)s
+    and read_mark=%(unread)s and user_id=%(user_id)s
 """
 
 _MARK_READ_BY_IDS_SQL = """
 UPDATE entries
-SET read_mark=1
+SET read_mark=%(read_mark)s
 WHERE source_id=%(source_id)s
     AND id=ANY(%(ids)s)
-    AND read_mark=0 AND user_id=%(user_id)s
+    AND read_mark=%(unread)s AND user_id=%(user_id)s
 """
 
 
@@ -420,6 +424,8 @@ def mark_read(
         "min_id": min_id,
         "user_id": user_id,
         "ids": ids,
+        "read_mark": model.EntryReadMark.READ,
+        "unread": model.EntryReadMark.UNREAD,
     }
     with db.cursor() as cur:
         if ids:
@@ -475,8 +481,8 @@ def find_next_entry_id(
             cur.execute(
                 "select min(e.id) "
                 "from entries e "
-                "where e.id > %s and e.read_mark=0 and e.source_id=%s",
-                (entry_id, source_id),
+                "where e.id > %s and e.read_mark=%s and e.source_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, source_id),
             )
         else:
             cur.execute(
@@ -498,8 +504,8 @@ def find_prev_entry_id(
             cur.execute(
                 "select max(e.id) "
                 "from entries e "
-                "where e.id < %s and e.read_mark=0 and e.source_id=%s",
-                (entry_id, source_id),
+                "where e.id < %s and e.read_mark=%s and e.source_id=%s",
+                (entry_id, model.EntryReadMark.UNREAD, source_id),
             )
         else:
             cur.execute(
@@ -518,8 +524,8 @@ def find_next_unread(db, user_id: int) -> ty.Optional[int]:
         cur.execute(
             "select e.source_id "
             "from entries e "
-            "where e.user_id = %s and e.read_mark=0",
-            (user_id,),
+            "where e.user_id = %s and e.read_mark=%s",
+            (user_id, model.EntryReadMark.UNREAD),
         )
         row = cur.fetchone()
         return row[0] if row else None
