@@ -434,7 +434,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         # is entry is read
         self.read_mark: EntryReadMark = EntryReadMark.UNREAD
         # is entry is marked
-        self.star_mark: int = 0
+        self.star_mark: bool = False
         # entry status, new or updated for changed entries (not used)
         self.status: EntryStatus = None
         # unique hash for entry
@@ -560,7 +560,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             "entry__updated": self.updated,
             "entry__created": self.created,
             "entry__read_mark": self.read_mark.value,
-            "entry__star_mark": self.star_mark,
+            "entry__star_mark": 1 if self.star_mark else 0,
             "entry__status": self.status.value,
             "entry__oid": self.oid,
             "entry__title": self.title,
@@ -580,7 +580,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.updated = row["entry__updated"]
         entry.created = row["entry__created"]
         entry.read_mark = EntryReadMark(row["entry__read_mark"])
-        entry.star_mark = row["entry__star_mark"]
+        entry.star_mark = bool(row["entry__star_mark"])
         entry.status = row["entry__status"]
         entry.oid = row["entry__oid"]
         entry.title = row["entry__title"]
