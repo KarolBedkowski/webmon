@@ -293,6 +293,9 @@ def _delete_old_entries(db):
 
 
 def _send_mails(db, conf):
+    if not conf.getboolean("smtp", "enabled", failback=False):
+        return
+
     _LOG.debug("_send_mails start")
     users = list(database.users.get_all(db))
     for user in users:
@@ -304,6 +307,7 @@ def _send_mails(db, conf):
             db.rollback()
         else:
             db.commit()
+
     _LOG.debug("_send_mails end")
 
 
