@@ -302,6 +302,7 @@ def save_state(
     db, state: model.SourceState, user_id: int
 ) -> model.SourceState:
     """Save (replace) source state"""
+    _LOG.debug("save_state: %s", state)
     row = model.SourceState.to_row(state)
     with db.cursor() as cur:
         cur.execute(

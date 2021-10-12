@@ -87,6 +87,7 @@ class FetchWorker(threading.Thread):
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
+                db.begin()
                 try:
                     self._process_source(db, source_id)
                 except Exception as err:  # pylint: disable=broad-except
@@ -142,8 +143,6 @@ class FetchWorker(threading.Thread):
             or new_state.next_update < next_update
         ):
             new_state.next_update = next_update
-
-        db.begin()
 
         if source.filters:
             entries = filters.filter_by(
@@ -284,6 +283,7 @@ def _delete_old_entries(db):
             removed_bin = database.binaries.remove_unused(db, user.id)
             _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
             db.commit()
+
         db.begin()
         states, entries = database.binaries.clean_sources_entries(db)
         _LOG.info("cleaned %d source states and %d entries", states, entries)
