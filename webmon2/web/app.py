@@ -102,9 +102,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
 
     _register_blueprints(app)
 
-    @app.teardown_appcontext
-    def close_connection(_exception):  # pylint: disable=unused-variable
-        db = getattr(g, "_database", None)
+    # @app.teardown_appcontext
+    @app.teardown_request
+    def teardown_db(_exception):  # pylint: disable=unused-variable
+        db = g.pop("db", None)
         if db is not None:
             db.close()
 
