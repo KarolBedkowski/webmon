@@ -87,8 +87,8 @@ class FetchWorker(threading.Thread):
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
-                db.begin()
                 try:
+                    db.begin()
                     self._process_source(db, source_id)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
@@ -261,33 +261,46 @@ def _delete_old_entries(db):
     try:
         users = list(database.users.get_all(db))
         for user in users:
-            db.begin()
-            keep_days = database.settings.get_value(
-                db, "keep_entries_days", user.id, default=90
-            )
-            if not keep_days:
-                continue
-            max_datetime = datetime.datetime.now() - datetime.timedelta(
-                days=keep_days
-            )
-            deleted_entries, deleted_oids = database.entries.delete_old(
-                db, user.id, max_datetime
-            )
-            _LOG.info(
-                "deleted %d old entries and %d oids for user %d",
-                deleted_entries,
-                deleted_oids,
-                user.id,
-            )
+            try:
+                db.begin()
+                keep_days = database.settings.get_value(
+                    db, "keep_entries_days", user.id, default=90
+                )
+                if not keep_days:
+                    continue
+                max_datetime = datetime.datetime.now() - datetime.timedelta(
+                    days=keep_days
+                )
+                deleted_entries, deleted_oids = database.entries.delete_old(
+                    db, user.id, max_datetime
+                )
+                _LOG.info(
+                    "deleted %d old entries and %d oids for user %d",
+                    deleted_entries,
+                    deleted_oids,
+                    user.id,
+                )
 
-            removed_bin = database.binaries.remove_unused(db, user.id)
-            _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
-            db.commit()
+                removed_bin = database.binaries.remove_unused(db, user.id)
+                _LOG.info(
+                    "removed %d binaries for user %d", removed_bin, user.id
+                )
+                db.commit()
+            except Exception as err:  # pylint: disable=broad-except
+                db.rollback()
+                _LOG.warning("_delete_old_entries error: %s", err)
 
         db.begin()
-        states, entries = database.binaries.clean_sources_entries(db)
-        _LOG.info("cleaned %d source states and %d entries", states, entries)
-        db.commit()
+        try:
+            states, entries = database.binaries.clean_sources_entries(db)
+            _LOG.info(
+                "cleaned %d source states and %d entries", states, entries
+            )
+            db.commit()
+        except Exception as err:  # pylint: disable=broad-except
+            db.rollback()
+            _LOG.warning("_delete_old_entries error: %s", err)
+
     except Exception as err:  # pylint: disable=broad-except
         _LOG.exception("delete old error: %s", err)
 

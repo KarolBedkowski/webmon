@@ -79,14 +79,19 @@ def get_all(
 
         _LOG.debug("get_all %r %s", args, sql)
         cur.execute(sql, args)
-        for row in cur:
-            source = model.Source.from_row(row)
-            source.state = model.SourceState.from_row(row)
-            source.unread = row["unread"]
-            group = user_groups[source.group_id]
-            assert group
-            source.group = group
-            yield source
+        res = [_build_source(row, user_groups) for row in cur]
+
+    return res
+
+
+def _build_source(row, user_groups) -> model.Source:
+    source = model.Source.from_row(row)
+    source.state = model.SourceState.from_row(row)
+    source.unread = row["unread"]
+    group = user_groups[source.group_id]
+    assert group
+    source.group = group
+    return source
 
 
 _GET_SOURCE_SQL = """
@@ -265,12 +270,11 @@ from source_state where source_id=%s
 
 def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
     """Get state for given source"""
-    cur = db.cursor()
-    cur.execute(_GET_STATE_SQL, (source_id,))
-    row = cur.fetchone()
-    state = model.SourceState.from_row(row) if row else None
-    cur.close()
-    return state
+    with db.cursor() as cur:
+        cur.execute(_GET_STATE_SQL, (source_id,))
+        row = cur.fetchone()
+
+    return model.SourceState.from_row(row) if row else None
 
 
 _INSERT_STATE_SQL = """
@@ -365,12 +369,13 @@ def refresh(
     elif source_id:
         sql += "and source_id=%(source_id)s"
 
-    cur = db.cursor()
-    cur.execute(
-        sql, {"group_id": group_id, "source_id": source_id, "user_id": user_id}
-    )
-    updated = cur.rowcount
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(
+            sql,
+            {"group_id": group_id, "source_id": source_id, "user_id": user_id},
+        )
+        updated = cur.rowcount
+
     return updated
 
 
