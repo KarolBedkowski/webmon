@@ -121,7 +121,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
             or path.startswith("/sec/login")
             or path.startswith("/metrics")
             or path.startswith("/atom")
+            or path.startswith("/binary/")
+            or path.startswith("/entry/mark/")
             or path == "/favicon.ico"
+            or path == "/manifest.json"
         )
         if g.non_action:
             return None
@@ -134,7 +137,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
                 session.modified = True
 
             return redirect(url_for("sec.login"))
-        _count_unread(user_id)
+
+        if request.method == "GET":
+            _count_unread(user_id)
+
         return None
 
     @app.after_request
