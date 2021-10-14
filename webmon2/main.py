@@ -336,6 +336,14 @@ def _serve(args, app_conf):
         _SDN.notify("STOPPING=1")
 
 
+def _update_schema(app_conf):
+    if is_running_from_reloader():
+        _LOG.error("cannot update schema when running from reloader")
+    else:
+        _LOG.info("update schema...")
+        database.DB.initialize(app_conf.get("main", "database"), True, 1, 5)
+
+
 def main():
     """Main function."""
 
@@ -365,15 +373,11 @@ def main():
         return
 
     if args.cmd == "update-schema":
-        if is_running_from_reloader():
-            _LOG.error("cannot update schema when running from reloader")
-        else:
-            _LOG.info("update schema...")
-            database.DB.initialize(
-                app_conf.get("main", "database"), True, 1, 5
-            )
-
+        _update_schema(app_conf)
         return
+
+    if HAS_SDNOTIFY:
+        _SDN.notify("STATUS=init-db")
 
     database.DB.initialize(
         app_conf.get("main", "database"),
