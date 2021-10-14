@@ -45,8 +45,8 @@ class CheckWorker(threading.Thread):
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15 if self.debug else 60)
-            try:
-                with database.DB.get() as db:
+            with database.DB.get() as db:
+                try:
                     now = time.time()
                     if now > self.next_cleanup_start:
                         _delete_old_entries(db)
@@ -67,8 +67,8 @@ class CheckWorker(threading.Thread):
 
                     _LOG.debug("CheckWorker check done")
                     _send_mails(db, self._conf)
-            except Exception:  # pylint: disable=broad-except
-                _LOG.exception("CheckWorker thread error")
+                except Exception as err:  # pylint: disable=broad-except
+                    _LOG.exception("CheckWorker thread error: %s", err)
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)
@@ -306,7 +306,8 @@ def _delete_old_entries(db):
 
 
 def _send_mails(db, conf):
-    if not conf.getboolean("smtp", "enabled", failback=False):
+    if not conf.getboolean("smtp", "enabled", fallback=False):
+        _LOG.debug("_send_mails disabled")
         return
 
     _LOG.debug("_send_mails start")
