@@ -56,7 +56,6 @@ class DB:
         self._conn = DB.POOL.getconn()
         self._conn.autocommit = False
         self._conn.initialize(_LOG)
-        # _LOG.debug("conn: %s", self._conn)
 
     @classmethod
     def get(cls):
@@ -112,6 +111,7 @@ class DB:
 
             _LOG.debug("Closing conn %s", self._conn)
             if self._conn.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
+                # prevent 'idle in transactions' connections
                 self._conn.rollback()
 
             self.POOL.putconn(self._conn)
@@ -131,14 +131,17 @@ class DB:
         for fname in sorted(os.listdir(schema_files)):
             if not fname.endswith(".sql"):
                 continue
+
             try:
                 version = int(os.path.splitext(fname)[0])
                 _LOG.debug("found update: %r", version)
                 if version <= schema_ver:
                     continue
+
             except ValueError:
                 _LOG.warning("skipping schema update file %s", fname)
                 continue
+
             _LOG.info("apply update: %s", fname)
             fpath = os.path.join(schema_files, fname)
             try:
@@ -164,4 +167,5 @@ class DB:
                     return row[0] or 0
             except psycopg2.ProgrammingError:
                 _LOG.info("no schema version")
-            return 0
+
+        return 0

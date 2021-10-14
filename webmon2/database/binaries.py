@@ -25,8 +25,7 @@ def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[bytes, str]]:
             "where datahash=%s and user_id=%s",
             (datahash, user_id),
         )
-        row = cur.fetchone()
-        return row
+        return cur.fetchone()
 
 
 def save(db, user_id: int, content_type: str, datahash: str, data) -> None:

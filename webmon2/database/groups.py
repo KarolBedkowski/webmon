@@ -257,8 +257,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        changed = cur.rowcount
-        return changed
+        return cur.rowcount
 
 
 def update_state(db, group_id: int, last_modified: datetime) -> str:

@@ -58,30 +58,28 @@ def get_all(
     else:
         user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}
 
+    args = {"user_id": user_id, "group_id": group_id}
+    sql = _GET_SOURCES_SQL
+    if group_id is not None:
+        sql += " and group_id = %(group_id)s"
+
+    if status == "disabled":
+        sql += " and s.status = 2"
+    elif status == "active":
+        sql += " and s.status = 1"
+    elif status == "notconf":
+        sql += " and s.status = 0"
+    elif status == "error":
+        sql += " and ss.status = 'error' and s.status = 1"
+    elif status == "notupdated":
+        sql += " and ss.last_update is null"
+
+    sql += " order by s.name "
+
+    _LOG.debug("get_all %r %s", args, sql)
     with db.cursor() as cur:
-        args = {"user_id": user_id, "group_id": group_id}
-        sql = _GET_SOURCES_SQL
-        if group_id is not None:
-            sql += " and group_id = %(group_id)s"
-
-        if status == "disabled":
-            sql += " and s.status = 2"
-        elif status == "active":
-            sql += " and s.status = 1"
-        elif status == "notconf":
-            sql += " and s.status = 0"
-        elif status == "error":
-            sql += " and ss.status = 'error' and s.status = 1"
-        elif status == "notupdated":
-            sql += " and ss.last_update is null"
-
-        sql += " order by s.name "
-
-        _LOG.debug("get_all %r %s", args, sql)
         cur.execute(sql, args)
-        res = [_build_source(row, user_groups) for row in cur]
-
-    return res
+        return [_build_source(row, user_groups) for row in cur]
 
 
 def _build_source(row, user_groups) -> model.Source:
@@ -181,8 +179,7 @@ def delete(db, source_id: int) -> int:
     """Delete source"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        updated = cur.rowcount
-        return updated
+        return cur.rowcount
 
 
 def update_filter(
@@ -334,8 +331,7 @@ def get_sources_to_fetch(db) -> ty.List[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
         cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(),))
-        ids = [row[0] for row in cur]
-        return ids
+        return [row[0] for row in cur]
 
 
 _REFRESH_SQL = """
@@ -393,8 +389,7 @@ def refresh_errors(db, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id,))
-        updated = cur.rowcount
-        return updated
+        return cur.rowcount
 
 
 _MARK_READ_SQL = """
@@ -439,8 +434,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        changed = cur.rowcount
-        return changed
+        return cur.rowcount
 
 
 def get_filter_state(
@@ -454,6 +448,7 @@ def get_filter_state(
             (source_id, filter_name),
         )
         row = cur.fetchone()
+
     if not row:
         return None
 

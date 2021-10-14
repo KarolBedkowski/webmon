@@ -230,8 +230,7 @@ def get_total_count(
 
     with db.cursor() as cur:
         cur.execute(sql, args)
-        result = cur.fetchone()[0]
-        return result
+        return cur.fetchone()[0]
 
 
 # pylint: disable=too-many-arguments,too-many-locals

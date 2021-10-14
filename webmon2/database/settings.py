@@ -36,9 +36,7 @@ def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
 
     with db.cursor() as cur:
         cur.execute(_GET_ALL_SQL, (user_id,))
-        res = [model.Setting.from_row(row) for row in cur]
-
-    return res
+        return [model.Setting.from_row(row) for row in cur]
 
 
 _GET_SQL = """

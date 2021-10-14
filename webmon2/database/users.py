@@ -68,11 +68,8 @@ def get(db, id_=None, login=None) -> ty.Optional[model.User]:
             return None
 
         row = cur.fetchone()
-        if not row:
-            return None
 
-        user = model.User.from_row(row)
-        return user
+    return model.User.from_row(row) if row else None
 
 
 _UPDATE_USER_SQL = """
@@ -91,20 +88,20 @@ returning id
 
 def save(db, user: model.User) -> model.User:
     """Insert or update user"""
-    cur = db.cursor()
-    if user.id:
-        cur.execute(_UPDATE_USER_SQL, user.to_row())
-    else:
-        cur.execute("select 1 from users where login=%s", (user.login,))
-        if cur.fetchone():
-            cur.close()
-            raise LoginAlreadyExistsError()
-        cur.execute(_INSERT_USER_SQL, user.to_row())
-        user_id = cur.fetchone()[0]
-        user.id = user_id
-        _create_new_user_data(cur, user_id)
+    with db.cursor() as cur:
+        if user.id:
+            cur.execute(_UPDATE_USER_SQL, user.to_row())
+        else:
+            cur.execute("select 1 from users where login=%s", (user.login,))
+            if cur.fetchone():
+                cur.close()
+                raise LoginAlreadyExistsError()
 
-    cur.close()
+            cur.execute(_INSERT_USER_SQL, user.to_row())
+            user_id = cur.fetchone()[0]
+            user.id = user_id
+            _create_new_user_data(cur, user_id)
+
     return user
 
 
