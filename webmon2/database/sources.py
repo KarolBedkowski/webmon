@@ -48,7 +48,11 @@ where s.user_id=%(user_id)s"""
 
 
 def get_all(
-    db, user_id: int, group_id=None, status: ty.Optional[str] = None
+    db,
+    user_id: int,
+    group_id=None,
+    status: ty.Optional[str] = None,
+    order: ty.Optional[str] = None,
 ) -> ty.Iterable[model.Source]:
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries
@@ -74,7 +78,18 @@ def get_all(
     elif status == "notupdated":
         sql += " and ss.last_update is null"
 
-    sql += " order by s.name "
+    if order == "name_desc":
+        sql += " order by s.name desc"
+    elif order == "update":
+        sql += " order by ss.last_update"
+    elif order == "update_desc":
+        sql += " order by ss.last_update desc"
+    elif order == "next_update":
+        sql += " order by ss.next_update"
+    elif order == "next_update_desc":
+        sql += " order by ss.next_update desc"
+    else:
+        sql += " order by s.name "
 
     _LOG.debug("get_all %r %s", args, sql)
     with db.cursor() as cur:
