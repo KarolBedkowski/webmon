@@ -43,7 +43,11 @@ def login():
         flogin = request.form["login"]
         fpassword = request.form["password"]
         db = c.get_db()
-        user = database.users.get(db, login=flogin)
+        try:
+            user = database.users.get(db, login=flogin)
+        except database.NotFound:
+            user = None
+
         if (
             user
             and user.active
@@ -73,7 +77,11 @@ def login():
 def login_totp():
     if request.method == "POST":
         db = c.get_db()
-        user = database.users.get(db, session["temp_user_id"])
+        try:
+            user = database.users.get(db, session["temp_user_id"])
+        except database.NotFound:
+            user = None
+
         ftotp = request.form["otp"]
         if user and user.active and security.verify_totp(user.totp, ftotp):
             back = session.get("_back_url")
