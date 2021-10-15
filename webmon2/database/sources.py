@@ -47,6 +47,34 @@ left join source_state ss on ss.source_id = s.id
 where s.user_id=%(user_id)s"""
 
 
+def _get_order_sql(order):
+    if order == "name_desc":
+        return " order by s.name desc"
+    if order == "update":
+        return " order by ss.last_update"
+    if order == "update_desc":
+        return " order by ss.last_update desc"
+    if order == "next_update":
+        return " order by ss.next_update"
+    if order == "next_update_desc":
+        return " order by ss.next_update desc"
+    return " order by s.name "
+
+
+def _get_status_sql(status):
+    if status == "disabled":
+        return " and s.status = 2"
+    if status == "active":
+        return " and s.status = 1"
+    if status == "notconf":
+        return " and s.status = 0"
+    if status == "error":
+        return " and ss.status = 'error' and s.status = 1"
+    if status == "notupdated":
+        return " and ss.last_update is null"
+    return ""
+
+
 def get_all(
     db,
     user_id: int,
@@ -67,29 +95,8 @@ def get_all(
     if group_id is not None:
         sql += " and group_id = %(group_id)s"
 
-    if status == "disabled":
-        sql += " and s.status = 2"
-    elif status == "active":
-        sql += " and s.status = 1"
-    elif status == "notconf":
-        sql += " and s.status = 0"
-    elif status == "error":
-        sql += " and ss.status = 'error' and s.status = 1"
-    elif status == "notupdated":
-        sql += " and ss.last_update is null"
-
-    if order == "name_desc":
-        sql += " order by s.name desc"
-    elif order == "update":
-        sql += " order by ss.last_update"
-    elif order == "update_desc":
-        sql += " order by ss.last_update desc"
-    elif order == "next_update":
-        sql += " order by ss.next_update"
-    elif order == "next_update_desc":
-        sql += " order by ss.next_update desc"
-    else:
-        sql += " order by s.name "
+    sql += _get_status_sql(status)
+    sql += _get_order_sql(order)
 
     _LOG.debug("get_all %r %s", args, sql)
     with db.cursor() as cur:
