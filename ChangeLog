@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.9.11 2021-10-15
+
+### Bug Fixes
+
+- Honor smtp.enabled setting
+- Fix not "idle in transaction" db connection
+- Typo in worker preventing sending mail; +better handle errors
+
+### Features
+
+- Support systemd notify via sdnotify lib
+- Sorting sources
+
+
 ## 2.5.10 2021-10-10
 
 ### Bug Fixes
