@@ -16,6 +16,7 @@ import typing as ty
 
 from webmon2 import model
 
+from . import _dbcommon as dbc
 from . import binaries, groups
 
 _ = ty
@@ -131,7 +132,7 @@ def get(
     with_state=False,
     with_group=True,
     user_id: ty.Optional[int] = None,
-) -> ty.Optional[model.Source]:
+) -> model.Source:
     """Get one source with optionally with state and group info.
     Optionally check is source belong to given user.
     Return none when not found.
@@ -141,11 +142,11 @@ def get(
         row = cur.fetchone()
 
     if row is None:
-        return None
+        raise dbc.NotFound()
 
     source = model.Source.from_row(row)
     if user_id and user_id != source.user_id:
-        return None
+        raise dbc.NotFound()
 
     if with_state:
         source.state = get_state(db, source.id)

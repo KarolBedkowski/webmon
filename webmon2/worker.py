@@ -106,9 +106,6 @@ class FetchWorker(threading.Thread):
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source_id)
         source = database.sources.get(db, id_=source_id, with_state=True)
-        if not sources:
-            _LOG.error("[%s] source %d not found!", self._idx, source_id)
-            return
 
         try:
             src = self._get_src(db, source)

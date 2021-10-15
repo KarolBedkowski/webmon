@@ -48,8 +48,10 @@ def source_refresh(source_id: int):
 def source_delete(source_id: int):
     db = c.get_db()
     user_id = session["user"]
-    source = database.sources.get(db, source_id, user_id=user_id)
-    if not source:
+    try:
+        # sanity check (source vs user)
+        database.sources.get(db, source_id, user_id=user_id)
+    except database.NotFound:
         return abort(404)
 
     database.sources.delete(db, source_id)
@@ -71,10 +73,14 @@ def source_edit(
     db = c.get_db()
     user_id = session["user"]
     if source_id:
-        source = database.sources.get(
-            db, source_id, with_state=True, user_id=user_id
-        )
-        if not source or source.user_id != user_id:
+        try:
+            source = database.sources.get(
+                db, source_id, with_state=True, user_id=user_id
+            )
+        except database.NotFound:
+            return abort(404)
+
+        if source.user_id != user_id:
             return abort(404)
 
     elif kind:
@@ -227,8 +233,9 @@ def source_filter_add(source_id: int):
 def source_filter_edit(source_id: int, idx: int):
     db = c.get_db()
     user_id = session["user"]
-    source = database.sources.get(db, source_id, user_id=user_id)
-    if not source:
+    try:
+        source = database.sources.get(db, source_id, user_id=user_id)
+    except database.NotFound:
         return abort(404)
 
     is_new = idx == "new"
@@ -326,8 +333,9 @@ def source_entry(source_id: int, mode: str, entry_id: int):
     """Display entry with marking as read."""
     db = c.get_db()
     user_id = session["user"]
-    src = database.sources.get(db, source_id, user_id=user_id)
-    if not src:
+    try:
+        src = database.sources.get(db, source_id, user_id=user_id)
+    except database.NotFound:
         return abort(404)
 
     entry = database.entries.get(

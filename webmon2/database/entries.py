@@ -163,9 +163,7 @@ def _get_find_sql(
 def _yield_entries(cur, user_sources) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
-        source = user_sources.get(entry.source_id)
-        assert source
-        entry.source = source
+        entry.source = user_sources.get(entry.source_id)
         yield entry
 
 
@@ -366,11 +364,7 @@ def get(
 
     entry = model.Entry.from_row(row)
     if with_source:
-        source = sources.get(db, entry.source_id, with_group=with_group)
-        if not source:
-            _LOG.error("invalid source in entry: %s", entry)
-        else:
-            entry.source = source
+        entry.source = sources.get(db, entry.source_id, with_group=with_group)
 
     return entry
 
