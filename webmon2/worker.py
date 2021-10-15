@@ -45,8 +45,8 @@ class CheckWorker(threading.Thread):
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15 if self.debug else 60)
-            try:
-                with database.DB.get() as db:
+            with database.DB.get() as db:
+                try:
                     now = time.time()
                     if now > self.next_cleanup_start:
                         _delete_old_entries(db)
@@ -67,8 +67,8 @@ class CheckWorker(threading.Thread):
 
                     _LOG.debug("CheckWorker check done")
                     _send_mails(db, self._conf)
-            except Exception:  # pylint: disable=broad-except
-                _LOG.exception("CheckWorker thread error")
+                except Exception as err:  # pylint: disable=broad-except
+                    _LOG.exception("CheckWorker thread error: %s", err)
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)
@@ -88,6 +88,7 @@ class FetchWorker(threading.Thread):
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
                 try:
+                    db.begin()
                     self._process_source(db, source_id)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
@@ -105,9 +106,6 @@ class FetchWorker(threading.Thread):
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source_id)
         source = database.sources.get(db, id_=source_id, with_state=True)
-        if not sources:
-            _LOG.error("[%s] source %d not found!", self._idx, source_id)
-            return
 
         try:
             src = self._get_src(db, source)
@@ -142,8 +140,6 @@ class FetchWorker(threading.Thread):
             or new_state.next_update < next_update
         ):
             new_state.next_update = next_update
-
-        db.begin()
 
         if source.filters:
             entries = filters.filter_by(
@@ -262,37 +258,55 @@ def _delete_old_entries(db):
     try:
         users = list(database.users.get_all(db))
         for user in users:
-            db.begin()
-            keep_days = database.settings.get_value(
-                db, "keep_entries_days", user.id, default=90
-            )
-            if not keep_days:
-                continue
-            max_datetime = datetime.datetime.now() - datetime.timedelta(
-                days=keep_days
-            )
-            deleted_entries, deleted_oids = database.entries.delete_old(
-                db, user.id, max_datetime
-            )
-            _LOG.info(
-                "deleted %d old entries and %d oids for user %d",
-                deleted_entries,
-                deleted_oids,
-                user.id,
-            )
+            try:
+                db.begin()
+                keep_days = database.settings.get_value(
+                    db, "keep_entries_days", user.id, default=90
+                )
+                if not keep_days:
+                    continue
+                max_datetime = datetime.datetime.now() - datetime.timedelta(
+                    days=keep_days
+                )
+                deleted_entries, deleted_oids = database.entries.delete_old(
+                    db, user.id, max_datetime
+                )
+                _LOG.info(
+                    "deleted %d old entries and %d oids for user %d",
+                    deleted_entries,
+                    deleted_oids,
+                    user.id,
+                )
 
-            removed_bin = database.binaries.remove_unused(db, user.id)
-            _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
-            db.commit()
+                removed_bin = database.binaries.remove_unused(db, user.id)
+                _LOG.info(
+                    "removed %d binaries for user %d", removed_bin, user.id
+                )
+                db.commit()
+            except Exception as err:  # pylint: disable=broad-except
+                db.rollback()
+                _LOG.warning("_delete_old_entries error: %s", err)
+
         db.begin()
-        states, entries = database.binaries.clean_sources_entries(db)
-        _LOG.info("cleaned %d source states and %d entries", states, entries)
-        db.commit()
+        try:
+            states, entries = database.binaries.clean_sources_entries(db)
+            _LOG.info(
+                "cleaned %d source states and %d entries", states, entries
+            )
+            db.commit()
+        except Exception as err:  # pylint: disable=broad-except
+            db.rollback()
+            _LOG.warning("_delete_old_entries error: %s", err)
+
     except Exception as err:  # pylint: disable=broad-except
         _LOG.exception("delete old error: %s", err)
 
 
 def _send_mails(db, conf):
+    if not conf.getboolean("smtp", "enabled", fallback=False):
+        _LOG.debug("_send_mails disabled")
+        return
+
     _LOG.debug("_send_mails start")
     users = list(database.users.get_all(db))
     for user in users:
@@ -304,6 +318,7 @@ def _send_mails(db, conf):
             db.rollback()
         else:
             db.commit()
+
     _LOG.debug("_send_mails end")
 
 

@@ -13,6 +13,7 @@ import importlib.util
 import locale
 import logging
 import os.path
+import signal
 import sys
 import typing as ty
 
@@ -31,6 +32,12 @@ except ImportError:
     except ImportError:
         print("no rich.trackback")
 
+try:
+    import sdnotify
+
+    HAS_SDNOTIFY = True
+except ImportError:
+    HAS_SDNOTIFY = False
 
 from . import cli, conf, database, logging_setup, web, worker
 
@@ -38,11 +45,13 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.10"
+VERSION = "2.5.11"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
 _DEFAULT_DB_FILE = "~/.local/share/" + APP_NAME + "/" + APP_NAME + ".db"
+_SDN = sdnotify.SystemdNotifier() if HAS_SDNOTIFY else None
+_SDN_WATCHDOG_INTERVAL = 15
 
 
 def _parse_options():
@@ -286,8 +295,62 @@ def _check_libraries():
         _LOG.warning("missing optional flask_minify library")
 
 
+def _sd_watchdog(_signal, _frame):
+    _SDN.notify("WATCHDOG=1")
+    signal.alarm(_SDN_WATCHDOG_INTERVAL)
+
+
+def _load_conf(args):
+    if args.conf:
+        app_conf = conf.load_conf(args.conf)
+    else:
+        app_conf = conf.try_load_user_conf()
+
+    if not app_conf:
+        _LOG.debug("loading default conf")
+        app_conf = conf.default_conf()
+
+    app_conf = conf.update_from_args(app_conf, args)
+    _LOG.debug("app_conf: %r", "  ".join(conf.conf_items(app_conf)))
+    return app_conf
+
+
+def _serve(args, app_conf):
+    if not is_running_from_reloader():
+        if HAS_SDNOTIFY:
+            _SDN.notify("STATUS=starting workers")
+
+        cworker = worker.CheckWorker(app_conf, debug=args.debug)
+        cworker.start()
+
+    if HAS_SDNOTIFY:
+        _SDN.notify("STATUS=running")
+        _SDN.notify("READY=1")
+
+    try:
+        web.start_app(args, app_conf)
+    except Exception as err:  # pylint: disable=broad-except
+        _LOG.error("start app error: %s", err)
+
+    if HAS_SDNOTIFY:
+        _SDN.notify("STOPPING=1")
+
+
+def _update_schema(app_conf):
+    if is_running_from_reloader():
+        _LOG.error("cannot update schema when running from reloader")
+    else:
+        _LOG.info("update schema...")
+        database.DB.initialize(app_conf.get("main", "database"), True, 1, 5)
+
+
 def main():
     """Main function."""
+
+    if HAS_SDNOTIFY:
+        _SDN.notify("STATUS=starting")
+        signal.signal(signal.SIGALRM, _sd_watchdog)
+        signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
     try:
         locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())
@@ -304,32 +367,17 @@ def main():
         cli.show_abilities()
         return
 
-    app_conf = None
-    if args.conf:
-        app_conf = conf.load_conf(args.conf)
-    else:
-        app_conf = conf.try_load_user_conf()
-
-    if not app_conf:
-        _LOG.debug("loading default conf")
-        app_conf = conf.default_conf()
-
-    app_conf = conf.update_from_args(app_conf, args)
-    _LOG.debug("app_conf: %r", "  ".join(conf.conf_items(app_conf)))
+    app_conf = _load_conf(args)
     if not conf.validate(app_conf):
         _LOG.error("app_conf validation error")
         return
 
     if args.cmd == "update-schema":
-        if is_running_from_reloader():
-            _LOG.error("cannot update schema when running from reloader")
-        else:
-            _LOG.info("update schema...")
-            database.DB.initialize(
-                app_conf.get("main", "database"), True, 1, 5
-            )
-
+        _update_schema(app_conf)
         return
+
+    if HAS_SDNOTIFY:
+        _SDN.notify("STATUS=init-db")
 
     database.DB.initialize(
         app_conf.get("main", "database"),
@@ -342,11 +390,7 @@ def main():
         return
 
     if args.cmd == "serve":
-        if not is_running_from_reloader():
-            cworker = worker.CheckWorker(app_conf, debug=args.debug)
-            cworker.start()
-
-        web.start_app(args, app_conf)
+        _serve(args, app_conf)
         return
 
     _LOG.error("missing command")

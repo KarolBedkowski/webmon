@@ -72,7 +72,7 @@ where id= %s
 
 def get(
     db, group_id: int, user_id: ty.Optional[int] = None
-) -> ty.Optional[model.SourceGroup]:
+) -> model.SourceGroup:
     """Get one group. Optionally check is group belong to user.
     Return None if not found.
     """
@@ -80,13 +80,13 @@ def get(
         cur.execute(_GET_SQL, (group_id,))
         row = cur.fetchone()
         if not row:
-            return None
+            raise dbc.NotFound()
 
-        source = model.SourceGroup.from_row(row)
-        if user_id and source.user_id != user_id:
-            return None
+    source = model.SourceGroup.from_row(row)
+    if user_id and source.user_id != user_id:
+        raise dbc.NotFound()
 
-        return source
+    return source
 
 
 _FIND_SQL = """
@@ -164,19 +164,20 @@ where id=%(source_group__user_id)s
 
 def save(db, group: model.SourceGroup) -> model.SourceGroup:
     """Save / update group"""
-    with db.cursor() as cur:
-        if not group.feed:
+    if not group.feed:
+        with db.cursor() as cur:
             group.feed = _generate_group_feed(cur)
 
-        row = group.to_row()
+    row = group.to_row()
 
+    with db.cursor() as cur:
         if group.id is None:
             cur.execute(_INSERT_GROUP_SQL, row)
             group.id = cur.fetchone()[0]
         else:
             cur.execute(_UPDATE_GROUP_SQL, row)
 
-        return group
+    return group
 
 
 def _generate_group_feed(cur) -> str:
@@ -256,8 +257,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        changed = cur.rowcount
-        return changed
+        return cur.rowcount
 
 
 def update_state(db, group_id: int, last_modified: datetime) -> str:
@@ -273,6 +273,8 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
             (group_id,),
         )
         row = cur.fetchone()
+
+    with db.cursor() as cur:
         if row:
             if row[0] > last_modified:
                 return row[1]
@@ -305,15 +307,16 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
             (group_id,),
         )
         row = cur.fetchone()
-        if not row:
-            last_updated = get_last_update(db, group_id)
-            if not last_updated:
-                return None
 
-            etag = update_state(db, group_id, last_updated)
-            return (last_updated, etag)
+    if not row:
+        last_updated = get_last_update(db, group_id)
+        if not last_updated:
+            return None
 
-        return row[0], row[1]
+        etag = update_state(db, group_id, last_updated)
+        return (last_updated, etag)
+
+    return row[0], row[1]
 
 
 def delete(db, user_id: int, group_id: int) -> None:
@@ -325,6 +328,7 @@ def delete(db, user_id: int, group_id: int) -> None:
         if not cur.fetchone()[0]:
             raise common.OperationError("can't delete last group")
 
+    with db.cursor() as cur:
         cur.execute(
             "select count(1) from sources where group_id=%s", (group_id,)
         )
@@ -338,8 +342,8 @@ def delete(db, user_id: int, group_id: int) -> None:
             )
             _LOG.debug("moved %d sources", cur.rowcount)
 
+    with db.cursor() as cur:
         cur.execute("delete from source_groups where id= %s", (group_id,))
-        cur.close()
 
 
 def _find_dst_group(db, user_id: int, group_id: int) -> int:
@@ -350,19 +354,22 @@ def _find_dst_group(db, user_id: int, group_id: int) -> int:
             (user_id, group_id),
         )
         row = cur.fetchone()
-        if row:
-            return row[0]
 
+    if row:
+        return row[0]
+
+    with db.cursor() as cur:
         cur.execute(
             "select id from source_groups where user_id= %s "
             "and id != %s order by id limit 1",
             (user_id, group_id),
         )
         row = cur.fetchone()
-        if row:
-            return row[0]
 
-        raise common.OperationError("can't find destination group for sources")
+    if row:
+        return row[0]
+
+    raise common.OperationError("can't find destination group for sources")
 
 
 def find_next_entry_id(

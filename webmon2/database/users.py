@@ -14,6 +14,8 @@ import typing as ty
 
 from webmon2 import model
 
+from . import _dbcommon as dbc
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -57,7 +59,7 @@ where login=%s
 """
 
 
-def get(db, id_=None, login=None) -> ty.Optional[model.User]:
+def get(db, id_=None, login=None) -> model.User:
     """Get user by id or login"""
     with db.cursor() as cur:
         if id_:
@@ -65,14 +67,14 @@ def get(db, id_=None, login=None) -> ty.Optional[model.User]:
         elif login:
             cur.execute(_GET_BY_LOGIN_SQL, (login,))
         else:
-            return None
+            raise AttributeError("missing id or login")
 
         row = cur.fetchone()
-        if not row:
-            return None
 
-        user = model.User.from_row(row)
-        return user
+    if not row:
+        raise dbc.NotFound()
+
+    return model.User.from_row(row)
 
 
 _UPDATE_USER_SQL = """
@@ -91,20 +93,20 @@ returning id
 
 def save(db, user: model.User) -> model.User:
     """Insert or update user"""
-    cur = db.cursor()
-    if user.id:
-        cur.execute(_UPDATE_USER_SQL, user.to_row())
-    else:
-        cur.execute("select 1 from users where login=%s", (user.login,))
-        if cur.fetchone():
-            cur.close()
-            raise LoginAlreadyExistsError()
-        cur.execute(_INSERT_USER_SQL, user.to_row())
-        user_id = cur.fetchone()[0]
-        user.id = user_id
-        _create_new_user_data(cur, user_id)
+    with db.cursor() as cur:
+        if user.id:
+            cur.execute(_UPDATE_USER_SQL, user.to_row())
+        else:
+            cur.execute("select 1 from users where login=%s", (user.login,))
+            if cur.fetchone():
+                cur.close()
+                raise LoginAlreadyExistsError()
 
-    cur.close()
+            cur.execute(_INSERT_USER_SQL, user.to_row())
+            user_id = cur.fetchone()[0]
+            user.id = user_id
+            _create_new_user_data(cur, user_id)
+
     return user
 
 

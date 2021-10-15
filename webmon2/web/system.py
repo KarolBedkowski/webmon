@@ -112,9 +112,6 @@ def sett_user_totp_del():
 
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
-    if not user.totp:
-        return abort(400)
-
     user.totp = None
     database.users.save(db, user)
     db.commit()
@@ -126,9 +123,6 @@ def sett_user_totp_del():
 def sett_user_totp_get():
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
-    if user.totp:
-        return abort(400)
-
     totp = session.get("temp_totp")
     if not totp:
         totp = security.generate_totp()
@@ -155,9 +149,6 @@ def sett_user_totp_post():
 
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
-    if user.totp:
-        return abort(400)
-
     totp = request.form["totp"]
     if security.verify_totp(secret, totp):
         user.totp = secret
@@ -308,8 +299,9 @@ def sett_sys_user(user_id: int = None):
 
     db = c.get_db()
     if user_id:
-        user = database.users.get(db, user_id)
-        if not user:
+        try:
+            user = database.users.get(db, user_id)
+        except database.NotFound:
             flash("User not found")
             return redirect(url_for("system.sett_sys_users"))
     else:
@@ -357,8 +349,9 @@ def sett_sys_user_delete(user_id: int):
         abort(401)
 
     db = c.get_db()
-    user = database.users.get(db, user_id)
-    if not user:
+    try:
+        user = database.users.get(db, user_id)
+    except database.NotFound:
         flash("User not found")
         return redirect(url_for("system.sett_sys_users"))
 

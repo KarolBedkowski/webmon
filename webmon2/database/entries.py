@@ -163,9 +163,7 @@ def _get_find_sql(
 def _yield_entries(cur, user_sources) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
-        source = user_sources.get(entry.source_id)
-        assert source
-        entry.source = source
+        entry.source = user_sources.get(entry.source_id)
         yield entry
 
 
@@ -230,8 +228,7 @@ def get_total_count(
 
     with db.cursor() as cur:
         cur.execute(sql, args)
-        result = cur.fetchone()[0]
-        return result
+        return cur.fetchone()[0]
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -361,18 +358,15 @@ def get(
 
         cur.execute(sql, {"oid": oid, "id": id_})
         row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
 
-        entry = model.Entry.from_row(row)
-        if with_source:
-            source = sources.get(db, entry.source_id, with_group=with_group)
-            if not source:
-                _LOG.error("invalid source in entry: %s", entry)
-            else:
-                entry.source = source
+    if not row:
+        raise dbc.NotFound()
 
-        return entry
+    entry = model.Entry.from_row(row)
+    if with_source:
+        entry.source = sources.get(db, entry.source_id, with_group=with_group)
+
+    return entry
 
 
 _INSERT_ENTRY_SQL = """
@@ -425,18 +419,20 @@ def save_many(db, entries: model.Entries):
     """Insert entries; where entry with given oid already exists - is deleted
     and inserted again; star mark is preserved.
     """
-    with db.cursor() as cur:
-        # filter updated entries; should be deleted & inserted
-        oids_to_delete = [
-            (entry.oid,) for entry in entries if entry.status == "updated"
-        ]
-        if oids_to_delete:
-            # find stared entries
+    # filter updated entries; should be deleted & inserted
+    oids_to_delete = [
+        (entry.oid,) for entry in entries if entry.status == "updated"
+    ]
+    if oids_to_delete:
+        # find stared entries
+        with db.cursor() as cur:
             cur.execute(
                 "select oid from entries where oid=%s and star_mark=1",
                 oids_to_delete,
             )
             marked_oids = {row[0] for row in cur}
+
+        with db.cursor() as cur:
             cur.executemany("delete from entries where oid=%s", oids_to_delete)
             _LOG.debug(
                 "to del %d, deleted: %d", len(oids_to_delete), cur.rowcount
@@ -447,8 +443,11 @@ def save_many(db, entries: model.Entries):
                     if entry.oid in marked_oids:
                         entry.star_mark = True
 
-        rows = map(model.Entry.to_row, entries)
+    rows = map(model.Entry.to_row, entries)
+
+    with db.cursor() as cur:
         cur.executemany(_INSERT_ENTRY_SQL, rows)
+
     _save_entry_icon(db, entries)
 
 
@@ -517,13 +516,14 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
             )
             result.update(row[0] for row in cur)
 
-        new_oids = [oid for oid in oids if oid not in result]
-        _LOG.debug(
-            "check_oids: check=%r, found=%d new=%d",
-            len(oids),
-            len(result),
-            len(new_oids),
-        )
+    new_oids = [oid for oid in oids if oid not in result]
+    _LOG.debug(
+        "check_oids: check=%r, found=%d new=%d",
+        len(oids),
+        len(result),
+        len(new_oids),
+    )
+    with db.cursor() as cur:
         cur.executemany(
             "insert into history_oids(source_id, oid) values (%s, %s)",
             [(source_id, oid) for oid in new_oids],

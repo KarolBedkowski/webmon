@@ -24,6 +24,7 @@ Dependences
 * flask, Werkzeug, gevent and optional Flask_Minify
 * python-gitlab (for gitlab api; pip install python-gitlab)
 * pyotp, pyqrcode for TOTP 2FA
+* sdnotify (optional for systemd service)
 
 
 Usage

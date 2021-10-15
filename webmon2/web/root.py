@@ -57,10 +57,14 @@ def sources():
     db = c.get_db()
     user_id = session["user"]
     status = request.args.get("status", "all")
+    order = request.args.get("order", "name")
     return render_template(
         "sources.html",
-        sources=database.sources.get_all(db, user_id, status=status),
+        sources=database.sources.get_all(
+            db, user_id, status=status, order=order
+        ),
         status=status,
+        order=order,
     )
 
 

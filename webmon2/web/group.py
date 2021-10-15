@@ -50,8 +50,9 @@ def group_edit(group_id: int = 0):
     db = c.get_db()
     user_id = session["user"]
     if group_id:
-        sgroup = database.groups.get(db, group_id, user_id)
-        if not sgroup:
+        try:
+            sgroup = database.groups.get(db, group_id, user_id)
+        except database.NotFound:
             return abort(404)
     else:
         sgroup = model.SourceGroup(user_id=user_id, name="")
@@ -77,8 +78,9 @@ def group_edit(group_id: int = 0):
 def group_sources(group_id: int):
     db = c.get_db()
     user_id = session["user"]
-    group = database.groups.get(db, group_id, user_id)
-    if not group:
+    try:
+        group = database.groups.get(db, group_id, user_id)
+    except database.NotFound:
         return abort(404)
 
     status = request.args.get("status", "all")
@@ -98,8 +100,9 @@ def group_sources(group_id: int):
 def group_entries(group_id: int, mode: str = "unread", page: int = 0):
     db = c.get_db()
     user_id = session["user"]
-    sgroup = database.groups.get(db, group_id, user_id)
-    if not sgroup:
+    try:
+        sgroup = database.groups.get(db, group_id, user_id)
+    except database.NotFound:
         return abort(404)
 
     offset = (page or 0) * c.PAGE_LIMIT
@@ -185,13 +188,14 @@ def group_delete(group_id: int):
     db = c.get_db()
     user_id = session["user"]
     try:
-        group_ = database.groups.get(db, group_id, user_id)
-        if not group_:
-            return abort(404)
+        # sanity check
+        database.groups.get(db, group_id, user_id)
         database.groups.delete(db, user_id, group_id)
         db.commit()
         flash("Group deleted")
 
+    except database.NotFound:
+        return abort(404)
     except common.OperationError as err:
         flash("Can't delete group: " + str(err), "error")
 
@@ -210,8 +214,9 @@ def group_entry(group_id: int, mode: str, entry_id: int):
     """
     db = c.get_db()
     user_id = session["user"]
-    group = database.groups.get(db, group_id, user_id)
-    if not group:
+    try:
+        group = database.groups.get(db, group_id, user_id)
+    except database.NotFound:
         return abort(404)
 
     entry = database.entries.get(

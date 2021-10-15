@@ -14,7 +14,8 @@ import psycopg2
 _LOG = logging.getLogger(__name__)
 
 
-def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[str, str]]:
+def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[bytes, str]]:
+    _LOG.debug("get: %r, %r", datahash, user_id)
     if not datahash:
         return None
 
@@ -24,8 +25,7 @@ def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[str, str]]:
             "where datahash=%s and user_id=%s",
             (datahash, user_id),
         )
-        row = cur.fetchone()
-        return row
+        return cur.fetchone()
 
 
 def save(db, user_id: int, content_type: str, datahash: str, data) -> None:

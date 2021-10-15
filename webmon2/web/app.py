@@ -102,9 +102,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
 
     _register_blueprints(app)
 
-    @app.teardown_appcontext
-    def close_connection(_exception):  # pylint: disable=unused-variable
-        db = getattr(g, "_database", None)
+    # @app.teardown_appcontext
+    @app.teardown_request
+    def teardown_db(_exception):  # pylint: disable=unused-variable
+        db = g.pop("db", None)
         if db is not None:
             db.close()
 
@@ -120,7 +121,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
             or path.startswith("/sec/login")
             or path.startswith("/metrics")
             or path.startswith("/atom")
+            or path.startswith("/binary/")
+            or path.startswith("/entry/mark/")
             or path == "/favicon.ico"
+            or path == "/manifest.json"
         )
         if g.non_action:
             return None
@@ -133,7 +137,10 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
                 session.modified = True
 
             return redirect(url_for("sec.login"))
-        _count_unread(user_id)
+
+        if request.method == "GET":
+            _count_unread(user_id)
+
         return None
 
     @app.after_request

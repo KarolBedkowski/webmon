@@ -16,6 +16,7 @@ import typing as ty
 
 from webmon2 import model
 
+from . import _dbcommon as dbc
 from . import binaries, groups
 
 _ = ty
@@ -47,8 +48,40 @@ left join source_state ss on ss.source_id = s.id
 where s.user_id=%(user_id)s"""
 
 
+def _get_order_sql(order):
+    if order == "name_desc":
+        return " order by s.name desc"
+    if order == "update":
+        return " order by ss.last_update"
+    if order == "update_desc":
+        return " order by ss.last_update desc"
+    if order == "next_update":
+        return " order by ss.next_update"
+    if order == "next_update_desc":
+        return " order by ss.next_update desc"
+    return " order by s.name "
+
+
+def _get_status_sql(status):
+    if status == "disabled":
+        return " and s.status = 2"
+    if status == "active":
+        return " and s.status = 1"
+    if status == "notconf":
+        return " and s.status = 0"
+    if status == "error":
+        return " and ss.status = 'error' and s.status = 1"
+    if status == "notupdated":
+        return " and ss.last_update is null"
+    return ""
+
+
 def get_all(
-    db, user_id: int, group_id=None, status: ty.Optional[str] = None
+    db,
+    user_id: int,
+    group_id=None,
+    status: ty.Optional[str] = None,
+    order: ty.Optional[str] = None,
 ) -> ty.Iterable[model.Source]:
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries
@@ -58,35 +91,28 @@ def get_all(
     else:
         user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}
 
+    args = {"user_id": user_id, "group_id": group_id}
+    sql = _GET_SOURCES_SQL
+    if group_id is not None:
+        sql += " and group_id = %(group_id)s"
+
+    sql += _get_status_sql(status)
+    sql += _get_order_sql(order)
+
+    _LOG.debug("get_all %r %s", args, sql)
     with db.cursor() as cur:
-        args = {"user_id": user_id, "group_id": group_id}
-        sql = _GET_SOURCES_SQL
-        if group_id is not None:
-            sql += " and group_id = %(group_id)s"
-
-        if status == "disabled":
-            sql += " and s.status = 2"
-        elif status == "active":
-            sql += " and s.status = 1"
-        elif status == "notconf":
-            sql += " and s.status = 0"
-        elif status == "error":
-            sql += " and ss.status = 'error' and s.status = 1"
-        elif status == "notupdated":
-            sql += " and ss.last_update is null"
-
-        sql += " order by s.name "
-
-        _LOG.debug("get_all %r %s", args, sql)
         cur.execute(sql, args)
-        for row in cur:
-            source = model.Source.from_row(row)
-            source.state = model.SourceState.from_row(row)
-            source.unread = row["unread"]
-            group = user_groups[source.group_id]
-            assert group
-            source.group = group
-            yield source
+        return [_build_source(row, user_groups) for row in cur]
+
+
+def _build_source(row, user_groups) -> model.Source:
+    source = model.Source.from_row(row)
+    source.state = model.SourceState.from_row(row)
+    source.unread = row["unread"]
+    group = user_groups[source.group_id]
+    assert group
+    source.group = group
+    return source
 
 
 _GET_SOURCE_SQL = """
@@ -106,7 +132,7 @@ def get(
     with_state=False,
     with_group=True,
     user_id: ty.Optional[int] = None,
-) -> ty.Optional[model.Source]:
+) -> model.Source:
     """Get one source with optionally with state and group info.
     Optionally check is source belong to given user.
     Return none when not found.
@@ -116,21 +142,17 @@ def get(
         row = cur.fetchone()
 
     if row is None:
-        return None
+        raise dbc.NotFound()
 
     source = model.Source.from_row(row)
     if user_id and user_id != source.user_id:
-        return None
+        raise dbc.NotFound()
 
     if with_state:
         source.state = get_state(db, source.id)
 
     if with_group and source.group_id:
-        group = groups.get(db, source.group_id)
-        if not group:
-            _LOG.error("invalid group in source: %s", source)
-        else:
-            source.group = group
+        source.group = groups.get(db, source.group_id)
 
     return source
 
@@ -176,8 +198,7 @@ def delete(db, source_id: int) -> int:
     """Delete source"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        updated = cur.rowcount
-        return updated
+        return cur.rowcount
 
 
 def update_filter(
@@ -265,12 +286,11 @@ from source_state where source_id=%s
 
 def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
     """Get state for given source"""
-    cur = db.cursor()
-    cur.execute(_GET_STATE_SQL, (source_id,))
-    row = cur.fetchone()
-    state = model.SourceState.from_row(row) if row else None
-    cur.close()
-    return state
+    with db.cursor() as cur:
+        cur.execute(_GET_STATE_SQL, (source_id,))
+        row = cur.fetchone()
+
+    return model.SourceState.from_row(row) if row else None
 
 
 _INSERT_STATE_SQL = """
@@ -302,6 +322,7 @@ def save_state(
     db, state: model.SourceState, user_id: int
 ) -> model.SourceState:
     """Save (replace) source state"""
+    _LOG.debug("save_state: %s", state)
     row = model.SourceState.to_row(state)
     with db.cursor() as cur:
         cur.execute(
@@ -329,8 +350,7 @@ def get_sources_to_fetch(db) -> ty.List[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
         cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(),))
-        ids = [row[0] for row in cur]
-        return ids
+        return [row[0] for row in cur]
 
 
 _REFRESH_SQL = """
@@ -364,12 +384,13 @@ def refresh(
     elif source_id:
         sql += "and source_id=%(source_id)s"
 
-    cur = db.cursor()
-    cur.execute(
-        sql, {"group_id": group_id, "source_id": source_id, "user_id": user_id}
-    )
-    updated = cur.rowcount
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(
+            sql,
+            {"group_id": group_id, "source_id": source_id, "user_id": user_id},
+        )
+        updated = cur.rowcount
+
     return updated
 
 
@@ -387,8 +408,7 @@ def refresh_errors(db, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id,))
-        updated = cur.rowcount
-        return updated
+        return cur.rowcount
 
 
 _MARK_READ_SQL = """
@@ -433,8 +453,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        changed = cur.rowcount
-        return changed
+        return cur.rowcount
 
 
 def get_filter_state(
@@ -448,6 +467,7 @@ def get_filter_state(
             (source_id, filter_name),
         )
         row = cur.fetchone()
+
     if not row:
         return None
 

@@ -34,12 +34,9 @@ def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
     if not user_id:
         raise ValueError("missing user_id")
 
-    cur = db.cursor()
-    cur.execute(_GET_ALL_SQL, (user_id,))
-    for row in cur:
-        yield model.Setting.from_row(row)
-
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(_GET_ALL_SQL, (user_id,))
+        return [model.Setting.from_row(row) for row in cur]
 
 
 _GET_SQL = """
@@ -56,10 +53,10 @@ where s.key=%s
 
 def get(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
     """Get one setting for given user"""
-    cur = db.cursor()
-    cur.execute(_GET_SQL, (user_id, key))
-    row = cur.fetchone()
-    cur.close()
+    with db.cursor() as cur:
+        cur.execute(_GET_SQL, (user_id, key))
+        row = cur.fetchone()
+
     return model.Setting.from_row(row) if row else None
 
 
@@ -71,14 +68,14 @@ values (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
 
 def save_all(db, settings: ty.List[model.Setting]) -> None:
     """Save all settings"""
-    cur = db.cursor()
     rows = [setting.to_row() for setting in settings]
-    cur.executemany(
-        "delete from user_settings where key=%s and user_id=%s",
-        [(setting.key, setting.user_id) for setting in settings],
-    )
-    cur.executemany(_INSERT_SQL, rows)
-    cur.close()
+
+    with db.cursor() as cur:
+        cur.executemany(
+            "delete from user_settings where key=%s and user_id=%s",
+            [(setting.key, setting.user_id) for setting in settings],
+        )
+        cur.executemany(_INSERT_SQL, rows)
 
 
 def get_value(db, key: str, user_id: int, default=None) -> ty.Any:

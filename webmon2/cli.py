@@ -54,6 +54,7 @@ def add_user(args):
     with database.DB.get() as db:
         user = database.users.save(db, user)
         db.commit()
+
     if not user:
         print("user already exists")
     else:
@@ -66,11 +67,14 @@ def change_user_pass(args):
     if not login or not password:
         print("wrong arguments for change password")
         return
+
     with database.DB.get() as db:
-        user = database.users.get(db, login=login)
-        if not user:
+        try:
+            user = database.users.get(db, login=login)
+        except database.NotFound:
             print("user not found")
             return
+
         user.password = security.hash_password(password)
         user = database.users.save(db, user)
         db.commit()
@@ -83,10 +87,12 @@ def remove_user_totp(args):
         print("missing login arguments for remove totp")
         return
     with database.DB.get() as db:
-        user = database.users.get(db, login=login)
-        if not user:
+        try:
+            user = database.users.get(db, login=login)
+        except database.NotFound:
             print("user not found")
             return
+
         user.totp = None
         user = database.users.save(db, user)
         db.commit()

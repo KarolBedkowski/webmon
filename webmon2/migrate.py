@@ -109,8 +109,9 @@ def migrate(args):
     user_login = args.migrate_user
     _LOG.info("migration from %s to user %s start", filename, user_login)
     with database.DB.get() as db:
-        user = database.users.get(db, login=user_login)
-        if not user:
+        try:
+            user = database.users.get(db, login=user_login)
+        except database.NotFound:
             _LOG.error(
                 "error migrating - users %s not found in database", user_login
             )
