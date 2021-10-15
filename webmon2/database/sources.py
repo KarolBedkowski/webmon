@@ -152,11 +152,7 @@ def get(
         source.state = get_state(db, source.id)
 
     if with_group and source.group_id:
-        group = groups.get(db, source.group_id)
-        if not group:
-            _LOG.error("invalid group in source: %s", source)
-        else:
-            source.group = group
+        source.group = groups.get(db, source.group_id)
 
     return source
 

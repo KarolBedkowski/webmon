@@ -72,7 +72,7 @@ where id= %s
 
 def get(
     db, group_id: int, user_id: ty.Optional[int] = None
-) -> ty.Optional[model.SourceGroup]:
+) -> model.SourceGroup:
     """Get one group. Optionally check is group belong to user.
     Return None if not found.
     """
@@ -80,13 +80,13 @@ def get(
         cur.execute(_GET_SQL, (group_id,))
         row = cur.fetchone()
         if not row:
-            return None
+            raise dbc.NotFound()
 
-        source = model.SourceGroup.from_row(row)
-        if user_id and source.user_id != user_id:
-            return None
+    source = model.SourceGroup.from_row(row)
+    if user_id and source.user_id != user_id:
+        raise dbc.NotFound()
 
-        return source
+    return source
 
 
 _FIND_SQL = """
