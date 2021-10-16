@@ -46,7 +46,9 @@ class DymmySource(AbstractSource):
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
             entry.status = model.EntryStatus.NEW
-            entry.title = self._source.name
+            entry.title = (
+                self._source.name + " " + str(entry.updated) + " " + str(idx)
+            )
             entry.url = "dummy"
             entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
             entries.append(entry)

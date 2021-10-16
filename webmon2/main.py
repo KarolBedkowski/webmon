@@ -316,11 +316,16 @@ def _load_conf(args):
 
 
 def _serve(args, app_conf):
-    if not is_running_from_reloader():
+    if (
+        not is_running_from_reloader()
+        and app_conf.getint("main", "workers", fallback=2) > 0
+    ):
         if HAS_SDNOTIFY:
             _SDN.notify("STATUS=starting workers")
 
-        cworker = worker.CheckWorker(app_conf, debug=args.debug)
+        cworker = worker.CheckWorker(
+            app_conf, debug=args.debug, sdn=_SDN if HAS_SDNOTIFY else None
+        )
         cworker.start()
 
     if HAS_SDNOTIFY:

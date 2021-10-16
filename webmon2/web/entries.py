@@ -47,15 +47,16 @@ def entries(mode: str, page: int):
     limit, offset = c.PAGE_LIMIT, page * c.PAGE_LIMIT
     unread = mode == "unread"
     user_id = session["user"]
+    order = request.args.get("order", "name")
     total_entries = database.entries.get_total_count(
         db, user_id, unread=unread
     )
     entries_ = list(
         database.entries.find(
-            db, user_id, limit=limit, offset=offset, unread=unread
+            db, user_id, limit=limit, offset=offset, unread=unread, order=order
         )
     )
-    data = c.preprate_entries_list(entries_, page, total_entries)
+    data = c.preprate_entries_list(entries_, page, total_entries, order)
     return render_template("entries.html", showed=mode, **data)
 
 

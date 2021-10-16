@@ -33,18 +33,24 @@ _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, conf, debug=False):
+    def __init__(self, conf, debug=False, sdn=None):
         threading.Thread.__init__(self, daemon=True)
         self._todo_queue = queue.Queue()
         self._conf = conf
         self._workers = conf.getint("main", "workers")
         self.debug = debug
+        self._sdn = sdn
         self.next_cleanup_start = time.time()
+
+    def _notify(self, msg):
+        if self._sdn:
+            self._sdn.notify(msg)
 
     def run(self):
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15 if self.debug else 60)
+            self._notify("STATUS=processing")
             with database.DB.get() as db:
                 try:
                     now = time.time()
@@ -66,9 +72,11 @@ class CheckWorker(threading.Thread):
                             worker.join()
 
                     _LOG.debug("CheckWorker check done")
+                    self._notify("STATUS=mailing")
                     _send_mails(db, self._conf)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("CheckWorker thread error: %s", err)
+            self._notify("STATUS=running")
 
     def _start_worker(self, idx):
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)

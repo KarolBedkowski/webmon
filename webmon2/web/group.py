@@ -105,6 +105,7 @@ def group_entries(group_id: int, mode: str = "unread", page: int = 0):
     except database.NotFound:
         return abort(404)
 
+    order = request.args.get("order", "updated")
     offset = (page or 0) * c.PAGE_LIMIT
     mode = "all" if mode == "all" else "unread"
     unread = mode != "all"
@@ -124,7 +125,7 @@ def group_entries(group_id: int, mode: str = "unread", page: int = 0):
         db, user_id, unread=unread, group_id=group_id
     )
 
-    data = c.preprate_entries_list(entries, page, total_entries)
+    data = c.preprate_entries_list(entries, page, total_entries, order)
 
     return render_template(
         "group_entries.html", group=sgroup, showed=mode, **data

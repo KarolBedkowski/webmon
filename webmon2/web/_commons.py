@@ -21,7 +21,7 @@ PAGE_LIMIT = 25
 
 
 def preprate_entries_list(
-    entries: ty.List[model.Entry], page: int, total_entries: int
+    entries: ty.List[model.Entry], page: int, total_entries: int, order: str
 ) -> ty.Dict[str, ty.Any]:
     last_page = math.ceil(total_entries / PAGE_LIMIT) - 1
     info = {
@@ -38,6 +38,7 @@ def preprate_entries_list(
         "total_entries": total_entries,
         "page": min(page, last_page),
         "last_page": last_page,
+        "order": order,
     }
     return info
 
