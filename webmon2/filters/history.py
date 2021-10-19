@@ -32,6 +32,8 @@ class History(AbstractFilter):
         prev_state: model.SourceState,
         curr_state: model.SourceState,
     ) -> model.Entries:
+        assert self.db
+
         entries = list(entries)
         if not entries:
             return

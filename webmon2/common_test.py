@@ -1,6 +1,7 @@
 # pylint: skip-file
+# type: ignore
 """
-Copyright (c) Karol Będkowski, 2016-2019
+Copyright (c) Karol Będkowski, 2016-2021
 
 This file is part of webmon.
 Licence: GPLv2+

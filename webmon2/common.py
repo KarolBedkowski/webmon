@@ -56,7 +56,7 @@ class OperationError(RuntimeError):
     pass
 
 
-ParentClass = ty.Type[ty.Any]
+ParentClass = ty.Any
 
 
 def find_subclass(
@@ -123,7 +123,7 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
         raise ValueError(f"invalid interval '{instr!s}'") from err
 
 
-def apply_defaults(*confs: ConfDict) -> ConfDict:
+def apply_defaults(*confs: ty.Optional[ConfDict]) -> ConfDict:
     """Create dict from confs."""
     result = {}  # type: ConfDict
     for idx, conf in enumerate(confs):

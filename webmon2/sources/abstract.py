@@ -34,12 +34,12 @@ class AbstractSource:
     )
 
     def __init__(
-        self, source: model.Source, sys_settings: ty.Dict[str, ty.Any]
+        self, source: model.Source, sys_settings: model.ConfDict
     ) -> None:
         super().__init__()
         self._source = source
         self._updated_source = None  # type: ty.Optional[model.Source]
-        self._conf = common.apply_defaults(
+        self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings,
             source.settings,
@@ -66,7 +66,9 @@ class AbstractSource:
         return self._updated_source
 
     @classmethod
-    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+    def validate_conf(
+        cls, *confs: model.ConfDict
+    ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """

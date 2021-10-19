@@ -29,10 +29,16 @@ def get(
             "where datahash=%s and user_id=%s",
             (datahash, user_id),
         )
-        return cur.fetchone()
+        return cur.fetchone()  # type: ignore
 
 
-def save(db: DB, user_id: int, content_type: str, datahash: str, data) -> None:
+def save(
+    db: DB,
+    user_id: int,
+    content_type: str,
+    datahash: str,
+    data: ty.Union[None, str, bytes],
+) -> None:
     _LOG.debug(
         "save binary: %r, %r, %r, %s",
         user_id,
@@ -91,7 +97,7 @@ WHERE icon IS NOT NULL
 def remove_unused(db: DB, user_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(_REMOVE_UNUSED_SQL, {"user_id": user_id})
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
 
 
 def clean_sources_entries(db: DB) -> ty.Tuple[int, int]:

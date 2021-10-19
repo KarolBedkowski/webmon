@@ -34,9 +34,10 @@ class Grep(AbstractFilter):
         ),
     ]  # type: ty.List[common.SettingDef]
 
-    def __init__(self, conf):
+    def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         pattern = conf.get("pattern")
+        self._re: ty.Optional[re.Pattern[str]]
         if pattern:
             self._re = re.compile(
                 pattern, re.IGNORECASE | re.MULTILINE | re.DOTALL
@@ -53,10 +54,14 @@ class Grep(AbstractFilter):
         if not self._re:
             return entries
 
-        if self._conf["invert"]:
-            return filter(lambda x: not self._re.match(x.content), entries)
+        rep = self._re
 
-        return filter(lambda x: self._re.match(x.content), entries)
+        if self._conf["invert"]:
+            return filter(
+                lambda x: not x.content or not rep.match(x.content), entries
+            )
+
+        return filter(lambda x: x.content and rep.match(x.content), entries)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         pass

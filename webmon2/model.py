@@ -26,6 +26,9 @@ from webmon2 import common, formatters
 _LOG = logging.getLogger(__name__)
 
 
+ConfDict = ty.Dict[str, ty.Any]
+
+
 class MailReportMode(IntEnum):
     NO_SEND = 0
     AS_GROUP_SOURCE = 1
@@ -116,7 +119,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.kind: str = kind
         self.name: str = name
         # update interval
-        self.interval: str = ""
+        self.interval: ty.Optional[str] = None
         # additional settings
         self.settings: ty.Optional[ty.Dict[str, ty.Any]] = None
         # filters configuration
@@ -396,6 +399,9 @@ class EntryReadMark(IntEnum):
     MANUAL_READ = 2
 
 
+T = ty.TypeVar("T")
+
+
 class Entry:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "id",
@@ -439,7 +445,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.url: ty.Optional[str] = None
         self.content: ty.Optional[str] = None
         # additional information about entry; ie. content type
-        self.opts: ty.Optional[ty.Dict[str, str]] = None
+        self.opts: ty.Optional[ty.Dict[str, ty.Any]] = None
         self.user_id: int = None  # type: ignore
         # hash of icon, from binaries table
         self.icon: ty.Optional[str] = None
@@ -486,11 +492,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.oid
 
     def get_opt(
-        self, key: str, default: ty.Optional[str] = None
-    ) -> ty.Optional[str]:
+        self, key: str, default: ty.Optional[T] = None
+    ) -> ty.Optional[T]:
         return self.opts.get(key, default) if self.opts else default
 
-    def set_opt(self, key: str, value: str) -> None:
+    def set_opt(self, key: str, value: ty.Any) -> None:
         if self.opts is None:
             self.opts = {}
 
@@ -711,3 +717,6 @@ class ScoringSett:
             "scoring_sett__active": self.active,
             "scoring_sett__score_change": self.score_change,
         }
+
+
+UserSources = ty.Dict[int, Source]

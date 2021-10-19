@@ -7,6 +7,8 @@ Copyright (c) Karol Będkowski, 2016-2021
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
+
 import logging
 import os.path
 import sys
@@ -34,6 +36,7 @@ __all__ = (
 
 _ = ty
 _LOG = logging.getLogger("db")
+tyCursor = ty.Type[psycopg2.extensions.cursor]
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extras.register_default_json(globally=True)
@@ -48,39 +51,40 @@ class DB:
 
     def __init__(self) -> None:
         super().__init__()
-        self._conn = None
+        self._conn: psycopg2.extensions.connection = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
-    def connect(self):
+    def connect(self) -> None:
+        assert DB.POOL
         self._conn = DB.POOL.getconn()
         self._conn.autocommit = False
         self._conn.initialize(_LOG)
 
     @classmethod
-    def get(cls):
+    def get(cls) -> DB:
         return DB()
 
-    def cursor(self):
+    def cursor(self) -> psycopg2.extensions.cursor:
         if not self._conn or self._conn.closed:
             self.close()
             self.connect()
 
         return self._conn.cursor(cursor_factory=extras.DictCursor)
 
-    def begin(self):
+    def begin(self) -> None:
         pass
 
-    def commit(self):
-        return self._conn.commit()
+    def commit(self) -> None:
+        self._conn.commit()
 
-    def rollback(self):
-        return self._conn.rollback()
+    def rollback(self) -> None:
+        self._conn.rollback()
 
     @classmethod
     def initialize(
         cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
-    ):
+    ) -> None:
         _LOG.info("initializing database")
         conn_str = extensions.parse_dsn(conn_str)
         cls.POOL = pool.ThreadedConnectionPool(
@@ -95,15 +99,18 @@ class DB:
             if update_schema:
                 db.update_schema()
 
-    def __enter__(self):
+    def __enter__(self) -> DB:
         # _LOG.debug("Enter conn %s", self._conn)
         return self
 
-    def __exit__(self, type_, value, traceback):
+    def __exit__(
+        self, type_: ty.Any, value: ty.Any, traceback: ty.Any
+    ) -> bool:
         self.close()
         return isinstance(value, TypeError)
 
-    def close(self):
+    def close(self) -> None:
+        assert self.POOL
         if self._conn is not None:
             if self._conn.closed:
                 self._conn = None
@@ -117,13 +124,13 @@ class DB:
             self.POOL.putconn(self._conn)
             self._conn = None
 
-    def check(self):
+    def check(self) -> None:
         with self.cursor() as cur:
             cur.execute("select now()")
             _LOG.debug("check: %s", cur.fetchone())
             self.rollback()
 
-    def update_schema(self):
+    def update_schema(self) -> None:
         self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
@@ -158,7 +165,7 @@ class DB:
                 _LOG.exception("schema update error: %s", err)
                 sys.exit(-1)
 
-    def _get_schema_version(self):
+    def _get_schema_version(self) -> int:
         with self.cursor() as cur:
             try:
                 cur.execute("select max(version) from schema_version")
