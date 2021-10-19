@@ -11,10 +11,14 @@ import typing as ty
 
 import psycopg2
 
+from . import DB
+
 _LOG = logging.getLogger(__name__)
 
 
-def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[bytes, str]]:
+def get(
+    db: DB, datahash: str, user_id: int
+) -> ty.Optional[ty.Tuple[bytes, str]]:
     _LOG.debug("get: %r, %r", datahash, user_id)
     if not datahash:
         return None
@@ -28,7 +32,7 @@ def get(db, datahash: str, user_id: int) -> ty.Optional[ty.Tuple[bytes, str]]:
         return cur.fetchone()
 
 
-def save(db, user_id: int, content_type: str, datahash: str, data) -> None:
+def save(db: DB, user_id: int, content_type: str, datahash: str, data) -> None:
     _LOG.debug(
         "save binary: %r, %r, %r, %s",
         user_id,
@@ -84,13 +88,13 @@ WHERE icon IS NOT NULL
 """
 
 
-def remove_unused(db, user_id: int) -> int:
+def remove_unused(db: DB, user_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(_REMOVE_UNUSED_SQL, {"user_id": user_id})
         return cur.rowcount
 
 
-def clean_sources_entries(db) -> ty.Tuple[int, int]:
+def clean_sources_entries(db: DB) -> ty.Tuple[int, int]:
     with db.cursor() as cur:
         cur.execute(_CLEAN_SOURCE_STATE_SQL)
         states_num = cur.rowcount

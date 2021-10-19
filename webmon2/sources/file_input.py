@@ -107,6 +107,11 @@ class FileSource(AbstractSource):
             raise ValueError("missing text/title")
 
         filename = url[7:]
-        return model.Source(
-            kind=cls.name, name=name, settings={"filename": filename}
+        src = model.Source(
+            user_id=0,
+            group_id=0,
+            kind=cls.name,
+            name=name,
         )
+        src.settings = {"filename": filename}
+        return src

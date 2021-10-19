@@ -6,7 +6,7 @@
 #
 # Distributed under terms of the GPLv3 license.
 # pylint: disable=protected-access
-
+# type: ignore
 """
 Tests for formattes module
 """

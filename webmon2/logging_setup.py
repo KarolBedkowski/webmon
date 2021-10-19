@@ -12,6 +12,7 @@ import os.path
 import sys
 import tempfile
 import time
+import typing as ty
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
@@ -31,14 +32,14 @@ class ColorFormatter(logging.Formatter):
         )
     }
 
-    def format(self, record):
+    def format(self, record: ty.Any) -> str:
         record.levelname = self.FORMAT_MAP.get(
             record.levelname, record.levelname
         )
         return logging.Formatter.format(self, record)
 
 
-def _create_dirs_for_log(filename):
+def _create_dirs_for_log(filename: str) -> str:
     log_fullpath = os.path.abspath(filename)
     log_dir = os.path.dirname(log_fullpath)
     log_dir_access = os.access(log_dir, os.W_OK)
@@ -56,7 +57,7 @@ def _create_dirs_for_log(filename):
     return log_fullpath
 
 
-def setup(filename, debug=False, silent=False):
+def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
     """Setup logging.
 
     Args:

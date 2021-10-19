@@ -29,24 +29,26 @@ _LOG = logging.getLogger("common")
 
 ConfDict = ty.Dict[str, ty.Any]
 
+Row = ty.Dict[str, ty.Any]
 
-class ParamError(RuntimeError):
+
+class ParamError(Exception):
     """Exception raised on missing param"""
 
 
-class InputError(RuntimeError):
+class InputError(Exception):
     """Exception raised on command error"""
 
-    def __init__(self, input_, *args, **kwds):
-        super().__init__(*args, **kwds)
+    def __init__(self, input_: ty.Any, msg: str):
+        super().__init__(msg)
         self.input = input_
 
 
-class FilterError(RuntimeError):
+class FilterError(Exception):
     """Exception raised on command error"""
 
-    def __init__(self, filter_, *args, **kwds):
-        super().__init__(*args, **kwds)
+    def __init__(self, filter_: ty.Any, msg: str):
+        super().__init__(msg)
         self.filter = filter_
 
 
@@ -54,25 +56,38 @@ class OperationError(RuntimeError):
     pass
 
 
-def find_subclass(base_class, name: str):
+ParentClass = ty.Type[ty.Any]
+
+
+def find_subclass(
+    base_class: ParentClass, name: str
+) -> ty.Optional[ty.Type[ParentClass]]:
     """Find subclass to given `base_class` with given value of
     attribute `name`"""
 
     for cname, clazz in get_subclasses_with_name(base_class):
         if cname == name:
-            return clazz
+            return clazz  # type: ignore
 
     return None
 
 
-def get_subclasses_with_name(base_class):
+ParentClass2 = ty.Type[ty.Any]
+
+
+def get_subclasses_with_name(
+    base_class: ParentClass2,
+) -> ty.Iterator[ty.Tuple[str, ty.Any]]:
     """Iter over subclasses and yield `name` attribute"""
 
-    def find(parent_cls):
+    def find(
+        parent_cls: ty.Type[ParentClass2],
+    ) -> ty.Iterator[ty.Tuple[str, ty.Type[ParentClass2]]]:
         for rcls in getattr(parent_cls, "__subclasses__")():
             name = getattr(rcls, "name")
             if name:
                 yield name, rcls
+
             yield from find(rcls)
 
     yield from find(base_class)
@@ -119,7 +134,7 @@ def apply_defaults(*confs: ConfDict) -> ConfDict:
     return result
 
 
-def create_missing_dir(path: str):
+def create_missing_dir(path: str) -> None:
     """Check path and if not exists create directory.
     If path exists and is not directory - raise error.
     """
@@ -166,9 +181,11 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
     for hrang in inp.split(","):
         if "-" not in hrang:
             continue
+
         start, stop = hrang.split("-")
         if not start or not stop:
             continue
+
         try:
             start_hm = _parse_hour_min(start)
             stop_hm = _parse_hour_min(stop)
@@ -199,14 +216,14 @@ class SettingDef:
     # pylint: disable=too-many-arguments
     def __init__(
         self,
-        name,
-        description,
-        default=None,
-        required=False,
-        options=None,
-        value_type=None,
-        global_param=False,
-        **kwargs,
+        name: str,
+        description: str,
+        default: ty.Optional[ty.Any] = None,
+        required: bool = False,
+        options: ty.Optional[ty.Dict[str, ty.Any]] = None,
+        value_type: ty.Optional[ty.Type[ty.Any]] = None,
+        global_param: bool = False,
+        **kwargs: ty.Any,
     ):
         self.name = name
         self.description = description
@@ -214,39 +231,44 @@ class SettingDef:
         self.required = required
         self.options = options
         self.parameters = kwargs
+        self.type: ty.Type[ty.Any]
         if value_type is None:
-            self.type = str if default is None else type(default)
+            self.type = str if default is None else type(default)  # type: ignore
         else:
             self.type = value_type
         self.global_param = global_param
 
-    def get_parameter(self, key, default=None):
+    def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
         if self.parameters:
             return self.parameters.get(key, default)
+
         return default
 
-    def validate_value(self, value) -> bool:
+    def validate_value(self, value: ty.Any) -> bool:
         if (
             self.required
             and self.default is None
             and (value is None or self.type == str and not value)
         ):
             return False
+
         try:
             self.type(value)
         except ValueError:
             return False
+
         return True
 
 
-def _val2str(value):
-    value = str(value)
+def _val2str(raw_value: ty.Any) -> str:
+    value = str(raw_value)
     if len(value) > 64:
         return value[:64] + "..."
+
     return value
 
 
-def obj2str(obj):
+def obj2str(obj: ty.Any) -> str:
     if hasattr(obj, "__dict__"):
         values = obj.__dict__.items()
     else:
@@ -256,7 +278,7 @@ def obj2str(obj):
     kvs = ", ".join(
         [key + "=" + _val2str(val) for key, val in values if key[0] != "_"]
     )
-    return "<" + obj.__class__.__name__ + " " + kvs + ">"
+    return f"<{obj.__class__.__name__} {kvs}>"
 
 
 def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
@@ -264,27 +286,36 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
     timezone to local"""
     if not date:
         return None
+
     try:
         parsed = email.utils.parsedate_to_datetime(date)
         if parsed:
             return parsed.astimezone(tz.tzlocal()).replace(tzinfo=None)
     except TypeError:
         pass
+
     return None
 
 
-def get_json_if_exists(row_keys, key, row, default=None):
+def get_json_if_exists(
+    row_keys: ty.KeysView[str], key: str, row: Row, default: ty.Any = None
+) -> ty.Any:
     if key not in row_keys:
         return default
+
     value = row[key]
     if value is None:
         return default
+
     if not isinstance(value, str):
         return value
+
     return json.loads(value) if value else default
 
 
-def parse_form_list_data(form, prefix):
+def parse_form_list_data(
+    form: ty.Dict[str, ty.Any], prefix: str
+) -> ty.Iterable[ty.Dict[str, ty.Any]]:
     """Parse form data named <prefix>-<idx>-<name> to
     enumeration[{<name>: <value>}]
     for each idx and matched prefix
@@ -292,32 +323,38 @@ def parse_form_list_data(form, prefix):
     values = {}
     for key, val in form.items():
         try:
-            kprefix, kidx, kname = key.split("-")
-            kidx = int(kidx)
+            kprefix, kidx_s, kname = key.split("-")
+            kidx = int(kidx_s)
         except (ValueError, TypeError):
             continue
+
         if kprefix != prefix:
             continue
+
         if kidx not in values:
             values[kidx] = {kname: val, "__idx": kidx}
         else:
             values[kidx][kname] = val
+
     for _, val in sorted(values.items()):
         yield val
 
 
-def _cache(func):
+CacheFuncRes = ty.TypeVar("CacheFuncRes")
+
+
+def _cache(func: ty.Callable[..., CacheFuncRes]) -> ty.Any:
     """Run function once and cache results."""
 
-    def wrapper(*args, **kwargs):
-        if not wrapper.has_run:
-            wrapper.has_run = True
-            wrapper.result = func(*args, **kwargs)
-            return wrapper.result
+    def wrapper(*args: ty.Any, **kwargs: ty.Any) -> CacheFuncRes:
+        if not wrapper.has_run:  # type: ignore
+            wrapper.has_run = True  # type: ignore
 
-        return wrapper.result
+            wrapper.result = func(*args, **kwargs)  # type: ignore
 
-    wrapper.has_run = False
+        return wrapper.result  # type: ignore
+
+    wrapper.has_run = False  # type: ignore
     return wrapper
 
 

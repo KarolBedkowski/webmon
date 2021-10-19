@@ -89,14 +89,17 @@ def dump_import(db, user_id: int, data_str: str):
 
     sources_map = {}
     for source in data.get("sources") or []:
-        src = model.Source()
+        src = model.Source(
+            user_id=user_id,
+            group_id=groups_map[source["group_id"]],
+            name=source["name"],
+            kind=source["kind"],
+        )
         fill_object(
             src,
             source,
             (
                 "group_id",
-                "kind",
-                "name",
                 "interval",
                 "settings",
                 "filters",
@@ -104,7 +107,5 @@ def dump_import(db, user_id: int, data_str: str):
                 "status",
             ),
         )
-        src.user_id = user_id
-        src.group_id = groups_map[source["group_id"]]
         src = database.sources.save(db, src)
         sources_map[source["id"]] = src.id

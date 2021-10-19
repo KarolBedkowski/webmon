@@ -55,36 +55,48 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
 
 
 def _migrate_url(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = "url"
-    source.name = inp.get("name", "unknown")
+    source = model.Source(
+        kind="url",
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"url": inp["url"]}
     source.interval = inp.get("interval")
     return source
 
 
 def _migrate_rss(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = "rss"
-    source.name = inp.get("name", "unknown")
+    source = model.Source(
+        kind="rss",
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"url": inp["url"]}
     source.interval = inp.get("interval")
     return source
 
 
 def _migrate_jamendo(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = inp["kind"]
-    source.name = inp.get("name", "unknown")
+    source = model.Source(
+        kind=inp["kind"],
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"artist_id": inp["artist_id"]}
     source.interval = inp.get("interval")
     return source
 
 
 def _migrate_github(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = inp["kind"]
-    source.name = inp.get("name", "unknown")
+    source = model.Source(
+        kind=inp["kind"],
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {
         "owner": inp["owner"],
         "repository": inp["repository"],
