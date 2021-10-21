@@ -9,6 +9,7 @@
 """
 Background workers
 """
+from __future__ import annotations
 
 import datetime
 import logging
@@ -17,6 +18,8 @@ import random
 import re
 import threading
 import time
+import typing as ty
+from configparser import ConfigParser
 
 from prometheus_client import Counter
 
@@ -33,20 +36,22 @@ _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
 class CheckWorker(threading.Thread):
-    def __init__(self, conf, debug=False, sdn=None):
+    def __init__(
+        self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
+    ) -> None:
         threading.Thread.__init__(self, daemon=True)
-        self._todo_queue = queue.Queue()
+        self._todo_queue: queue.Queue[int] = queue.Queue()
         self._conf = conf
         self._workers = conf.getint("main", "workers")
         self.debug = debug
         self._sdn = sdn
         self.next_cleanup_start = time.time()
 
-    def _notify(self, msg):
+    def _notify(self, msg: str) -> None:
         if self._sdn:
             self._sdn.notify(msg)
 
-    def run(self):
+    def run(self) -> None:
         _LOG.info("CheckWorker started; workers: %d", self._workers)
         while True:
             time.sleep(15 if self.debug else 60)
@@ -78,20 +83,22 @@ class CheckWorker(threading.Thread):
                     _LOG.exception("CheckWorker thread error: %s", err)
             self._notify("STATUS=running")
 
-    def _start_worker(self, idx):
+    def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)
         worker.start()
         return worker
 
 
 class FetchWorker(threading.Thread):
-    def __init__(self, idx, todo_queue, conf):
+    def __init__(
+        self, idx: str, todo_queue: queue.Queue[int], conf: ConfigParser
+    ) -> None:
         threading.Thread.__init__(self)
         self._idx = idx + ":" + str(id(self))
         self._todo_queue = todo_queue
         self._conf = conf
 
-    def run(self):
+    def run(self) -> None:
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
@@ -106,11 +113,13 @@ class FetchWorker(threading.Thread):
                     source = database.sources.get(
                         db, id_=source_id, with_state=True
                     )
-                    _save_state_error(db, source, err)
+                    _save_state_error(db, source, str(err))
                 finally:
                     db.commit()
 
-    def _process_source(self, db, source_id):  # pylint: disable=no-self-use
+    def _process_source(
+        self, db: database.DB, source_id: int
+    ) -> None:  # pylint: disable=no-self-use
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source_id)
         source = database.sources.get(db, id_=source_id, with_state=True)
@@ -125,6 +134,7 @@ class FetchWorker(threading.Thread):
         if not src:
             return
 
+        assert source.state
         new_state, entries = src.load(source.state)
 
         if new_state.status == model.SourceStateStatus.ERROR:
@@ -139,6 +149,8 @@ class FetchWorker(threading.Thread):
             )
             return
 
+        assert source.state
+        assert source.interval
         last_update = source.state.last_update or datetime.datetime.now()
         next_update = last_update + datetime.timedelta(
             seconds=common.parse_interval(source.interval)
@@ -158,9 +170,10 @@ class FetchWorker(threading.Thread):
         entries = self._score_entries(entries, db, source.user_id)
         entries = list(entries)
         if entries:
-            max_date = max(entry.updated for entry in entries)
+            # TODO: 2x to samo?
+            max_date = max(entry.updated for entry in entries if entry.updated)
             new_state.set_state("last_entry_date", str(max_date))
-            max_updated = max(e.updated for e in entries)
+            max_updated = max(e.updated for e in entries if e.updated)
             database.entries.save_many(db, entries)
             database.groups.update_state(db, source.group_id, max_updated)
             icon = entries[0].icon
@@ -183,7 +196,9 @@ class FetchWorker(threading.Thread):
             str(new_state),
         )
 
-    def _final_filter_entries(self, entries):  # pylint: disable=no-self-use
+    def _final_filter_entries(  # pylint: disable=no-self-use
+        self, entries: model.Entries
+    ) -> model.Entries:
         entries_oids = set()
         for entry in entries:
             entry.calculate_oid()
@@ -207,7 +222,7 @@ class FetchWorker(threading.Thread):
             yield entry
 
     def _score_entries(
-        self, entries: model.Entries, db, user_id: int
+        self, entries: model.Entries, db: database.DB, user_id: int
     ) -> model.Entries:
         # load scoring
         scss = list(self._load_scoring(db, user_id))
@@ -223,7 +238,9 @@ class FetchWorker(threading.Thread):
             )
             yield entry
 
-    def _load_scoring(self, db, user_id):  # pylint: disable=no-self-use
+    def _load_scoring(  # pylint: disable=no-self-use
+        self, db: database.DB, user_id: int
+    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:
         for scs in database.scoring.get_active(db, user_id):
             _LOG.debug("scs: %s", scs)
             try:
@@ -235,7 +252,9 @@ class FetchWorker(threading.Thread):
             except re.error as err:
                 _LOG.warning("compile scoring pattern error: %s %s", scs, err)
 
-    def _get_src(self, db, source):
+    def _get_src(
+        self, db: database.DB, source: model.Source
+    ) -> ty.Optional[sources.AbstractSource]:
         try:
             sys_settings = database.settings.get_dict(db, source.user_id)
             # _LOG.debug('[%s] sys_settings: %r', self._idx, sys_settings)
@@ -251,6 +270,7 @@ class FetchWorker(threading.Thread):
             src = sources.get_source(source, sys_settings)
             src.validate()
             return src
+
         except common.ParamError as err:
             _LOG.error(
                 "[%s] get source class for source id=%d error: %s",
@@ -259,13 +279,15 @@ class FetchWorker(threading.Thread):
                 err,
             )
             _save_state_error(db, source, str(err))
+
         return None
 
 
-def _delete_old_entries(db):
+def _delete_old_entries(db: database.DB) -> None:
     try:
         users = list(database.users.get_all(db))
         for user in users:
+            assert user.id
             try:
                 db.begin()
                 keep_days = database.settings.get_value(
@@ -310,7 +332,7 @@ def _delete_old_entries(db):
         _LOG.exception("delete old error: %s", err)
 
 
-def _send_mails(db, conf):
+def _send_mails(db: database.DB, conf: ConfigParser) -> None:
     if not conf.getboolean("smtp", "enabled", fallback=False):
         _LOG.debug("_send_mails disabled")
         return
@@ -330,7 +352,7 @@ def _send_mails(db, conf):
     _LOG.debug("_send_mails end")
 
 
-def _calc_next_check_on_error(source: model.Source):
+def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     next_check_delta = common.parse_interval(source.interval or "1d")
     # add some random time
     next_check_delta += random.randint(3600, 7200)
@@ -339,7 +361,7 @@ def _calc_next_check_on_error(source: model.Source):
     )
 
 
-def _save_state_error(db, source: model.Source, err: str):
+def _save_state_error(db: database.DB, source: model.Source, err: str) -> None:
     _SOURCES_PROCESSED_ERRORS.inc()
     assert source.state
 

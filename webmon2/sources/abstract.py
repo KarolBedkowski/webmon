@@ -46,7 +46,7 @@ class AbstractSource:
         )
         _LOG.debug("Source %s: conf: %r", source.id, self._conf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return " ".join(
             (
                 "<",
@@ -57,7 +57,7 @@ class AbstractSource:
             )
         )
 
-    def validate(self):
+    def validate(self) -> None:
         for name, error in self.validate_conf(self._conf):
             raise common.ParamError(f"parameter {name} error {error}")
 

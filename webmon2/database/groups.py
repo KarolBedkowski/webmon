@@ -15,6 +15,7 @@ from datetime import datetime
 from webmon2 import common, model
 
 from . import _dbcommon as dbc
+from ._db import DB, tyCursor
 
 _LOG = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ order by sg.name
 """
 
 
-def get_all(db, user_id: int) -> ty.List[model.SourceGroup]:
+def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
     """Get all groups for user with number of unread entries"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -71,7 +72,7 @@ where id= %s
 
 
 def get(
-    db, group_id: int, user_id: ty.Optional[int] = None
+    db: DB, group_id: int, user_id: ty.Optional[int] = None
 ) -> model.SourceGroup:
     """Get one group. Optionally check is group belong to user.
     Return None if not found.
@@ -100,7 +101,7 @@ where name=%s and user_id=%s
 """
 
 
-def find(db, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
+def find(db: DB, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
     """Get one group."""
     with db.cursor() as cur:
         cur.execute(_FIND_SQL, (name, user_id))
@@ -119,7 +120,7 @@ where feed= %s
 """
 
 
-def get_by_feed(db, feed: str) -> model.SourceGroup:
+def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     """Get group by feed"""
     if feed == "off":
         raise dbc.NotFound()
@@ -133,7 +134,7 @@ def get_by_feed(db, feed: str) -> model.SourceGroup:
         return model.SourceGroup.from_row(row)
 
 
-def get_last_update(db, group_id: int) -> ty.Optional[datetime]:
+def get_last_update(db: DB, group_id: int) -> ty.Optional[datetime]:
     """Find last update time for entries in group"""
     with db.cursor() as cur:
         cur.execute(
@@ -162,7 +163,7 @@ where id=%(source_group__user_id)s
 """
 
 
-def save(db, group: model.SourceGroup) -> model.SourceGroup:
+def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     """Save / update group"""
     if not group.feed:
         with db.cursor() as cur:
@@ -180,7 +181,7 @@ def save(db, group: model.SourceGroup) -> model.SourceGroup:
     return group
 
 
-def _generate_group_feed(cur) -> str:
+def _generate_group_feed(cur: tyCursor) -> str:
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     while True:
         feed = "".join(random.SystemRandom().choice(chars) for _ in range(32))
@@ -202,7 +203,7 @@ LIMIT 1
 """
 
 
-def get_next_unread_group(db, user_id: int) -> ty.Optional[int]:
+def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
     """Find group id with unread entries"""
     with db.cursor() as cur:
         cur.execute(
@@ -228,7 +229,7 @@ WHERE id=ANY(%(ids)s) AND read_mark=%(unread)s AND user_id=%(user_id)s
 
 # pylint: disable=too-many-arguments
 def mark_read(
-    db,
+    db: DB,
     user_id: int,
     group_id: int,
     max_id: ty.Optional[int] = None,
@@ -257,10 +258,10 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
 
 
-def update_state(db, group_id: int, last_modified: datetime) -> str:
+def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
     """Save (update or insert) group last modified information"""
     etag_h = hashlib.md5(str(group_id).encode("ascii"))
     etag_h.update(str(last_modified).encode("ascii"))
@@ -277,7 +278,7 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
     with db.cursor() as cur:
         if row:
             if row[0] > last_modified:
-                return row[1]
+                return row[1]  # type: ignore
 
             cur.execute(
                 "update source_group_state "
@@ -296,7 +297,7 @@ def update_state(db, group_id: int, last_modified: datetime) -> str:
         return etag
 
 
-def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
+def get_state(db: DB, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
     """Get group entries last modified information
     Returns: last modified date and etag
     """
@@ -319,7 +320,7 @@ def get_state(db, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
     return row[0], row[1]
 
 
-def delete(db, user_id: int, group_id: int) -> None:
+def delete(db: DB, user_id: int, group_id: int) -> None:
     """Delete group; move existing sources to main (or first) group"""
     with db.cursor() as cur:
         cur.execute(
@@ -346,7 +347,7 @@ def delete(db, user_id: int, group_id: int) -> None:
         cur.execute("delete from source_groups where id= %s", (group_id,))
 
 
-def _find_dst_group(db, user_id: int, group_id: int) -> int:
+def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(
             "select id from source_groups where user_id= %s and name='main' "
@@ -356,7 +357,7 @@ def _find_dst_group(db, user_id: int, group_id: int) -> int:
         row = cur.fetchone()
 
     if row:
-        return row[0]
+        return row[0]  # type: ignore
 
     with db.cursor() as cur:
         cur.execute(
@@ -367,13 +368,13 @@ def _find_dst_group(db, user_id: int, group_id: int) -> int:
         row = cur.fetchone()
 
     if row:
-        return row[0]
+        return row[0]  # type: ignore
 
     raise common.OperationError("can't find destination group for sources")
 
 
 def find_next_entry_id(
-    db, group_id: int, entry_id: int, unread=True
+    db: DB, group_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -396,7 +397,7 @@ def find_next_entry_id(
 
 
 def find_prev_entry_id(
-    db, group_id: int, entry_id: int, unread=True
+    db: DB, group_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:

@@ -10,6 +10,8 @@
 command line commands
 """
 
+import argparse
+import configparser
 import os
 import sys
 
@@ -99,7 +101,7 @@ def remove_user_totp(args):
         print("user changed")
 
 
-def write_config_file(args, app_conf):
+def write_config_file(args, app_conf) -> None:
     filename = args.conf_filename
     if not filename:
         print("missing destination filename", file=sys.stderr)
@@ -122,7 +124,7 @@ def write_config_file(args, app_conf):
 
 
 # pylint: disable=import-outside-toplevel
-def shell(args, app_conf):
+def shell(args: argparse.Namespace, app_conf: configparser.ConfigParser):
     try:
         import IPython
         from IPython.terminal.ipapp import load_default_config
@@ -141,7 +143,9 @@ def shell(args, app_conf):
     )
 
 
-def process_cli(args, app_conf) -> bool:
+def process_cli(
+    args: argparse.Namespace, app_conf: configparser.ConfigParser
+) -> bool:
     if args.cmd == "users":
         if args.subcmd == "add":
             add_user(args)

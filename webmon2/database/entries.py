@@ -13,10 +13,11 @@ import logging
 import typing as ty
 from datetime import datetime
 
-from webmon2 import database, model
+from webmon2 import model
 
 from . import _dbcommon as dbc
 from . import binaries, sources
+from ._db import DB, tyCursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -154,7 +155,7 @@ def _get_find_sql(
 
 
 def _yield_entries(
-    cur: database.tyCursor, user_sources: model.UserSources
+    cur: tyCursor, user_sources: model.UserSources
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
@@ -162,7 +163,7 @@ def _yield_entries(
         yield entry
 
 
-def get_starred(db: database.DB, user_id: int) -> model.Entries:
+def get_starred(db: DB, user_id: int) -> model.Entries:
     """Get all starred entries for given user"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -174,7 +175,7 @@ def get_starred(db: database.DB, user_id: int) -> model.Entries:
         yield from _yield_entries(cur, user_sources)
 
 
-def get_history(db: database.DB, user_id: int) -> model.Entries:
+def get_history(db: DB, user_id: int) -> model.Entries:
     """Get all entries manually read (read_mark=2) for given user"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -190,7 +191,7 @@ def get_history(db: database.DB, user_id: int) -> model.Entries:
 
 
 def get_total_count(
-    db: database.DB,
+    db: DB,
     user_id: int,
     source_id: ty.Optional[int] = None,
     group_id: ty.Optional[int] = None,
@@ -247,7 +248,7 @@ def _get_order_sql(order: ty.Optional[str]) -> str:
 
 # pylint: disable=too-many-arguments,too-many-locals
 def find(
-    db: database.DB,
+    db: DB,
     user_id: int,
     source_id: ty.Optional[int] = None,
     group_id: ty.Optional[int] = None,
@@ -286,7 +287,7 @@ def find(
 
 # pylint: disable=too-many-arguments,too-many-locals
 def find_fulltext(
-    db: database.DB,
+    db: DB,
     user_id: int,
     query: str,
     title_only: bool,
@@ -328,9 +329,7 @@ def find_fulltext(
         yield from _yield_entries(cur, user_sources)
 
 
-def find_for_feed(
-    db: database.DB, user_id: int, group_id: int
-) -> model.Entries:
+def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
     user_sources = {
         src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
@@ -362,7 +361,7 @@ from entries
 
 
 def get(
-    db: database.DB,
+    db: DB,
     id_: ty.Optional[int] = None,
     oid: ty.Optional[str] = None,
     with_source: bool = False,
@@ -422,7 +421,7 @@ where id=%(entry__id)s
 """
 
 
-def save(db: database.DB, entry: model.Entry) -> model.Entry:
+def save(db: DB, entry: model.Entry) -> model.Entry:
     """Insert or update entry"""
     row = entry.to_row()
     with db.cursor() as cur:
@@ -436,7 +435,7 @@ def save(db: database.DB, entry: model.Entry) -> model.Entry:
     return entry
 
 
-def save_many(db: database.DB, entries: model.Entries) -> None:
+def save_many(db: DB, entries: model.Entries) -> None:
     """Insert entries; where entry with given oid already exists - is deleted
     and inserted again; star mark is preserved.
     """
@@ -474,7 +473,7 @@ def save_many(db: database.DB, entries: model.Entries) -> None:
     _save_entry_icon(db, entries)
 
 
-def _save_entry_icon(db: database.DB, entries: model.Entries) -> None:
+def _save_entry_icon(db: DB, entries: model.Entries) -> None:
     saved = set()
     for entry in entries:
         if not entry.icon or entry.icon in saved or not entry.icon_data:
@@ -486,7 +485,7 @@ def _save_entry_icon(db: database.DB, entries: model.Entries) -> None:
 
 
 def delete_old(
-    db: database.DB, user_id: int, max_datetime: datetime
+    db: DB, user_id: int, max_datetime: datetime
 ) -> ty.Tuple[int, int]:
     """Delete old entries for given user"""
     with db.cursor() as cur:
@@ -506,9 +505,7 @@ def delete_old(
         return (deleted_entries, deleted_oids)
 
 
-def mark_star(
-    db: database.DB, user_id: int, entry_id: int, star: bool = True
-) -> int:
+def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     """Change star mark for given entry"""
     db_star = 1 if star else 0
     _LOG.info(
@@ -525,9 +522,7 @@ def mark_star(
     return changed  # type: ignore
 
 
-def check_oids(
-    db: database.DB, oids: ty.List[str], source_id: int
-) -> ty.Set[str]:
+def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
@@ -563,7 +558,7 @@ def check_oids(
 
 # pylint: disable=too-many-arguments
 def mark_read(
-    db: database.DB,
+    db: DB,
     user_id: int,
     entry_id: ty.Optional[int] = None,
     min_id: ty.Optional[int] = None,
@@ -607,7 +602,7 @@ def mark_read(
 
 
 def mark_all_read(
-    db: database.DB, user_id: int, max_date: ty.Optional[datetime] = None
+    db: DB, user_id: int, max_date: ty.Optional[datetime] = None
 ) -> int:
     with db.cursor() as cur:
         if max_date:
@@ -681,7 +676,7 @@ def _get_related_sql(unread: bool, order: ty.Optional[str]) -> str:
 
 
 def find_next_entry_id(
-    db: database.DB,
+    db: DB,
     user_id: int,
     entry_id: int,
     unread: bool = True,
@@ -702,7 +697,7 @@ def find_next_entry_id(
 
 
 def find_prev_entry_id(
-    db: database.DB,
+    db: DB,
     user_id: int,
     entry_id: int,
     unread: bool = True,

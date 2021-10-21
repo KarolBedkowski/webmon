@@ -22,6 +22,7 @@ from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
 from webmon2 import common, formatters
+from webmon2.database._db import tyCursor
 
 _LOG = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class SourceGroup:
         return sgr
 
     @classmethod
-    def from_row(cls, row: common.Row) -> SourceGroup:
+    def from_row(cls, row: tyCursor) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -157,7 +158,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         return src
 
     @classmethod
-    def from_row(cls, row: common.Row) -> Source:
+    def from_row(cls, row: tyCursor) -> Source:
         source = Source(
             user_id=row["source__user_id"],
             kind=row["source__kind"],
@@ -338,7 +339,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.state.update(states)
 
     def set_icon(
-        self, content_type_data: ty.Tuple[str, bytes]
+        self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
     ) -> ty.Optional[str]:
         if not content_type_data:
             return self.icon
@@ -365,7 +366,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: common.Row) -> SourceState:
+    def from_row(cls, row: tyCursor) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -577,7 +578,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: common.Row) -> Entry:
+    def from_row(cls, row: tyCursor) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -615,7 +616,7 @@ class Setting:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: common.Row) -> Setting:
+    def from_row(cls, row: tyCursor) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
@@ -650,7 +651,7 @@ class User:
     totp: ty.Optional[str] = None
 
     @classmethod
-    def from_row(cls, row: common.Row) -> User:
+    def from_row(cls, row: tyCursor) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -700,7 +701,7 @@ class ScoringSett:
         return bool(self.user_id and self.pattern and self.pattern.strip())
 
     @classmethod
-    def from_row(cls, row: common.Row) -> ScoringSett:
+    def from_row(cls, row: tyCursor) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],

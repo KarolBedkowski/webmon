@@ -11,7 +11,7 @@ import typing as ty
 
 import psycopg2
 
-from . import DB
+from ._db import DB
 
 _LOG = logging.getLogger(__name__)
 

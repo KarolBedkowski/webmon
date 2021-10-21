@@ -9,6 +9,7 @@
 """
 Data sources
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -23,10 +24,11 @@ __all__ = (
     "get_source",
     "sources_name",
     "sources_info",
+    "AbstractSource",
 )
 
 
-def _load_plugins():
+def _load_plugins() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
 
     from . import dummy, file_input, jamendo, web
@@ -54,28 +56,30 @@ class UnknownInputException(Exception):
     pass
 
 
-def get_source(source: model.Source, sys_settings):
+def get_source(
+    source: model.Source, sys_settings: model.ConfDict
+) -> AbstractSource:
     """Get input class according to configuration"""
     scls = common.find_subclass(AbstractSource, source.kind)
     if scls:
         src = scls(source, sys_settings)
-        return src
+        return src  # type: ignore
 
     raise UnknownInputException()
 
 
-def get_source_class(kind: str) -> ty.Optional[AbstractSource]:
+def get_source_class(kind: str) -> ty.Optional[ty.Type[AbstractSource]]:
     scls = common.find_subclass(AbstractSource, kind)
     return scls
 
 
-def sources_name():
+def sources_name() -> ty.List[str]:
     return [
         name for name, scls in common.get_subclasses_with_name(AbstractSource)
     ]
 
 
-def sources_info():
+def sources_info() -> ty.List[ty.Tuple[str, str, str]]:
     return [
         (name, scls.short_info, scls.long_info)
         for name, scls in common.get_subclasses_with_name(AbstractSource)

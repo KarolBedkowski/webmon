@@ -18,6 +18,7 @@ import re
 import smtplib
 import subprocess
 import typing as ty
+from configparser import ConfigParser
 from datetime import datetime, timedelta
 
 import html2text as h2t
@@ -27,7 +28,7 @@ from webmon2 import common, database, formatters, model
 _LOG = logging.getLogger(__name__)
 
 
-def process(db, user: model.User, app_conf):
+def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     """Process unread entries for user and send report via mail"""
     if not user.id:
         raise ValueError("require existing user")
@@ -68,7 +69,9 @@ def process(db, user: model.User, app_conf):
     )
 
 
-def _process_groups(db, conf, user_id: int):
+def _process_groups(
+    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int
+) -> ty.Iterable[str]:
     for group in database.groups.get_all(db, user_id):
         if group.mail_report == model.MailReportMode.NO_SEND:
             _LOG.debug("group %s skipped", group.name)
@@ -78,7 +81,9 @@ def _process_groups(db, conf, user_id: int):
         yield from _process_group(db, conf, user_id, group.id)
 
 
-def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
+def _process_group(
+    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, group_id: int
+) -> ty.Iterator[str]:
     _LOG.debug("processing group %d", group_id)
     sources = [
         source
@@ -89,6 +94,7 @@ def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
         _LOG.debug("no unread sources in group %d", group_id)
         return
 
+    assert sources[0].group
     group_name = sources[0].group.name
     yield group_name
     yield "\n"
@@ -101,20 +107,23 @@ def _process_group(db, conf, user_id: int, group_id: int) -> ty.Iterator[str]:
     yield "\n\n\n"
 
 
-def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
+def _proces_source(
+    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, source_id: int
+) -> ty.Iterator[str]:
     _LOG.debug("processing source %d", source_id)
 
     entries = [
         entry
         for entry in database.entries.find(db, user_id, source_id=source_id)
         if model.MailReportMode.SEND
-        in (entry.source.mail_report, entry.source.group.mail_report)
+        in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
     ]
 
     if not entries:
         _LOG.debug("no entries to send in source %d", source_id)
         return
 
+    assert entries[0].source
     source_name = entries[0].source.name
     yield source_name
     yield "\n"
@@ -135,14 +144,15 @@ def _proces_source(db, conf, user_id: int, source_id: int) -> ty.Iterator[str]:
 _HEADER_LINE = re.compile(r"^#+ .+")
 
 
-def _adjust_header(line, prefix="###"):
+def _adjust_header(line: str, prefix: str = "###") -> str:
     if line and _HEADER_LINE.match(line):
         return prefix + line
+
     return line
 
 
-def _render_entry_plain(entry):
-    title = entry.title + " " + entry.updated.strftime("%x %X")
+def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
+    title = (entry.title or "") + " " + entry.updated.strftime("%x %X")  # type: ignore
     yield "### "
     yield _get_entry_score_mark(entry)
     if entry.url:
@@ -153,6 +163,7 @@ def _render_entry_plain(entry):
         yield ")"
     else:
         yield title
+
     yield "\n"
     if entry.content:
         content_type = entry.content_type
@@ -162,10 +173,13 @@ def _render_entry_plain(entry):
             yield conv.handle(entry.content)
         else:
             yield "\n".join(map(_adjust_header, entry.content.split("\n")))
+
         yield "\n"
 
 
-def _prepare_msg(conf, content):
+def _prepare_msg(
+    conf: ty.Dict[str, ty.Any], content: str
+) -> email.mime.base.MIMEBase:
     body_plain = (
         _encrypt(conf, content) if conf.get("mail_encrypt") else content
     )
@@ -183,7 +197,12 @@ def _prepare_msg(conf, content):
     return msg
 
 
-def _send_mail(conf, content, app_conf, user: model.User):
+def _send_mail(
+    conf: ty.Dict[str, ty.Any],
+    content: str,
+    app_conf: ConfigParser,
+    user: model.User,
+) -> bool:
     _LOG.debug("send mail: %r", conf)
     mail_to = conf["mail_to"] or user.email
 
@@ -230,7 +249,7 @@ def _send_mail(conf, content, app_conf, user: model.User):
     return True
 
 
-def _encrypt(conf, message: str) -> str:
+def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
     with subprocess.Popen(
         ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]],
         stdin=subprocess.PIPE,
@@ -249,7 +268,7 @@ def _encrypt(conf, message: str) -> str:
         return stdout.decode("utf-8")
 
 
-def _get_entry_score_mark(entry):
+def _get_entry_score_mark(entry: model.Entry) -> str:
     if entry.score < -5:
         return "▼▼ "
     if entry.score < 0:
@@ -261,7 +280,7 @@ def _get_entry_score_mark(entry):
     return ""
 
 
-def _is_silent_hour(conf):
+def _is_silent_hour(conf: ty.Dict[str, ty.Any]) -> bool:
     begin = conf.get("silent_hours_from", "")
     end = conf.get("silent_hours_to", "")
 

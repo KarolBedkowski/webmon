@@ -14,6 +14,8 @@ import typing as ty
 
 from webmon2 import model
 
+from ._db import DB
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -30,7 +32,7 @@ where user_id = %s
 """
 
 
-def get(db, user_id: int) -> ty.Iterable[model.ScoringSett]:
+def get(db: DB, user_id: int) -> ty.Iterable[model.ScoringSett]:
     """Get scoring settings for user"""
     with db.cursor() as cur:
         cur.execute(_GET_ALL_SQL_FOR_USER, (user_id,))
@@ -45,7 +47,7 @@ and active
 )
 
 
-def get_active(db, user_id: int) -> ty.Iterable[model.ScoringSett]:
+def get_active(db: DB, user_id: int) -> ty.Iterable[model.ScoringSett]:
     """Get active scoring settings for user"""
     with db.cursor() as cur:
         cur.execute(_GET_ACTIVE_SQL_FOR_USER, (user_id,))
@@ -60,7 +62,7 @@ values (%(scoring_sett__user_id)s, %(scoring_sett__pattern)s,
 
 
 def save(
-    db, user_id: int, scoring_settings: ty.List[model.ScoringSett]
+    db: DB, user_id: int, scoring_settings: ty.List[model.ScoringSett]
 ) -> None:
     """Save / update scoring settings for user"""
     with db.cursor() as cur:

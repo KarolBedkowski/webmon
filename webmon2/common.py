@@ -21,6 +21,8 @@ import typing as ty
 
 from dateutil import tz
 
+from webmon2.database._db import tyCursor
+
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 
@@ -298,7 +300,10 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
 
 
 def get_json_if_exists(
-    row_keys: ty.KeysView[str], key: str, row: Row, default: ty.Any = None
+    row_keys: ty.KeysView[str],
+    key: str,
+    row: tyCursor,
+    default: ty.Any = None,
 ) -> ty.Any:
     if key not in row_keys:
         return default
