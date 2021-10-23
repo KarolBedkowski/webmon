@@ -21,7 +21,6 @@ from psycopg2 import extensions, extras, pool
 
 _ = ty
 _LOG = logging.getLogger("db")
-tyCursor = ty.Type[psycopg2.extensions.cursor]
 
 psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
 psycopg2.extras.register_default_json(globally=True)

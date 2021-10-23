@@ -15,7 +15,8 @@ import typing as ty
 from webmon2 import model
 
 from . import _dbcommon as dbc
-from ._db import DB, tyCursor
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _LOG = logging.getLogger(__name__)
 

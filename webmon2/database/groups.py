@@ -15,7 +15,8 @@ from datetime import datetime
 from webmon2 import common, model
 
 from . import _dbcommon as dbc
-from ._db import DB, tyCursor
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _LOG = logging.getLogger(__name__)
 

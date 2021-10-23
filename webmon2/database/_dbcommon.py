@@ -9,6 +9,11 @@
 """
 Common functions for db access
 """
+import typing as ty
+
+from psycopg2 import extensions
+
+tyCursor = ty.Type[extensions.cursor]
 
 
 class NotFound(Exception):

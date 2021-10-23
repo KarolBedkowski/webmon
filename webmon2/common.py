@@ -12,7 +12,6 @@ import datetime
 import email.utils
 import functools
 import itertools
-import json
 import logging
 import os.path
 import pathlib
@@ -20,8 +19,6 @@ import time
 import typing as ty
 
 from dateutil import tz
-
-from webmon2.database._db import tyCursor
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
@@ -297,25 +294,6 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
         pass
 
     return None
-
-
-def get_json_if_exists(
-    row_keys: ty.KeysView[str],
-    key: str,
-    row: tyCursor,
-    default: ty.Any = None,
-) -> ty.Any:
-    if key not in row_keys:
-        return default
-
-    value = row[key]
-    if value is None:
-        return default
-
-    if not isinstance(value, str):
-        return value
-
-    return json.loads(value) if value else default
 
 
 def parse_form_list_data(

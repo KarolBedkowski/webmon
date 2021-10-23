@@ -17,7 +17,8 @@ from webmon2 import model
 
 from . import _dbcommon as dbc
 from . import binaries, sources
-from ._db import DB, tyCursor
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)

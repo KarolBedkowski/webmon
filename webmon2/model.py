@@ -21,12 +21,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
+from psycopg2 import extensions
+
 from webmon2 import common, formatters
-from webmon2.database._db import tyCursor
 
 _LOG = logging.getLogger(__name__)
 
 
+tyCursor = ty.Type[extensions.cursor]
 ConfDict = ty.Dict[str, ty.Any]
 
 
@@ -168,12 +170,8 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.id = row["source__id"]
         source.interval = row["source__interval"]
         row_keys = row.keys()
-        source.settings = common.get_json_if_exists(
-            row_keys, "source__settings", row
-        )
-        source.filters = common.get_json_if_exists(
-            row_keys, "source__filters", row
-        )
+        source.settings = get_json_if_exists(row_keys, "source__settings", row)
+        source.filters = get_json_if_exists(row_keys, "source__filters", row)
         source.status = SourceStatus(row["source__status"])
         mail_report = row["source__mail_report"]
         if mail_report is None:
@@ -377,9 +375,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
         row_keys = row.keys()
-        state.state = common.get_json_if_exists(
-            row_keys, "source_state__state", row
-        )
+        state.state = get_json_if_exists(row_keys, "source_state__state", row)
         state.icon = row["source_state__icon"]
         return state
 
@@ -590,7 +586,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.title = row["entry__title"]
         entry.url = row["entry__url"]
         row_keys = row.keys()
-        entry.opts = common.get_json_if_exists(row_keys, "entry__opts", row)
+        entry.opts = get_json_if_exists(row_keys, "entry__opts", row)
         if "entry__content" in row_keys:
             entry.content = row["entry__content"]
 
@@ -721,3 +717,22 @@ class ScoringSett:
 
 
 UserSources = ty.Dict[int, Source]
+
+
+def get_json_if_exists(
+    row_keys: ty.KeysView[str],
+    key: str,
+    row: tyCursor,
+    default: ty.Any = None,
+) -> ty.Any:
+    if key not in row_keys:
+        return default
+
+    value = row[key]
+    if value is None:
+        return default
+
+    if not isinstance(value, str):
+        return value
+
+    return json.loads(value) if value else default
