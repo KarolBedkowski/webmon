@@ -11,7 +11,7 @@ Access to entries in db.
 """
 import logging
 import typing as ty
-from datetime import datetime
+from datetime import date, datetime
 
 from webmon2 import model
 
@@ -602,7 +602,7 @@ def mark_read(
 
 
 def mark_all_read(
-    db: DB, user_id: int, max_date: ty.Optional[datetime] = None
+    db: DB, user_id: int, max_date: ty.Union[None, date, datetime] = None
 ) -> int:
     with db.cursor() as cur:
         if max_date:

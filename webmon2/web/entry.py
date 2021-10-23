@@ -25,7 +25,7 @@ BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 
 @BP.route("/<int:entry_id>")
-def entry(entry_id: int):
+def entry(entry_id: int) -> ty.Any:
     """Display entry and mark it as read."""
     db = c.get_db()
     user_id = session["user"]  # type: int
@@ -62,7 +62,7 @@ def entry(entry_id: int):
 
 
 @BP.route("/mark/read", methods=["POST"])
-def entry_mark_read_api():
+def entry_mark_read_api() -> ty.Any:
     """Mark entry read (by clicking on read mark)"""
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
@@ -89,7 +89,7 @@ def entry_mark_read_api():
 
 
 @BP.route("/mark/star", methods=["POST"])
-def entry_mark_star_api():
+def entry_mark_star_api() -> ty.Any:
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
     user_id = session["user"]

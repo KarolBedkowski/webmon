@@ -35,7 +35,7 @@ BP = Blueprint("source", __name__, url_prefix="/source")
 
 
 @BP.route("/<int:source_id>/refresh")
-def source_refresh(source_id: int):
+def source_refresh(source_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     database.sources.refresh(db, user_id, source_id=source_id)
@@ -45,7 +45,7 @@ def source_refresh(source_id: int):
 
 
 @BP.route("/<int:source_id>/delete")
-def source_delete(source_id: int):
+def source_delete(source_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -61,7 +61,7 @@ def source_delete(source_id: int):
 
 
 @BP.route("/new")
-def source_new():
+def source_new() -> ty.Any:
     return render_template("source_new.html", sources=sources.sources_info())
 
 
@@ -69,7 +69,7 @@ def source_new():
 @BP.route("/new/<kind>", methods=["POST", "GET"])
 def source_edit(
     source_id: ty.Optional[int] = None, kind: ty.Optional[str] = None
-):
+) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     if source_id:
@@ -84,7 +84,7 @@ def source_edit(
             return abort(404)
 
     elif kind:
-        source = model.Source(kind=kind, user_id=user_id)
+        source = model.Source(kind=kind, user_id=user_id, name="", group_id=0)
     else:
         return abort(400)
 
@@ -104,6 +104,7 @@ def source_edit(
         source_form.update_from_request(request.form)
         errors = source_form.validate()
         u_source = source_form.update_model(source)
+        assert u_source.settings
         errors.update(src.validate_conf(u_source.settings, user_settings))
         if not errors:
             next_action = request.form.get("next_action")
@@ -133,7 +134,9 @@ def source_edit(
 @BP.route("/<int:source_id>/entries")
 @BP.route("/<int:source_id>/entries/<mode>")
 @BP.route("/<int:source_id>/entries/<mode>/<int:page>")
-def source_entries(source_id: int, mode: str = "unread", page: int = 0):
+def source_entries(
+    source_id: int, mode: str = "unread", page: int = 0
+) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(
@@ -161,7 +164,7 @@ def source_entries(source_id: int, mode: str = "unread", page: int = 0):
         db, user_id, unread=unread, source_id=source_id
     )
 
-    data = c.preprate_entries_list(entries, page, total_entries)
+    data = c.preprate_entries_list(entries, page, total_entries, "update")
 
     return render_template(
         "source_entries.html", source=source, showed=mode, **data
@@ -169,7 +172,7 @@ def source_entries(source_id: int, mode: str = "unread", page: int = 0):
 
 
 @BP.route("/<int:source_id>/mark/read")
-def source_mark_read(source_id: int):
+def source_mark_read(source_id: int) -> ty.Any:
     """Mark all entries in source read."""
     db = c.get_db()
     min_id = int(request.args.get("min_id", -1))
@@ -205,7 +208,7 @@ def source_mark_read(source_id: int):
 
 
 @BP.route("/<int:source_id>/filters")
-def source_filters(source_id: int):
+def source_filters(source_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
@@ -222,7 +225,7 @@ def source_filters(source_id: int):
 
 
 @BP.route("/<int:source_id>/filter/add")
-def source_filter_add(source_id: int):
+def source_filter_add(source_id: int) -> ty.Any:
     filters_info = filters.filters_info()
     return render_template(
         "filter_new.html", source_id=source_id, filters_info=filters_info
@@ -230,7 +233,7 @@ def source_filter_add(source_id: int):
 
 
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])
-def source_filter_edit(source_id: int, idx: int):
+def source_filter_edit(source_id: int, idx: ty.Union[int, str]) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -240,8 +243,8 @@ def source_filter_edit(source_id: int, idx: int):
 
     is_new = idx == "new"
     if not is_new:
-        idx = int(idx)
-        is_new = idx < 0 or idx >= len(source.filters or [])
+        sfidx = int(idx)
+        is_new = sfidx < 0 or sfidx >= len(source.filters or [])
 
     if is_new:  # new filter
         name = request.args.get("name")
@@ -249,20 +252,20 @@ def source_filter_edit(source_id: int, idx: int):
             return redirect(url_for("source_filter_add", source_id=source_id))
 
         conf = {"name": request.args["name"]}
-        idx = -1
+        sfidx = -1
     else:
-        conf = source.filters[idx]
+        conf = source.filters[sfidx]
 
     fltr = filters.get_filter(conf)
     if not fltr:
         _LOG.warning(
-            "invalid filter for source %d [%d]: %r", source_id, idx, conf
+            "invalid filter for source %d [%d]: %r", source_id, sfidx, conf
         )
         return abort(400)
 
     # for new filters without parameters, save it
     if is_new and not fltr.params:
-        return _save_filter(db, source_id, idx, conf)
+        return _save_filter(db, source_id, sfidx, conf)
 
     errors = {}
     form = forms.FieldsForm(
@@ -277,7 +280,7 @@ def source_filter_edit(source_id: int, idx: int):
         conf.update(form.values_map())
         errors = dict(fltr.validate_conf(conf))
         if not errors:
-            return _save_filter(db, source_id, idx, conf)
+            return _save_filter(db, source_id, sfidx, conf)
 
     return render_template(
         "filter_edit.html",
@@ -289,21 +292,25 @@ def source_filter_edit(source_id: int, idx: int):
     )
 
 
-def _build_filter_conf_from_req(fltr, conf):
-    param_types = fltr.get_param_types()
-    for key, val in request.form.items():
-        if key.startswith("sett-"):
-            param_name = key[5:]
-            if val:
-                param_type = param_types[param_name]
-                conf[param_name] = param_type(val)
-            else:
-                conf[param_name] = None
+# def _build_filter_conf_from_req(
+#     fltr: filters.AbstractFilter, conf: model.ConfDict
+# ):
+#     param_types = fltr.get_param_types()
+#     for key, val in request.form.items():
+#         if key.startswith("sett-"):
+#             param_name = key[5:]
+#             if val:
+#                 param_type = param_types[param_name]
+#                 conf[param_name] = param_type(val)
+#             else:
+#                 conf[param_name] = None
 
-    return conf
+#     return conf
 
 
-def _save_filter(db, source_id: int, idx: int, conf):
+def _save_filter(
+    db: database.DB, source_id: int, idx: int, conf: model.ConfDict
+) -> ty.Any:
     database.sources.update_filter(db, source_id, idx, conf)
     db.commit()
     flash("Filter saved")
@@ -311,7 +318,7 @@ def _save_filter(db, source_id: int, idx: int, conf):
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")
-def source_filter_move(source_id: int, idx: int, move: str):
+def source_filter_move(source_id: int, idx: int, move: str) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     database.sources.move_filter(db, user_id, source_id, idx, move)
@@ -320,7 +327,7 @@ def source_filter_move(source_id: int, idx: int, move: str):
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/delete")
-def source_filter_delete(source_id: int, idx: int):
+def source_filter_delete(source_id: int, idx: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     database.sources.delete_filter(db, user_id, source_id, idx)
@@ -329,7 +336,7 @@ def source_filter_delete(source_id: int, idx: int):
 
 
 @BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
-def source_entry(source_id: int, mode: str, entry_id: int):
+def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:
     """Display entry with marking as read."""
     db = c.get_db()
     user_id = session["user"]
@@ -373,7 +380,9 @@ def source_entry(source_id: int, mode: str, entry_id: int):
 
 
 @BP.route("/source/<int:source_id>/next_unread")
-def source_next_unread(source_id: int):  # pylint: disable=unused-argument
+def source_next_unread(
+    source_id: int,  # pylint: disable=unused-argument
+) -> ty.Any:
     db = c.get_db()
     n_source_id = database.sources.find_next_unread(db, session["user"])
     if n_source_id:

@@ -39,7 +39,7 @@ BP = Blueprint("root", __name__, url_prefix="/")
 
 
 @BP.route("/")
-def index():
+def index() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     if database.settings.get_value(
@@ -53,7 +53,7 @@ def index():
 
 
 @BP.route("/sources")
-def sources():
+def sources() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     status = request.args.get("status", "all")
@@ -69,7 +69,7 @@ def sources():
 
 
 @BP.route("/sources/refresh")
-def sources_refresh():
+def sources_refresh() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
@@ -80,7 +80,7 @@ def sources_refresh():
 
 
 @BP.route("/sources/refresh/errors")
-def sources_refresh_err():
+def sources_refresh_err() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
@@ -89,7 +89,7 @@ def sources_refresh_err():
 
 
 @BP.route("/groups")
-def groups():
+def groups() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     return render_template(
@@ -98,7 +98,7 @@ def groups():
 
 
 @common.cache
-def _metrics_accesslist():
+def _metrics_accesslist() -> ty.List[str]:
     conf = current_app.config["app_conf"]
     return [
         ip.strip()
@@ -107,18 +107,18 @@ def _metrics_accesslist():
 
 
 @BP.route("/metrics")
-def metrics():
+def metrics() -> ty.Any:
     if request.remote_addr not in _metrics_accesslist():
         abort(401)
 
     return Response(
-        prometheus_client.generate_latest(),
+        prometheus_client.generate_latest(),  # type: ignore
         mimetype="text/plain; version=0.0.4; charset=utf-8",
     )
 
 
 @common.cache
-def _build_manifest():
+def _build_manifest() -> str:
     manifest = {
         "name": "Webmon2",
         "short_name": "Webmon2",
@@ -160,12 +160,12 @@ def _build_manifest():
 
 
 @BP.route("/manifest.json")
-def manifest_json():
+def manifest_json() -> Response:
     return Response(_build_manifest(), mimetype="application/manifest+json")
 
 
 @BP.route("/binary/<datahash>")
-def binary(datahash: str):
+def binary(datahash: str) -> ty.Any:
     db = c.get_db()
     data_content_type = database.binaries.get(db, datahash, session["user"])
     if not data_content_type:

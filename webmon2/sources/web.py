@@ -42,6 +42,7 @@ class WebSource(AbstractSource):
         """Return one part - page content."""
         new_state, entries = self._load(state)
         if new_state.status != model.SourceStateStatus.ERROR:
+            assert self._source.interval
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -123,7 +124,9 @@ class WebSource(AbstractSource):
             if response:
                 response.close()
 
-    def _check_redirects(self, response) -> ty.Optional[str]:
+    def _check_redirects(
+        self, response: requests.Response
+    ) -> ty.Optional[str]:
         if not response.history:
             return None
 
@@ -143,21 +146,27 @@ class WebSource(AbstractSource):
 
         return None
 
-    def _update_source(self, new_url: ty.Optional[str] = None):
+    def _update_source(self, new_url: ty.Optional[str] = None) -> None:
         self._updated_source = self._updated_source or self._source.clone()
         if new_url:
+            assert self._updated_source.settings
             self._updated_source.settings["url"] = new_url
 
-    def _load_image(self, url):  # pylint: disable=no-self-use
+    def _load_image(
+        self, url: str
+    ) -> ty.Optional[ty.Tuple[str, bytes]]:  # pylint: disable=no-self-use
         url_splited = urlsplit(url)
         favicon_url = urlunsplit(
             (url_splited[0], url_splited[1], "favicon.ico", "", "")
         )
+        if favicon_url:
+            return self._load_binary(favicon_url)
 
-        return self._load_binary(favicon_url)
+        return None
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        assert source.settings
         return {
             "text": source.name,
             "title": source.name,
@@ -178,7 +187,9 @@ class WebSource(AbstractSource):
         if not name:
             raise ValueError("missing text/title")
 
-        return model.Source(kind="rss", name=name, settings={"url": url})
+        src = model.Source(kind="rss", name=name, user_id=0, group_id=0)
+        src.settings = {"url": url}
+        return src
 
 
 def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:

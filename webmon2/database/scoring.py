@@ -62,7 +62,7 @@ values (%(scoring_sett__user_id)s, %(scoring_sett__pattern)s,
 
 
 def save(
-    db: DB, user_id: int, scoring_settings: ty.List[model.ScoringSett]
+    db: DB, user_id: int, scoring_settings: ty.Iterable[model.ScoringSett]
 ) -> None:
     """Save / update scoring settings for user"""
     with db.cursor() as cur:

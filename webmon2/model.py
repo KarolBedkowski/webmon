@@ -278,7 +278,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.icon = self.icon
         return new_state
 
-    def new_ok(self, **states: States) -> SourceState:
+    def new_ok(self, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -292,7 +292,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_error(self, error: str, **states: States) -> SourceState:
+    def new_error(self, error: str, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.error = error
@@ -306,7 +306,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_not_modified(self, **states: States) -> SourceState:
+    def new_not_modified(self, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()

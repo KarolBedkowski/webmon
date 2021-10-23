@@ -14,8 +14,20 @@ import logging
 import os
 import random
 import time
+import typing as ty
+from argparse import Namespace
+from configparser import ConfigParser
 
-from flask import Flask, abort, g, redirect, request, session, url_for
+from flask import (
+    Flask,
+    Response,
+    abort,
+    g,
+    redirect,
+    request,
+    session,
+    url_for,
+)
 
 try:
     from flask_minify import minify
@@ -48,7 +60,7 @@ __all__ = ("create_app", "start_app")
 _LOG = logging.getLogger(__name__)
 
 
-def _register_blueprints(app):
+def _register_blueprints(app: Flask) -> None:
     _filters.register(app)
     app.register_blueprint(root.BP)
     app.register_blueprint(entries.BP)
@@ -60,7 +72,7 @@ def _register_blueprints(app):
     app.register_blueprint(atom.BP)
 
 
-def _start_bg_tasks(args):
+def _start_bg_tasks(args: Namespace) -> None:
     cworker = worker.CheckWorker(args.workers)
     cworker.start()
 
@@ -73,7 +85,7 @@ _CSP = (
 )
 
 
-def _create_app(debug: bool, web_root: str, conf) -> Flask:
+def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     template_folder = os.path.join(os.path.dirname(__file__), "templates")
     # create and configure the app
     app = Flask(
@@ -103,15 +115,17 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
     _register_blueprints(app)
 
     # @app.teardown_appcontext
-    @app.teardown_request
-    def teardown_db(_exception):  # pylint: disable=unused-variable
+    @app.teardown_request  # type: ignore
+    def teardown_db(  # pylint: disable=unused-variable
+        _exception: ty.Optional[BaseException],
+    ) -> None:
         db = g.pop("db", None)
         if db is not None:
             db.close()
 
     @app.before_request
-    def before_request():  # pylint: disable=unused-variable
-        request.req_start_time = time.time()
+    def before_request() -> ty.Any:  # pylint: disable=unused-variable
+        request.req_start_time = time.time()  # type: ignore
         if not _check_csrf_token():
             return abort(400)
 
@@ -144,26 +158,28 @@ def _create_app(debug: bool, web_root: str, conf) -> Flask:
         return None
 
     @app.after_request
-    def after_request(response):  # pylint: disable=unused-variable
+    def after_request(  # pylint: disable=unused-variable
+        resp: Response,
+    ) -> Response:
         if hasattr(g, "non_action") and not g.non_action:
-            if not response.headers.get("Cache-Control"):
-                response.headers[
+            if not resp.headers.get("Cache-Control"):
+                resp.headers[
                     "Cache-Control"
                 ] = "no-cache, max-age=0, must-revalidate, no-store"
-            response.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
-            response.headers["X-CSRF-TOKEN"] = session.get("_csrf_token")
+            resp.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
+            resp.headers["X-CSRF-TOKEN"] = str(session.get("_csrf_token"))
         else:
-            response.headers["Cache-Control"] = "public, max-age=604800"
+            resp.headers["Cache-Control"] = "public, max-age=604800"
 
-        response.headers["Content-Security-Policy"] = _CSP
-        resp_time = time.time() - request.req_start_time
+        resp.headers["Content-Security-Policy"] = _CSP
+        resp_time = time.time() - request.req_start_time  # type: ignore
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
             resp_time
         )
         _REQUEST_COUNT.labels(
-            request.method, request.endpoint, response.status_code
+            request.method, request.endpoint, resp.status_code
         ).inc()
-        return response
+        return resp
 
     return app
 
@@ -191,7 +207,7 @@ def _check_csrf_token() -> bool:
     return True
 
 
-def _count_unread(user_id: int):
+def _count_unread(user_id: int) -> None:
     db = c.get_db()
     unread = database.entries.get_total_count(db, user_id, unread=True)
     g.entries_unread_count = unread
@@ -210,27 +226,27 @@ _REQUEST_LATENCY = Histogram(
 )
 
 
-def simple_not_found(_env, resp):
+def simple_not_found(_env: ty.Any, resp: Response) -> ty.Any:
     resp("400 Notfound", [("Content-Type", "text/plain")])
     return [b"Not found"]
 
 
-def create_app(args, conf):
+def create_app(args: Namespace, conf: ConfigParser) -> Flask:
     web_root = conf.get("web", "root")
     app = _create_app(args.debug, web_root, conf)
 
     if web_root != "/":
-        app.wsgi_app = DispatcherMiddleware(
+        app.wsgi_app = DispatcherMiddleware(  # type: ignore
             simple_not_found, {web_root: app.wsgi_app}
         )
 
-    app.wsgi_app = ProxyFix(
+    app.wsgi_app = ProxyFix(  # type: ignore
         app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0
     )
     return app
 
 
-def start_app(args, conf):
+def start_app(args: Namespace, conf: ConfigParser) -> None:
     app = create_app(args, conf)
     host = conf.get("web", "address")
     port = conf.getint("web", "port")

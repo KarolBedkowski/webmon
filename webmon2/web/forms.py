@@ -52,7 +52,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     # additional setting for field; i.e. multiline
     parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     @staticmethod
@@ -60,7 +60,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         param: common.SettingDef,
         values: ty.Optional[ty.Dict[str, ty.Any]] = None,
         prefix: str = "",
-        sett_value=None,
+        sett_value: ty.Any = None,
     ) -> Field:
         if param.options:
             field_type = "select"
@@ -129,7 +129,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
 
         self.value = form_value
 
-    def get_parameter(self, key: str, default=None):
+    def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
         if self.parameters:
             return self.parameters.get(key, default)
 
@@ -220,7 +220,7 @@ class GroupForm:
     feed_enabled: bool = True
     mail_report: int = 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     @staticmethod
@@ -263,15 +263,15 @@ class GroupForm:
 class Filter:  # pylint: disable=too-few-public-methods
     __slots__ = ("name", "parameters")
 
-    def __init__(self, name=None):
+    def __init__(self, name: str) -> None:
         self.name: str = name
-        self.parameters = []
+        self.parameters: ty.List[ty.Any] = []
 
 
 class FieldsForm:
     __slots__ = ("fields",)
 
-    def __init__(self, fields: ty.Optional[ty.List[Field]] = None):
+    def __init__(self, fields: ty.Optional[ty.List[Field]] = None) -> None:
         self.fields: ty.List[Field] = fields or []
 
     def update_from_request(self, request_form: Form) -> bool:
@@ -328,7 +328,7 @@ class UserForm:
         )
         return form
 
-    def update_from_request(self, form: Form):
+    def update_from_request(self, form: Form) -> None:
         self.login = form["login"].strip()
         self.email = form["email"].strip()
         self.active = bool(form.get("active"))
@@ -340,7 +340,7 @@ class UserForm:
     def update_model(self, user: model.User) -> model.User:
         user = user.clone()
         if not user.login:
-            user.login = self.login  # type: ignore
+            user.login = self.login
 
         user.email = self.email
         user.active = self.active

@@ -35,7 +35,7 @@ BP = Blueprint("group", __name__, url_prefix="/group")
 
 
 @BP.route("/group/<int:group_id>/refresh")
-def refresh_group(group_id: int):
+def refresh_group(group_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     marked = database.sources.refresh(db, user_id, group_id=group_id)
@@ -46,7 +46,7 @@ def refresh_group(group_id: int):
 
 @BP.route("/group/new", methods=["GET", "POST"])
 @BP.route("/group/<int:group_id>", methods=["GET", "POST"])
-def group_edit(group_id: int = 0):
+def group_edit(group_id: int = 0) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     if group_id:
@@ -75,7 +75,7 @@ def group_edit(group_id: int = 0):
 
 
 @BP.route("/group/<int:group_id>/sources")
-def group_sources(group_id: int):
+def group_sources(group_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -97,7 +97,9 @@ def group_sources(group_id: int):
 @BP.route("/group/<int:group_id>/entries")
 @BP.route("/group/<int:group_id>/entries/<mode>")
 @BP.route("/group/<int:group_id>/entries/<mode>/<int:page>")
-def group_entries(group_id: int, mode: str = "unread", page: int = 0):
+def group_entries(
+    group_id: int, mode: str = "unread", page: int = 0
+) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -133,7 +135,7 @@ def group_entries(group_id: int, mode: str = "unread", page: int = 0):
 
 
 @BP.route("/group/<int:group_id>/mark/read")
-def group_mark_read(group_id: int):
+def group_mark_read(group_id: int) -> ty.Any:
     db = c.get_db()
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
@@ -172,7 +174,9 @@ def group_mark_read(group_id: int):
 
 
 @BP.route("/group/<int:group_id>/next_unread")
-def group_next_unread(group_id: int):  # pylint: disable=unused-argument
+def group_next_unread(
+    group_id: int,
+) -> ty.Any:  # pylint: disable=unused-argument
     db = c.get_db()
     # go to next unread group
     next_group_id = database.groups.get_next_unread_group(db, session["user"])
@@ -185,7 +189,7 @@ def group_next_unread(group_id: int):  # pylint: disable=unused-argument
 
 
 @BP.route("/group/<int:group_id>/delete")
-def group_delete(group_id: int):
+def group_delete(group_id: int) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -207,7 +211,7 @@ def group_delete(group_id: int):
 
 
 @BP.route("/group/<int:group_id>/entry/<mode>/<int:entry_id>")
-def group_entry(group_id: int, mode: str, entry_id: int):
+def group_entry(group_id: int, mode: str, entry_id: int) -> ty.Any:
     """Get entry by group view.
     Mark displayed items as manually read.
 
@@ -224,6 +228,7 @@ def group_entry(group_id: int, mode: str, entry_id: int):
         db, entry_id, with_source=True, with_group=True
     )
 
+    assert entry.source
     if user_id != entry.user_id or group_id != entry.source.group_id:
         return abort(404)
 

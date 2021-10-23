@@ -43,8 +43,8 @@ def preprate_entries_list(
     return info
 
 
-def get_db():
-    database = getattr(g, "db", None)
+def get_db() -> DB:
+    database: DB = getattr(g, "db", None)
     if database is None:
         database = g.db = DB.get()
 

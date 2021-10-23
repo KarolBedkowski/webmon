@@ -23,6 +23,7 @@ __all__ = (
     "filter_by",
     "filters_name",
     "filters_info",
+    "AbstractFilter",
 )
 
 
