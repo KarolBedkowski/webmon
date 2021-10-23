@@ -7,7 +7,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-
+Definition of DB object
 """
 from __future__ import annotations
 

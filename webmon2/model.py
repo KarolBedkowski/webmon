@@ -396,7 +396,7 @@ class EntryReadMark(IntEnum):
     MANUAL_READ = 2
 
 
-T = ty.TypeVar("T")
+OptValue = ty.TypeVar("OptValue")
 
 
 class Entry:  # pylint: disable=too-many-instance-attributes
@@ -489,8 +489,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.oid
 
     def get_opt(
-        self, key: str, default: ty.Optional[T] = None
-    ) -> ty.Optional[T]:
+        self, key: str, default: ty.Optional[OptValue] = None
+    ) -> ty.Optional[OptValue]:
         return self.opts.get(key, default) if self.opts else default
 
     def set_opt(self, key: str, value: ty.Any) -> None:

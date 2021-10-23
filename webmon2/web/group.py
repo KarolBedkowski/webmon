@@ -174,13 +174,11 @@ def group_mark_read(group_id: int) -> ty.Any:
 
 
 @BP.route("/group/<int:group_id>/next_unread")
-def group_next_unread(
-    group_id: int,
-) -> ty.Any:  # pylint: disable=unused-argument
+def group_next_unread(group_id: int) -> ty.Any:
     db = c.get_db()
     # go to next unread group
     next_group_id = database.groups.get_next_unread_group(db, session["user"])
-    _LOG.debug("next group: %r", next_group_id)
+    _LOG.debug("next group: %r -> %r", group_id, next_group_id)
     if next_group_id:
         return redirect(url_for("group.group_entries", group_id=next_group_id))
 

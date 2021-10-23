@@ -170,12 +170,10 @@ class FetchWorker(threading.Thread):
         entries = self._score_entries(entries, db, source.user_id)
         entries = list(entries)
         if entries:
-            # TODO: 2x to samo?
             max_date = max(entry.updated for entry in entries if entry.updated)
             new_state.set_state("last_entry_date", str(max_date))
-            max_updated = max(e.updated for e in entries if e.updated)
             database.entries.save_many(db, entries)
-            database.groups.update_state(db, source.group_id, max_updated)
+            database.groups.update_state(db, source.group_id, max_date)
             icon = entries[0].icon
             if not new_state.icon and icon:
                 new_state.icon = icon

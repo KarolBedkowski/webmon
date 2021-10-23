@@ -230,21 +230,20 @@ def get_total_count(
         return cur.fetchone()[0]  # type: ignore
 
 
-def _get_order_sql(order: ty.Optional[str]) -> str:
-    if order == "update":
-        return " order by e.updated"
-    if order == "update_desc":
-        return " order by e.updated desc"
-    if order == "title":
-        return " order by e.title"
-    if order == "title_desc":
-        return " order by e.title desc"
-    if order == "score":
-        return " order by e.score"
-    if order == "score_desc":
-        return " order by e.score desc"
+_ORDER_SQL = {
+    "update": " order by e.updated",
+    "update_desc": " order by e.updated desc",
+    "title": " order by e.title",
+    "title_desc": " order by e.title desc",
+    "score": " order by e.score",
+    "score_desc": " order by e.score desc",
+}
 
-    return " order by e.updated"
+
+def _get_order_sql(order: ty.Optional[str]) -> str:
+    if not order:
+        return " order by e.updated"
+    return _ORDER_SQL.get(order, " order by e.updated")
 
 
 # pylint: disable=too-many-arguments,too-many-locals
