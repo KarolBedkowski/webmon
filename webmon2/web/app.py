@@ -136,11 +136,10 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             or path.startswith("/metrics")
             or path.startswith("/atom")
             or path.startswith("/binary/")
-            or path.startswith("/entry/mark/")
             or path == "/favicon.ico"
             or path == "/manifest.json"
         )
-        if g.non_action:
+        if g.non_action or path.startswith("/entry/mark/"):
             return None
 
         user_id = session.get("user")
