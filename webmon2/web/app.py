@@ -78,9 +78,14 @@ def _start_bg_tasks(args: Namespace) -> None:
 
 
 _CSP = (
-    "default-src 'self' 'unsafe-inline'; "
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
     "img-src *; media-src *; "
     "frame-src *; "
+    #    "form-action 'self'; "
+    #    "base-url 'self'; "
+    #    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
     "worker-src 'self' 'unsafe-inline' *; "
 )
 
@@ -167,10 +172,12 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
                 ] = "no-cache, max-age=0, must-revalidate, no-store"
             resp.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
             resp.headers["X-CSRF-TOKEN"] = str(session.get("_csrf_token"))
+            resp.headers["Content-Security-Policy"] = _CSP
+            resp.headers["X-Content-Type-Options"] = "nosniff"
+            resp.headers["X-Frame-Options"] = "DENY"
         else:
             resp.headers["Cache-Control"] = "public, max-age=604800"
 
-        resp.headers["Content-Security-Policy"] = _CSP
         resp_time = time.time() - request.req_start_time  # type: ignore
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
             resp_time
