@@ -22,8 +22,11 @@ _LOG = logging.getLogger(__name__)
 def dump_object(
     obj: ty.Any, attrs: ty.Optional[ty.Iterable[str]] = None
 ) -> ty.Dict[str, ty.Any]:
-    if not attrs:
+    if not attrs and hasattr(obj, "__slots__"):
         attrs = getattr(obj, "__slots__")
+
+    if not attrs and hasattr(obj, "__dataclass_fields__"):
+        attrs = getattr(obj, "__dataclass_fields__")
 
     if not attrs:
         return {}
@@ -113,6 +116,7 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
             name=source["name"],
             kind=source["kind"],
         )
+        src.status = model.SourceStatus(source["status"])
         fill_object(
             src,
             source,
@@ -122,7 +126,6 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
                 "settings",
                 "filters",
                 "user_id",
-                "status",
             ),
         )
         src = database.sources.save(db, src)
