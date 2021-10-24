@@ -104,7 +104,7 @@ def source_edit(
         source_form.update_from_request(request.form)
         errors = source_form.validate()
         u_source = source_form.update_model(source)
-        assert u_source.settings
+        assert u_source.settings is not None
         errors.update(src.validate_conf(u_source.settings, user_settings))
         if not errors:
             next_action = request.form.get("next_action")

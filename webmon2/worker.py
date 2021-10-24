@@ -150,7 +150,7 @@ class FetchWorker(threading.Thread):
             return
 
         assert source.state
-        assert source.interval
+        assert source.interval is not None
         last_update = source.state.last_update or datetime.datetime.now()
         next_update = last_update + datetime.timedelta(
             seconds=common.parse_interval(source.interval)

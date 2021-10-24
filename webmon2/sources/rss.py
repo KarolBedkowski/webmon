@@ -63,7 +63,7 @@ class RssSource(AbstractSource):
                 for entry in entries:
                     entry.icon = new_state.icon
 
-            assert self._source.interval
+            assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -196,7 +196,7 @@ class RssSource(AbstractSource):
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
-        assert source.settings
+        assert source.settings is not None
         return {
             "text": source.name,
             "title": source.name,
@@ -263,7 +263,7 @@ class RssSource(AbstractSource):
         self._updated_source = self._updated_source or self._source.clone()
 
         if new_url:
-            assert self._updated_source.settings
+            assert self._updated_source.settings is not None
             self._updated_source.settings["url"] = new_url
 
         if interval:
@@ -313,7 +313,7 @@ def _filter_entries_updated(
             yield entry
 
         try:
-            assert updated_parsed
+            assert updated_parsed is not None
             if time.mktime(updated_parsed) > timestamp:
                 yield entry
         except (ValueError, TypeError):

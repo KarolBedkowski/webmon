@@ -54,7 +54,7 @@ class DymmySource(AbstractSource):
             entries.append(entry)
 
         new_state = state.new_ok()
-        assert self._source.interval
+        assert self._source.interval is not None
         new_state.next_update = datetime.datetime.now() + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )

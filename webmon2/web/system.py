@@ -85,7 +85,7 @@ def sett_user() -> ty.Any:
         elif not request.form["curr_password"]:
             flash("Missing curr_password password", "error")
         else:
-            assert user.password
+            assert user.password is not None
             if security.verify_password(
                 user.password, request.form["curr_password"]
             ):
@@ -131,7 +131,7 @@ def sett_user_totp_get() -> ty.Any:
         session["temp_totp"] = totp
         session.modified = True
 
-    assert user.login
+    assert user.login is not None
     otp_url = security.generate_totp_url(totp, user.login)
     return render_template(
         "system/user.totp.html",

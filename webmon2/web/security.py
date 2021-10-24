@@ -50,7 +50,7 @@ def login() -> ty.Any:
             flash("Invalid user and/or password")
             return render_template("login.html")
 
-        assert user.password
+        assert user.password is not None
         if user.active and security.verify_password(user.password, fpassword):
             if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
@@ -81,7 +81,7 @@ def login_totp() -> ty.Any:
         except database.NotFound:
             return render_template("login.totp.html")
 
-        assert user.totp
+        assert user.totp is not None
         ftotp = request.form["otp"]
         if user and user.active and security.verify_totp(user.totp, ftotp):
             back = session.get("_back_url")

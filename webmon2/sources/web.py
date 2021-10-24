@@ -42,7 +42,7 @@ class WebSource(AbstractSource):
         """Return one part - page content."""
         new_state, entries = self._load(state)
         if new_state.status != model.SourceStateStatus.ERROR:
-            assert self._source.interval
+            assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -149,7 +149,7 @@ class WebSource(AbstractSource):
     def _update_source(self, new_url: ty.Optional[str] = None) -> None:
         self._updated_source = self._updated_source or self._source.clone()
         if new_url:
-            assert self._updated_source.settings
+            assert self._updated_source.settings is not None
             self._updated_source.settings["url"] = new_url
 
     def _load_image(
@@ -166,7 +166,7 @@ class WebSource(AbstractSource):
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
-        assert source.settings
+        assert source.settings is not None
         return {
             "text": source.name,
             "title": source.name,

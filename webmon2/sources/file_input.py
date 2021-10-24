@@ -74,7 +74,7 @@ class FileSource(AbstractSource):
             entry.content = content
             entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
-            assert self._source.interval
+            assert self._source.interval is not None
             new_state.next_update = (
                 datetime.datetime.now()
                 + datetime.timedelta(
@@ -87,7 +87,7 @@ class FileSource(AbstractSource):
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
-        assert source.settings
+        assert source.settings is not None
         return {
             "text": source.name,
             "title": source.name,
