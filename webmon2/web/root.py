@@ -161,7 +161,9 @@ def _build_manifest() -> str:
 
 @BP.route("/manifest.json")
 def manifest_json() -> Response:
-    return Response(_build_manifest(), mimetype="application/manifest+json")
+    return Response(
+        _build_manifest(), mimetype="application/manifest+json; charset=UTF-8"
+    )
 
 
 @BP.route("/binary/<datahash>")
