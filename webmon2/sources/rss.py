@@ -274,7 +274,7 @@ class RssSource(AbstractSource):
 def _fail_error(
     state: model.SourceState, doc: feedparser.FeedParserDict, status: int
 ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
-    _LOG.error("load document error %d: state: %r %r", status, state, doc)
+    _LOG.error("load document error %r: state: %r %r", status, state, doc)
     summary = f"Loading page error: {status}"
     feed = doc.get("feed")
     if feed:
