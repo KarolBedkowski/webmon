@@ -37,7 +37,8 @@ class Grep(AbstractFilter):
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         pattern = conf.get("pattern")
-        self._re: ty.Optional[re.Pattern[str]]
+        # self._re: ty.Optional[re.Pattern[str]]  py3.7
+        self._re: ty.Optional[re.Pattern]
         if pattern:
             self._re = re.compile(
                 pattern, re.IGNORECASE | re.MULTILINE | re.DOTALL

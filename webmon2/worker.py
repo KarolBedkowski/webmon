@@ -237,7 +237,10 @@ class FetchWorker(threading.Thread):
             yield entry
 
     def _load_scoring(  # pylint: disable=no-self-use
-        self, db: database.DB, user_id: int
+        self,
+        db: database.DB,
+        user_id: int
+        #    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:  # py3.7
     ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:
         for scs in database.scoring.get_active(db, user_id):
             _LOG.debug("scs: %s", scs)

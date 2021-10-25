@@ -67,7 +67,8 @@ _LINKS_SCHEMA = {"http", "https", "mailto", "ftp"}
 def _convert_links(content: str, page_link: str) -> str:
     """convert relative links to absolute"""
 
-    def convert_links(match: re.Match[str]) -> str:
+    # def convert_links(match: re.Match[str]) -> str: ## py3.7 not supported
+    def convert_links(match) -> str:
         link = match.group(1)
         if ":" in link and link.split(":", 1)[0] in _LINKS_SCHEMA:
             return str(match.group(0))
