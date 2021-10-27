@@ -22,19 +22,19 @@ class ColorFormatter(logging.Formatter):
     """Formatter for logs that color messages according to level."""
 
     FORMAT_MAP = {
-        level: f"\033[1;{color}m{level:<8}\033[0m"
-        for level, color in (
-            ("DEBUG", 34),
-            ("INFO", 37),
-            ("WARNING", 33),
-            ("ERROR", 31),
-            ("CRITICAL", 31),
+        levelno: f"\033[1;{color}m{level:<8}\033[0m"
+        for levelno, level, color in (
+            (logging.DEBUG, "DEBUG", 34),
+            (logging.INFO, "INFO", 37),
+            (logging.WARNING, "WARNING", 33),
+            (logging.ERROR, "ERROR", 31),
+            (logging.CRITICAL, "CRITICAL", 31),
         )
     }
 
-    def format(self, record: ty.Any) -> str:
+    def format(self, record: logging.LogRecord) -> str:
         record.levelname = self.FORMAT_MAP.get(
-            record.levelname, record.levelname
+            record.levelno, record.levelname
         )
         return logging.Formatter.format(self, record)
 
