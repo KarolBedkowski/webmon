@@ -16,6 +16,7 @@ import os.path
 import signal
 import sys
 import typing as ty
+from configparser import ConfigParser
 
 from werkzeug.serving import is_running_from_reloader
 
@@ -54,7 +55,7 @@ _SDN = sdnotify.SystemdNotifier() if HAS_SDNOTIFY else None
 _SDN_WATCHDOG_INTERVAL = 15
 
 
-def _parse_options():
+def _parse_options() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=APP_NAME + " " + VERSION)
     parser.add_argument(
         "-s",
@@ -211,7 +212,7 @@ def _parse_options():
     return parser.parse_args()
 
 
-def _load_user_classes():
+def _load_user_classes() -> None:
     users_scripts_dir = os.path.expanduser("~/.local/share/" + APP_NAME)
     if not os.path.isdir(users_scripts_dir):
         return
@@ -227,15 +228,16 @@ def _load_user_classes():
             modname = fname[:-3]
             try:
                 spec = importlib.util.spec_from_file_location(modname, fpath)
-                module = importlib.util.module_from_spec(spec)
-                sys.modules[modname] = module
-                spec.loader.exec_module(module)
+                if spec:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[modname] = module
+                    spec.loader.exec_module(module)  # type: ignore
 
             except ImportError as err:
                 _LOG.error("Importing '%s' error %s", fpath, err)
 
 
-def _check_libraries():
+def _check_libraries() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
     # pylint: disable=c-extension-no-member
     try:
@@ -295,12 +297,14 @@ def _check_libraries():
         _LOG.warning("missing optional flask_minify library")
 
 
-def _sd_watchdog(_signal, _frame):
+def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:
+    assert _SDN
     _SDN.notify("WATCHDOG=1")
     signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
 
-def _load_conf(args):
+def _load_conf(args: argparse.Namespace) -> ConfigParser:
+    app_conf: ty.Optional[ConfigParser]
     if args.conf:
         app_conf = conf.load_conf(args.conf)
     else:
@@ -315,15 +319,20 @@ def _load_conf(args):
     return app_conf
 
 
-def _serve(args, app_conf):
-    if not is_running_from_reloader():
-        if HAS_SDNOTIFY:
+def _serve(args: argparse.Namespace, app_conf: ConfigParser) -> None:
+    if (
+        not is_running_from_reloader()
+        and app_conf.getint("main", "workers", fallback=2) > 0
+    ):
+        if HAS_SDNOTIFY and _SDN:
             _SDN.notify("STATUS=starting workers")
 
-        cworker = worker.CheckWorker(app_conf, debug=args.debug)
+        cworker = worker.CheckWorker(
+            app_conf, debug=args.debug, sdn=_SDN if HAS_SDNOTIFY else None
+        )
         cworker.start()
 
-    if HAS_SDNOTIFY:
+    if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STATUS=running")
         _SDN.notify("READY=1")
 
@@ -332,11 +341,11 @@ def _serve(args, app_conf):
     except Exception as err:  # pylint: disable=broad-except
         _LOG.error("start app error: %s", err)
 
-    if HAS_SDNOTIFY:
+    if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STOPPING=1")
 
 
-def _update_schema(app_conf):
+def _update_schema(app_conf: ConfigParser) -> None:
     if is_running_from_reloader():
         _LOG.error("cannot update schema when running from reloader")
     else:
@@ -344,16 +353,16 @@ def _update_schema(app_conf):
         database.DB.initialize(app_conf.get("main", "database"), True, 1, 5)
 
 
-def main():
+def main() -> None:
     """Main function."""
 
-    if HAS_SDNOTIFY:
+    if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STATUS=starting")
         signal.signal(signal.SIGALRM, _sd_watchdog)
         signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
     try:
-        locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())
+        locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())  # type: ignore
     except locale.Error:
         pass
 
@@ -376,7 +385,7 @@ def main():
         _update_schema(app_conf)
         return
 
-    if HAS_SDNOTIFY:
+    if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STATUS=init-db")
 
     database.DB.initialize(

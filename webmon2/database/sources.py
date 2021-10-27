@@ -18,6 +18,8 @@ from webmon2 import model
 
 from . import _dbcommon as dbc
 from . import binaries, groups
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -48,7 +50,7 @@ left join source_state ss on ss.source_id = s.id
 where s.user_id=%(user_id)s"""
 
 
-def _get_order_sql(order):
+def _get_order_sql(order: ty.Optional[str]) -> str:
     if order == "name_desc":
         return " order by s.name desc"
     if order == "update":
@@ -62,7 +64,7 @@ def _get_order_sql(order):
     return " order by s.name "
 
 
-def _get_status_sql(status):
+def _get_status_sql(status: ty.Optional[str]) -> str:
     if status == "disabled":
         return " and s.status = 2"
     if status == "active":
@@ -77,9 +79,9 @@ def _get_status_sql(status):
 
 
 def get_all(
-    db,
+    db: DB,
     user_id: int,
-    group_id=None,
+    group_id: ty.Optional[int] = None,
     status: ty.Optional[str] = None,
     order: ty.Optional[str] = None,
 ) -> ty.Iterable[model.Source]:
@@ -89,7 +91,7 @@ def get_all(
     if group_id:
         user_groups = {group_id: groups.get(db, group_id)}
     else:
-        user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}
+        user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}  # type: ignore
 
     args = {"user_id": user_id, "group_id": group_id}
     sql = _GET_SOURCES_SQL
@@ -105,7 +107,9 @@ def get_all(
         return [_build_source(row, user_groups) for row in cur]
 
 
-def _build_source(row, user_groups) -> model.Source:
+def _build_source(
+    row: tyCursor, user_groups: ty.Dict[int, model.SourceGroup]
+) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
     source.unread = row["unread"]
@@ -127,10 +131,10 @@ from sources where id=%s
 
 
 def get(
-    db,
+    db: DB,
     id_: int,
-    with_state=False,
-    with_group=True,
+    with_state: bool = False,
+    with_group: bool = True,
     user_id: ty.Optional[int] = None,
 ) -> model.Source:
     """Get one source with optionally with state and group info.
@@ -178,7 +182,7 @@ where id=%(source__id)s
 """
 
 
-def save(db, source: model.Source) -> model.Source:
+def save(db: DB, source: model.Source) -> model.Source:
     """Insert or update source"""
     row = source.to_row()
     with db.cursor() as cur:
@@ -194,15 +198,15 @@ def save(db, source: model.Source) -> model.Source:
     return source
 
 
-def delete(db, source_id: int) -> int:
+def delete(db: DB, source_id: int) -> int:
     """Delete source"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
 
 
 def update_filter(
-    db, source_id: int, filter_idx: int, filter_: ty.Dict[str, ty.Any]
+    db: DB, source_id: int, filter_idx: int, filter_: ty.Dict[str, ty.Any]
 ) -> None:
     """Append or update filter in given source"""
     source = get(db, source_id, False, False)
@@ -220,7 +224,9 @@ def update_filter(
     save(db, source)
 
 
-def delete_filter(db, user_id: int, source_id: int, filter_idx: int) -> None:
+def delete_filter(
+    db: DB, user_id: int, source_id: int, filter_idx: int
+) -> None:
     """Delete filter in source"""
     source = get(db, source_id, False, False)
     if not source or source.user_id != user_id:
@@ -232,7 +238,7 @@ def delete_filter(db, user_id: int, source_id: int, filter_idx: int) -> None:
 
 
 def move_filter(
-    db, user_id: int, source_id: int, filter_idx: int, direction: str
+    db: DB, user_id: int, source_id: int, filter_idx: int, direction: str
 ) -> None:
     """Change position of given filter in source"""
     if direction not in ("up", "down"):
@@ -284,7 +290,7 @@ from source_state where source_id=%s
 """
 
 
-def get_state(db, source_id: int) -> ty.Optional[model.SourceState]:
+def get_state(db: DB, source_id: int) -> ty.Optional[model.SourceState]:
     """Get state for given source"""
     with db.cursor() as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
@@ -319,7 +325,7 @@ where source_id=%(source_state__source_id)s
 
 
 def save_state(
-    db, state: model.SourceState, user_id: int
+    db: DB, state: model.SourceState, user_id: int
 ) -> model.SourceState:
     """Save (replace) source state"""
     _LOG.debug("save_state: %s", state)
@@ -346,7 +352,7 @@ _GET_SOURCES_TO_FETCH_SQL = """
 """
 
 
-def get_sources_to_fetch(db) -> ty.List[int]:
+def get_sources_to_fetch(db: DB) -> ty.List[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
         cur.execute(_GET_SOURCES_TO_FETCH_SQL, (datetime.datetime.now(),))
@@ -366,7 +372,7 @@ where (last_update is null or last_update < now() - '-1 minutes'::interval)
 
 
 def refresh(
-    db,
+    db: DB,
     user_id: int,
     source_id: ty.Optional[int] = None,
     group_id: ty.Optional[int] = None,
@@ -391,7 +397,7 @@ def refresh(
         )
         updated = cur.rowcount
 
-    return updated
+    return updated  # type: ignore
 
 
 _REFRESH_ERRORS_SQL = """
@@ -404,11 +410,11 @@ where status='error'
 """
 
 
-def refresh_errors(db, user_id: int) -> int:
+def refresh_errors(db: DB, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id,))
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
 
 
 _MARK_READ_SQL = """
@@ -430,11 +436,11 @@ WHERE source_id=%(source_id)s
 
 # pylint: disable=too-many-arguments
 def mark_read(
-    db,
+    db: DB,
     user_id: int,
     source_id: int,
-    max_id: int = None,
-    min_id: int = None,
+    max_id: ty.Optional[int] = None,
+    min_id: ty.Optional[int] = None,
     ids: ty.Optional[ty.Iterable[int]] = None,
 ) -> int:
     """Mark source read"""
@@ -453,11 +459,11 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
 
 
 def get_filter_state(
-    db, source_id: int, filter_name: str
+    db: DB, source_id: int, filter_name: str
 ) -> ty.Optional[ty.Dict[str, ty.Any]]:
     """Get state for given filter in source"""
     with db.cursor() as cur:
@@ -471,11 +477,11 @@ def get_filter_state(
     if not row:
         return None
 
-    return json.loads(row[0]) if isinstance(row[0], str) and row[0] else row[0]
+    return json.loads(row[0]) if isinstance(row[0], str) and row[0] else row[0]  # type: ignore
 
 
 def put_filter_state(
-    db, source_id: int, filter_name: str, state: ty.Dict[str, ty.Any]
+    db: DB, source_id: int, filter_name: str, state: ty.Dict[str, ty.Any]
 ) -> None:
     """Save source filter state"""
     with db.cursor() as cur:
@@ -494,7 +500,7 @@ def put_filter_state(
 
 
 def find_next_entry_id(
-    db, source_id: int, entry_id: int, unread: bool = True
+    db: DB, source_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -517,7 +523,7 @@ def find_next_entry_id(
 
 
 def find_prev_entry_id(
-    db, source_id: int, entry_id: int, unread: bool = True
+    db: DB, source_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
         if unread:
@@ -539,7 +545,7 @@ def find_prev_entry_id(
         return row[0] if row else None
 
 
-def find_next_unread(db, user_id: int) -> ty.Optional[int]:
+def find_next_unread(db: DB, user_id: int) -> ty.Optional[int]:
     with db.cursor() as cur:
         cur.execute(
             "select e.source_id "

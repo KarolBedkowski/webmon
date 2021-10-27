@@ -10,6 +10,7 @@
 App security
 """
 import logging
+import typing as ty
 
 from flask import (
     Blueprint,
@@ -30,7 +31,7 @@ BP = Blueprint("sec", __name__, url_prefix="/sec")
 
 
 @BP.route("/login", methods=["POST", "GET"])
-def login():
+def login() -> ty.Any:
     if "temp_user_id" in session:
         del session["temp_user_id"]
 
@@ -46,13 +47,11 @@ def login():
         try:
             user = database.users.get(db, login=flogin)
         except database.NotFound:
-            user = None
+            flash("Invalid user and/or password")
+            return render_template("login.html")
 
-        if (
-            user
-            and user.active
-            and security.verify_password(user.password, fpassword)
-        ):
+        assert user.password is not None
+        if user.active and security.verify_password(user.password, fpassword):
             if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
                 session.permanent = False
@@ -74,14 +73,15 @@ def login():
 
 
 @BP.route("/login/totp", methods=["POST", "GET"])
-def login_totp():
+def login_totp() -> ty.Any:
     if request.method == "POST":
         db = c.get_db()
         try:
             user = database.users.get(db, session["temp_user_id"])
         except database.NotFound:
-            user = None
+            return render_template("login.totp.html")
 
+        assert user.totp is not None
         ftotp = request.form["otp"]
         if user and user.active and security.verify_totp(user.totp, ftotp):
             back = session.get("_back_url")
@@ -101,7 +101,7 @@ def login_totp():
 
 
 @BP.route("/logout")
-def logout():
+def logout() -> ty.Any:
     session.clear()
     session.modified = True
     return redirect(url_for("root.index"))

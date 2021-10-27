@@ -6,6 +6,7 @@
 #
 # Distributed under terms of the GPLv3 license.
 # pylint: skip-file
+# type: ignore
 
 """
 

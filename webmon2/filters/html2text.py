@@ -36,7 +36,7 @@ class Html2Text(AbstractFilter):
         common.SettingDef("width", "Max line width", default=999999),
     ]  # type: ty.List[common.SettingDef]
 
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
@@ -67,14 +67,15 @@ _LINKS_SCHEMA = {"http", "https", "mailto", "ftp"}
 def _convert_links(content: str, page_link: str) -> str:
     """convert relative links to absolute"""
 
-    def convert_links(match):
+    # def convert_links(match: re.Match[str]) -> str: ## py3.7 not supported
+    def convert_links(match) -> str:
         link = match.group(1)
         if ":" in link and link.split(":", 1)[0] in _LINKS_SCHEMA:
-            return match.group(0)
+            return str(match.group(0))
 
         if link[0] == "/" and page_link[-1] == "/":
             link = link[1:]
 
-        return "(<" + page_link + link + ">)"
+        return f"(<{page_link}{link}>)"
 
     return _RE_LINKS.sub(convert_links, content)

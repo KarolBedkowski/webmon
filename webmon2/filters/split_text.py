@@ -27,7 +27,9 @@ _ = ty
 _LOG = logging.getLogger(__name__)
 
 
-def _get_elements_by_xpath(entry: model.Entry, expression: str):
+def _get_elements_by_xpath(
+    entry: model.Entry, expression: str
+) -> model.Entries:
     # pylint: disable=no-member
     html_parser = etree.HTMLParser(
         encoding="utf-8", recover=True, strip_cdata=True
@@ -55,11 +57,11 @@ class GetElementsByCss(AbstractFilter):
         common.SettingDef("sel", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
-    def __init__(self, config):
+    def __init__(self, config: model.ConfDict):
         super().__init__(config)
-        self._expression = None
+        self._expression: str = ""
 
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         sel = self._conf["sel"]
         try:
@@ -116,8 +118,8 @@ class GetElementsById(AbstractFilter):
                 yield _new_entry(entry, str(elem))
 
 
-def _new_entry(entry, content):
+def _new_entry(entry: model.Entry, content: str) -> model.Entry:
     new_entry = entry.clone()
-    new_entry.status = "new"
+    new_entry.status = model.EntryStatus.NEW
     new_entry.content = content
     return new_entry

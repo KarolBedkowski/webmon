@@ -10,15 +10,18 @@
 command line commands
 """
 
+import argparse
+import configparser
 import os
 import sys
+import typing as ty
 
 from webmon2 import model
 
 from . import common, conf, database, filters, security, sources
 
 
-def _show_abilities_cls(title, base_cls):
+def _show_abilities_cls(title: str, base_cls: ty.Any) -> None:
     print(title)
     for name, cls in common.get_subclasses_with_name(base_cls):
         print("  -", name)
@@ -36,12 +39,12 @@ def _show_abilities_cls(title, base_cls):
     print()
 
 
-def show_abilities():
+def show_abilities() -> None:
     _show_abilities_cls("Sources:", sources.AbstractSource)
     _show_abilities_cls("Filters:", filters.AbstractFilter)
 
 
-def add_user(args):
+def add_user(args: argparse.Namespace) -> None:
     login = args.login
     password = args.password
     admin = args.admin
@@ -61,7 +64,7 @@ def add_user(args):
         print("user created")
 
 
-def change_user_pass(args):
+def change_user_pass(args: argparse.Namespace) -> None:
     login = args.login
     password = args.password
     if not login or not password:
@@ -81,7 +84,7 @@ def change_user_pass(args):
         print("password changed")
 
 
-def remove_user_totp(args):
+def remove_user_totp(args: argparse.Namespace) -> None:
     login = args.login
     if not login:
         print("missing login arguments for remove totp")
@@ -99,7 +102,9 @@ def remove_user_totp(args):
         print("user changed")
 
 
-def write_config_file(args, app_conf):
+def write_config_file(
+    args: argparse.Namespace, app_conf: configparser.ConfigParser
+) -> None:
     filename = args.conf_filename
     if not filename:
         print("missing destination filename", file=sys.stderr)
@@ -122,7 +127,9 @@ def write_config_file(args, app_conf):
 
 
 # pylint: disable=import-outside-toplevel
-def shell(args, app_conf):
+def shell(
+    args: argparse.Namespace, app_conf: configparser.ConfigParser
+) -> None:
     try:
         import IPython
         from IPython.terminal.ipapp import load_default_config
@@ -141,7 +148,9 @@ def shell(args, app_conf):
     )
 
 
-def process_cli(args, app_conf) -> bool:
+def process_cli(
+    args: argparse.Namespace, app_conf: configparser.ConfigParser
+) -> bool:
     if args.cmd == "users":
         if args.subcmd == "add":
             add_user(args)

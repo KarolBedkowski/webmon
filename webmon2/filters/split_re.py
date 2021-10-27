@@ -36,13 +36,13 @@ class SelectByRE(AbstractFilter):
         common.SettingDef("re", "selector", required=True, multiline=True),
     ]  # type: ty.List[common.SettingDef]
 
-    def __init__(self, conf):
+    def __init__(self, conf: model.ConfDict):
         super().__init__(conf)
         self._re = re.compile(
             conf["re"], re.IGNORECASE | re.LOCALE | re.MULTILINE
         )
 
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         try:
             self._re = re.compile(

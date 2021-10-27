@@ -9,9 +9,11 @@
 """
 Application configuration.
 """
-import configparser
+import argparse
 import logging
 import os
+import typing as ty
+from configparser import ConfigParser
 
 _LOG = logging.getLogger("conf")
 
@@ -45,14 +47,14 @@ allow_from = 127.0.0.1
 """
 
 
-def load_conf(fileobj):
-    conf = configparser.ConfigParser()
+def load_conf(fileobj: ty.Iterable[str]) -> ConfigParser:
+    conf = ConfigParser()
     conf.read_string(_DEFAULTS)
     conf.read_file(fileobj)
     return conf
 
 
-def try_load_user_conf():
+def try_load_user_conf() -> ty.Optional[ConfigParser]:
     user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
     if os.path.isfile(user_conf):
         try:
@@ -65,14 +67,16 @@ def try_load_user_conf():
     return None
 
 
-def default_conf():
-    conf = configparser.ConfigParser()
+def default_conf() -> ConfigParser:
+    conf = ConfigParser()
     conf.read_string(_DEFAULTS)
     return conf
 
 
 # pylint: disable=too-many-branches
-def update_from_args(conf, args):
+def update_from_args(
+    conf: ConfigParser, args: argparse.Namespace
+) -> ConfigParser:
     if args.database:
         conf.set("main", "database", args.database)
 
@@ -114,7 +118,7 @@ def update_from_args(conf, args):
 
 
 # pylint: disable=too-many-branches
-def validate(conf) -> bool:
+def validate(conf: ConfigParser) -> bool:
     valid = True
 
     if not conf.get("web", "root"):
@@ -172,7 +176,7 @@ def validate(conf) -> bool:
     return valid
 
 
-def conf_items(conf):
+def conf_items(conf: ConfigParser) -> ty.Iterator[str]:
     for sec in conf.sections():
         yield "[" + sec + "]"
         for key, val in conf.items(sec):
@@ -180,6 +184,6 @@ def conf_items(conf):
         yield ""
 
 
-def save_conf(conf, filename):
+def save_conf(conf: ConfigParser, filename: str) -> None:
     with open(filename, "w", encoding="UTF-8") as ofile:
         conf.write(ofile)

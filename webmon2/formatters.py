@@ -27,7 +27,7 @@ def format_markdown(body: str) -> str:
     value = markdown2.markdown(
         body, extras=["code-friendly", "nofollow", "target-blank-links"]
     )
-    return value
+    return str(value)
 
 
 def format_html(body: str) -> str:
@@ -48,7 +48,7 @@ def format_html(body: str) -> str:
     return _clean_html_brutal(body)
 
 
-def _clean_html_brutal(content):
+def _clean_html_brutal(content: str) -> str:
     body_start = content.find("<body")
     if body_start >= 0:
         body_mark_end = content.find(">", body_start)

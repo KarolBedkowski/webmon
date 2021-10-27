@@ -45,7 +45,7 @@ class Score(AbstractFilter):
         ),
     ]  # type: ty.List[common.SettingDef]
 
-    def __init__(self, conf):
+    def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         patterns = conf.get("patterns")
         if patterns:

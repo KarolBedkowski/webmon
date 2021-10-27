@@ -13,7 +13,7 @@ Abstract filter definition
 import abc
 import typing as ty
 
-from webmon2 import common, model
+from webmon2 import common, database, model
 
 _ = ty
 
@@ -21,30 +21,32 @@ _ = ty
 class AbstractFilter:
     """Base class for all filters."""
 
-    name = None  # type: ty.Optional[str]
+    name: str = None  # type: ignore
     short_info = ""
     long_info = ""
     params = []  # type: ty.List[common.SettingDef]
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config: model.ConfDict) -> None:
         super().__init__()
-        self.db = None
-        self._conf = common.apply_defaults(
+        self.db: ty.Optional[database.DB] = None
+        self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params}, config
-        )  # type: ty.Dict[str, ty.Any]
+        )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return " ".join(
             ("<", self.__class__.__name__, self.name, repr(self._conf), ">")
         )
 
-    def validate(self):
+    def validate(self) -> None:
         """Validate filter parameters"""
         for name, error in self.validate_conf(self._conf):
             raise common.ParamError(f"parameter {name} error {error}")
 
     @classmethod
-    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+    def validate_conf(
+        cls, *confs: model.ConfDict
+    ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """
@@ -78,7 +80,7 @@ class AbstractFilter:
         raise NotImplementedError()
 
     @classmethod
-    def get_param_types(cls) -> ty.Dict[str, str]:
+    def get_param_types(cls) -> ty.Dict[str, ty.Type[ty.Any]]:
         return {param.name: param.type for param in cls.params}
 
     @classmethod

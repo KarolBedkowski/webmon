@@ -33,7 +33,7 @@ class Wrap(AbstractFilter):
         common.SettingDef("max_lines", "Max number of lines", value_type=int),
     ]  # type: ty.List[common.SettingDef]
 
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:

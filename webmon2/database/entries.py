@@ -11,12 +11,14 @@ Access to entries in db.
 """
 import logging
 import typing as ty
-from datetime import datetime
+from datetime import date, datetime
 
 from webmon2 import model
 
 from . import _dbcommon as dbc
 from . import binaries, sources
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -46,7 +48,6 @@ _GET_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where e.user_id = %(user_id)s
-order by e.id
 """
 )
 
@@ -54,7 +55,6 @@ _GET_UNREAD_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where read_mark = %(unread)s and e.user_id=%(user_id)s
-order by e.id
 """
 )
 
@@ -64,7 +64,6 @@ _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = (
 where read_mark = %(unread)s
     and e.source_id=%(source_id)s
     and e.user_id=%(user_id)s
-order by e.id
 """
 )
 
@@ -72,7 +71,6 @@ _GET_ENTRIES_BY_SOURCE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where e.source_id = %(source_id)s and e.user_id=%(user_id)s
-order by e.id
 """
 )
 
@@ -83,7 +81,6 @@ join sources s on s.id = e.source_id
 where read_mark = %(unread)s
     and s.group_id = %(group_id)s
     and e.user_id = %(user_id)s
-order by e.id
 """
 )
 
@@ -93,7 +90,6 @@ _GET_ENTRIES_BY_GROUP_SQL = (
 join sources s on s.id = e.source_id
 where s.group_id = %(group_id)s
     and e.user_id=%(user_id)s
-order by e.id
 """
 )
 
@@ -101,7 +97,6 @@ _GET_STARRED_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 where e.star_mark = 1 and e.user_id=%(user_id)s
-order by e.id
 """
 )
 
@@ -160,14 +155,16 @@ def _get_find_sql(
     return _GET_ENTRIES_SQL
 
 
-def _yield_entries(cur, user_sources) -> model.Entries:
+def _yield_entries(
+    cur: tyCursor, user_sources: model.UserSources
+) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
         entry.source = user_sources.get(entry.source_id)
         yield entry
 
 
-def get_starred(db, user_id: int) -> model.Entries:
+def get_starred(db: DB, user_id: int) -> model.Entries:
     """Get all starred entries for given user"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -179,7 +176,7 @@ def get_starred(db, user_id: int) -> model.Entries:
         yield from _yield_entries(cur, user_sources)
 
 
-def get_history(db, user_id: int) -> model.Entries:
+def get_history(db: DB, user_id: int) -> model.Entries:
     """Get all entries manually read (read_mark=2) for given user"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -195,7 +192,7 @@ def get_history(db, user_id: int) -> model.Entries:
 
 
 def get_total_count(
-    db,
+    db: DB,
     user_id: int,
     source_id: ty.Optional[int] = None,
     group_id: ty.Optional[int] = None,
@@ -226,20 +223,39 @@ def get_total_count(
     if unread:
         sql += " and read_mark=%(unread)s"
 
+    _LOG.debug("get_total_count(%r): %s", args, sql)
+
     with db.cursor() as cur:
         cur.execute(sql, args)
-        return cur.fetchone()[0]
+        return cur.fetchone()[0]  # type: ignore
+
+
+_ORDER_SQL = {
+    "update": " order by e.updated",
+    "update_desc": " order by e.updated desc",
+    "title": " order by e.title",
+    "title_desc": " order by e.title desc",
+    "score": " order by e.score",
+    "score_desc": " order by e.score desc",
+}
+
+
+def _get_order_sql(order: ty.Optional[str]) -> str:
+    if not order:
+        return " order by e.updated"
+    return _ORDER_SQL.get(order, " order by e.updated")
 
 
 # pylint: disable=too-many-arguments,too-many-locals
 def find(
-    db,
+    db: DB,
     user_id: int,
     source_id: ty.Optional[int] = None,
     group_id: ty.Optional[int] = None,
     unread: bool = True,
     offset: ty.Optional[int] = None,
     limit: ty.Optional[int] = None,
+    order: ty.Optional[str] = None,
 ) -> model.Entries:
     """Find entries for user/source/group unread or all.
     Limit and offset work only for getting all entries.
@@ -253,9 +269,12 @@ def find(
         "unread": model.EntryReadMark.UNREAD,
     }
     sql = _get_find_sql(source_id, group_id, unread)
+    sql += _get_order_sql(order)
     if limit:
         # for unread there is no pagination
         sql += " limit %(limit)s offset %(offset)s"
+
+    _LOG.debug("find(%r): %s", args, sql)
 
     user_sources = {
         src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
@@ -268,12 +287,13 @@ def find(
 
 # pylint: disable=too-many-arguments,too-many-locals
 def find_fulltext(
-    db,
+    db: DB,
     user_id: int,
     query: str,
     title_only: bool,
     group_id: ty.Optional[int] = None,
     source_id: ty.Optional[int] = None,
+    order: ty.Optional[str] = None,
 ) -> model.Entries:
     """Find entries for user by full-text search on title or title and content.
     Search in source (if given source_id) or in group (if given group_id)
@@ -298,7 +318,7 @@ def find_fulltext(
     else:
         sql += " and e.user_id=%(user_id)s "
 
-    sql += " order by e.id"
+    sql += _get_order_sql(order)
 
     user_sources = {
         src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
@@ -309,7 +329,7 @@ def find_fulltext(
         yield from _yield_entries(cur, user_sources)
 
 
-def find_for_feed(db, user_id: int, group_id: int) -> model.Entries:
+def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
     user_sources = {
         src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
@@ -341,7 +361,7 @@ from entries
 
 
 def get(
-    db,
+    db: DB,
     id_: ty.Optional[int] = None,
     oid: ty.Optional[str] = None,
     with_source: bool = False,
@@ -401,7 +421,7 @@ where id=%(entry__id)s
 """
 
 
-def save(db, entry: model.Entry) -> model.Entry:
+def save(db: DB, entry: model.Entry) -> model.Entry:
     """Insert or update entry"""
     row = entry.to_row()
     with db.cursor() as cur:
@@ -415,13 +435,15 @@ def save(db, entry: model.Entry) -> model.Entry:
     return entry
 
 
-def save_many(db, entries: model.Entries):
+def save_many(db: DB, entries: model.Entries) -> None:
     """Insert entries; where entry with given oid already exists - is deleted
     and inserted again; star mark is preserved.
     """
     # filter updated entries; should be deleted & inserted
     oids_to_delete = [
-        (entry.oid,) for entry in entries if entry.status == "updated"
+        (entry.oid,)
+        for entry in entries
+        if entry.status == model.EntryStatus.UPDATED
     ]
     if oids_to_delete:
         # find stared entries
@@ -451,7 +473,7 @@ def save_many(db, entries: model.Entries):
     _save_entry_icon(db, entries)
 
 
-def _save_entry_icon(db, entries: model.Entries):
+def _save_entry_icon(db: DB, entries: model.Entries) -> None:
     saved = set()
     for entry in entries:
         if not entry.icon or entry.icon in saved or not entry.icon_data:
@@ -462,7 +484,9 @@ def _save_entry_icon(db, entries: model.Entries):
         saved.add(entry.icon)
 
 
-def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
+def delete_old(
+    db: DB, user_id: int, max_datetime: datetime
+) -> ty.Tuple[int, int]:
     """Delete old entries for given user"""
     with db.cursor() as cur:
         cur.execute(
@@ -481,24 +505,24 @@ def delete_old(db, user_id: int, max_datetime: datetime) -> ty.Tuple[int, int]:
         return (deleted_entries, deleted_oids)
 
 
-def mark_star(db, user_id: int, entry_id: int, star=True) -> int:
+def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     """Change star mark for given entry"""
-    star = 1 if star else 0
+    db_star = 1 if star else 0
     _LOG.info(
-        "mark_star user_id=%d, entry_id=%r,star=%r", user_id, entry_id, star
+        "mark_star user_id=%d, entry_id=%r,star=%r", user_id, entry_id, db_star
     )
     with db.cursor() as cur:
         cur.execute(
             "update entries set star_mark=%s where id=%s and star_mark=%s",
-            (star, entry_id, 1 - star),
+            (db_star, entry_id, 1 - db_star),
         )
         changed = cur.rowcount
 
     _LOG.debug("changed: %d", changed)
-    return changed
+    return changed  # type: ignore
 
 
-def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
+def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
@@ -534,7 +558,7 @@ def check_oids(db, oids: ty.List[str], source_id: int) -> ty.Set[str]:
 
 # pylint: disable=too-many-arguments
 def mark_read(
-    db,
+    db: DB,
     user_id: int,
     entry_id: ty.Optional[int] = None,
     min_id: ty.Optional[int] = None,
@@ -574,11 +598,11 @@ def mark_read(
             )
         changed = cur.rowcount
 
-    return changed
+    return changed  # type: ignore
 
 
 def mark_all_read(
-    db, user_id: int, max_date: ty.Optional[datetime] = None
+    db: DB, user_id: int, max_date: ty.Union[None, date, datetime] = None
 ) -> int:
     with db.cursor() as cur:
         if max_date:
@@ -603,50 +627,90 @@ def mark_all_read(
                 ),
             )
 
-        return cur.rowcount
+        return cur.rowcount  # type: ignore
+
+
+_GET_RELATED_RM_ENTRY_SQL = """
+WITH DATA AS (
+	SELECT e.id,
+		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
+		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+	FROM entries e
+	WHERE user_id = %(user_id)s AND read_mark = %(read_mark)s
+	ORDER BY {order}
+)
+SELECT prev, next
+FROM DATA
+WHERE id=%(entry_id)s
+"""
+
+_GET_RELATED_ENTRY_SQL = """
+WITH DATA AS (
+	SELECT e.id,
+		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
+		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+	FROM entries e
+	WHERE user_id = %(user_id)s
+	ORDER BY {order}
+)
+SELECT prev, next
+FROM DATA
+WHERE id=%(entry_id)s
+"""
+
+
+def _get_related_sql(unread: bool, order: ty.Optional[str]) -> str:
+    order_key = "updated"
+    if order in ("title", "updated", "score"):
+        order_key = order
+    elif order == "title_desc":
+        order_key = "title desc"
+    elif order == "updated_desc":
+        order_key = "updated desc"
+    elif order == "score_desc":
+        order_key = "score desc"
+
+    if unread:
+        return _GET_RELATED_RM_ENTRY_SQL.format(order=order_key)
+    return _GET_RELATED_ENTRY_SQL.format(order=order_key)
 
 
 def find_next_entry_id(
-    db, user_id: int, entry_id: int, unread: bool = True
+    db: DB,
+    user_id: int,
+    entry_id: int,
+    unread: bool = True,
+    order: ty.Optional[str] = None,
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
-        if unread:
-            cur.execute(
-                "select min(e.id) "
-                "from entries e "
-                "where e.id > %s and e.read_mark=%s and e.user_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, user_id),
-            )
-        else:
-            cur.execute(
-                "select min(e.id) "
-                "from entries e  "
-                "where e.id > %s and e.user_id=%s",
-                (entry_id, user_id),
-            )
+        args = {
+            "entry_id": entry_id,
+            "user_id": user_id,
+            "read_mark": model.EntryReadMark.UNREAD,
+        }
 
+        sql = _get_related_sql(unread, order)
+        _LOG.debug("find_next_entry_id(%r): %s", args, sql)
+        cur.execute(sql, args)
         row = cur.fetchone()
-        return row[0] if row else None
+        return row[1] if row else None
 
 
 def find_prev_entry_id(
-    db, user_id: int, entry_id: int, unread=True
+    db: DB,
+    user_id: int,
+    entry_id: int,
+    unread: bool = True,
+    order: ty.Optional[str] = None,
 ) -> ty.Optional[int]:
     with db.cursor() as cur:
-        if unread:
-            cur.execute(
-                "select max(e.id) "
-                "from entries e "
-                "where e.id < %s and e.read_mark=%s and e.user_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, user_id),
-            )
-        else:
-            cur.execute(
-                "select max(e.id) "
-                "from entries e "
-                "where e.id < %s and e.user_id=%s",
-                (entry_id, user_id),
-            )
-
+        args = {
+            "entry_id": entry_id,
+            "user_id": user_id,
+            "read_mark": model.EntryReadMark.UNREAD,
+        }
+        sql = _get_related_sql(unread, order)
+        _LOG.debug("find_prev_entry_id(%r): %s", args, sql)
+        cur.execute(sql, args)
         row = cur.fetchone()
         return row[0] if row else None

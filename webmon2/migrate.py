@@ -9,6 +9,7 @@
 """
 Migration utils
 """
+import argparse
 import logging
 import os
 import typing as ty
@@ -54,37 +55,49 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
     return None
 
 
-def _migrate_url(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = "url"
-    source.name = inp.get("name", "unknown")
+def _migrate_url(inp: model.ConfDict) -> ty.Optional[model.Source]:
+    source = model.Source(
+        kind="url",
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"url": inp["url"]}
     source.interval = inp.get("interval")
     return source
 
 
-def _migrate_rss(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = "rss"
-    source.name = inp.get("name", "unknown")
+def _migrate_rss(inp: model.ConfDict) -> ty.Optional[model.Source]:
+    source = model.Source(
+        kind="rss",
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"url": inp["url"]}
     source.interval = inp.get("interval")
     return source
 
 
-def _migrate_jamendo(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = inp["kind"]
-    source.name = inp.get("name", "unknown")
+def _migrate_jamendo(inp: model.ConfDict) -> ty.Optional[model.Source]:
+    source = model.Source(
+        kind=inp["kind"],
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {"artist_id": inp["artist_id"]}
     source.interval = inp.get("interval")
     return source
 
 
-def _migrate_github(inp) -> ty.Optional[model.Source]:
-    source = model.Source()
-    source.kind = inp["kind"]
-    source.name = inp.get("name", "unknown")
+def _migrate_github(inp: model.ConfDict) -> ty.Optional[model.Source]:
+    source = model.Source(
+        kind=inp["kind"],
+        name=inp.get("name", "unknown"),
+        user_id=0,
+        group_id=0,
+    )
     source.settings = {
         "owner": inp["owner"],
         "repository": inp["repository"],
@@ -104,7 +117,7 @@ _MIGR_FUNCS = {
 }
 
 
-def migrate(args):
+def migrate(args: argparse.Namespace) -> None:
     filename = args.migrate_filename
     user_login = args.migrate_user
     _LOG.info("migration from %s to user %s start", filename, user_login)
@@ -118,11 +131,13 @@ def migrate(args):
             return
 
         user_id = user.id
+        assert user_id
         group_id = database.groups.get_all(db, user_id)[0].id
+        assert group_id
 
         _LOG.debug("migrate to user_id: %d group: %d", user_id, group_id)
 
-        for inp in _load_sources(filename):
+        for inp in _load_sources(filename) or []:
             _LOG.info("migrating %r", inp)
             mfunc = _MIGR_FUNCS.get(inp.get("kind", "url"))
             if mfunc:
