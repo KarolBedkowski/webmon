@@ -1,6 +1,23 @@
 # Changelog
 
-## 2.9.11 2021-10-15
+## 2.5.12 2021-10-27
+
+### Bug Fixes
+
+- Missing refreshing csrf tokens for api actions
+- Add / update security headers
+- Fix manifest content type
+- Not typed re module in py 3.7
+- Fix error handling in RssSource
+
+### Miscellaneous Tasks
+
+### Refactor
+
+- Clean code; add types to code
+
+
+## 2.5.11 2021-10-15
 
 ### Bug Fixes
 

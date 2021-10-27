@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "webmon2"
-version = "2.5.11"
+version = "2.5.12"
 description = ""
 authors = ["Karol Będkowski <karol.bedkowski@gmail.com>"]
 license = "GPL-2.0-or-later"
@@ -65,3 +65,4 @@ skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
 
 [mypy]
 python_version = 3.7
+strict = true
