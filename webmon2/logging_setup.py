@@ -57,6 +57,14 @@ def _create_dirs_for_log(filename: str) -> str:
     return log_fullpath
 
 
+def _filter_metrics_reqs(record: logging.LogRecord) -> bool:
+    """Filter that remove successful request to /metrics endpoint"""
+    return (
+        record.levelno != logging.INFO
+        or '/metrics HTTP/1.1" 200' not in record.getMessage()
+    )
+
+
 def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
     """Setup logging.
 
@@ -83,11 +91,13 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
         log_werkzeug.setLevel(logging.WARN)
+        log_werkzeug.addFilter(_filter_metrics_reqs)
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
         log_werkzeug.setLevel(logging.WARN)
+        log_werkzeug.addFilter(_filter_metrics_reqs)
 
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
