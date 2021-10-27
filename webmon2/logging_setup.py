@@ -68,28 +68,31 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
     logger = logging.getLogger()
     log_req = logging.getLogger("requests")
     log_github3 = logging.getLogger("github3")
+    log_werkzeug = logging.getLogger("werkzeug")
 
+    msg_format = (
+        "%(levelname)-8s %(name)s [%(filename)s:%(lineno)d] %(message)s"
+    )
     if debug:
         logger.setLevel(logging.DEBUG)
         log_req.setLevel(logging.DEBUG)
         log_github3.setLevel(logging.DEBUG)
+        log_werkzeug.setLevel(logging.DEBUG)
     elif silent:
         logger.setLevel(logging.WARN)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
+        log_werkzeug.setLevel(logging.WARN)
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
+        log_werkzeug.setLevel(logging.WARN)
 
     if filename:
         log_fullpath = _create_dirs_for_log(filename)
         fileh = logging.FileHandler(log_fullpath)
-        fileh.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(levelname)-8s %(name)s - %(message)s"
-            )
-        )
+        fileh.setFormatter(logging.Formatter("%(asctime)s " + msg_format))
         logger.addHandler(fileh)
 
     console = logging.StreamHandler()
@@ -97,7 +100,7 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
     if sys.platform != "win32" and debug:
         fmtr = ColorFormatter
 
-    console.setFormatter(fmtr("%(levelname)-8s %(name)s - %(message)s"))
+    console.setFormatter(fmtr(msg_format))
     logger.addHandler(console)
 
     log = logging.getLogger("logging")
