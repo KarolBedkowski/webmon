@@ -14,7 +14,7 @@ import logging
 import typing as ty
 import urllib
 
-from flask import request
+from flask import Flask, request
 
 from webmon2 import formatters
 
@@ -38,11 +38,11 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
     return str(int(diff // 86400)) + "d"
 
 
-def _format_date(date) -> str:
+def _format_date(date: ty.Any) -> str:
     if isinstance(date, datetime.datetime):
         return date.strftime("%x %X")
 
-    return date
+    return str(date)
 
 
 def _absoute_url(url: str) -> str:
@@ -63,7 +63,7 @@ def _entry_score_class(score: int) -> str:
     return ""
 
 
-def register(app):
+def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
     app.jinja_env.filters["format_date"] = _format_date

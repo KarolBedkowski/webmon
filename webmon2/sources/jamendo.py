@@ -25,6 +25,7 @@ from .abstract import AbstractSource
 
 # from urllib3 import poolmanager
 
+JsonResult = ty.List[ty.Dict[str, ty.Any]]
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
@@ -87,7 +88,7 @@ class JamendoMixin:
             return 200, res
 
 
-def _build_request_url(url: str, **params) -> str:
+def _build_request_url(url: str, **params: ty.Any) -> str:
     return url + "&".join(
         key + "=" + urllib.parse.quote_plus(str(val))
         for key, val in params.items()
@@ -107,7 +108,9 @@ def _jamendo_album_to_url(album_id: int) -> str:
     return f"https://www.jamendo.com/album/{album_id}/"
 
 
-def _create_entry(source: model.Source, content: str, date) -> model.Entry:
+def _create_entry(
+    source: model.Source, content: str, date: datetime.datetime
+) -> model.Entry:
     entry = model.Entry.for_source(source)
     entry.title = source.name
     entry.status = model.EntryStatus.NEW
@@ -179,7 +182,9 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
         return new_state, entries
 
     @classmethod
-    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+    def validate_conf(
+        cls, *confs: model.ConfDict
+    ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration."""
         yield from super(JamendoAlbumsSource, cls).validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
@@ -198,7 +203,9 @@ class JamendoAlbumsSource(AbstractSource, JamendoMixin):
         raise NotImplementedError()
 
 
-def _jamendo_format_long_list(source: model.Source, results) -> model.Entries:
+def _jamendo_format_long_list(
+    source: model.Source, results: JsonResult
+) -> model.Entries:
     for result in results:
         for album in result.get("albums") or []:
             yield _create_entry(
@@ -276,7 +283,9 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
         return new_state, entries
 
     @classmethod
-    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+    def validate_conf(
+        cls, *confs: model.ConfDict
+    ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration."""
         yield from super(JamendoTracksSource, cls).validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
@@ -295,7 +304,9 @@ class JamendoTracksSource(AbstractSource, JamendoMixin):
         raise NotImplementedError()
 
 
-def _jamendo_track_format(source: model.Source, results) -> model.Entries:
+def _jamendo_track_format(
+    source: model.Source, results: JsonResult
+) -> model.Entries:
     for result in results:
         tracks = result.get("tracks")
         if tracks:
@@ -315,7 +326,7 @@ def _jamendo_track_format(source: model.Source, results) -> model.Entries:
             )
 
 
-def _get_release_date(data) -> datetime.datetime:
+def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
     try:
         return datetime.datetime.fromisoformat(data["releasedate"])
     except ValueError:

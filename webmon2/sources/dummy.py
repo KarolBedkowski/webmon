@@ -46,12 +46,15 @@ class DymmySource(AbstractSource):
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
             entry.status = model.EntryStatus.NEW
-            entry.title = self._source.name
+            entry.title = (
+                self._source.name + " " + str(entry.updated) + " " + str(idx)
+            )
             entry.url = "dummy"
             entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
             entries.append(entry)
 
         new_state = state.new_ok()
+        assert self._source.interval is not None
         new_state.next_update = datetime.datetime.now() + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )
@@ -76,4 +79,4 @@ class DymmySource(AbstractSource):
         if not name:
             raise ValueError("missing text/title")
 
-        return model.Source(kind=cls.name, name=name, settings={})
+        return model.Source(kind=cls.name, name=name, user_id=0, group_id=0)

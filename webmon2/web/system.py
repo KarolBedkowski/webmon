@@ -12,6 +12,7 @@ Web gui
 
 import datetime
 import logging
+import typing as ty
 from io import BytesIO
 
 try:
@@ -44,12 +45,12 @@ BP = Blueprint("system", __name__, url_prefix="/system")
 
 
 @BP.route("/settings/", methods=["POST", "GET"])
-def sett_index():
+def sett_index() -> ty.Any:
     return redirect(url_for("system.sett_user"))
 
 
 @BP.route("/settings/globals", methods=["POST", "GET"])
-def sett_globals():
+def sett_globals() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     settings = list(database.settings.get_all(db, user_id))
@@ -72,7 +73,7 @@ def sett_globals():
 
 
 @BP.route("/settings/user", methods=["POST", "GET"])
-def sett_user():
+def sett_user() -> ty.Any:
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
 
@@ -84,6 +85,7 @@ def sett_user():
         elif not request.form["curr_password"]:
             flash("Missing curr_password password", "error")
         else:
+            assert user.password is not None
             if security.verify_password(
                 user.password, request.form["curr_password"]
             ):
@@ -106,7 +108,7 @@ def sett_user():
 
 
 @BP.route("/settings/user/totp/remove", methods=["GET", "POST"])
-def sett_user_totp_del():
+def sett_user_totp_del() -> ty.Any:
     if not security.otp_available():
         return abort(404)
 
@@ -120,7 +122,7 @@ def sett_user_totp_del():
 
 
 @BP.route("/settings/user/totp", methods=["GET"])
-def sett_user_totp_get():
+def sett_user_totp_get() -> ty.Any:
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     totp = session.get("temp_totp")
@@ -129,6 +131,7 @@ def sett_user_totp_get():
         session["temp_totp"] = totp
         session.modified = True
 
+    assert user.login is not None
     otp_url = security.generate_totp_url(totp, user.login)
     return render_template(
         "system/user.totp.html",
@@ -139,7 +142,7 @@ def sett_user_totp_get():
 
 
 @BP.route("/settings/user/totp", methods=["POST"])
-def sett_user_totp_post():
+def sett_user_totp_post() -> ty.Any:
     if not security.otp_available():
         return abort(404)
 
@@ -166,12 +169,12 @@ def sett_user_totp_post():
 
 
 @BP.route("/settings/data")
-def sett_data():
+def sett_data() -> ty.Any:
     return render_template("system/data.html")
 
 
 @BP.route("/settings/data/export")
-def sett_data_export():
+def sett_data_export() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     content = imp_exp.dump_export(db, user_id)
@@ -180,7 +183,7 @@ def sett_data_export():
 
 
 @BP.route("/settings/data/export/opml")
-def sett_data_export_opml():
+def sett_data_export_opml() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     content = opml.dump_data(db, user_id)
@@ -189,13 +192,13 @@ def sett_data_export_opml():
 
 
 @BP.route("/settings/data/import", methods=["POST"])
-def sett_data_import():
+def sett_data_import() -> ty.Any:
     if "file" not in request.files:
         flash("No file to import")
         return redirect(url_for("system.sett_data"))
 
     file = request.files["file"]
-    data = file.read()
+    data = file.read()  # type: ignore
     if not data:
         flash("No file to import", "error")
         return redirect(url_for("system.sett_data"))
@@ -213,13 +216,13 @@ def sett_data_import():
 
 
 @BP.route("/settings/data/import/opml", methods=["POST"])
-def sett_data_import_opml():
+def sett_data_import_opml() -> ty.Any:
     if "file" not in request.files:
         flash("No file to import")
         return redirect(url_for("system.sett_data"))
 
     file = request.files["file"]
-    data = file.read()
+    data = file.read()  # type: ignore
     if not data:
         flash("No file to import", "error")
         return redirect(url_for("system.sett_data"))
@@ -237,7 +240,7 @@ def sett_data_import_opml():
 
 
 @BP.route("/settings/data/manipulation/mark_all_read")
-def sett_data_mark_all_read():
+def sett_data_mark_all_read() -> ty.Any:
     user_id = session["user"]
     db = c.get_db()
     updated = database.entries.mark_all_read(db, user_id)
@@ -247,7 +250,7 @@ def sett_data_mark_all_read():
 
 
 @BP.route("/settings/data/manipulation/mark_all_read_y")
-def sett_data_mark_all_old_read():
+def sett_data_mark_all_old_read() -> ty.Any:
     user_id = session["user"]
     db = c.get_db()
     max_date = datetime.date.today() - datetime.timedelta(days=1)
@@ -258,20 +261,22 @@ def sett_data_mark_all_old_read():
 
 
 @BP.route("/settings/scoring", methods=["GET", "POST"])
-def sett_scoring():
+def sett_scoring() -> ty.Any:
     user_id = session["user"]
     db = c.get_db()
     if request.method == "POST":
-        scs = [
-            model.ScoringSett(
-                user_id=user_id,
-                pattern=sett.get("pattern"),
-                active=sett.get("active"),
-                score_change=sett.get("score"),
-            )
-            for sett in common.parse_form_list_data(request.form, "r")
-        ]
-        scs = filter(lambda x: x.valid(), scs)
+        scs = filter(
+            lambda x: x.valid(),
+            [
+                model.ScoringSett(
+                    user_id=user_id,
+                    pattern=sett.get("pattern"),  # type: ignore
+                    active=sett.get("active"),  # type: ignore
+                    score_change=sett.get("score"),  # type: ignore
+                )
+                for sett in common.parse_form_list_data(request.form, "r")
+            ],
+        )
         database.scoring.save(db, user_id, scs)
         db.commit()
         flash("Saved")
@@ -282,7 +287,7 @@ def sett_scoring():
 
 
 @BP.route("/settings/system/users", methods=["GET"])
-def sett_sys_users():
+def sett_sys_users() -> ty.Any:
     if not session["user_admin"]:
         abort(403)
 
@@ -293,7 +298,7 @@ def sett_sys_users():
 
 @BP.route("/settings/system/users/new", methods=["GET", "POST"])
 @BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])
-def sett_sys_user(user_id: int = None):
+def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
     if not session["user_admin"]:
         abort(403)
 
@@ -340,7 +345,7 @@ def sett_sys_user(user_id: int = None):
 @BP.route(
     "/settings/system/users/<int:user_id>/delete", methods=["GET", "POST"]
 )
-def sett_sys_user_delete(user_id: int):
+def sett_sys_user_delete(user_id: int) -> ty.Any:
     if not session["user_admin"]:
         abort(403)
 
@@ -363,7 +368,7 @@ def sett_sys_user_delete(user_id: int):
 
 
 @BP.route("/qrcode")
-def sys_qrcode():
+def sys_qrcode() -> ty.Any:
     if not _HAS_PYQRCODE:
         return abort(404)
 

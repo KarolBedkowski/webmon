@@ -27,7 +27,7 @@ class NotAvaliable(RuntimeError):
     pass
 
 
-def hash_password(password):
+def hash_password(password: str) -> str:
     salt = os.urandom(16)
     phash = hashlib.scrypt(
         password.encode("utf-8"), salt=salt, n=16, r=16, p=2
@@ -35,7 +35,7 @@ def hash_password(password):
     return salt.hex() + phash.hex()
 
 
-def verify_password(hashed, password):
+def verify_password(hashed: str, password: str) -> bool:
     salt = bytes.fromhex(hashed[:32])
     passw = bytes.fromhex(hashed[32:])
     phash = hashlib.scrypt(
@@ -44,28 +44,30 @@ def verify_password(hashed, password):
     return passw == phash
 
 
-def otp_available():
+def otp_available() -> bool:
     return _HAS_PYOTP
 
 
-def generate_totp():
+def generate_totp() -> str:
     if not _HAS_PYOTP:
         raise NotAvaliable()
 
-    return pyotp.random_base32()
+    return str(pyotp.random_base32())
 
 
-def generate_totp_url(secret, name):
+def generate_totp_url(secret: str, name: str) -> str:
     if not _HAS_PYOTP:
         raise NotAvaliable()
 
     my_name = "webmon2." + socket.gethostname()
-    return pyotp.totp.TOTP(secret).provisioning_uri(
-        name=name + "@" + my_name, issuer_name=my_name
+    return str(
+        pyotp.totp.TOTP(secret).provisioning_uri(
+            name=name + "@" + my_name, issuer_name=my_name
+        )
     )
 
 
-def verify_totp(secret, totp):
+def verify_totp(secret: str, totp: str) -> bool:
     if not _HAS_PYOTP:
         raise NotAvaliable()
 
@@ -76,8 +78,8 @@ def verify_totp(secret, totp):
         return False
 
     try:
-        totp = int(totp)
+        totp_val = int(totp)
     except ValueError:
         return False
 
-    return pyotp.TOTP(secret).verify(totp, valid_window=1)
+    return bool(pyotp.TOTP(secret).verify(totp_val, valid_window=1))

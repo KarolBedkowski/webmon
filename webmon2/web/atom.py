@@ -33,7 +33,7 @@ ItemElement = ty.NewType("ItemElement", DEFAULT_ETREE.Element)
 
 def add_subelement_with_text(
     root: DEFAULT_ETREE.Element, child_tag: str, text: str
-):
+) -> DEFAULT_ETREE.Element:
     sub = DEFAULT_ETREE.SubElement(root, child_tag)
     sub.text = text
     return sub
@@ -80,7 +80,7 @@ def start_rss(
 
 
 @BP.route("/group/<key>")
-def group(key: str):
+def group(key: str) -> Response:
     if key == "off":
         return abort(404)
 
@@ -118,7 +118,7 @@ def group(key: str):
 
         rss_items.append(
             gen_item(
-                title=entry.title or entry.source.group.name,
+                title=entry.title or entry.source.group.name,  # type: ignore
                 link=url,
                 description=body,
                 args={

@@ -15,6 +15,10 @@ from datetime import datetime, timedelta
 
 import github3
 from dateutil import tz
+from github3.repos.commit import RepoCommit
+from github3.repos.release import Release
+from github3.repos.repo import Repository
+from github3.repos.tag import RepoTag
 
 from webmon2 import common, model
 
@@ -33,7 +37,7 @@ class GitHubMixin:
 
     @staticmethod
     def _github_check_repo_updated(
-        repository, last_updated: ty.Optional[datetime]
+        repository: Repository, last_updated: ty.Optional[datetime]
     ) -> ty.Optional[str]:
         """Verify last repository update date.
         Returns: None when repo is not updated or formatted minimal date
@@ -48,7 +52,7 @@ class GitHubMixin:
 
         return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def _github_get_repository(self, conf: dict):
+    def _github_get_repository(self, conf: model.ConfDict) -> Repository:
         """Create repository object according to configuration."""
         github = None
         if conf.get("github_user") and conf.get("github_token"):
@@ -66,7 +70,7 @@ class GitHubMixin:
 
 
 def _build_entry(
-    source: model.Source, repository, content: str
+    source: model.Source, repository: Repository, content: str
 ) -> model.Entry:
     entry = model.Entry.for_source(source)
     entry.url = repository.html_url
@@ -164,16 +168,16 @@ class GithubInput(AbstractSource, GitHubMixin):
         raise NotImplementedError()
 
 
-def _format_gh_commit_short(commit, _full_message: bool) -> str:
+def _format_gh_commit_short(commit: RepoCommit, _full_message: bool) -> str:
     cmt = commit.commit
-    return (
+    return str(
         cmt.committer["date"]
         + " "
         + cmt.message.strip().split("\n", 1)[0].rstrip()
     )
 
 
-def _format_gh_commit_long(commit, full_message: bool) -> str:
+def _format_gh_commit_long(commit: RepoCommit, full_message: bool) -> str:
     cmt = commit.commit
     result = ["### " + cmt.committer["date"], "Author: " + cmt.author["name"]]
     msg = cmt.message.strip().split("\n")
@@ -237,7 +241,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             content = "\n\n".join(filter(None, map(_format_gh_tag, tags)))
         except Exception as err:
             _LOG.exception("github load error: %s", err)
-            raise common.InputError(self, err)
+            raise common.InputError(self, str(err))
 
         new_state = state.new_ok(etag=repository.etag)
         self._state_update_icon(new_state)
@@ -246,7 +250,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         entry.icon = new_state.icon
         return new_state, [entry]
 
-    def _state_update_icon(self, new_state):
+    def _state_update_icon(self, new_state: model.SourceState) -> None:
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
@@ -261,7 +265,9 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         raise NotImplementedError()
 
 
-def _filter_tags(tags, repository, min_date: datetime):
+def _filter_tags(
+    tags: ty.Iterable[RepoTag], repository: Repository, min_date: datetime
+) -> ty.Iterable[RepoTag]:
     """For each tag in tags load commit informations from repo and compare
     commit last update date with min_date; return only tags with date after
     than min_date"""
@@ -278,18 +284,21 @@ def _filter_tags(tags, repository, min_date: datetime):
             pass
 
 
-def _load_tags(repository, max_items, etag):
+def _load_tags(
+    repository: Repository, max_items: int, etag: str
+) -> ty.Iterable[RepoTag]:
     if hasattr(repository, "tags"):
-        return repository.tags(max_items, etag=etag)
+        return repository.tags(max_items, etag=etag)  # type: ignore
 
-    return repository.iter_tags(max_items, etag=etag)
+    return repository.iter_tags(max_items, etag=etag)  # type: ignore
 
 
-def _format_gh_tag(tag) -> str:
+def _format_gh_tag(tag: RepoTag) -> str:
+    res: str = tag.name
     if hasattr(tag, "ex_commit_date"):
-        return tag.name + " " + str(tag.ex_commit_date)
+        res += " " + str(tag.ex_commit_date)
 
-    return tag.name
+    return res
 
 
 class GithubReleasesSource(AbstractSource, GitHubMixin):
@@ -379,7 +388,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
 
 def _build_gh_release_entry(
-    source: model.Source, repository, release
+    source: model.Source, repository: Repository, release: Release
 ) -> model.Entry:
     res = [
         "### ",

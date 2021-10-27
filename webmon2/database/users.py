@@ -15,6 +15,8 @@ import typing as ty
 from webmon2 import model
 
 from . import _dbcommon as dbc
+from ._db import DB
+from ._dbcommon import tyCursor
 
 _LOG = logging.getLogger(__name__)
 
@@ -32,7 +34,7 @@ from users
 """
 
 
-def get_all(db) -> ty.Iterable[model.User]:
+def get_all(db: DB) -> ty.Iterable[model.User]:
     """Get all users"""
     with db.cursor() as cur:
         cur.execute(_GET_ALL_SQL)
@@ -59,7 +61,9 @@ where login=%s
 """
 
 
-def get(db, id_=None, login=None) -> model.User:
+def get(
+    db: DB, id_: ty.Optional[int] = None, login: ty.Optional[str] = None
+) -> model.User:
     """Get user by id or login"""
     with db.cursor() as cur:
         if id_:
@@ -91,7 +95,7 @@ returning id
 """
 
 
-def save(db, user: model.User) -> model.User:
+def save(db: DB, user: model.User) -> model.User:
     """Insert or update user"""
     with db.cursor() as cur:
         if user.id:
@@ -110,7 +114,7 @@ def save(db, user: model.User) -> model.User:
     return user
 
 
-def _create_new_user_data(cur, user_id: int) -> None:
+def _create_new_user_data(cur: tyCursor, user_id: int) -> None:
     cur.execute(
         "select count(1) from source_groups where user_id=%s", (user_id,)
     )
@@ -121,7 +125,16 @@ def _create_new_user_data(cur, user_id: int) -> None:
         )
 
 
-def get_state(db, user_id: int, key: str, default=None, conv=None):
+State = ty.Any
+
+
+def get_state(
+    db: DB,
+    user_id: int,
+    key: str,
+    default: ty.Optional[State] = None,
+    conv: ty.Optional[ty.Callable[[str], State]] = None,
+) -> State:
     with db.cursor() as cur:
         cur.execute(
             "select value from users_state where user_id=%s and key=%s",
@@ -143,7 +156,7 @@ DO UPDATE SET value=EXCLUDED.value
 """
 
 
-def set_state(db, user_id: int, key: str, value) -> None:
+def set_state(db: DB, user_id: int, key: str, value: ty.Any) -> None:
     with db.cursor() as cur:
         cur.execute(_SET_STATE_SQL, (user_id, key, value))
 
@@ -153,6 +166,6 @@ _DELETE_USER_SQL = """
 """
 
 
-def delete(db, user_id: int) -> None:
+def delete(db: DB, user_id: int) -> None:
     with db.cursor() as cur:
         cur.execute(_DELETE_USER_SQL, (user_id,))

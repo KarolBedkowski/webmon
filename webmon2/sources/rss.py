@@ -63,6 +63,7 @@ class RssSource(AbstractSource):
                 for entry in entries:
                     entry.icon = new_state.icon
 
+            assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
@@ -195,6 +196,7 @@ class RssSource(AbstractSource):
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        assert source.settings is not None
         return {
             "text": source.name,
             "title": source.name,
@@ -214,9 +216,13 @@ class RssSource(AbstractSource):
         if not name:
             raise ValueError("missing text/title")
 
-        return model.Source(kind="rss", name=name, settings={"url": url})
+        src = model.Source(kind="rss", name=name, user_id=0, group_id=0)
+        src.settings = {"url": url}
+        return src
 
-    def _load_image(self, doc):
+    def _load_image(
+        self, doc: feedparser.FeedParserDict
+    ) -> ty.Optional[ty.Tuple[str, bytes]]:
         _LOG.debug("source %d load image", self._source.id)
         feed = doc.feed
         image_href = None
@@ -231,7 +237,7 @@ class RssSource(AbstractSource):
 
         return self._load_binary(image_href) if image_href else None
 
-    def _check_sy_updateperiod(self, feed) -> None:
+    def _check_sy_updateperiod(self, feed: feedparser.FeedParserDict) -> None:
         if self._source.interval:
             return
 
@@ -257,6 +263,7 @@ class RssSource(AbstractSource):
         self._updated_source = self._updated_source or self._source.clone()
 
         if new_url:
+            assert self._updated_source.settings is not None
             self._updated_source.settings["url"] = new_url
 
         if interval:
@@ -265,9 +272,9 @@ class RssSource(AbstractSource):
 
 
 def _fail_error(
-    state: model.SourceState, doc, status: int
+    state: model.SourceState, doc: feedparser.FeedParserDict, status: int
 ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
-    _LOG.error("load document error %d: state: %r %r", status, state, doc)
+    _LOG.error("load document error %r: state: %r %r", status, state, doc)
     summary = f"Loading page error: {status}"
     feed = doc.get("feed")
     if feed:
@@ -276,7 +283,12 @@ def _fail_error(
     return state.new_error(summary), []
 
 
-def _get_val(entry, key: str, default=None):
+T = ty.Any
+
+
+def _get_val(
+    entry: ty.Dict[str, ty.Any], key: str, default: ty.Optional[T] = None
+) -> ty.Optional[T]:
     val = entry.get(key)
     if val is None:
         return default
@@ -290,7 +302,9 @@ def _get_val(entry, key: str, default=None):
     return str(val).strip()
 
 
-def _filter_entries_updated(entries, timestamp):
+def _filter_entries_updated(
+    entries: ty.Iterable[feedparser.FeedParserDict], timestamp: float
+) -> ty.Iterable[feedparser.FeedParserDict]:
     now = time.localtime(time.time())
     for entry in entries:
         updated_parsed = entry.get("updated_parsed")
@@ -299,6 +313,7 @@ def _filter_entries_updated(entries, timestamp):
             yield entry
 
         try:
+            assert updated_parsed is not None
             if time.mktime(updated_parsed) > timestamp:
                 yield entry
         except (ValueError, TypeError):

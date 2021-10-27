@@ -34,19 +34,19 @@ class AbstractSource:
     )
 
     def __init__(
-        self, source: model.Source, sys_settings: ty.Dict[str, ty.Any]
+        self, source: model.Source, sys_settings: model.ConfDict
     ) -> None:
         super().__init__()
         self._source = source
         self._updated_source = None  # type: ty.Optional[model.Source]
-        self._conf = common.apply_defaults(
+        self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings,
             source.settings,
         )
         _LOG.debug("Source %s: conf: %r", source.id, self._conf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return " ".join(
             (
                 "<",
@@ -57,7 +57,7 @@ class AbstractSource:
             )
         )
 
-    def validate(self):
+    def validate(self) -> None:
         for name, error in self.validate_conf(self._conf):
             raise common.ParamError(f"parameter {name} error {error}")
 
@@ -66,7 +66,9 @@ class AbstractSource:
         return self._updated_source
 
     @classmethod
-    def validate_conf(cls, *confs) -> ty.Iterable[ty.Tuple[str, str]]:
+    def validate_conf(
+        cls, *confs: model.ConfDict
+    ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """
@@ -94,7 +96,7 @@ class AbstractSource:
         raise NotImplementedError()
 
     def _load_binary(
-        self, url, only_images=True
+        self, url: str, only_images: bool = True
     ) -> ty.Optional[ty.Tuple[str, bytes]]:
         _LOG.debug("loading binary %s", url)
         try:
@@ -133,7 +135,7 @@ class AbstractSource:
 
     @classmethod
     def get_param_types(cls) -> ty.Dict[str, str]:
-        return {param.name: param.type for param in cls.params}
+        return {param.name: param.type for param in cls.params}  # type: ignore
 
     @classmethod
     def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
@@ -159,6 +161,8 @@ _IMAGE_TYPES = set(
 )
 
 
-def _check_content_type(response, accepted: ty.Iterable[str]) -> bool:
+def _check_content_type(
+    response: requests.Response, accepted: ty.Iterable[str]
+) -> bool:
     content_type = response.headers["Content-Type"]
     return content_type in accepted

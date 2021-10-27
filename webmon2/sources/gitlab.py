@@ -14,6 +14,7 @@ import typing as ty
 from datetime import datetime, timedelta
 
 import gitlab
+import gitlab.v4.objects as gobj
 
 from webmon2 import common, model
 
@@ -47,7 +48,7 @@ class AbstractGitLabSource(AbstractSource):
 
     @staticmethod
     def _gitlab_check_project_updated(
-        project, last_updated: ty.Optional[datetime]
+        project: gobj.projects.Project, last_updated: ty.Optional[datetime]
     ) -> ty.Optional[str]:
         """Verify last repository update date.
         Returns: None when repo is not updated or formatted minimal date
@@ -69,24 +70,24 @@ class AbstractGitLabSource(AbstractSource):
 
         return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def _gitlab_get_project(self):
+    def _gitlab_get_project(self) -> ty.Optional[gobj.projects.Project]:
         """Create project object according to configuration."""
         conf = self._conf
-        if conf.get("gitlab_url") and conf.get("gitlab_token"):
+        url = conf.get("gitlab_url")
+        token = conf.get("gitlab_token")
+        if url and token:
             try:
-                gitl = gitlab.Gitlab(
-                    conf.get("gitlab_url"), conf.get("gitlab_token")
-                )
+                gitl = gitlab.Gitlab(url, token)  # type: ignore
                 _LOG.debug("gitlab: %r", gitl)
-                return gitl.projects.get(conf["project"])
+                return gitl.projects.get(conf["project"])  # type: ignore
 
             except Exception as err:
                 raise common.InputError(self, "Gitlab auth error: " + str(err))
 
         return None
 
-    def _get_favicon(self):
-        url = self._conf["gitlab_url"]
+    def _get_favicon(self) -> str:
+        url: str = self._conf["gitlab_url"]
         if not url.endswith("/"):
             url += "/"
 
@@ -103,7 +104,9 @@ class AbstractGitLabSource(AbstractSource):
         raise NotImplementedError()
 
 
-def _build_entry(source: model.Source, project, content: str) -> model.Entry:
+def _build_entry(
+    source: model.Source, project: gobj.projects.Project, content: str
+) -> model.Entry:
     entry = model.Entry.for_source(source)
     entry.url = project.web_url
     entry.title = source.name
@@ -187,15 +190,19 @@ class GitLabCommits(AbstractGitLabSource):
         raise NotImplementedError()
 
 
-def _format_gl_commit_short(commit, _full_message: bool) -> str:
-    return (
+def _format_gl_commit_short(
+    commit: gobj.commits.ProjectCommit, _full_message: bool
+) -> str:
+    return str(
         commit.committed_date
         + " "
         + commit.message.strip().split("\n", 1)[0].rstrip()
     )
 
 
-def _format_gl_commit_long(commit, full_message: bool) -> str:
+def _format_gl_commit_long(
+    commit: gobj.commits.ProjectCommit, full_message: bool
+) -> str:
     result = [
         "### " + commit.committed_date,
         "Author: " + commit.committer_name,
@@ -251,7 +258,7 @@ class GitLabTagsSource(AbstractGitLabSource):
             content = "\n\n".join(filter(None, map(_format_gl_tag, tags)))
         except Exception as err:
             _LOG.exception("gitlab load error: %s", err)
-            raise common.InputError(self, err)
+            raise common.InputError(self, str(err))
 
         new_state = state.new_ok()
         self._state_update_icon(new_state)
@@ -260,7 +267,7 @@ class GitLabTagsSource(AbstractGitLabSource):
         entry.icon = new_state.icon
         return new_state, [entry]
 
-    def _state_update_icon(self, new_state):
+    def _state_update_icon(self, new_state: model.SourceState) -> None:
         if not new_state.icon:
             new_state.set_icon(self._load_binary(self._get_favicon()))
 
@@ -275,8 +282,8 @@ class GitLabTagsSource(AbstractGitLabSource):
         raise NotImplementedError()
 
 
-def _format_gl_tag(tag) -> str:
-    res = tag.name
+def _format_gl_tag(tag: gobj.tags.ProjectTag) -> str:
+    res: str = tag.name
     commit_date = tag.commit.get("committed_date")
     if commit_date:
         res += " " + commit_date
@@ -355,7 +362,9 @@ class GitLabReleasesSource(AbstractGitLabSource):
 
 
 def _build_gl_release_entry(
-    source: model.Source, project, release
+    source: model.Source,
+    project: gobj.projects.Project,
+    release: gobj.releases.ProjectRelease,
 ) -> model.Entry:
     res = [
         "### ",

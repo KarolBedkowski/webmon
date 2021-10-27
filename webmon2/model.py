@@ -21,18 +21,21 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 
+from psycopg2 import extensions
+
 from webmon2 import common, formatters
 
 _LOG = logging.getLogger(__name__)
+
+
+tyCursor = ty.Type[extensions.cursor]
+ConfDict = ty.Dict[str, ty.Any]
 
 
 class MailReportMode(IntEnum):
     NO_SEND = 0
     AS_GROUP_SOURCE = 1
     SEND = 2
-
-
-Row = ty.Dict[str, ty.Any]
 
 
 @dataclass
@@ -51,7 +54,7 @@ class SourceGroup:
     # number of sources in group / not in source_groups table
     sources_count: int = 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     def clone(self) -> SourceGroup:
@@ -66,7 +69,7 @@ class SourceGroup:
         return sgr
 
     @classmethod
-    def from_row(cls, row: Row) -> SourceGroup:
+    def from_row(cls, row: tyCursor) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -75,7 +78,7 @@ class SourceGroup:
             mail_report=MailReportMode(row["source_group__mail_report"]),
         )
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "source_group__id": self.id,
             "source_group__name": self.name,
@@ -112,70 +115,64 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "default_score",
     )
 
-    def __init__(self, **args):
-        self.id: int = args.get("id")
-        self.group_id: int = args.get("group_id")
+    def __init__(self, user_id: int, name: str, kind: str, group_id: int):
+        self.id: int = 0
+        self.group_id: int = group_id
         # source kind name - using to select class supported this source
-        self.kind: str = args.get("kind")
-        self.name: str = args.get("name")
+        self.kind: str = kind
+        self.name: str = name
         # update interval
-        self.interval: str = args.get("interval")
+        self.interval: ty.Optional[str] = None
         # additional settings
-        self.settings: ty.Dict[str, ty.Any] = args.get("settings")
+        self.settings: ty.Optional[ty.Dict[str, ty.Any]] = None
         # filters configuration
-        self.filters: ty.List[ty.Dict[str, ty.Any]] = args.get("filters")
-        self.user_id: int = args.get("user_id")
+        self.filters: ty.List[ty.Dict[str, ty.Any]] = []
+        self.user_id: int = user_id
         # status of source
-        self.status: SourceStatus = args.get(
-            "status", SourceStatus.NOT_ACTIVATED
-        )
+        self.status: SourceStatus = SourceStatus.NOT_ACTIVATED
         # mail sending setting
-        self.mail_report: MailReportMode = args.get(
-            "mail_report", MailReportMode.AS_GROUP_SOURCE
-        )
+        self.mail_report: MailReportMode = MailReportMode.AS_GROUP_SOURCE
         # default score given for entries this source
-        self.default_score: int = args.get("default_score")
+        self.default_score: int = 0
 
-        self.group: SourceGroup = None
+        self.group: ty.Optional[SourceGroup] = None
         self.state: ty.Optional[SourceState] = None
         # is source has unread entries
         self.unread: ty.Optional[int] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     def clone(self) -> Source:
-        src = Source()
+        src = Source(
+            user_id=self.user_id,
+            kind=self.kind,
+            name=self.name,
+            group_id=self.group_id,
+        )
         src.id = self.id
-        src.group_id = self.group_id
-        src.kind = self.kind
-        src.name = self.name
         src.interval = self.interval
         src.settings = self.settings
         src.filters = self.filters
-        src.user_id = self.user_id
         src.status = self.status
         src.mail_report = self.mail_report
         src.default_score = self.default_score
         return src
 
     @classmethod
-    def from_row(cls, row: Row) -> Source:
-        source = Source()
+    def from_row(cls, row: tyCursor) -> Source:
+        source = Source(
+            user_id=row["source__user_id"],
+            kind=row["source__kind"],
+            name=row["source__name"],
+            group_id=row["source__group_id"],
+        )
         source.id = row["source__id"]
-        source.group_id = row["source__group_id"]
-        source.kind = row["source__kind"]
-        source.name = row["source__name"]
         source.interval = row["source__interval"]
         row_keys = row.keys()
-        source.settings = common.get_json_if_exists(
-            row_keys, "source__settings", row
-        )
-        source.filters = common.get_json_if_exists(
-            row_keys, "source__filters", row
-        )
+        source.settings = get_json_if_exists(row_keys, "source__settings", row)
+        source.filters = get_json_if_exists(row_keys, "source__filters", row)
         source.status = SourceStatus(row["source__status"])
-        source.user_id = row["source__user_id"]
         mail_report = row["source__mail_report"]
         if mail_report is None:
             source.mail_report = MailReportMode.AS_GROUP_SOURCE
@@ -184,7 +181,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.default_score = row["source__default_score"]
         return source
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "source__group_id": self.group_id,
             "source__kind": self.kind,
@@ -220,6 +217,10 @@ class SourceStateStatus(Enum):
     OK = "ok"
 
 
+States = ty.Dict[str, ty.Any]
+IconData = ty.Tuple[str, bytes]
+
+
 class SourceState:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
         "source_id",
@@ -235,36 +236,28 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "icon_data",
     )
 
-    def __init__(self, **args):
-        self.source_id: int = args.get("source_id")
+    def __init__(self) -> None:
+        self.source_id: int = 0
         # next source update time
-        self.next_update: ty.Optional[datetime.datetime] = args.get(
-            "next_update"
-        )
+        self.next_update: ty.Optional[datetime] = None
         # last source update time
-        self.last_update: ty.Optional[datetime.datetime] = args.get(
-            "last_update"
-        )
+        self.last_update: ty.Optional[datetime] = None
         # last source update failed time
-        self.last_error: ty.Optional[datetime.datetime] = args.get(
-            "last_error"
-        )
+        self.last_error: ty.Optional[datetime] = None
         # number of failed updates since last success update
-        self.error_counter: int = args.get("error_counter")
+        self.error_counter: int = 0
         # number of success updated since last failure
-        self.success_counter: int = args.get("success_counter")
+        self.success_counter: int = 0
         # source updates status
-        self.status: ty.Optional[SourceStateStatus] = args.get(
-            "status", SourceStateStatus.NEW
-        )
-        self.error: ty.Optional[str] = args.get("error")
+        self.status: ty.Optional[SourceStateStatus] = None
+        self.error: ty.Optional[str] = None
         # additional informations stored by source loader
-        self.state: ty.Optional[ty.Dict[str, ty.Any]] = args.get("state")
+        self.state: ty.Optional[States] = None
         # icon hash
-        self.icon: ty.Optional[str] = args.get("icon")
+        self.icon: ty.Optional[str] = None
 
         # icon as binary data; loaded from binaries
-        self.icon_data: ty.Tuple[str, str] = args.get("icon_data")
+        self.icon_data: ty.Optional[IconData] = None
 
     @staticmethod
     def new(source_id: int) -> SourceState:
@@ -283,7 +276,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.icon = self.icon
         return new_state
 
-    def new_ok(self, **states) -> SourceState:
+    def new_ok(self, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -297,7 +290,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_error(self, error: str, **states) -> SourceState:
+    def new_error(self, error: str, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.error = error
@@ -311,7 +304,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def new_not_modified(self, **states) -> SourceState:
+    def new_not_modified(self, **states: ty.Any) -> SourceState:
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -325,16 +318,16 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.update_state(states)
         return state
 
-    def set_state(self, key: str, value):
+    def set_state(self, key: str, value: ty.Any) -> None:
         if self.state is None:
             self.state = {key: value}
         else:
             self.state[key] = value
 
-    def get_state(self, key: str, default=None):
+    def get_state(self, key: str, default: ty.Any = None) -> ty.Any:
         return self.state.get(key, default) if self.state else default
 
-    def update_state(self, states: ty.Optional[ty.Dict[str, ty.Any]]):
+    def update_state(self, states: ty.Optional[States]) -> None:
         if not states:
             return
 
@@ -343,7 +336,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
         self.state.update(states)
 
-    def set_icon(self, content_type_data) -> ty.Optional[str]:
+    def set_icon(
+        self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
+    ) -> ty.Optional[str]:
         if not content_type_data:
             return self.icon
 
@@ -351,10 +346,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.icon_data = content_type_data
         return self.icon
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "source_state__source_id": self.source_id,
             "source_state__next_update": self.next_update,
@@ -369,7 +364,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: Row) -> SourceState:
+    def from_row(cls, row: tyCursor) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -380,9 +375,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
         row_keys = row.keys()
-        state.state = common.get_json_if_exists(
-            row_keys, "source_state__state", row
-        )
+        state.state = get_json_if_exists(row_keys, "source_state__state", row)
         state.icon = row["source_state__icon"]
         return state
 
@@ -401,6 +394,9 @@ class EntryReadMark(IntEnum):
     READ = 1
     # opened and read
     MANUAL_READ = 2
+
+
+OptValue = ty.TypeVar("OptValue")
 
 
 class Entry:  # pylint: disable=too-many-instance-attributes
@@ -424,9 +420,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         "score",
     )
 
-    def __init__(self, id_=None, source_id=None):
-        self.id: int = id_
-        self.source_id: int = source_id
+    def __init__(
+        self, id_: ty.Optional[int] = None, source_id: ty.Optional[int] = None
+    ):
+        self.id: int = id_  # type: ignore
+        self.source_id: int = source_id  # type: ignore
         # time of entry updated
         self.updated: ty.Optional[datetime] = None
         # time of entry created
@@ -436,7 +434,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         # is entry is marked
         self.star_mark: bool = False
         # entry status, new or updated for changed entries (not used)
-        self.status: EntryStatus = None
+        self.status: EntryStatus = EntryStatus.NEW
         # unique hash for entry
         self.oid: ty.Optional[str] = None
         self.title: ty.Optional[str] = None
@@ -445,16 +443,16 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.content: ty.Optional[str] = None
         # additional information about entry; ie. content type
         self.opts: ty.Optional[ty.Dict[str, ty.Any]] = None
-        self.user_id: int = None
+        self.user_id: int = None  # type: ignore
         # hash of icon, from binaries table
         self.icon: ty.Optional[str] = None
         self.score = 0  # type; int
 
         # icon as data - tuple(content type, data)
         self.icon_data: ty.Optional[ty.Tuple[str, ty.Any]] = None
-        self.source: Source = None
+        self.source: ty.Optional[Source] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     def clone(self) -> Entry:
@@ -490,10 +488,12 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.oid = base64.b64encode(csum.digest()).decode("ascii")
         return self.oid
 
-    def get_opt(self, key: str, default=None):
+    def get_opt(
+        self, key: str, default: ty.Optional[OptValue] = None
+    ) -> ty.Optional[OptValue]:
         return self.opts.get(key, default) if self.opts else default
 
-    def set_opt(self, key: str, value):
+    def set_opt(self, key: str, value: ty.Any) -> None:
         if self.opts is None:
             self.opts = {}
 
@@ -522,7 +522,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def _get_content_type(self) -> ty.Optional[str]:
         return self.get_opt("content-type")
 
-    def _set_content_type(self, content_type: str):
+    def _set_content_type(self, content_type: str) -> None:
         if self.opts is None:
             self.opts = {}
 
@@ -533,7 +533,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def get_summary(self) -> ty.Optional[str]:
         return formatters.entry_summary(self.content, self._get_content_type())
 
-    def validate(self):
+    def validate(self) -> None:
         if not isinstance(self.updated, datetime):
             _LOG.error("wrong entry.updated:  %r (%r)", self.updated, self)
 
@@ -554,7 +554,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
         return self.icon
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "entry__source_id": self.source_id,
             "entry__updated": self.updated,
@@ -574,7 +574,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: Row) -> Entry:
+    def from_row(cls, row: tyCursor) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -586,7 +586,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.title = row["entry__title"]
         entry.url = row["entry__url"]
         row_keys = row.keys()
-        entry.opts = common.get_json_if_exists(row_keys, "entry__opts", row)
+        entry.opts = get_json_if_exists(row_keys, "entry__opts", row)
         if "entry__content" in row_keys:
             entry.content = row["entry__content"]
 
@@ -608,11 +608,11 @@ class Setting:
     # user id if settings is for given user
     user_id: ty.Optional[int] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: Row) -> Setting:
+    def from_row(cls, row: tyCursor) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
@@ -625,7 +625,7 @@ class Setting:
             user_id=row["setting__user_id"],
         )
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "setting__key": self.key,
             "setting__value": json.dumps(self.value),
@@ -647,7 +647,7 @@ class User:
     totp: ty.Optional[str] = None
 
     @classmethod
-    def from_row(cls, row: Row) -> User:
+    def from_row(cls, row: tyCursor) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -658,7 +658,7 @@ class User:
             totp=row["user__totp"],
         )
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "user__id": self.id,
             "user__login": self.login,
@@ -690,14 +690,14 @@ class ScoringSett:
     score_change: int = 0
     id: ty.Optional[int] = None  # pylint: disable=redefined-builtin
 
-    def __str__(self):
+    def __str__(self) -> str:
         return common.obj2str(self)
 
-    def valid(self):
-        return self.user_id and self.pattern and self.pattern.strip()
+    def valid(self) -> bool:
+        return bool(self.user_id and self.pattern and self.pattern.strip())
 
     @classmethod
-    def from_row(cls, row: Row) -> ScoringSett:
+    def from_row(cls, row: tyCursor) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],
@@ -706,7 +706,7 @@ class ScoringSett:
             score_change=row["scoring_sett__score_change"],
         )
 
-    def to_row(self) -> Row:
+    def to_row(self) -> common.Row:
         return {
             "scoring_sett__id": self.id,
             "scoring_sett__user_id": self.user_id,
@@ -714,3 +714,25 @@ class ScoringSett:
             "scoring_sett__active": self.active,
             "scoring_sett__score_change": self.score_change,
         }
+
+
+UserSources = ty.Dict[int, Source]
+
+
+def get_json_if_exists(
+    row_keys: ty.KeysView[str],
+    key: str,
+    row: tyCursor,
+    default: ty.Any = None,
+) -> ty.Any:
+    if key not in row_keys:
+        return default
+
+    value = row[key]
+    if value is None:
+        return default
+
+    if not isinstance(value, str):
+        return value
+
+    return json.loads(value) if value else default

@@ -74,6 +74,7 @@ class FileSource(AbstractSource):
             entry.content = content
             entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
+            assert self._source.interval is not None
             new_state.next_update = (
                 datetime.datetime.now()
                 + datetime.timedelta(
@@ -86,6 +87,7 @@ class FileSource(AbstractSource):
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        assert source.settings is not None
         return {
             "text": source.name,
             "title": source.name,
@@ -107,6 +109,11 @@ class FileSource(AbstractSource):
             raise ValueError("missing text/title")
 
         filename = url[7:]
-        return model.Source(
-            kind=cls.name, name=name, settings={"filename": filename}
+        src = model.Source(
+            user_id=0,
+            group_id=0,
+            kind=cls.name,
+            name=name,
         )
+        src.settings = {"filename": filename}
+        return src

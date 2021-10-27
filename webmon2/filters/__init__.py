@@ -12,7 +12,7 @@ Filters
 import logging
 import typing as ty
 
-from webmon2 import common, model
+from webmon2 import common, database, model
 
 from ._abstract import AbstractFilter
 
@@ -23,10 +23,11 @@ __all__ = (
     "filter_by",
     "filters_name",
     "filters_info",
+    "AbstractFilter",
 )
 
 
-def _load_filters():
+def _load_filters() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
     from . import (
         diff,
@@ -54,7 +55,7 @@ class UnknownFilterException(Exception):
     pass
 
 
-def get_filter(conf) -> ty.Optional[AbstractFilter]:
+def get_filter(conf: ty.Dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
     """Get filter object by configuration"""
     name = conf.get("name")
     if not name:
@@ -64,18 +65,18 @@ def get_filter(conf) -> ty.Optional[AbstractFilter]:
     rcls = common.find_subclass(AbstractFilter, name)
     _LOG.debug("found filter %r for %s", rcls, name)
     if rcls:
-        fltr = rcls(conf)
+        fltr: AbstractFilter = rcls(conf)
         return fltr
 
     raise UnknownFilterException()
 
 
 def filter_by(
-    filters_conf: ty.List[ty.Dict],
+    filters_conf: ty.List[ty.Dict[str, ty.Any]],
     entries: model.Entries,
     prev_state: model.SourceState,
     curr_state: model.SourceState,
-    db,
+    db: database.DB,
 ) -> model.Entries:
     """Apply filters by configuration to entries list."""
 

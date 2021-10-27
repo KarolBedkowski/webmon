@@ -15,6 +15,8 @@ import typing as ty
 
 from webmon2 import model
 
+from ._db import DB
+
 _LOG = logging.getLogger(__name__)
 
 
@@ -29,7 +31,7 @@ left join user_settings us on us.key = s.key and us.user_id=%s
 """
 
 
-def get_all(db, user_id: int) -> ty.Iterable[model.Setting]:
+def get_all(db: DB, user_id: int) -> ty.Iterable[model.Setting]:
     """Get all settings for given user."""
     if not user_id:
         raise ValueError("missing user_id")
@@ -51,7 +53,7 @@ where s.key=%s
 """
 
 
-def get(db, key: str, user_id: int) -> ty.Optional[model.Setting]:
+def get(db: DB, key: str, user_id: int) -> ty.Optional[model.Setting]:
     """Get one setting for given user"""
     with db.cursor() as cur:
         cur.execute(_GET_SQL, (user_id, key))
@@ -66,7 +68,7 @@ values (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
 """
 
 
-def save_all(db, settings: ty.List[model.Setting]) -> None:
+def save_all(db: DB, settings: ty.List[model.Setting]) -> None:
     """Save all settings"""
     rows = [setting.to_row() for setting in settings]
 
@@ -78,12 +80,17 @@ def save_all(db, settings: ty.List[model.Setting]) -> None:
         cur.executemany(_INSERT_SQL, rows)
 
 
-def get_value(db, key: str, user_id: int, default=None) -> ty.Any:
+Value = ty.Any
+
+
+def get_value(
+    db: DB, key: str, user_id: int, default: ty.Optional[Value] = None
+) -> Value:
     """Get value of setting for given user"""
     setting = get(db, key, user_id)
     return setting.value if setting else default
 
 
-def get_dict(db, user_id: int) -> ty.Dict[str, ty.Any]:
+def get_dict(db: DB, user_id: int) -> ty.Dict[str, ty.Any]:
     """Get dictionary of setting for given user."""
     return {setting.key: setting.value for setting in get_all(db, user_id)}

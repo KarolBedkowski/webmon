@@ -41,7 +41,7 @@ class NDiff(AbstractFilter):
         ),
     ]  # type: ty.List[common.SettingDef]
 
-    def validate(self):
+    def validate(self) -> None:
         super().validate()
         threshold = self._conf.get("threshold")
         if (
@@ -57,6 +57,8 @@ class NDiff(AbstractFilter):
         prev_state: model.SourceState,
         curr_state: model.SourceState,
     ) -> model.Entries:
+        assert self.db
+
         if not entries:
             return
 
