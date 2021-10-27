@@ -61,6 +61,7 @@ def _filter_metrics_reqs(record: logging.LogRecord) -> bool:
     """Filter that remove successful request to /metrics endpoint"""
     return (
         record.levelno != logging.INFO
+        or record.name != "werkzeug"
         or '/metrics HTTP/1.1" 200' not in record.getMessage()
     )
 
@@ -91,12 +92,14 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
         log_werkzeug.setLevel(logging.WARN)
+        logger.addFilter(_filter_metrics_reqs)
         log_werkzeug.addFilter(_filter_metrics_reqs)
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
         log_werkzeug.setLevel(logging.WARN)
+        logger.addFilter(_filter_metrics_reqs)
         log_werkzeug.addFilter(_filter_metrics_reqs)
 
     if filename:
