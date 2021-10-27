@@ -28,6 +28,7 @@ from flask import (
     session,
     url_for,
 )
+from werkzeug.exceptions import NotFound
 
 try:
     from flask_minify import minify
@@ -232,22 +233,17 @@ _REQUEST_LATENCY = Histogram(
 )
 
 
-def simple_not_found(_env: ty.Any, resp: Response) -> ty.Any:
-    resp("400 Notfound", [("Content-Type", "text/plain")])
-    return [b"Not found"]
-
-
 def create_app(args: Namespace, conf: ConfigParser) -> Flask:
     web_root = conf.get("web", "root")
     app = _create_app(args.debug, web_root, conf)
 
     if web_root != "/":
         app.wsgi_app = DispatcherMiddleware(  # type: ignore
-            simple_not_found, {web_root: app.wsgi_app}
+            NotFound(), {web_root: app.wsgi_app}
         )
 
     app.wsgi_app = ProxyFix(  # type: ignore
-        app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0
+        app.wsgi_app, x_proto=1, x_host=1, x_port=1, x_prefix=1
     )
     return app
 
