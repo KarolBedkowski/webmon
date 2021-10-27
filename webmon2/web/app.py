@@ -28,6 +28,7 @@ from flask import (
     session,
     url_for,
 )
+from flask.logging import default_handler
 from werkzeug.exceptions import NotFound
 
 try:
@@ -36,7 +37,7 @@ except ImportError:
     minify = None
 
 from gevent.pool import Pool
-from gevent.pywsgi import WSGIServer
+from gevent.pywsgi import LoggingLogAdapter, WSGIServer
 from prometheus_client import Counter, Histogram
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -99,6 +100,8 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         instance_relative_config=True,
         template_folder=template_folder,
     )
+
+    app.logger.removeHandler(default_handler)
 
     if conf.getboolean("web", "minify"):
         if minify:
@@ -245,6 +248,7 @@ def create_app(args: Namespace, conf: ConfigParser) -> Flask:
     app.wsgi_app = ProxyFix(  # type: ignore
         app.wsgi_app, x_proto=1, x_host=1, x_port=1, x_prefix=1
     )
+
     return app
 
 
@@ -256,5 +260,10 @@ def start_app(args: Namespace, conf: ConfigParser) -> None:
         app.run(host=host, port=port, debug=True)
     else:
         pool = Pool(conf.getint("web", "pool", fallback=10))
-        http_server = WSGIServer((host, port), app, spawn=pool)
+        http_server = WSGIServer(
+            (host, port),
+            app,
+            spawn=pool,
+            log=LoggingLogAdapter(logging.getLogger("werkzeug")),
+        )
         http_server.serve_forever()
