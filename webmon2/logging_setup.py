@@ -17,6 +17,8 @@ import typing as ty
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 
+_ = ty
+
 
 class ColorFormatter(logging.Formatter):
     """Formatter for logs that color messages according to level."""
@@ -57,7 +59,9 @@ def _create_dirs_for_log(filename: str) -> str:
     return log_fullpath
 
 
-class NoMetricsLogFilter(logging.Filter):
+class NoMetricsLogFilter(
+    logging.Filter
+):  # pylint: disable=too-few-public-methods
     def filter(self, record: logging.LogRecord) -> bool:
         """Filter that remove successful request to /metrics endpoint"""
         return (

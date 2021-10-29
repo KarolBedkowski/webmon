@@ -28,19 +28,18 @@ from flask import (
     session,
     url_for,
 )
-from flask.logging import default_handler
+from gevent.pool import Pool
+from gevent.pywsgi import LoggingLogAdapter, WSGIServer
+from prometheus_client import Counter, Histogram
 from werkzeug.exceptions import NotFound
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from flask_minify import minify
 except ImportError:
     minify = None
 
-from gevent.pool import Pool
-from gevent.pywsgi import LoggingLogAdapter, WSGIServer
-from prometheus_client import Counter, Histogram
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
 
 from webmon2 import database, worker
 
@@ -100,8 +99,6 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         instance_relative_config=True,
         template_folder=template_folder,
     )
-
-    app.logger.removeHandler(default_handler)
 
     if conf.getboolean("web", "minify"):
         if minify:

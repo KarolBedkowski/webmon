@@ -107,6 +107,18 @@ def get_all(
         return [_build_source(row, user_groups) for row in cur]
 
 
+def get_all_dict(
+    db: DB,
+    user_id: int,
+    group_id: ty.Optional[int] = None,
+    status: ty.Optional[str] = None,
+    order: ty.Optional[str] = None,
+) -> ty.Dict[int, model.Source]:
+    return {
+        src.id: src for src in get_all(db, user_id, group_id, status, order)
+    }
+
+
 def _build_source(
     row: tyCursor, user_groups: ty.Dict[int, model.SourceGroup]
 ) -> model.Source:

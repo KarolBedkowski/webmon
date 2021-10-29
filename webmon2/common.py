@@ -326,7 +326,9 @@ def parse_form_list_data(
 CacheFuncRes = ty.TypeVar("CacheFuncRes")
 
 
-def _cache(func: ty.Callable[..., CacheFuncRes]) -> ty.Any:
+def _cache(
+    func: ty.Callable[..., CacheFuncRes]
+) -> ty.Callable[..., CacheFuncRes]:
     """Run function once and cache results."""
 
     def wrapper(*args: ty.Any, **kwargs: ty.Any) -> CacheFuncRes:
@@ -342,4 +344,6 @@ def _cache(func: ty.Callable[..., CacheFuncRes]) -> ty.Any:
 
 
 # functools.cache is available in 3.9+
-cache = functools.cache if hasattr(functools, "cache") else _cache
+cache: ty.Callable[[ty.Callable[..., ty.Any]], ty.Any] = (
+    functools.cache if hasattr(functools, "cache") else _cache  # type: ignore
+)

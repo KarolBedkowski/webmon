@@ -169,7 +169,7 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
     if not user_id:
         raise ValueError("missing user_id")
 
-    user_sources = {src.id: src for src in sources.get_all(db, user_id)}
+    user_sources = sources.get_all_dict(db, user_id)
 
     with db.cursor() as cur:
         cur.execute(_GET_STARRED_ENTRIES_SQL, {"user_id": user_id})
@@ -181,7 +181,7 @@ def get_history(db: DB, user_id: int) -> model.Entries:
     if not user_id:
         raise ValueError("missing user_id")
 
-    user_sources = {src.id: src for src in sources.get_all(db, user_id)}
+    user_sources = sources.get_all_dict(db, user_id)
 
     with db.cursor() as cur:
         cur.execute(
@@ -198,7 +198,17 @@ def get_total_count(
     group_id: ty.Optional[int] = None,
     unread: bool = True,
 ) -> int:
-    """Get number of read/all entries for user/source/group"""
+    """Get number of read/all entries for user/source/group.
+
+    Args:
+        db: database object
+        user_id: user_id
+        source_id: optional source id to filter entries
+        group_id: optional sources group id to filter entries
+        unread: count only unread entries or all
+    Returns:
+        number of entries
+    """
     if not user_id and not source_id and not group_id:
         raise ValueError("missing user_id/source_id/group_id")
 
@@ -241,8 +251,10 @@ _ORDER_SQL = {
 
 
 def _get_order_sql(order: ty.Optional[str]) -> str:
+    """Get sql part for order entries."""
     if not order:
         return " order by e.updated"
+
     return _ORDER_SQL.get(order, " order by e.updated")
 
 
@@ -259,6 +271,16 @@ def find(
 ) -> model.Entries:
     """Find entries for user/source/group unread or all.
     Limit and offset work only for getting all entries.
+
+    Args:
+        db: database object
+        user_id: user id
+        source_id: optional source to filter entries
+        group_id: optional sources group id to filter entries
+        unread: get only unread entries
+        offset: get entries from `offset` index
+        limit: get only `limit` number of entries
+        order: optional sorting
     """
     args = {
         "limit": limit or 25,
@@ -276,9 +298,7 @@ def find(
 
     _LOG.debug("find(%r): %s", args, sql)
 
-    user_sources = {
-        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
-    }
+    user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
     with db.cursor() as cur:
         cur.execute(sql, args)
@@ -298,6 +318,14 @@ def find_fulltext(
     """Find entries for user by full-text search on title or title and content.
     Search in source (if given source_id) or in group (if given group_id)
     or in all entries given user
+
+    Args:
+        db: database object
+        user_id: user id
+        query: expression to look for
+        group_id: optional sources group id to filter entries
+        source_id: optional source to filter entries
+        order: optional sorting
     """
     args = {
         "user_id": user_id,
@@ -320,9 +348,7 @@ def find_fulltext(
 
     sql += _get_order_sql(order)
 
-    user_sources = {
-        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
-    }
+    user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
     with db.cursor() as cur:
         cur.execute(sql, args)
@@ -331,9 +357,7 @@ def find_fulltext(
 
 def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
-    user_sources = {
-        src.id: src for src in sources.get_all(db, user_id, group_id=group_id)
-    }
+    user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
     with db.cursor() as cur:
         cur.execute(_GET_ENTRIES_BY_GROUP_FEED_SQL, {"group_id": group_id})
         yield from _yield_entries(cur, user_sources)
@@ -566,9 +590,27 @@ def mark_read(
     read: model.EntryReadMark = model.EntryReadMark.READ,
     ids: ty.Optional[ty.List[int]] = None,
 ) -> int:
-    """Change read mark for given entry"""
-    if not (entry_id or (user_id and (max_id or ids))):
-        raise ValueError("missing entry_id/max_id/ids/user")
+    """Change read mark for given entry.
+    If `entry_id` is given - mark only this one entry; else if `ids` is given -
+    mark entries from this list; else if `max_id` is given - mark entries in
+    range `min_id` (or 0) to `max_id` including.
+
+    One of: `entry_id`, `max_id`, `ids` is required
+
+    Args:
+        db: database obj
+        user_id: user id (required)
+        entry_id: optional entry id to mark
+        min_id, max_id: optional entries id range
+        read: status to set
+        ids: list of entries id to set
+    Return:
+        number of changed entries
+    """
+    if not user_id:
+        raise ValueError("missing user_id")
+    if not (entry_id or max_id or ids):
+        raise ValueError("missing entry_id/max_id/ids")
 
     _LOG.debug(
         "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, user_id=%r",
@@ -581,8 +623,8 @@ def mark_read(
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s",
-                (read.value, entry_id),
+                "update entries set read_mark=%s where id=%s and user_id=%s",
+                (read.value, entry_id, user_id),
             )
         elif ids:
             cur.execute(
@@ -604,6 +646,16 @@ def mark_read(
 def mark_all_read(
     db: DB, user_id: int, max_date: ty.Union[None, date, datetime] = None
 ) -> int:
+    """Mark all entries for given user as read; optionally mark only entries
+    older than `max_date`.
+
+    Args:
+        db: database object
+        user_id: user id
+        max_date: optional date or datetime to mark entries older than this date
+    Return:
+        number of updated items
+    """
     with db.cursor() as cur:
         if max_date:
             cur.execute(
@@ -682,6 +734,17 @@ def find_next_entry_id(
     unread: bool = True,
     order: ty.Optional[str] = None,
 ) -> ty.Optional[int]:
+    """Find next entry to given.
+
+    Args:
+        db: database object
+        user_id: user id (required)
+        entry_id: current entry id
+        unread: look only for unread entries
+        order: optional entries sorting
+    Return:
+        next entry id if exists or None
+    """
     with db.cursor() as cur:
         args = {
             "entry_id": entry_id,
@@ -703,6 +766,17 @@ def find_prev_entry_id(
     unread: bool = True,
     order: ty.Optional[str] = None,
 ) -> ty.Optional[int]:
+    """Find previous entry to given.
+
+    Args:
+        db: database object
+        user_id: user id (required)
+        entry_id: current entry id
+        unread: look only for unread entries
+        order: optional entries sorting
+    Return:
+        previous entry id if exists or None
+    """
     with db.cursor() as cur:
         args = {
             "entry_id": entry_id,

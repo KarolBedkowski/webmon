@@ -169,8 +169,11 @@ def manifest_json() -> Response:
 @BP.route("/binary/<datahash>")
 def binary(datahash: str) -> ty.Any:
     db = c.get_db()
-    data_content_type = database.binaries.get(db, datahash, session["user"])
-    if not data_content_type:
+    try:
+        data_content_type = database.binaries.get(
+            db, datahash, session["user"]
+        )
+    except database.NotFound:
         return abort(404)
     data, content_type = data_content_type
     g.non_action = True
