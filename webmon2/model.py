@@ -45,7 +45,7 @@ class SourceGroup:
     user_id: int
     # id of source group
     id: ty.Optional[int] = None
-    # feed url - hash part
+    # feed url - hash part; if feed is disable - feed = "off"
     feed: ty.Optional[str] = None
     # configuration of mail sending for this group
     mail_report: MailReportMode = MailReportMode.AS_GROUP_SOURCE

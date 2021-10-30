@@ -95,8 +95,9 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
 
     groups_map: ty.Dict[int, int] = {}
     for group in data.get("groups") or []:
-        grp = database.groups.find(db, user_id, group["name"])
-        if not grp:
+        try:
+            grp = database.groups.find(db, user_id, group["name"])
+        except database.NotFound:
             grp = model.SourceGroup(
                 user_id=user_id,
                 name=group["name"],
