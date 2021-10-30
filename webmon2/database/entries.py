@@ -25,113 +25,113 @@ _LOG = logging.getLogger(__name__)
 
 
 _GET_ENTRIES_SQL_MAIN = """
-select
-    e.id as entry__id,
-    e.source_id as entry__source_id,
-    e.updated as entry__updated,
-    e.created as entry__created,
-    e.read_mark as entry__read_mark,
-    e.star_mark as entry__star_mark,
-    e.status as entry__status,
-    e.oid as entry__oid,
-    e.title as entry__title,
-    e.url as entry__url,
-    e.opts as entry__opts,
-    e.content as entry__content,
-    e.user_id as entry__user_id,
-    e.icon as entry__icon,
-    e.score as entry__score
-from entries e
+SELECT
+    e.id AS entry__id,
+    e.source_id AS entry__source_id,
+    e.updated AS entry__updated,
+    e.created AS entry__created,
+    e.read_mark AS entry__read_mark,
+    e.star_mark AS entry__star_mark,
+    e.status AS entry__status,
+    e.oid AS entry__oid,
+    e.title AS entry__title,
+    e.url AS entry__url,
+    e.opts AS entry__opts,
+    e.content AS entry__content,
+    e.user_id AS entry__user_id,
+    e.icon AS entry__icon,
+    e.score AS entry__score
+FROM entries e
 """
 
 _GET_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.user_id = %(user_id)s
+WHERE e.user_id = %(user_id)s
 """
 )
 
 _GET_UNREAD_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where read_mark = %(unread)s and e.user_id=%(user_id)s
+WHERE read_mark = %(unread)s AND e.user_id=%(user_id)s
 """
 )
 
 _GET_UNREAD_ENTRIES_BY_SOURCE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where read_mark = %(unread)s
-    and e.source_id=%(source_id)s
-    and e.user_id=%(user_id)s
+WHERE read_mark = %(unread)s
+    AND e.source_id=%(source_id)s
+    AND e.user_id=%(user_id)s
 """
 )
 
 _GET_ENTRIES_BY_SOURCE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.source_id = %(source_id)s and e.user_id=%(user_id)s
+WHERE e.source_id = %(source_id)s AND e.user_id=%(user_id)s
 """
 )
 
 _GET_UNREAD_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-join sources s on s.id = e.source_id
-where read_mark = %(unread)s
-    and s.group_id = %(group_id)s
-    and e.user_id = %(user_id)s
+JOIN sources s ON s.id = e.source_id
+WHERE read_mark = %(unread)s
+    AND s.group_id = %(group_id)s
+    AND e.user_id = %(user_id)s
 """
 )
 
 _GET_ENTRIES_BY_GROUP_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-join sources s on s.id = e.source_id
-where s.group_id = %(group_id)s
-    and e.user_id=%(user_id)s
+JOIN sources s ON s.id = e.source_id
+WHERE s.group_id = %(group_id)s
+    AND e.user_id=%(user_id)s
 """
 )
 
 _GET_STARRED_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.star_mark = 1 and e.user_id=%(user_id)s
+WHERE e.star_mark = 1 AND e.user_id=%(user_id)s
 """
 )
 
 _GET_ENTRIES_BY_GROUP_FEED_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-join sources s on s.id = e.source_id
-where s.group_id = %(group_id)s
-order by e.id desc
-limit 100
+JOIN sources s ON s.id = e.source_id
+WHERE s.group_id = %(group_id)s
+ORDER BY e.id DESC
+LIMIT 100
 """
 )
 
 _GET_HISTORY_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where e.read_mark = %(read)s and e.user_id=%(user_id)s
-order by e.id
+WHERE e.read_mark = %(read)s AND e.user_id=%(user_id)s
+ORDER BY e.id
 """
 )
 
 _GET_ENTRIES_FULLTEXT_TITLE_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
-    and e.user_id=%(user_id)s
+WHERE to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
+    AND e.user_id=%(user_id)s
 """
 )
 
 _GET_ENTRIES_FULLTEXT_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
-where to_tsvector(content || ' ' || title)
+WHERE to_tsvector(content || ' ' || title)
         @@ to_tsquery('pg_catalog.simple', %(query)s)
-    and e.user_id=%(user_id)s
+    AND e.user_id=%(user_id)s
 """
 )
 
@@ -220,18 +220,18 @@ def get_total_count(
     }
 
     if source_id:
-        sql = "select count(1) from entries where source_id=%(source_id)s "
+        sql = "SELECT count(1) FROM entries WHERE source_id=%(source_id)s "
     elif group_id:
         sql = (
-            "select count(1) from entries e "
-            "join sources s on e.source_id = s.id "
-            "where s.group_id=%(group_id)s "
+            "SELECT count(1) FROM entries e "
+            "JOIN sources s ON e.source_id = s.id "
+            "WHERE s.group_id=%(group_id)s "
         )
     else:
-        sql = "select count(1) from entries where user_id=%(user_id)s"
+        sql = "SELECT count(1) FROM entries WHERE user_id=%(user_id)s"
 
     if unread:
-        sql += " and read_mark=%(unread)s"
+        sql += " AND read_mark=%(unread)s"
 
     _LOG.debug("get_total_count(%r): %s", args, sql)
 
@@ -294,7 +294,7 @@ def find(
     sql += _get_order_sql(order)
     if limit:
         # for unread there is no pagination
-        sql += " limit %(limit)s offset %(offset)s"
+        sql += " LIMIT %(limit)s OFFSET %(offset)s"
 
     _LOG.debug("find(%r): %s", args, sql)
 
@@ -340,11 +340,11 @@ def find_fulltext(
     )
 
     if source_id:
-        sql += " and e.source_id=%(source_id)s "
+        sql += " AND e.source_id=%(source_id)s "
     elif group_id:
-        sql += " and s.group_id=%(group_id)s "
+        sql += " AND s.group_id=%(group_id)s "
     else:
-        sql += " and e.user_id=%(user_id)s "
+        sql += " AND e.user_id=%(user_id)s "
 
     sql += _get_order_sql(order)
 
@@ -364,23 +364,23 @@ def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
 
 
 _GET_ENTRY_SQL = """
-select
-    id as entry__id,
-    source_id as entry__source_id,
-    updated as entry__updated,
-    created as entry__created,
-    read_mark as entry__read_mark,
-    star_mark as entry__star_mark,
-    status as entry__status,
-    oid as entry__oid,
-    title as entry__title,
-    url as entry__url,
-    opts as entry__opts,
-    content as entry__content,
-    user_id as entry__user_id,
-    icon as entry__icon,
-    score as entry__score
-from entries
+SELECT
+    id AS entry__id,
+    source_id AS entry__source_id,
+    updated AS entry__updated,
+    created AS entry__created,
+    read_mark AS entry__read_mark,
+    star_mark AS entry__star_mark,
+    status AS entry__status,
+    oid AS entry__oid,
+    title AS entry__title,
+    url AS entry__url,
+    opts AS entry__opts,
+    content AS entry__content,
+    user_id AS entry__user_id,
+    icon AS entry__icon,
+    score AS entry__score
+FROM entries
 """
 
 
@@ -396,9 +396,9 @@ def get(
 
     with db.cursor() as cur:
         if id_ is not None:
-            sql = _GET_ENTRY_SQL + "where id=%(id)s"
+            sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
         else:
-            sql = _GET_ENTRY_SQL + "where oid=%(oid)s"
+            sql = _GET_ENTRY_SQL + "WHERE oid=%(oid)s"
 
         cur.execute(sql, {"oid": oid, "id": id_})
         row = cur.fetchone()
@@ -427,8 +427,8 @@ RETURNING id
 """
 
 _UPDATE_ENTRY_SQL = """
-update entries
-set source_id=%(entry__source_id)s,
+UPDATE entries
+SET source_id=%(entry__source_id)s,
     updated=%(entry__updated)s,
     created=%(entry__created)s,
     read_mark=%(entry__read_mark)s,
@@ -441,7 +441,7 @@ set source_id=%(entry__source_id)s,
     content=%(entry__content)s,
     icon=%(entry__icon)s,
     score=%(entry__score)s
-where id=%(entry__id)s
+WHERE id=%(entry__id)s
 """
 
 
@@ -473,13 +473,13 @@ def save_many(db: DB, entries: model.Entries) -> None:
         # find stared entries
         with db.cursor() as cur:
             cur.execute(
-                "select oid from entries where oid=%s and star_mark=1",
+                "SELECT oid FROM entries WHERE oid=%s AND star_mark=1",
                 oids_to_delete,
             )
             marked_oids = {row[0] for row in cur}
 
         with db.cursor() as cur:
-            cur.executemany("delete from entries where oid=%s", oids_to_delete)
+            cur.executemany("DELETE FROM entries WHERE oid=%s", oids_to_delete)
             _LOG.debug(
                 "to del %d, deleted: %d", len(oids_to_delete), cur.rowcount
             )
@@ -514,15 +514,15 @@ def delete_old(
     """Delete old entries for given user"""
     with db.cursor() as cur:
         cur.execute(
-            "delete from entries where star_mark=0 and read_mark=%s "
-            "and updated<%s and user_id=%s",
+            "DELETE FROM entries WHERE star_mark=0 AND read_mark=%s "
+            "AND updated<%s AND user_id=%s",
             (model.EntryReadMark.UNREAD, max_datetime, user_id),
         )
         deleted_entries = cur.rowcount
         cur.execute(
-            "delete from history_oids where source_id in "
-            "(select id from sources where user_id=%s) "
-            "and created<%s",
+            "DELETE FROM history_oids "
+            "WHERE source_id IN (SELECT id FROM sources WHERE user_id=%s) "
+            "AND created<%s",
             (user_id, max_datetime),
         )
         deleted_oids = cur.rowcount
@@ -537,7 +537,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     )
     with db.cursor() as cur:
         cur.execute(
-            "update entries set star_mark=%s where id=%s and star_mark=%s",
+            "UPDATE entries SET star_mark=%s WHERE id=%s AND star_mark=%s",
             (db_star, entry_id, 1 - db_star),
         )
         changed = cur.rowcount
@@ -558,8 +558,8 @@ def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
         for idx in range(0, len(oids), 100):
             part_oids = tuple(oids[idx : idx + 100])
             cur.execute(
-                "select oid from history_oids "
-                "where source_id=%s and oid in %s",
+                "SELECT oid FROM history_oids "
+                "WHERE source_id=%s AND oid IN %s",
                 (source_id, part_oids),
             )
             result.update(row[0] for row in cur)
@@ -573,7 +573,7 @@ def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     )
     with db.cursor() as cur:
         cur.executemany(
-            "insert into history_oids(source_id, oid) values (%s, %s)",
+            "INSERT INTO history_oids(source_id, oid) VALUES (%s, %s)",
             [(source_id, oid) for oid in new_oids],
         )
 
@@ -623,19 +623,19 @@ def mark_read(
     with db.cursor() as cur:
         if entry_id:
             cur.execute(
-                "update entries set read_mark=%s where id=%s and user_id=%s",
+                "UPDATE entries SET read_mark=%s WHERE id=%s AND user_id=%s",
                 (read.value, entry_id, user_id),
             )
         elif ids:
             cur.execute(
-                "UPDATE Entries SET read_mark=%s "
+                "UPDATE entries SET read_mark=%s "
                 "WHERE id=ANY(%s) AND user_id=%s",
                 (read.value, ids, user_id),
             )
         elif max_id:
             cur.execute(
-                "update entries set read_mark=%s "
-                "where id<=%s and id>=%s and user_id=%s",
+                "UPDATE entries SET read_mark=%s "
+                "WHERE id<=%s AND id>=%s AND user_id=%s",
                 (read.value, max_id, min_id or 0, user_id),
             )
         changed = cur.rowcount
@@ -659,8 +659,8 @@ def mark_all_read(
     with db.cursor() as cur:
         if max_date:
             cur.execute(
-                "update entries set read_mark=%s where user_id=%s "
-                "and read_mark=%s and updated<%s",
+                "UPDATE entries SET read_mark=%s WHERE user_id=%s "
+                "AND read_mark=%s AND updated<%s",
                 (
                     model.EntryReadMark.READ,
                     user_id,
@@ -670,8 +670,8 @@ def mark_all_read(
             )
         else:
             cur.execute(
-                "update entries set read_mark=%s where user_id=%s "
-                "and read_mark=%s",
+                "UPDATE entries set read_mark=%s WHERE user_id=%s "
+                "AND read_mark=%s",
                 (
                     model.EntryReadMark.READ,
                     user_id,
@@ -685,8 +685,8 @@ def mark_all_read(
 _GET_RELATED_RM_ENTRY_SQL = """
 WITH DATA AS (
 	SELECT e.id,
-		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
-		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
+		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
 	FROM entries e
 	WHERE user_id = %(user_id)s AND read_mark = %(read_mark)s
 	ORDER BY {order}

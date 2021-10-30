@@ -37,8 +37,8 @@ def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
     if datahash:
         with db.cursor() as cur:
             cur.execute(
-                "select data, content_type from binaries "
-                "where datahash=%s and user_id=%s",
+                "SELECT data, content_type FROM binaries "
+                "WHERE datahash=%s AND user_id=%s",
                 (datahash, user_id),
             )
             res: ty.Optional[ty.Tuple[bytes, str]] = cur.fetchone()
@@ -90,13 +90,13 @@ DELETE FROM binaries b
 WHERE user_id = %(user_id)s
     AND NOT EXISTS (
         SELECT NULL FROM entries e
-        WHERE e.user_id = %(user_id)s and e.icon = b.datahash
+        WHERE e.user_id = %(user_id)s AND e.icon = b.datahash
     )
     AND NOT EXISTS (
         SELECT NULL
         FROM source_state ss
-        JOIN sources s on s.id = ss.source_id
-        WHERE s.user_id = %(user_id)s and ss.icon = b.datahash
+        JOIN sources s ON s.id = ss.source_id
+        WHERE s.user_id = %(user_id)s AND ss.icon = b.datahash
     )
 """
 
@@ -123,7 +123,7 @@ WHERE icon IS NOT NULL
     AND NOT EXISTS (
         SELECT NULL
         FROM binaries b
-        WHERE b.datahash=e.icon and b.user_id=e.user_id
+        WHERE b.datahash=e.icon AND b.user_id=e.user_id
     )
 """
 
@@ -134,8 +134,8 @@ WHERE icon IS NOT NULL
     AND NOT EXISTS (
         SELECT NULL
         FROM binaries b
-        JOIN sources s on b.user_id = s.user_id
-        WHERE b.datahash=ss.icon and ss.source_id = s.id
+        JOIN sources s ON b.user_id = s.user_id
+        WHERE b.datahash=ss.icon AND ss.source_id = s.id
     )
 """
 
