@@ -193,13 +193,11 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
             pass
 
 
-def check_date_in_timerange(
-    tsrange: str, timestamp: ty.Union[int, float]
-) -> bool:
-    """Check is `timestamp` is one of time ranges defined in `tsrange`"""
-    timestampt = time.localtime(timestamp)
-    tshm = timestampt.tm_hour * 60 + timestampt.tm_min
+def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
+    """Check is `hour`:`minutes` is in any time ranges defined in `tsrange`"""
+    tshm = hour * 60 + minutes
     for rstart, rstop in parse_hours_range(tsrange):
+        print((rstart, rstop, tshm))
         if rstart < rstop:
             if rstart <= tshm <= rstop:
                 return True
