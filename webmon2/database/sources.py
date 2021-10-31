@@ -18,7 +18,7 @@ from webmon2 import model
 from . import _dbcommon as dbc
 from . import binaries, groups
 from ._db import DB
-from ._dbcommon import tyCursor
+from ._dbcommon import Cursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -142,7 +142,7 @@ def get_all_dict(
 
 
 def _build_source(
-    row: tyCursor, user_groups: ty.Dict[int, model.SourceGroup]
+    row: Cursor, user_groups: ty.Dict[int, model.SourceGroup]
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)

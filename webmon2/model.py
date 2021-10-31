@@ -28,7 +28,7 @@ from webmon2 import common, formatters
 _LOG = logging.getLogger(__name__)
 
 
-tyCursor = ty.Type[extensions.cursor]
+Cursor = ty.Type[extensions.cursor]
 ConfDict = ty.Dict[str, ty.Any]
 
 
@@ -69,7 +69,7 @@ class SourceGroup:
         return sgr
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> SourceGroup:
+    def from_row(cls, row: Cursor) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -160,7 +160,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         return src
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Source:
+    def from_row(cls, row: Cursor) -> Source:
         source = Source(
             user_id=row["source__user_id"],
             kind=row["source__kind"],
@@ -364,7 +364,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> SourceState:
+    def from_row(cls, row: Cursor) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -574,7 +574,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Entry:
+    def from_row(cls, row: Cursor) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -612,7 +612,7 @@ class Setting:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Setting:
+    def from_row(cls, row: Cursor) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
@@ -647,7 +647,7 @@ class User:
     totp: ty.Optional[str] = None
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> User:
+    def from_row(cls, row: Cursor) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -697,7 +697,7 @@ class ScoringSett:
         return bool(self.user_id and self.pattern and self.pattern.strip())
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> ScoringSett:
+    def from_row(cls, row: Cursor) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],
@@ -722,7 +722,7 @@ UserSources = ty.Dict[int, Source]
 def get_json_if_exists(
     row_keys: ty.KeysView[str],
     key: str,
-    row: tyCursor,
+    row: Cursor,
     default: ty.Any = None,
 ) -> ty.Any:
     if key not in row_keys:

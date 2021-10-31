@@ -18,7 +18,7 @@ from webmon2 import model
 from . import _dbcommon as dbc
 from . import binaries, sources
 from ._db import DB
-from ._dbcommon import tyCursor
+from ._dbcommon import Cursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -156,7 +156,7 @@ def _get_find_sql(
 
 
 def _yield_entries(
-    cur: tyCursor, user_sources: model.UserSources
+    cur: Cursor, user_sources: model.UserSources
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
