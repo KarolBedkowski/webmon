@@ -12,6 +12,7 @@ Background workers
 from __future__ import annotations
 
 import datetime
+import gc
 import logging
 import queue
 import random
@@ -53,6 +54,7 @@ class CheckWorker(threading.Thread):
 
     def run(self) -> None:
         _LOG.info("CheckWorker started; workers: %d", self._workers)
+        gc_cntr = 0
         while True:
             time.sleep(15 if self.debug else 60)
             self._notify("STATUS=processing")
@@ -81,6 +83,12 @@ class CheckWorker(threading.Thread):
                     _send_mails(db, self._conf)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("CheckWorker thread error: %s", err)
+
+            gc_cntr += 1
+            if gc_cntr == 30:
+                gc.collect()
+                gc_cntr = 0
+
             self._notify("STATUS=running")
 
     def _start_worker(self, idx: int) -> FetchWorker:
