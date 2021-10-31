@@ -169,9 +169,8 @@ class Source:  # pylint: disable=too-many-instance-attributes
         )
         source.id = row["source__id"]
         source.interval = row["source__interval"]
-        row_keys = row.keys()
-        source.settings = get_json_if_exists(row_keys, "source__settings", row)
-        source.filters = get_json_if_exists(row_keys, "source__filters", row)
+        source.settings = try_load_json("source__settings", row)
+        source.filters = try_load_json("source__filters", row)
         source.status = SourceStatus(row["source__status"])
         mail_report = row["source__mail_report"]
         if mail_report is None:
@@ -261,6 +260,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def new(source_id: int) -> SourceState:
+        """
+        Create new `SourceState` for given `source_id`.
+        """
         source = SourceState()
         source.source_id = source_id
         source.next_update = datetime.now() + timedelta(minutes=15)
@@ -269,6 +271,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return source
 
     def create_new(self) -> SourceState:
+        """
+        Create new `SourceState` and copy basic data from current object.
+        """
         new_state = SourceState()
         new_state.source_id = self.source_id
         new_state.error_counter = self.error_counter
@@ -277,6 +282,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return new_state
 
     def new_ok(self, **states: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `OK` and copy basic data from
+        current object. Reset error and increment success counters.
+        """
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -291,6 +300,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return state
 
     def new_error(self, error: str, **states: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `ERROR` and copy basic data from
+        current object. Increment error counter.
+        """
         state = SourceState()
         state.source_id = self.source_id
         state.error = error
@@ -305,6 +318,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return state
 
     def new_not_modified(self, **states: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `NOT_MODIFIED`,copy basic data
+        from current object. Reset error and increment success counters.
+        """
         state = SourceState()
         state.source_id = self.source_id
         state.last_update = datetime.now()
@@ -319,15 +336,24 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return state
 
     def set_state(self, key: str, value: ty.Any) -> None:
+        """
+        Update state `value` for `key`.
+        """
         if self.state is None:
             self.state = {key: value}
         else:
             self.state[key] = value
 
     def get_state(self, key: str, default: ty.Any = None) -> ty.Any:
+        """
+        Get state value for `key`, return `default` if `key` is not found.
+        """
         return self.state.get(key, default) if self.state else default
 
     def update_state(self, states: ty.Optional[States]) -> None:
+        """
+        Update4 states from `states` dict.
+        """
         if not states:
             return
 
@@ -339,6 +365,15 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     def set_icon(
         self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
     ) -> ty.Optional[str]:
+        """
+        Set icon; create and set hash into `icon` field; put data from
+        `content_type_data` into `icon_data` field.
+        If `content_type_data` is None icon is not updated but current icon
+        has is returned (if any).
+
+        Return:
+            binary data hash (new or current)
+        """
         if not content_type_data:
             return self.icon
 
@@ -374,8 +409,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter = row["source_state__success_counter"]
         state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
-        row_keys = row.keys()
-        state.state = get_json_if_exists(row_keys, "source_state__state", row)
+        state.state = try_load_json("source_state__state", row)
         state.icon = row["source_state__icon"]
         return state
 
@@ -481,6 +515,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return entry
 
     def calculate_oid(self) -> str:
+        """
+        Calculate oid for entry using source_id, title, url and content.
+        """
         data = "".join(
             map(str, (self.source_id, self.title, self.url, self.content))
         )
@@ -491,15 +528,26 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def get_opt(
         self, key: str, default: ty.Optional[OptValue] = None
     ) -> ty.Optional[OptValue]:
+        """
+        Get additional data for entry identified by `key`; return `default` if
+        not data found.
+        """
         return self.opts.get(key, default) if self.opts else default
 
     def set_opt(self, key: str, value: ty.Any) -> None:
+        """
+        Set additional information for entry using `key`.
+        """
         if self.opts is None:
             self.opts = {}
 
         self.opts[key] = value
 
     def human_title(self) -> str:
+        """
+        Return entry title; if it is not defined explicit try to get content
+        limited do 50 characters.
+        """
         if self.title:
             return self.title
 
@@ -512,6 +560,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.content
 
     def is_long_content(self) -> bool:
+        """
+        Check is content is long (should be truncated on preview).
+
+        TODO: move it do `opts`.
+        """
         if self.content:
             lines = self.content.count("\n")
             characters = len(self.content)
@@ -529,8 +582,12 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.opts["content-type"] = content_type
 
     content_type = property(_get_content_type, _set_content_type)
+    """Content type of entry content."""
 
     def get_summary(self) -> ty.Optional[str]:
+        """
+        Get summary of entry content for preview.
+        """
         return formatters.entry_summary(self.content, self._get_content_type())
 
     def validate(self) -> None:
@@ -544,6 +601,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             _LOG.error("missing title %s", self)
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
+        """
+        Calculate hash of icon binary data.
+        """
         if not self.icon_data:
             return self.icon
 
@@ -585,9 +645,10 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.oid = row["entry__oid"]
         entry.title = row["entry__title"]
         entry.url = row["entry__url"]
-        row_keys = row.keys()
-        entry.opts = get_json_if_exists(row_keys, "entry__opts", row)
-        if "entry__content" in row_keys:
+        entry.opts = try_load_json("entry__opts", row)
+
+        # entry content may be not loaded
+        if "entry__content" in row.keys():
             entry.content = row["entry__content"]
 
         entry.user_id = row["entry__user_id"]
@@ -719,16 +780,13 @@ class ScoringSett:
 UserSources = ty.Dict[int, Source]
 
 
-def get_json_if_exists(
-    row_keys: ty.KeysView[str],
-    key: str,
-    row: Cursor,
-    default: ty.Any = None,
-) -> ty.Any:
-    if key not in row_keys:
-        return default
-
-    value = row[key]
+def try_load_json(column: str, row: Cursor, default: ty.Any = None) -> ty.Any:
+    """
+    Try load json object form database `row` object and `column`.
+    If value is None - return default; if value is not string - return as is,
+    otherwise parse value via json parser.
+    """
+    value = row.get(column)
     if value is None:
         return default
 
