@@ -270,7 +270,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.success_counter = 0
         return source
 
-    def create_new(self) -> SourceState:
+    def create_new(
+        self, status: ty.Optional[SourceStateStatus] = None, **states: ty.Any
+    ) -> SourceState:
         """
         Create new `SourceState` and copy basic data from current object.
         """
@@ -279,6 +281,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.error_counter = self.error_counter
         new_state.success_counter = self.success_counter
         new_state.icon = self.icon
+        new_state.status = status
+        new_state.last_update = self.last_update
+        new_state.state = self.state.copy() if self.state else None
+        new_state.update_state(states)
         return new_state
 
     def new_ok(self, **states: ty.Any) -> SourceState:
@@ -286,17 +292,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         Create new `SourceState` with statue = `OK` and copy basic data from
         current object. Reset error and increment success counters.
         """
-        state = SourceState()
-        state.source_id = self.source_id
-        state.last_update = datetime.now()
-        state.status = SourceStateStatus.OK
-        state.success_counter = self.success_counter + 1
-        state.last_error = None
-        state.error = None
+        state = self.create_new(status=SourceStateStatus.OK, **states)
+        state.success_counter += 1
         state.error_counter = 0
-        state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
         return state
 
     def new_error(self, error: str, **states: ty.Any) -> SourceState:
@@ -304,17 +302,11 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         Create new `SourceState` with statue = `ERROR` and copy basic data from
         current object. Increment error counter.
         """
-        state = SourceState()
-        state.source_id = self.source_id
+        state = self.create_new(status=SourceStateStatus.ERROR, **states)
         state.error = error
-        state.last_update = self.last_update
-        state.status = SourceStateStatus.ERROR
-        state.success_counter = self.success_counter
-        state.error_counter = self.error_counter + 1
+        state.error_counter += 1
         state.last_error = datetime.now()
         state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
         return state
 
     def new_not_modified(self, **states: ty.Any) -> SourceState:
@@ -322,17 +314,11 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         Create new `SourceState` with statue = `NOT_MODIFIED`,copy basic data
         from current object. Reset error and increment success counters.
         """
-        state = SourceState()
-        state.source_id = self.source_id
-        state.last_update = datetime.now()
-        state.status = SourceStateStatus.NOT_MODIFIED
-        state.last_error = None
-        state.error = None
+        state = self.create_new(
+            status=SourceStateStatus.NOT_MODIFIED, **states
+        )
         state.error_counter = 0
-        state.success_counter = self.success_counter + 1
-        state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
+        state.success_counter += 1
         return state
 
     def set_state(self, key: str, value: ty.Any) -> None:
@@ -646,11 +632,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.title = row["entry__title"]
         entry.url = row["entry__url"]
         entry.opts = try_load_json("entry__opts", row)
-
         # entry content may be not loaded
-        if "entry__content" in row.keys():
-            entry.content = row["entry__content"]
-
+        entry.content = row.get("entry__content", None)
         entry.user_id = row["entry__user_id"]
         entry.icon = row["entry__icon"]
         entry.score = row["entry__score"]
