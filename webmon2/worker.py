@@ -22,7 +22,7 @@ import time
 import typing as ty
 from configparser import ConfigParser
 
-from prometheus_client import Counter
+from prometheus_client import Counter, Histogram
 
 from . import common, database, filters, formatters, mailer, model, sources
 
@@ -32,6 +32,17 @@ _SOURCES_PROCESSED = Counter(
 )
 _SOURCES_PROCESSED_ERRORS = Counter(
     "webmon2_sources_processed_errors", "Sources processed with errors count"
+)
+_WORKER_PROCESSING_TIME = Histogram(
+    "webmon2_worker_processing_seconds",
+    "Worker processing time",
+    buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0],
+)
+_SOURCE_PROCESSING_TIME = Histogram(
+    "webmon2_source_processing_seconds",
+    "Source processing time",
+    ["source_id"],
+    buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0],
 )
 _CLEANUP_INTERVAL = 60 * 60 * 24
 
@@ -67,6 +78,7 @@ class CheckWorker(threading.Thread):
         while True:
             time.sleep(15 if self._debug else 60)
             self._notify("STATUS=processing")
+            start = time.time()
             with database.DB.get() as db:
                 try:
                     now = time.time()
@@ -94,6 +106,8 @@ class CheckWorker(threading.Thread):
                     _send_mails(db, self._conf)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("CheckWorker thread error: %s", err)
+
+            _WORKER_PROCESSING_TIME.observe(time.time() - start)
 
             gc_cntr += 1
             if gc_cntr == 30:
@@ -124,6 +138,7 @@ class FetchWorker(threading.Thread):
     def run(self) -> None:
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
+            start = time.time()
             with database.DB.get() as db:
                 source = None
                 try:
@@ -142,6 +157,9 @@ class FetchWorker(threading.Thread):
                         _save_state_error(db, source, str(err))
                 finally:
                     db.commit()
+            _SOURCE_PROCESSING_TIME.labels(source_id).observe(
+                time.time() - start
+            )
 
     def _process_source(self, db: database.DB, source: model.Source) -> None:
         """

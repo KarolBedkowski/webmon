@@ -22,10 +22,12 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta
 
 import html2text as h2t
+from prometheus_client import Counter
 
 from webmon2 import common, database, formatters, model
 
 _LOG = logging.getLogger(__name__)
+_SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
 
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
@@ -64,6 +66,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     if content and not _send_mail(conf, content, app_conf, user):
         return
 
+    _SENT_MAIL_COUNT.inc()
     database.users.set_state(
         db, user.id, "mail_last_send", datetime.now().timestamp()
     )
@@ -72,6 +75,9 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
 def _process_groups(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int
 ) -> ty.Iterable[str]:
+    """
+    Iterate over source groups for `user_id` and build mail body.
+    """
     for group in database.groups.get_all(db, user_id):
         if group.mail_report == model.MailReportMode.NO_SEND:
             _LOG.debug("group %s skipped", group.name)
