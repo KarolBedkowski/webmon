@@ -125,22 +125,25 @@ class FetchWorker(threading.Thread):
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
+                source = None
                 try:
                     db.begin()
-                    self._process_source(db, source_id)
+                    # load source from database
+                    source = database.sources.get(
+                        db, id_=source_id, with_state=True
+                    )
+                    self._process_source(db, source)
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
                         "[%s] process source %d error", self._idx, source_id
                     )
                     db.rollback()
-                    source = database.sources.get(
-                        db, id_=source_id, with_state=True
-                    )
-                    _save_state_error(db, source, str(err))
+                    if source:
+                        _save_state_error(db, source, str(err))
                 finally:
                     db.commit()
 
-    def _process_source(self, db: database.DB, source_id: int) -> None:
+    def _process_source(self, db: database.DB, source: model.Source) -> None:
         """
         Process one source.
 
@@ -148,37 +151,26 @@ class FetchWorker(threading.Thread):
             any exception - according to precessed source type.
         """
         _SOURCES_PROCESSED.inc()
-        _LOG.debug("[%s] processing source %d", self._idx, source_id)
+        _LOG.debug("[%s] processing source %d", self._idx, source.id)
 
-        # load source from database
-        source = database.sources.get(db, id_=source_id, with_state=True)
-
-        # get source object
+        # get source object; errors are propagated upwards
         try:
             src = self._get_src(db, source)
-        except common.ParamError as err:
-            _LOG.error(
-                "[%s] source: %d param error: %s", self._idx, source.id, err
-            )
-            _save_state_error(db, source, str(err))
-            return
-        except sources.UnknownInputException:
-            _LOG.error("[%s] source %d: unknown input", self._idx, source_id)
-            _save_state_error(db, source, "unsupported source")
-            return
+        except sources.UnknownInputException as err:
+            raise Exception(f"unsupported input {source.kind}") from err
 
         assert source.state and src
         # load data
         new_state, entries = src.load(source.state)
         if new_state.status == model.SourceStateStatus.ERROR:
             # stop processing source when error occurred
-            _SOURCES_PROCESSED_ERRORS.inc()
-            new_state.next_update = _calc_next_check_on_error(source)
-            database.sources.save_state(db, new_state, source.user_id)
+            _save_state_error(
+                db, source, new_state.error or "error", new_state
+            )
             _LOG.info(
                 "[%s] process source %d error: %s",
                 self._idx,
-                source_id,
+                source.id,
                 new_state.error,
             )
             return
@@ -221,13 +213,13 @@ class FetchWorker(threading.Thread):
         # if source was updated - save new version
         updated_source = src.updated_source
         if updated_source:
-            _LOG.debug("[%s] source %d updated", self._idx, source_id)
+            _LOG.debug("[%s] source %d updated", self._idx, source.id)
             database.sources.save(db, updated_source)
 
         _LOG.debug(
             "[%s] processing source %d FINISHED, entries=%d, state=%s",
             self._idx,
-            source_id,
+            source.id,
             len(entries),
             str(new_state),
         )
@@ -411,7 +403,12 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     )
 
 
-def _save_state_error(db: database.DB, source: model.Source, err: str) -> None:
+def _save_state_error(
+    db: database.DB,
+    source: model.Source,
+    err: str,
+    state: ty.Optional[model.SourceState] = None,
+) -> None:
     """
     Create and save `SourceState` with state = `ERROR` for `source` and `err`
     message.
@@ -419,7 +416,7 @@ def _save_state_error(db: database.DB, source: model.Source, err: str) -> None:
     _SOURCES_PROCESSED_ERRORS.inc()
     assert source.state
 
-    new_state = source.state.new_error(str(err))
+    new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
 
     database.sources.save_state(db, new_state, source.user_id)
