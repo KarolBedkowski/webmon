@@ -153,9 +153,11 @@ class FetchWorker(threading.Thread):
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source.id)
 
+        sys_settings = database.settings.get_dict(db, source.user_id)
+
         # get source object; errors are propagated upwards
         try:
-            src = self._get_src(db, source)
+            src = self._get_src(source, sys_settings)
         except sources.UnknownInputException as err:
             raise Exception(f"unsupported input {source.kind}") from err
 
@@ -195,8 +197,10 @@ class FetchWorker(threading.Thread):
 
         # process entriec, calcuate oids, sanitize content
         entries = self._final_filter_entries(entries)
-        # calculate scoring
-        entries = self._score_entries(entries, db, source.user_id)
+        # calculate scoring & update entries state
+        entries = self._score_entries(
+            entries, db, source.user_id, sys_settings
+        )
         entries = list(entries)
         if entries:
             # save entries
@@ -257,10 +261,15 @@ class FetchWorker(threading.Thread):
             yield entry
 
     def _score_entries(
-        self, entries: model.Entries, db: database.DB, user_id: int
+        self,
+        entries: model.Entries,
+        db: database.DB,
+        user_id: int,
+        sys_settings: ty.Dict[str, str],
     ) -> model.Entries:
         """
-        Apply scoring for `entries`.
+        Apply scoring for `entries`. If entry score is below `minimal_score`
+        user settings - mark it as read.
         """
         # load scoring
         scss = list(self._load_scoring(db, user_id))
@@ -269,6 +278,8 @@ class FetchWorker(threading.Thread):
             yield from entries
             return
 
+        min_score = int(sys_settings.get("minimal_score", "-20"))
+
         for entry in entries:
             entry.score += sum(
                 score_change
@@ -276,6 +287,9 @@ class FetchWorker(threading.Thread):
                 if (entry.title and pattern.match(entry.title))
                 or (entry.content and pattern.match(entry.content))
             )
+            if entry.score < min_score:
+                entry.read_mark = model.EntryReadMark.READ
+
             yield entry
 
     def _load_scoring(
@@ -297,12 +311,11 @@ class FetchWorker(threading.Thread):
                 _LOG.warning("compile scoring pattern error: %s %s", scs, err)
 
     def _get_src(
-        self, db: database.DB, source: model.Source
+        self, source: model.Source, sys_settings: ty.Dict[str, str]
     ) -> ty.Optional[sources.AbstractSource]:
         """
         Create and initialize source object according to `source` configuration.
         """
-        sys_settings = database.settings.get_dict(db, source.user_id)
         if not source.interval:
             interval = sys_settings.get("interval") or "1d"
             _LOG.debug(
@@ -311,7 +324,7 @@ class FetchWorker(threading.Thread):
                 source.id,
                 interval,
             )
-            source.interval = interval
+            source.interval = interval or "1d"
 
         src = sources.get_source(source, sys_settings)
         src.validate()
