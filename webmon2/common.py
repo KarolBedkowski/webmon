@@ -15,7 +15,6 @@ import itertools
 import logging
 import os.path
 import pathlib
-import time
 import typing as ty
 
 from dateutil import tz

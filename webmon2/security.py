@@ -59,10 +59,10 @@ def generate_totp_url(secret: str, name: str) -> str:
     if not _HAS_PYOTP:
         raise NotAvaliable()
 
-    my_name = "webmon2." + socket.gethostname()
+    issuer = "webmon2." + socket.gethostname()
     return str(
         pyotp.totp.TOTP(secret).provisioning_uri(
-            name=name + "@" + my_name, issuer_name=my_name
+            name=name + "@" + issuer, issuer_name=issuer
         )
     )
 

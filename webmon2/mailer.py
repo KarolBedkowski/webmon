@@ -43,6 +43,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     if _is_silent_hour(conf):
         return
 
+    # it is time for send mail?
     last_send = database.users.get_state(
         db,
         user.id,
@@ -90,6 +91,9 @@ def _process_groups(
 def _process_group(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, group_id: int
 ) -> ty.Iterator[str]:
+    """
+    Process sources in `group_id` and build mail body part.
+    """
     _LOG.debug("processing group %d", group_id)
     sources = [
         source
@@ -116,6 +120,9 @@ def _process_group(
 def _proces_source(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, source_id: int
 ) -> ty.Iterator[str]:
+    """
+    Build mail content for `source_id`.
+    """
     _LOG.debug("processing source %d", source_id)
 
     entries = [
@@ -147,17 +154,18 @@ def _proces_source(
     yield "\n\n"
 
 
-_HEADER_LINE = re.compile(r"^#+ .+")
-
-
 def _adjust_header(line: str, prefix: str = "###") -> str:
-    if line and _HEADER_LINE.match(line):
+    if line and re.compile(r"^#+ .+").match(line):
         return prefix + line
 
     return line
 
 
 def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
+    """
+    Render entry as markdown document.
+    If entry content type is not plain or markdown try convert it to plain text.
+    """
     title = (entry.title or "") + " " + entry.updated.strftime("%x %X")  # type: ignore
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -173,12 +181,12 @@ def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
     yield "\n"
     if entry.content:
         content_type = entry.content_type
-        if content_type not in ("plain", "markdown"):
+        if content_type in ("plain", "markdown"):
+            yield "\n".join(map(_adjust_header, entry.content.split("\n")))
+        else:
             conv = h2t.HTML2Text(bodywidth=74)
             conv.protect_links = True
             yield conv.handle(entry.content)
-        else:
-            yield "\n".join(map(_adjust_header, entry.content.split("\n")))
 
         yield "\n"
 
@@ -186,6 +194,11 @@ def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
 def _prepare_msg(
     conf: ty.Dict[str, ty.Any], content: str
 ) -> email.mime.base.MIMEBase:
+    """
+    Prepare email message according to `conf` and with `content`.
+    If `mail_html` enabled build multi part message (convert `content` using
+    markdown -> html converter).
+    """
     body_plain = (
         _encrypt(conf, content) if conf.get("mail_encrypt") else content
     )
@@ -199,6 +212,7 @@ def _prepare_msg(
     html = formatters.format_markdown(content)
     if conf.get("mail_encrypt"):
         html = _encrypt(conf, html)
+
     msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
     return msg
 
