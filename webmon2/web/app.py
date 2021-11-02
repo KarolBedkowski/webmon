@@ -229,7 +229,7 @@ _REQUEST_LATENCY = Histogram(
     "webmon2_request_latency_seconds",
     "Request latency",
     ["endpoint", "method"],
-    buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0],
+    buckets=[0.5, 1.0, 3.0, 10.0],
 )
 
 
