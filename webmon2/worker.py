@@ -193,7 +193,13 @@ class FetchWorker(threading.Thread):
 
         assert source.state and source.interval is not None
         # calculate next update time; source may overwrite user settings
-        last_update = source.state.last_update or datetime.datetime.now()
+        if source.state.last_update:
+            last_update = max(
+                source.state.last_update, datetime.datetime.now()
+            )
+        else:
+            last_update = datetime.datetime.now()
+
         next_update = last_update + datetime.timedelta(
             seconds=common.parse_interval(source.interval)
         )
