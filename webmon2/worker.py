@@ -233,6 +233,7 @@ class FetchWorker(threading.Thread):
                 new_state.icon = icon
 
         # update source state
+        new_state.set_state("last_check", str(datetime.datetime.now()))
         database.sources.save_state(db, new_state, source.user_id)
         # if source was updated - save new version
         updated_source = src.updated_source
@@ -451,5 +452,6 @@ def _save_state_error(
 
     new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
+    new_state.set_state("last_check", str(datetime.datetime.now()))
 
     database.sources.save_state(db, new_state, source.user_id)
