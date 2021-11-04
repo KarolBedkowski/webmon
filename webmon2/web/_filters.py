@@ -63,6 +63,14 @@ def _entry_score_class(score: int) -> str:
     return ""
 
 
+def _format_key(inp: str) -> str:
+    if not inp:
+        return ""
+
+    inp = inp.replace("_", " ")
+    return inp[0].upper() + inp[1:]
+
+
 def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
@@ -72,3 +80,4 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["cleanup_html"] = formatters.cleanup_html
     app.jinja_env.filters["summary"] = formatters.entry_summary
     app.jinja_env.filters["entry_score_class"] = _entry_score_class
+    app.jinja_env.filters["format_key"] = _format_key

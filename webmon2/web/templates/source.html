@@ -89,7 +89,7 @@
 		{% if source.state.state %}
 		<h3>Additional</h3>
 			{% for key, val in source.state.state.items() %}
-				<p>{{ key }}: {{ val}}</p>
+				<p>{{ key | format_key }}: {{ val}}</p>
 			{% endfor %}
 		{% endif %}
 	</section>
