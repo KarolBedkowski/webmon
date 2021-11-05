@@ -169,17 +169,20 @@ _UPDATE_GROUP_SQL = """
 UPDATE source_groups
 SET name=%(source_group__name)s, feed=%(source_group__feed)s,
     mail_report=%(source_group__mail_report)s
-WHERE id=%(source_group__user_id)s
+WHERE id=%(source_group__id)s
 """
 
 
 def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     """Save / update group.
     Generate random group.feed if empty.
+    User id is not updated.
 
     Return:
         updated group object
     """
+    _LOG.debug("save: %r", group)
+
     if not group.feed:
         group.feed = _generate_group_feed(db)
 
