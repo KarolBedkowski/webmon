@@ -166,6 +166,7 @@ class FetchWorker(threading.Thread):
         """
         _SOURCES_PROCESSED.inc()
         _LOG.debug("[%s] processing source %d", self._idx, source.id)
+        start = time.time()
 
         sys_settings = database.settings.get_dict(db, source.user_id)
 
@@ -234,6 +235,7 @@ class FetchWorker(threading.Thread):
 
         # update source state
         new_state.set_state("last_check", str(datetime.datetime.now()))
+        new_state.set_state("last_update_duration", str(time.time() - start))
         database.sources.save_state(db, new_state, source.user_id)
         # if source was updated - save new version
         updated_source = src.updated_source
