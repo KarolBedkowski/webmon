@@ -59,18 +59,29 @@ def group_edit(group_id: int = 0) -> ty.Any:
 
     form = forms.GroupForm.from_model(sgroup)
     errors = {}
+    entity_hash = str(hash(sgroup))
+
     if request.method == "POST":
-        form.update_from_request(request.form)
-        errors = form.validate()
-        if not errors:
-            usgroup = form.update_model(sgroup)
-            database.groups.save(db, usgroup)
-            db.commit()
-            flash("Group saved")
-            return redirect(request.args.get("back") or url_for("root.groups"))
+        if entity_hash == request.form["_entity_hash"]:
+            form.update_from_request(request.form)
+            errors = form.validate()
+            if not errors:
+                usgroup = form.update_model(sgroup)
+                database.groups.save(db, usgroup)
+                db.commit()
+                flash("Group saved")
+                return redirect(
+                    request.args.get("back") or url_for("root.groups")
+                )
+        else:
+            flash("Group changed somewhere else; reloading...")
 
     return render_template(
-        "group.html", group=form, group_id=group_id, errors=errors
+        "group.html",
+        group=form,
+        group_id=group_id,
+        errors=errors,
+        entity_hash=entity_hash,
     )
 
 

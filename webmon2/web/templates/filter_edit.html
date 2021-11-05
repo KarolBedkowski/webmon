@@ -21,6 +21,7 @@
 	<h4>Settings</h4>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+		<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 		<div class="form-wrapper">
 			{% for field in form.fields %}
 				{{ rf.render_field(field) }}

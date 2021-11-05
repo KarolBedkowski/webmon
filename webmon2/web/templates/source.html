@@ -21,6 +21,7 @@
 		<p><b>{{ source_cls.short_info }}</b>: {{ source_cls.long_info }}</p>
 		<form method="POST">
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
 				<label for="source-name" class="field-required">Name</label>
 				<input type="text" name="name" id="source-name" value="{{ form.name }}" required="required" />

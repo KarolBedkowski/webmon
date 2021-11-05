@@ -57,6 +57,9 @@ class SourceGroup:
     def __str__(self) -> str:
         return common.obj2str(self)
 
+    def __hash__(self) -> int:
+        return hash(tuple(map(str, self.__dict__.values())))
+
     def clone(self) -> SourceGroup:
         sgr = SourceGroup(
             id=self.id,
@@ -142,6 +145,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
 
     def __str__(self) -> str:
         return common.obj2str(self)
+
+    def __hash__(self) -> int:
+        return hash(tuple(str(getattr(self, key)) for key in self.__slots__))
 
     def clone(self) -> Source:
         src = Source(
@@ -724,6 +730,9 @@ class User:
             totp=self.totp,
         )
         return user
+
+    def __hash__(self) -> int:
+        return hash(tuple(map(str, self.__dict__.values())))
 
 
 @dataclass

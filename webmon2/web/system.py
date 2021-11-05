@@ -74,16 +74,22 @@ def sett_globals() -> ty.Any:
 
 @BP.route("/settings/user", methods=["POST", "GET"])
 def sett_user() -> ty.Any:
+    """
+    Edit current user profile.
+    """
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
+    entity_hash = str(hash(user))
 
     if request.method == "POST":
-        if request.form["new_password1"] != request.form["new_password2"]:
+        if entity_hash != request.form["_entity_hash"]:
+            flash("User changed somewhere else; reloading...")
+        elif request.form["new_password1"] != request.form["new_password2"]:
             flash("New passwords not match", "error")
         elif not request.form["new_password1"]:
             flash("Missing new password", "error")
         elif not request.form["curr_password"]:
-            flash("Missing curr_password password", "error")
+            flash("Missing current password", "error")
         else:
             assert user.password is not None
             if security.verify_password(
@@ -104,6 +110,7 @@ def sett_user() -> ty.Any:
         "system/user.html",
         totp_enabled=totp_enabled,
         otp_available=otp_available,
+        entity_hash=entity_hash,
     )
 
 
@@ -314,32 +321,41 @@ def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
 
     errors = {}
     form = forms.UserForm.from_model(user)
+    entity_hash = str(hash(user))
 
     if request.method == "POST":
-        form.update_from_request(request.form)
-        errors = form.validate()
+        if entity_hash == request.form["_entity_hash"]:
+            form.update_from_request(request.form)
+            errors = form.validate()
 
-        if session["user"] == user_id and not form.active and user.active:
-            errors["active"] = "Can't deactivate current user"
+            if session["user"] == user_id and not form.active and user.active:
+                errors["active"] = "Can't deactivate current user"
 
-        if not errors:
-            uuser = form.update_model(user)  # type: model.User
-            if form.password1:
-                uuser.password = security.hash_password(form.password1)
+            if not errors:
+                uuser = form.update_model(user)  # type: model.User
+                if form.password1:
+                    uuser.password = security.hash_password(form.password1)
 
-            _LOG.info("save user: %r", uuser)
-            try:
-                database.users.save(db, uuser)
-            except database.users.LoginAlreadyExistsError:
-                errors["login"] = "Login already exists"
-            else:
-                db.commit()
-                flash("User saved")
-                return redirect(url_for("system.sett_sys_users"))
+                _LOG.info("save user: %r", uuser)
+                try:
+                    database.users.save(db, uuser)
+                except database.users.LoginAlreadyExistsError:
+                    errors["login"] = "Login already exists"
+                else:
+                    db.commit()
+                    flash("User saved")
+                    return redirect(url_for("system.sett_sys_users"))
 
-        flash("There are errors in form", "error")
+            flash("There are errors in form", "error")
+        else:
+            flash("User changed somewhere else; reloading...")
 
-    return render_template("system/sys_user.html", form=form, errors=errors)
+    return render_template(
+        "system/sys_user.html",
+        form=form,
+        errors=errors,
+        entity_hash=entity_hash,
+    )
 
 
 @BP.route(
