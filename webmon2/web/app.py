@@ -78,7 +78,7 @@ def _start_bg_tasks(args: Namespace) -> None:
 
 
 _CSP = (
-    "default-src 'self'; "
+    "default-src 'self' 'unsafe-inline'; "
     "script-src 'self' 'unsafe-inline'; "
     "img-src *; media-src *; "
     "frame-src *; "
