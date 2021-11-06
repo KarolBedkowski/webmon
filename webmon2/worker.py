@@ -42,6 +42,11 @@ _SOURCE_PROCESSING_TIME = Gauge(
     "Source processing time",
     ["source_id"],
 )
+_CLEAN_COUNTER = Counter(
+    "webmon2_clean_items",
+    "Number of deleted entries",
+    ["user_id", "area"],
+)
 _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
@@ -384,9 +389,12 @@ def _delete_old_entries(db: database.DB) -> None:
                 deleted_oids,
                 user.id,
             )
+            _CLEAN_COUNTER.labels(user.id, "entries").inc(deleted_entries)
+            _CLEAN_COUNTER.labels(user.id, "oids").inc(deleted_oids)
 
             removed_bin = database.binaries.remove_unused(db, user.id)
             _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
+            _CLEAN_COUNTER.labels(user.id, "binaries").inc(removed_bin)
             db.commit()
         except Exception as err:  # pylint: disable=broad-except
             db.rollback()
@@ -396,6 +404,8 @@ def _delete_old_entries(db: database.DB) -> None:
     try:
         states, entries = database.binaries.clean_sources_entries(db)
         _LOG.info("cleaned %d source states and %d entries", states, entries)
+        _CLEAN_COUNTER.labels("", "bin_states").inc(states)
+        _CLEAN_COUNTER.labels("", "bin_entries").inc(entries)
         db.commit()
     except Exception as err:  # pylint: disable=broad-except
         db.rollback()
