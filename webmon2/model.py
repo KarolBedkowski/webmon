@@ -288,7 +288,6 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.success_counter = self.success_counter
         new_state.icon = self.icon
         new_state.status = status
-        new_state.last_update = self.last_update
         new_state.state = self.state.copy() if self.state else None
         new_state.update_state(states)
         return new_state
