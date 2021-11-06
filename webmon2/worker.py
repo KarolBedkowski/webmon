@@ -238,7 +238,9 @@ class FetchWorker(threading.Thread):
 
         # update source state
         new_state.set_state("last_check", str(datetime.datetime.now()))
-        new_state.set_state("last_update_duration", str(time.time() - start))
+        new_state.set_state(
+            "last_update_duration", f"{time.time() - start:0.2f}"
+        )
         database.sources.save_state(db, new_state, source.user_id)
         # if source was updated - save new version
         updated_source = src.updated_source
