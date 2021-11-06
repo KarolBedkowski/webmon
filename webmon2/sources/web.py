@@ -123,6 +123,8 @@ class WebSource(AbstractSource):
         finally:
             if response:
                 response.close()
+                del response
+                response = None
 
     def _check_redirects(
         self, response: requests.Response
@@ -193,7 +195,7 @@ class WebSource(AbstractSource):
 
 
 def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
-    headers = {"User-agent": AbstractSource.AGENT}
+    headers = {"User-agent": AbstractSource.AGENT, "Connection": "close"}
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()

@@ -155,6 +155,10 @@ class GithubInput(AbstractSource, GitHubMixin):
 
         entry = _build_entry(self._source, repository, content)
         entry.icon = new_state.icon
+
+        del repository
+        repository = None
+
         return new_state, [entry]
 
     @classmethod
@@ -248,6 +252,10 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
 
         entry = _build_entry(self._source, repository, content)
         entry.icon = new_state.icon
+
+        del repository
+        repository = None
+
         return new_state, [entry]
 
     def _state_update_icon(self, new_state: model.SourceState) -> None:
@@ -373,6 +381,9 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
         for entry in entries:
             entry.icon = new_state.icon
+
+        del repository
+        repository = None
 
         return new_state, entries
 
