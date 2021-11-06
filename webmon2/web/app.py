@@ -185,7 +185,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             resp.headers["X-Content-Type-Options"] = "nosniff"
             resp.headers["X-Frame-Options"] = "DENY"
         elif not resp.headers.get("Cache-Control"):
-            resp.headers["Cache-Control"] = "public, max-age=604800"
+            resp.headers["Cache-Control"] = "public, max-age=31536000"
 
         resp_time = time.time() - request.req_start_time  # type: ignore
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
@@ -201,9 +201,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
 def _set_cache_contol_no_cache(resp: Response) -> None:
     if not resp.headers.get("Cache-Control"):
-        resp.headers[
-            "Cache-Control"
-        ] = "no-cache, max-age=0, must-revalidate, no-store"
+        resp.headers["Cache-Control"] = "no-cache, max-age=0"
 
 
 def _check_csrf_token() -> bool:
