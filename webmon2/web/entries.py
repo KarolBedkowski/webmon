@@ -145,11 +145,11 @@ def entries_search() -> str:
     )
 
 
-@BP.route("/<mode>/mark/read")
-def entries_mark_read(mode: str) -> ty.Any:
+@BP.route("/<mode>/mark/read", methods=["POST"])
+def entries_mark_read(mode: str) -> ty.Any:  # pylint: disable=unused-argument
     db = c.get_db()
     user_id = session["user"]  # type: int
-    ids = [int(id_) for id_ in request.args.get("ids", "").split(",")] or None
+    ids = [int(id_) for id_ in request.form.get("ids", "").split(",")] or None
     marked = database.entries.mark_read(
         db,
         user_id,
@@ -158,5 +158,4 @@ def entries_mark_read(mode: str) -> ty.Any:
         ids=ids,
     )
     db.commit()
-    flash(f"{marked} entries marked read")
-    return redirect(url_for("entries.entries", mode=mode))
+    return {"marked": marked}

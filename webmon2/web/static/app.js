@@ -138,9 +138,21 @@
 		document.querySelectorAll("a[data-action=mark-all-read]").forEach((element) => {
 			element.onclick = (event) => {
 				event.preventDefault();
+				if (element.attributes.processing) return;
+				element.attributes.processing = true;
+
 				let articlesId = getArticleIds().join(",");
-				let url = element.attributes.href.value + "&ids=" + articlesId;
-				window.location.href = url;
+				let formData = new FormData();
+				formData.append("ids", articlesId);
+				executeEntryAction(element.attributes.href.value, formData, (data) => {
+					if (data.url) {
+						window.location.href = data.url;
+					} else {
+						window.location.reload();
+					}
+				}, () => {
+					element.attributes.processing = false;
+				});
 		}});
 
 		document.querySelectorAll("time").forEach((element) => {

@@ -145,18 +145,18 @@ def group_entries(
     )
 
 
-@BP.route("/group/<int:group_id>/mark/read")
+@BP.route("/group/<int:group_id>/mark/read", methods=["POST"])
 def group_mark_read(group_id: int) -> ty.Any:
     db = c.get_db()
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
     user_id = session["user"]
     ids: ty.Optional[ty.List[int]] = None
-    r_ids = request.args.get("ids", "")
+    r_ids = request.form.get("ids", "")
     if r_ids:
         ids = list(map(int, r_ids.split(","))) or None
 
-    database.groups.mark_read(
+    marked = database.groups.mark_read(
         db, user_id, group_id, min_id=min_id, max_id=max_id, ids=ids
     )
     db.commit()
@@ -171,17 +171,16 @@ def group_mark_read(group_id: int) -> ty.Any:
             )
 
         flash("No more unread groups...")
-        return redirect(url_for("root.groups"))
-
-    return redirect(
-        request.args.get("back")
-        or url_for(
+        dst = url_for("root.groups")
+    else:
+        dst = request.args.get("back") or url_for(
             "group.group_entries",
             group_id=group_id,
             page=request.args.get("page"),
             mode=request.args.get("mode"),
         )
-    )
+
+    return {"url": dst, "marked": marked}
 
 
 @BP.route("/group/<int:group_id>/next_unread")
