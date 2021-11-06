@@ -176,7 +176,6 @@ def binary(datahash: str) -> ty.Any:
     except database.NotFound:
         return abort(404)
     data, content_type = data_content_type
-    g.non_action = True
     resp = Response(data, mimetype=content_type)
     resp.headers["Cache-Control"] = "max-age=31536000, public, immutable"
     return resp

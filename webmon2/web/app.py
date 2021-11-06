@@ -135,16 +135,15 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             return abort(400)
 
         path = request.path
-        g.non_action = (
-            path.startswith("/static")
+
+        # pages that not need valid user
+        if (
+            path == "/favicon.ico"
+            or path.startswith("/static")
             or path.startswith("/sec/login")
             or path.startswith("/metrics")
             or path.startswith("/atom")
-            or path.startswith("/binary/")
-            or path == "/favicon.ico"
-            or path == "/manifest.json"
-        )
-        if g.non_action or path.startswith("/entry/mark/"):
+        ):
             return None
 
         user_id = session.get("user")
@@ -156,6 +155,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
             return redirect(url_for("sec.login"))
 
+        #  pates that not need load additional data
+        if (
+            path.startswith("/binary/")
+            or path == "/manifest.json"
+            or path.startswith("/entry/mark/")
+        ):
+            return None
+
         if request.method == "GET":
             _count_unread(user_id)
 
@@ -165,17 +172,19 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def after_request(  # pylint: disable=unused-variable
         resp: Response,
     ) -> Response:
-        if hasattr(g, "non_action") and not g.non_action:
-            if not resp.headers.get("Cache-Control"):
-                resp.headers[
-                    "Cache-Control"
-                ] = "no-cache, max-age=0, must-revalidate, no-store"
-            resp.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
-            resp.headers["X-CSRF-TOKEN"] = str(session.get("_csrf_token"))
+        cont_type = (resp.content_type.split(";") or [""])[0]
+        if cont_type in (
+            "application/json",
+            "application/atom+xml",
+            "text/plain",
+        ):
+            _set_cache_contol_no_cache(resp)
+        if cont_type == "text/html":
+            _set_cache_contol_no_cache(resp)
             resp.headers["Content-Security-Policy"] = _CSP
             resp.headers["X-Content-Type-Options"] = "nosniff"
             resp.headers["X-Frame-Options"] = "DENY"
-        else:
+        elif not resp.headers.get("Cache-Control"):
             resp.headers["Cache-Control"] = "public, max-age=604800"
 
         resp_time = time.time() - request.req_start_time  # type: ignore
@@ -188,6 +197,13 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         return resp
 
     return app
+
+
+def _set_cache_contol_no_cache(resp: Response):
+    if not resp.headers.get("Cache-Control"):
+        resp.headers[
+            "Cache-Control"
+        ] = "no-cache, max-age=0, must-revalidate, no-store"
 
 
 def _check_csrf_token() -> bool:
