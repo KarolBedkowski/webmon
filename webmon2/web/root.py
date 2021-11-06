@@ -20,7 +20,6 @@ from flask import (
     abort,
     current_app,
     flash,
-    g,
     json,
     redirect,
     render_template,

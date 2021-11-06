@@ -199,7 +199,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     return app
 
 
-def _set_cache_contol_no_cache(resp: Response):
+def _set_cache_contol_no_cache(resp: Response) -> None:
     if not resp.headers.get("Cache-Control"):
         resp.headers[
             "Cache-Control"

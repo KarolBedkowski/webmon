@@ -15,7 +15,6 @@ import typing as ty
 
 from flask import (
     Blueprint,
-    flash,
     redirect,
     render_template,
     request,
