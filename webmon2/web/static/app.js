@@ -52,10 +52,6 @@
 			method: "POST",
 			body: formData,
 		}).then((resp) => {
-			let csrf = resp.headers.get("X-CSRF-TOKEN");
-			if (csrf) {
-				document.querySelector("meta[name=_app_csrf]").setAttribute("value", csrf);
-			}
 			return resp.json();
 		}).then((data) => {
 			if (onDataCallback) onDataCallback(data);

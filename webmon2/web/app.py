@@ -12,7 +12,6 @@ Web gui application
 
 import logging
 import os
-import random
 import time
 import typing as ty
 from argparse import Namespace
@@ -191,11 +190,6 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     return app
 
 
-def _generate_csrf_token() -> str:
-    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    return "".join(random.SystemRandom().choice(chars) for _ in range(32))
-
-
 def _check_csrf_token() -> bool:
     if request.method == "POST":
         req_token = request.form.get("_csrf_token")
@@ -204,12 +198,8 @@ def _check_csrf_token() -> bool:
             _LOG.info("bad csrf token")
             return False
 
-        session["_csrf_token"] = _generate_csrf_token()
-        session.modified = True
-
     elif "_csrf_token" not in session:
-        session["_csrf_token"] = _generate_csrf_token()
-        session.modified = True
+        c.generate_csrf_token()
 
     return True
 
