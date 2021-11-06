@@ -176,7 +176,7 @@ def source_entries(
     )
 
 
-@BP.route("/<int:source_id>/mark/read")
+@BP.route("/<int:source_id>/mark/read", methods=["POST"])
 def source_mark_read(source_id: int) -> ty.Any:
     """Mark all entries in source read."""
     db = c.get_db()
@@ -186,30 +186,29 @@ def source_mark_read(source_id: int) -> ty.Any:
     r_ids = request.args.get("ids")
     ids = list(map(int, r_ids.split(","))) if r_ids else None
 
-    database.sources.mark_read(
+    marked = database.sources.mark_read(
         db, user_id, source_id, max_id=max_id, min_id=min_id, ids=ids
     )
     db.commit()
     if request.args.get("go") == "next":
         n_source_id = database.sources.find_next_unread(db, user_id)
         if n_source_id:
-            return redirect(
-                url_for("source.source_entries", source_id=n_source_id)
-            )
-
-        flash("No more unread sources...")
+            return {
+                "url": url_for("source.source_entries", source_id=n_source_id),
+                "marked": marked,
+            }
 
     if min_id:
-        return redirect(
-            url_for(
-                "source.source_entries",
-                source_id=source_id,
-                page=request.args.get("page"),
-                mode=request.args.get("mode"),
-            )
+        dst = url_for(
+            "source.source_entries",
+            source_id=source_id,
+            page=request.args.get("page"),
+            mode=request.args.get("mode"),
         )
+    else:
+        dst = url_for("root.sources")
 
-    return redirect(url_for("root.sources"))
+    return {"url": dst, "marked": marked}
 
 
 @BP.route("/<int:source_id>/filters")
