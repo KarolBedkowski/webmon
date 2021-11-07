@@ -311,7 +311,6 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error = error
         state.error_counter += 1
         state.last_error = datetime.now()
-        state.state = self.state.copy() if self.state else None
         return state
 
     def new_not_modified(self, **states: ty.Any) -> SourceState:
@@ -322,6 +321,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = self.create_new(
             status=SourceStateStatus.NOT_MODIFIED, **states
         )
+        state.last_update = self.last_update
         state.error_counter = 0
         state.success_counter += 1
         return state
