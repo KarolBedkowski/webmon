@@ -1,4 +1,5 @@
-{% macro render_source(source) -%}
+
+{% macro render_source(source, webmon2) -%}
 	<article>
 		<header>
 			{% if source.state.icon %}
@@ -22,13 +23,16 @@
 				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
 				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Really delete source?">✘ Delete</a></span>
 			</div>
-			{% if source.status == 0 %}
+			{% if source.status == webmon2.model.SourceStatus.NOT_ACTIVATED %}
 				<p class="error-inl">Need configure &amp; activate.</p>
-			{% elif source.status == 2 %}
+			{% elif source.status == webmon2.model.SourceStatus.DISABLED %}
 				<p class="warn-inl">💤 Disabled</p>
 			{% else %}
-				{% if source.state.status == 'error' %}
-				<p><span class="error-inl">Error:</span><br/><i>{{ source.state.error}}</br>at {{ source.state.last_update | format_date }}</i><br/>Times: {{ source.state.error_counter}}</p>
+				{% if source.state.status == webmon2.model.SourceStateStatus.ERROR %}
+				<p><span class="error-inl">Error:</span><br/>
+					<i>{{ source.state.error | summary('plain') }}</br>
+					at {{ source.state.last_update | format_date }}</i><br/>
+					Times: {{ source.state.error_counter}}</p>
 				{% endif %}
 			{% endif %}
 			{% if source.state.get_prop('info') %}

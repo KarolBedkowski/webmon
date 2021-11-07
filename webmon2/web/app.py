@@ -40,6 +40,7 @@ except ImportError:
     minify = None
 
 
+import webmon2
 from webmon2 import database, worker
 
 from . import _commons as c
@@ -195,6 +196,11 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             request.method, request.endpoint, resp.status_code
         ).inc()
         return resp
+
+    @app.context_processor
+    def handle_context() -> ty.Dict[str, ty.Any]:
+        """Inject object into jinja2 templates."""
+        return {"webmon2": webmon2}
 
     return app
 
