@@ -222,7 +222,7 @@ class SourceStateStatus(Enum):
     OK = "ok"
 
 
-States = ty.Dict[str, ty.Any]
+Props = ty.Dict[str, ty.Any]
 IconData = ty.Tuple[str, bytes]
 
 
@@ -236,7 +236,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "success_counter",
         "status",
         "error",
-        "state",
+        "props",
         "icon",
         "icon_data",
     )
@@ -257,7 +257,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.status: ty.Optional[SourceStateStatus] = None
         self.error: ty.Optional[str] = None
         # additional informations stored by source loader
-        self.state: ty.Optional[States] = None
+        self.props: ty.Optional[Props] = None
         # icon hash
         self.icon: ty.Optional[str] = None
 
@@ -277,7 +277,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return source
 
     def create_new(
-        self, status: ty.Optional[SourceStateStatus] = None, **states: ty.Any
+        self, status: ty.Optional[SourceStateStatus] = None, **props: ty.Any
     ) -> SourceState:
         """
         Create new `SourceState` and copy basic data from current object.
@@ -288,77 +288,75 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.success_counter = self.success_counter
         new_state.icon = self.icon
         new_state.status = status
-        new_state.state = self.state.copy() if self.state else None
-        new_state.update_state(states)
+        new_state.props = self.props.copy() if self.props else None
+        new_state.update_props(props)
         return new_state
 
-    def new_ok(self, **states: ty.Any) -> SourceState:
+    def new_ok(self, **props: ty.Any) -> SourceState:
         """
         Create new `SourceState` with statue = `OK` and copy basic data from
         current object. Reset error and increment success counters.
         """
-        state = self.create_new(status=SourceStateStatus.OK, **states)
+        state = self.create_new(status=SourceStateStatus.OK, **props)
         state.success_counter += 1
         state.error_counter = 0
         return state
 
-    def new_error(self, error: str, **states: ty.Any) -> SourceState:
+    def new_error(self, error: str, **props: ty.Any) -> SourceState:
         """
         Create new `SourceState` with statue = `ERROR` and copy basic data from
         current object. Increment error counter.
         """
-        state = self.create_new(status=SourceStateStatus.ERROR, **states)
+        state = self.create_new(status=SourceStateStatus.ERROR, **props)
         state.error = error
         state.error_counter += 1
         state.last_error = datetime.now()
         return state
 
-    def new_not_modified(self, **states: ty.Any) -> SourceState:
+    def new_not_modified(self, **props: ty.Any) -> SourceState:
         """
         Create new `SourceState` with statue = `NOT_MODIFIED`,copy basic data
         from current object. Reset error and increment success counters.
         """
-        state = self.create_new(
-            status=SourceStateStatus.NOT_MODIFIED, **states
-        )
+        state = self.create_new(status=SourceStateStatus.NOT_MODIFIED, **props)
         state.last_update = self.last_update
         state.error_counter = 0
         state.success_counter += 1
         return state
 
-    def set_state(self, key: str, value: ty.Any) -> None:
+    def set_prop(self, key: str, value: ty.Any) -> None:
         """
-        Update state `value` for `key`.
+        Update props`value` for `key`.
         """
-        if self.state is None:
-            self.state = {key: value}
+        if self.props is None:
+            self.props = {key: value}
         else:
-            self.state[key] = value
+            self.props[key] = value
 
-    def get_state(self, key: str, default: ty.Any = None) -> ty.Any:
+    def get_prop(self, key: str, default: ty.Any = None) -> ty.Any:
         """
-        Get state value for `key`, return `default` if `key` is not found.
+        Get props value for `key`, return `default` if `key` is not found.
         """
-        return self.state.get(key, default) if self.state else default
+        return self.props.get(key, default) if self.props else default
 
-    def del_state(self, key: str) -> None:
+    def del_prop(self, key: str) -> None:
         """
-        Delete value from state if exists.
+        Delete value from props if exists.
         """
-        if self.state and key in self.state:
-            del self.state[key]
+        if self.props and key in self.props:
+            del self.props[key]
 
-    def update_state(self, states: ty.Optional[States]) -> None:
+    def update_props(self, props: ty.Optional[Props]) -> None:
         """
         Update4 states from `states` dict.
         """
-        if not states:
+        if not props:
             return
 
-        if not self.state:
-            self.state = {}
+        if not self.props:
+            self.props = {}
 
-        self.state.update(states)
+        self.props.update(props)
 
     def set_icon(
         self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
@@ -392,7 +390,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             "source_state__success_counter": self.success_counter,
             "source_state__status": self.status.value if self.status else None,
             "source_state__error": self.error,
-            "source_state__state": json.dumps(self.state),
+            "source_state__props": json.dumps(self.props),
             "source_state__icon": self.icon,
         }
 
@@ -407,7 +405,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter = row["source_state__success_counter"]
         state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
-        state.state = try_load_json("source_state__state", row)
+        state.props = try_load_json("source_state__props", row)
         state.icon = row["source_state__icon"]
         return state
 

@@ -80,7 +80,7 @@ class RssSource(AbstractSource):
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
             self._conf["url"],
-            etag=state.get_state("etag"),
+            etag=state.get_prop("etag"),
             modified=state.last_update,
         )
         status = doc.get("status") if doc else 400
@@ -114,16 +114,16 @@ class RssSource(AbstractSource):
         expires = common.parse_http_date(doc.headers.get("expires"))
         if expires:
             new_state.next_update = expires
-            new_state.set_state("expires", str(expires))
+            new_state.set_prop("expires", str(expires))
 
         if status == 301:  # permanent redirects
-            new_state.set_state("info", "Permanently redirects: " + doc.href)
+            new_state.set_prop("info", "Permanently redirects: " + doc.href)
             self._update_source(new_url=doc.href)
         elif status == 302:
-            new_state.set_state("info", "Temporary redirects: " + doc.href)
+            new_state.set_prop("info", "Temporary redirects: " + doc.href)
             self._update_source(new_url=doc.href)
         else:
-            new_state.del_state("info")
+            new_state.del_prop("info")
 
         load_article = self._conf["load_article"]
         load_content = self._conf["load_content"]

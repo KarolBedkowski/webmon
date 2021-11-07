@@ -5,6 +5,8 @@
  * Distributed under terms of the GPLv3 license.
  */
 
-CREATE INDEX entries_idx2 ON public.entries USING btree (source_id, read_mark);
+CREATE INDEX IF NOT EXISTS entries_idx2 ON public.entries USING btree (source_id, read_mark);
+
+ALTER TABLE source_state RENAME COLUMN state TO props;
 
 -- vim:et

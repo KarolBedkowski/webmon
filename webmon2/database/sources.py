@@ -68,7 +68,7 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.success_counter AS source_state__success_counter,
     ss.status AS source_state__status,
     ss.error AS source_state__error,
-    ss.state AS source_state__state,
+    ss.props AS source_state__props,
     ss.icon AS source_state__icon,
     (
         SELECT count(null)
@@ -387,7 +387,7 @@ SELECT source_id AS source_state__source_id,
     success_counter AS source_state__success_counter,
     status AS source_state__status,
     error AS source_state__error,
-    state AS source_state__state,
+    props AS source_state__props,
     icon AS source_state__icon
 FROM source_state
 WHERE source_id=%s
@@ -405,11 +405,11 @@ def get_state(db: DB, source_id: int) -> ty.Optional[model.SourceState]:
 
 _INSERT_STATE_SQL = """
 INSERT INTO source_state(source_id, next_update, last_update, last_error,
-    error_counter, success_counter, status, error, state, icon)
+    error_counter, success_counter, status, error, props, icon)
 VALUES (%(source_state__source_id)s, %(source_state__next_update)s,
     %(source_state__last_update)s, %(source_state__last_error)s,
     %(source_state__error_counter)s, %(source_state__success_counter)s,
-    %(source_state__status)s, %(source_state__error)s, %(source_state__state)s,
+    %(source_state__status)s, %(source_state__error)s, %(source_state__props)s,
     %(source_state__icon)s)
 """
 
@@ -422,7 +422,7 @@ SET next_update=%(source_state__next_update)s,
     success_counter=%(source_state__success_counter)s,
     status=%(source_state__status)s,
     error=%(source_state__error)s,
-    state=%(source_state__state)s,
+    props=%(source_state__props)s,
     icon=%(source_state__icon)s
 WHERE source_id=%(source_state__source_id)s
 """

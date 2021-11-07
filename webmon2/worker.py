@@ -229,16 +229,16 @@ class FetchWorker(threading.Thread):
         if entries:
             # save entries
             max_date = max(entry.updated for entry in entries if entry.updated)
-            new_state.set_state("last_entry_date", str(max_date))
+            new_state.set_prop("last_entry_date", str(max_date))
             database.entries.save_many(db, entries)
             database.groups.update_state(db, source.group_id, max_date)
             icon = entries[0].icon
             if not new_state.icon and icon:
                 new_state.icon = icon
 
-        # update source state
-        new_state.set_state("last_check", str(datetime.datetime.now()))
-        new_state.set_state(
+        # update source state properties
+        new_state.set_prop("last_check", str(datetime.datetime.now()))
+        new_state.set_prop(
             "last_update_duration", f"{time.time() - start:0.2f}"
         )
         database.sources.save_state(db, new_state, source.user_id)
@@ -464,6 +464,6 @@ def _save_state_error(
 
     new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
-    new_state.set_state("last_check", str(datetime.datetime.now()))
+    new_state.set_prop("last_check", str(datetime.datetime.now()))
 
     database.sources.save_state(db, new_state, source.user_id)

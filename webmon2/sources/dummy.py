@@ -33,7 +33,7 @@ class DymmySource(AbstractSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
 
-        last_check = state.get_state("last_check")
+        last_check = state.get_prop("last_check")
 
         if (
             last_check
@@ -58,7 +58,7 @@ class DymmySource(AbstractSource):
         new_state.next_update = datetime.datetime.now() + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )
-        new_state.set_state("last_check", datetime.datetime.now().timestamp())
+        new_state.set_prop("last_check", datetime.datetime.now().timestamp())
         return new_state, entries
 
     @classmethod

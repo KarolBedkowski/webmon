@@ -110,7 +110,7 @@ class WebSource(AbstractSource):
             expires = common.parse_http_date(response.headers.get("expires"))
             if expires:
                 new_state.next_update = expires
-                new_state.set_state("expires", str(expires))
+                new_state.set_prop("expires", str(expires))
 
             return new_state, [entry]
 
@@ -129,14 +129,14 @@ class WebSource(AbstractSource):
         self, response: requests.Response, new_state: model.SourceState
     ) -> ty.Optional[str]:
         if not response.history:
-            new_state.del_state("info")
+            new_state.del_prop("info")
             return None
 
         for hist in response.history:
             if hist.is_permanent_redirect:
                 href = hist.headers.get("Location")
                 if href:
-                    new_state.set_state(
+                    new_state.set_prop(
                         "info", "Permanently redirects: " + href
                     )
                     self._update_source(new_url=href)
@@ -147,10 +147,10 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
-                    new_state.set_state("info", "Temporary redirects: " + href)
+                    new_state.set_prop("info", "Temporary redirects: " + href)
                     return href
 
-        new_state.del_state("info")
+        new_state.del_prop("info")
         return None
 
     def _update_source(self, new_url: ty.Optional[str] = None) -> None:
@@ -206,8 +206,8 @@ def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
             state.last_update.timestamp()
         )
 
-    if state.state:
-        etag = state.state.get("etag")
+    if state.props:
+        etag = state.props.get("etag")
         if etag:
             headers["If-None-Match"] = etag
 
