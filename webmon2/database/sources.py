@@ -43,12 +43,12 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.state AS source_state__state,
     ss.icon AS source_state__icon,
     (
-        SELECT count(1)
+        SELECT count(null)
         FROM entries
         WHERE source_id=s.id AND read_mark=0
     ) AS unread
 FROM sources s
-LEFT JOIN source_state ss ON ss.source_id = s.id
+JOIN source_state ss ON ss.source_id = s.id
 WHERE s.user_id=%(user_id)s"""
 
 

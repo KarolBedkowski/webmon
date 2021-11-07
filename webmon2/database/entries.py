@@ -553,8 +553,8 @@ def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
     if not source_id:
         raise ValueError("missing source_id")
 
+    result = set()  # type: ty.Set[str]
     with db.cursor() as cur:
-        result = set()  # type: ty.Set[str]
         for idx in range(0, len(oids), 100):
             part_oids = tuple(oids[idx : idx + 100])
             cur.execute(

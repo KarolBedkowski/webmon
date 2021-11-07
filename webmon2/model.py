@@ -341,7 +341,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         return self.state.get(key, default) if self.state else default
 
-    def del_state(self, key: str):
+    def del_state(self, key: str) -> None:
+        """
+        Delete value from state if exists.
+        """
         if self.state and key in self.state:
             del self.state[key]
 
