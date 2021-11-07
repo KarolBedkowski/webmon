@@ -23,6 +23,34 @@ from ._dbcommon import Cursor
 _ = ty
 _LOG = logging.getLogger(__name__)
 
+
+def get_names(
+    db: DB, user_id: int, group_id: ty.Optional[int]
+) -> ty.List[ty.Tuple[int, str]]:
+    """
+    Get list of id, name all user sources optionally filtered by `group_id`
+    and ordered by name;
+    """
+    _LOG.debug("get_names %r, %r", user_id, group_id)
+    if not user_id:
+        raise ValueError("missing user_id")
+
+    with db.cursor() as cur:
+        if group_id:
+            cur.execute(
+                "SELECT id, name FROM sources "
+                "WHERE user_id=%s and group_id=%s ORDER BY name",
+                (user_id, group_id),
+            )
+        else:
+            cur.execute(
+                "SELECT id, name FROM sources WHERE user_id=%s ORDER BY name",
+                (user_id,),
+            )
+
+        return cur.fetchall()  # type: ignore
+
+
 _GET_SOURCES_SQL = """
 SELECT s.id AS source__id, s.group_id AS source__group_id,
     s.kind AS source__kind, s.name AS source__name,

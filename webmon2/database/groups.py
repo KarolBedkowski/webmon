@@ -19,6 +19,24 @@ from ._db import DB
 
 _LOG = logging.getLogger(__name__)
 
+
+def get_names(db: DB, user_id: int) -> ty.List[ty.Tuple[int, str]]:
+    """
+    Get list of id, name all user groups ordered by name.
+    """
+    if not user_id:
+        raise ValueError("missing user_id")
+
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT id, name FROM source_groups "
+            "WHERE user_id=%s ORDER BY name",
+            (user_id,),
+        )
+
+        return cur.fetchall()  # type: ignore
+
+
 _GET_SOURCE_GROUPS_SQL = """
 SELECT sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
     (

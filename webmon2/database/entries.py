@@ -114,7 +114,6 @@ _GET_HISTORY_ENTRIES_SQL = (
     _GET_ENTRIES_SQL_MAIN
     + """
 WHERE e.read_mark = %(read)s AND e.user_id=%(user_id)s
-ORDER BY e.id
 """
 )
 
@@ -176,19 +175,70 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
         yield from _yield_entries(cur, user_sources)
 
 
-def get_history(db: DB, user_id: int) -> model.Entries:
-    """Get all entries manually read (read_mark=2) for given user"""
+def get_history(  # pylint: disable=too-many-arguments
+    db: DB,
+    user_id: int,
+    source_id: ty.Optional[int],
+    group_id: ty.Optional[int],
+    offset: int = 0,
+    limit: int = 20,
+) -> ty.Tuple[model.Entries, int]:
+    """
+    Get entries manually read (read_mark=2) for given user ordered by id
+    Optionally filter by `source_id` and/or `group_id`.
+    Load only `limit` entries starting from `offset`.
+
+    Returns:
+        (list of entries, number of all entries)
+
+    """
+    _LOG.debug(
+        "get_history: %r, %r, %r, %r, %r",
+        user_id,
+        source_id,
+        group_id,
+        offset,
+        limit,
+    )
+
     if not user_id:
         raise ValueError("missing user_id")
 
-    user_sources = sources.get_all_dict(db, user_id)
+    if source_id:
+        user_sources = {source_id: sources.get(db, source_id, user_id=user_id)}
+    else:
+        user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
+
+    sql = _GET_HISTORY_ENTRIES_SQL
+    if source_id:
+        sql += " AND source_id = %(source_id)s"
+    if group_id:
+        sql += (
+            " AND source_id in "
+            "(select id from sources where group_id=%(group_id)s)"
+        )
+
+    params = {
+        "user_id": user_id,
+        "read": model.EntryReadMark.MANUAL_READ,
+        "source_id": source_id,
+        "group_id": group_id,
+        "limit": limit,
+        "offset": offset,
+    }
+
+    # count all
+    with db.cursor() as cur:
+        cur.execute(f"select count(1) from ({sql}) ss", params)
+        total = int(cur.fetchone()[0])
+
+    sql += " ORDER BY e.id LIMIT %(limit)s OFFSET %(offset)s"
 
     with db.cursor() as cur:
-        cur.execute(
-            _GET_HISTORY_ENTRIES_SQL,
-            {"user_id": user_id, "read": model.EntryReadMark.MANUAL_READ},
-        )
-        yield from _yield_entries(cur, user_sources)
+        cur.execute(sql, params)
+        entries = list(_yield_entries(cur, user_sources))
+
+    return entries, total
 
 
 def get_total_count(
