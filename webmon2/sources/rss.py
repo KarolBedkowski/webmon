@@ -85,11 +85,10 @@ class RssSource(AbstractSource):
         )
         status = doc.get("status") if doc else 400
         if status not in (200, 301, 302, 304):
-
+            res = _fail_error(state, doc, status)
             del doc
             doc = None
-
-            return _fail_error(state, doc, status)
+            return res
 
         # self._check_sy_updateperiod(doc.feed)
 
