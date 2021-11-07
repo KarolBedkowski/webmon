@@ -25,13 +25,19 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
-    print("no stackprinter")
     try:
         from rich.traceback import install
 
         install()
     except ImportError:
-        print("no rich.trackback")
+        pass
+
+try:
+    import icecream
+
+    icecream.install()
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    pass
 
 try:
     import sdnotify
