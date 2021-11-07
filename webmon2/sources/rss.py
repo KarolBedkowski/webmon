@@ -123,6 +123,8 @@ class RssSource(AbstractSource):
         elif status == 302:
             new_state.set_state("info", "Temporary redirects: " + doc.href)
             self._update_source(new_url=doc.href)
+        else:
+            new_state.del_state("info")
 
         load_article = self._conf["load_article"]
         load_content = self._conf["load_content"]

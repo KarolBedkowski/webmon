@@ -341,6 +341,10 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         return self.state.get(key, default) if self.state else default
 
+    def del_state(self, key: str):
+        if self.state and key in self.state:
+            del self.state[key]
+
     def update_state(self, states: ty.Optional[States]) -> None:
         """
         Update4 states from `states` dict.
