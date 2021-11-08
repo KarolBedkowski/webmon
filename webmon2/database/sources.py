@@ -71,7 +71,7 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.props AS source_state__props,
     ss.icon AS source_state__icon,
     (
-        SELECT count(null)
+        SELECT count(1)
         FROM entries
         WHERE source_id=s.id AND read_mark=0
     ) AS unread
