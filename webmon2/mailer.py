@@ -84,6 +84,10 @@ def _process_groups(
             _LOG.debug("group %s skipped", group.name)
             continue
 
+        if not group.unread:
+            _LOG.debug("no unread entries in group %s", group.name)
+            continue
+
         assert group.id
         yield from _process_group(db, conf, user_id, group.id)
 
