@@ -346,6 +346,12 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         if self.props and key in self.props:
             del self.props[key]
 
+    def visible_props(self) -> ty.Iterable[ty.Tuple[str, str]]:
+        if not self.props:
+            return []
+
+        return ((key, val) for key, val in self.props.items() if key[0] != "_")
+
     def update_props(self, props: ty.Optional[Props]) -> None:
         """
         Update4 states from `states` dict.

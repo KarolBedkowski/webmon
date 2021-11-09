@@ -87,12 +87,10 @@
 		<p>Errors: {{ source.state.error_counter }}</p>
 		<p>Last error at: {{ source.state.last_error | format_date }}</p>
 		<p>Last error message: {{ source.state.error }}</p>
-		{% if source.state.props %}
 		<h3>Additional</h3>
-			{% for key, val in source.state.props.items() %}
-				<p>{{ key | format_key }}: {{ val}}</p>
-			{% endfor %}
-		{% endif %}
+		{% for key, val in source.state.visible_props() %}
+			<p>{{ key | format_key }}: {{ val}}</p>
+		{% endfor %}
 	</section>
 	{% endif %}
 {% endblock %}
