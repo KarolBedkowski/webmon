@@ -64,6 +64,7 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.next_update AS source_state__next_update,
     ss.last_update AS source_state__last_update,
     ss.last_error AS source_state__last_error,
+    ss.last_check AS source_state__last_check,
     ss.error_counter AS source_state__error_counter,
     ss.success_counter AS source_state__success_counter,
     ss.status AS source_state__status,
@@ -382,6 +383,7 @@ _GET_STATE_SQL = """
 SELECT source_id AS source_state__source_id,
     next_update AS source_state__next_update,
     last_update AS source_state__last_update,
+    last_check AS source_state__last_check,
     last_error AS source_state__last_error,
     error_counter AS source_state__error_counter,
     success_counter AS source_state__success_counter,
@@ -405,12 +407,12 @@ def get_state(db: DB, source_id: int) -> ty.Optional[model.SourceState]:
 
 _INSERT_STATE_SQL = """
 INSERT INTO source_state(source_id, next_update, last_update, last_error,
-    error_counter, success_counter, status, error, props, icon)
+    error_counter, success_counter, status, error, props, icon, last_check)
 VALUES (%(source_state__source_id)s, %(source_state__next_update)s,
     %(source_state__last_update)s, %(source_state__last_error)s,
     %(source_state__error_counter)s, %(source_state__success_counter)s,
     %(source_state__status)s, %(source_state__error)s, %(source_state__props)s,
-    %(source_state__icon)s)
+    %(source_state__icon)s, %(source_state__last_check)s)
 """
 
 _UPDATE_STATE_SQL = """
@@ -418,6 +420,7 @@ UPDATE source_state
 SET next_update=%(source_state__next_update)s,
     last_update=%(source_state__last_update)s,
     last_error=%(source_state__last_error)s,
+    last_check=%(source_state__last_check)s,
     error_counter=%(source_state__error_counter)s,
     success_counter=%(source_state__success_counter)s,
     status=%(source_state__status)s,

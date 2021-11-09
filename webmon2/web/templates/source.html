@@ -83,6 +83,7 @@
 		<h2>State</h2>
 		<p>Next update: {{ source.state.next_update | format_date }}</p>
 		<p>Last update: {{ source.state.last_update | format_date }}</p>
+		<p>Last check: {{ source.state.last_check | format_date }}</p>
 		<p>Updates: {{ source.state.success_counter }}</p>
 		<p>Errors: {{ source.state.error_counter }}</p>
 		<p>Last error at: {{ source.state.last_error | format_date }}</p>

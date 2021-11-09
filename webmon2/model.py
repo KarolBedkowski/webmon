@@ -239,14 +239,17 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "props",
         "icon",
         "icon_data",
+        "last_check",
     )
 
     def __init__(self) -> None:
         self.source_id: int = 0
         # next source update time
         self.next_update: ty.Optional[datetime] = None
-        # last source update time
+        # last source update time (load new new items or update existing)
         self.last_update: ty.Optional[datetime] = None
+        # last check for changes
+        self.last_check: ty.Optional[datetime] = None
         # last source update failed time
         self.last_error: ty.Optional[datetime] = None
         # number of failed updates since last success update
@@ -398,6 +401,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             "source_state__error": self.error,
             "source_state__props": json.dumps(self.props),
             "source_state__icon": self.icon,
+            "source_state__last_check": self.last_check,
         }
 
     @classmethod
@@ -413,6 +417,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error = row["source_state__error"]
         state.props = try_load_json("source_state__props", row)
         state.icon = row["source_state__icon"]
+        state.last_check = row["source_state__last_check"]
         return state
 
 

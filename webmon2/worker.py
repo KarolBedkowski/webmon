@@ -237,7 +237,7 @@ class FetchWorker(threading.Thread):
                 new_state.icon = icon
 
         # update source state properties
-        new_state.set_prop("last_check", str(datetime.datetime.now()))
+        new_state.last_check = datetime.datetime.now()
         new_state.set_prop(
             "last_update_duration", f"{time.time() - start:0.2f}"
         )
@@ -464,6 +464,6 @@ def _save_state_error(
 
     new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
-    new_state.set_prop("last_check", str(datetime.datetime.now()))
+    new_state.last_check = datetime.datetime.now()
 
     database.sources.save_state(db, new_state, source.user_id)
