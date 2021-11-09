@@ -24,7 +24,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import database, filters, model, sources
+from webmon2 import common, database, filters, model, sources
 
 from . import _commons as c
 from . import forms
@@ -114,6 +114,18 @@ def source_edit(
                     u_source.status = model.SourceStatus.ACTIVE
 
                 u_source = database.sources.save(db, u_source)
+
+                # adjust next check time when interval changed
+                if (
+                    source_id
+                    and source.interval != u_source.interval
+                    and u_source.interval
+                ):
+                    interval = common.parse_interval(u_source.interval)
+                    assert source.state
+                    source.state.adjust_next_update(interval)
+                    database.sources.save_state(db, source.state, user_id)
+
                 db.commit()
                 flash("Source saved")
                 if next_action == "edit_filters":

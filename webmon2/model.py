@@ -386,6 +386,18 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.icon_data = content_type_data
         return self.icon
 
+    def adjust_next_update(self, interval: int) -> None:
+        """
+        Change next update time to last_check/last_update/now + interval.
+        """
+        last = datetime.now()
+        if self.last_check:
+            last = max(self.last_check, last)
+        elif self.last_update:
+            last = max(self.last_update, last)
+
+        self.next_update = last + timedelta(seconds=interval)
+
     def __str__(self) -> str:
         return common.obj2str(self)
 
