@@ -37,11 +37,6 @@ _WORKER_PROCESSING_TIME = Gauge(
     "webmon2_worker_processing_seconds",
     "Worker processing time",
 )
-_SOURCE_PROCESSING_TIME = Gauge(
-    "webmon2_source_processing_seconds",
-    "Source processing time",
-    ["source_id"],
-)
 _CLEAN_COUNTER = Counter(
     "webmon2_clean_items",
     "Number of deleted entries",
@@ -141,7 +136,6 @@ class FetchWorker(threading.Thread):
     def run(self) -> None:
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
-            start = time.time()
             with database.DB.get() as db:
                 source = None
                 try:
@@ -160,7 +154,6 @@ class FetchWorker(threading.Thread):
                         _save_state_error(db, source, str(err))
                 finally:
                     db.commit()
-            _SOURCE_PROCESSING_TIME.labels(source_id).set(time.time() - start)
 
     def _process_source(self, db: database.DB, source: model.Source) -> None:
         """
