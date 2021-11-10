@@ -561,11 +561,14 @@ def _save_entry_icon(db: DB, entries: model.Entries) -> None:
 def delete_old(
     db: DB, user_id: int, max_datetime: datetime
 ) -> ty.Tuple[int, int]:
-    """Delete old entries for given user"""
+    """
+    Delete old entries for given user.
+    Keep unread and starred messages.
+    """
     with db.cursor() as cur:
         cur.execute(
-            "DELETE FROM entries WHERE star_mark=0 AND read_mark=%s "
-            "AND updated<%s AND user_id=%s",
+            "DELETE FROM entries WHERE star_mark = 0 AND read_mark != %s "
+            "AND updated < %s AND user_id = %s",
             (model.EntryReadMark.UNREAD, max_datetime, user_id),
         )
         deleted_entries = cur.rowcount
