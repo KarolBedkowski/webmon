@@ -1,4 +1,4 @@
-webmon ver 2.5.x
+webmon ver 2.6.x
 ================
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
