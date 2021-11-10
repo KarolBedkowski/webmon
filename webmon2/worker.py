@@ -22,7 +22,7 @@ import time
 import typing as ty
 from configparser import ConfigParser
 
-from prometheus_client import Counter, Gauge
+from prometheus_client import Counter
 
 from . import common, database, filters, formatters, mailer, model, sources
 
@@ -33,7 +33,7 @@ _SOURCES_PROCESSED = Counter(
 _SOURCES_PROCESSED_ERRORS = Counter(
     "webmon2_sources_processed_errors", "Sources processed with errors count"
 )
-_WORKER_PROCESSING_TIME = Gauge(
+_WORKER_PROCESSING_TIME = Counter(
     "webmon2_worker_processing_seconds",
     "Worker processing time",
 )
@@ -105,7 +105,7 @@ class CheckWorker(threading.Thread):
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception("CheckWorker thread error: %s", err)
 
-            _WORKER_PROCESSING_TIME.set(time.time() - start)
+            _WORKER_PROCESSING_TIME.inc(time.time() - start)
 
             gc_cntr += 1
             if gc_cntr == 30:
