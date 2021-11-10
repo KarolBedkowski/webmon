@@ -40,7 +40,8 @@ class WebSource(AbstractSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
-        new_state, entries = self._load(state)
+        with requests.Session() as sess:
+            new_state, entries = self._load(state, sess)
         if new_state.status != model.SourceStateStatus.ERROR:
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
@@ -54,13 +55,13 @@ class WebSource(AbstractSource):
         return new_state, entries
 
     def _load(
-        self, state: model.SourceState
+        self, state: model.SourceState, sess: requests.Session
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
         headers = _prepare_headers(state)
         response = None
         try:
-            response = requests.request(
+            response = sess.request(
                 url=url,
                 method="GET",
                 headers=headers,
@@ -85,8 +86,14 @@ class WebSource(AbstractSource):
 
                 return state.new_error(msg), []
 
-            url = self._check_redirects(response) or url
+            new_state = state.new_ok(
+                etag=response.headers.get("ETag"),
+                last_modified=response.headers.get("last_modified"),
+            )
+            if not new_state.icon:
+                new_state.set_icon(self._load_image(url))
 
+            url = self._check_redirects(response, new_state) or url
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now()
             entry.status = (
@@ -98,20 +105,12 @@ class WebSource(AbstractSource):
             entry.url = url
             entry.content = response.text
             entry.set_opt("content-type", "html")
-
-            new_state = state.new_ok(
-                etag=response.headers.get("ETag"),
-                last_modified=response.headers.get("last_modified"),
-            )
-            if not new_state.icon:
-                new_state.set_icon(self._load_image(url))
-
             entry.icon = new_state.icon
 
             expires = common.parse_http_date(response.headers.get("expires"))
             if expires:
                 new_state.next_update = expires
-                new_state.set_state("expires", str(expires))
+                new_state.set_prop("expires", str(expires))
 
             return new_state, [entry]
 
@@ -123,17 +122,23 @@ class WebSource(AbstractSource):
         finally:
             if response:
                 response.close()
+                del response
+                response = None
 
     def _check_redirects(
-        self, response: requests.Response
+        self, response: requests.Response, new_state: model.SourceState
     ) -> ty.Optional[str]:
         if not response.history:
+            new_state.del_prop("info")
             return None
 
         for hist in response.history:
             if hist.is_permanent_redirect:
                 href = hist.headers.get("Location")
                 if href:
+                    new_state.set_prop(
+                        "info", "Permanently redirects: " + href
+                    )
                     self._update_source(new_url=href)
                     return href
 
@@ -142,8 +147,10 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
+                    new_state.set_prop("info", "Temporary redirects: " + href)
                     return href
 
+        new_state.del_prop("info")
         return None
 
     def _update_source(self, new_url: ty.Optional[str] = None) -> None:
@@ -193,14 +200,14 @@ class WebSource(AbstractSource):
 
 
 def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
-    headers = {"User-agent": AbstractSource.AGENT}
+    headers = {"User-agent": AbstractSource.AGENT, "Connection": "close"}
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()
         )
 
-    if state.state:
-        etag = state.state.get("etag")
+    if state.props:
+        etag = state.props.get("etag")
         if etag:
             headers["If-None-Match"] = etag
 

@@ -52,40 +52,50 @@ class JamendoMixin:
         _LOG.debug("make request: %s", url)
         headers = {
             "User-agent": "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
-            "Gecko/20100101 Firefox/45.0"
+            "Gecko/20100101 Firefox/45.0",
+            "Connection": "close",
         }
         with requests.Session() as sess:
+            response = None
             try:
                 # sess.mount("https://", ForceTLSV1Adapter())
                 response = sess.request(url=url, method="GET", headers=headers)
                 response.raise_for_status()
+
+                if not response:
+                    raise Exception("No response")
+
+                if response.status_code == 304:
+                    return 304, None
+
+                if response.status_code != 200:
+                    msg = f"Response code: {response.status_code}"
+                    if response.text:
+                        msg += "\n" + response.text
+
+                    return 500, msg
+
+                res = response.json()
+                try:
+                    if res["headers"]["status"] != "success":
+                        return 500, res["headers"]["error_message"]
+
+                except KeyError:
+                    return 500, "wrong answer"
+
+                if not res["results"]:
+                    return 304, None
+
+                return 200, res
             except requests.exceptions.ReadTimeout:
                 return 500, "timeout"
             except Exception as err:  # pylint: disable=broad-except
                 return 500, str(err)
-
-            if response.status_code == 304:
-                return 304, None
-
-            if response.status_code != 200:
-                msg = f"Response code: {response.status_code}"
-                if response.text:
-                    msg += "\n" + response.text
-
-                return 500, msg
-
-            res = response.json()
-            try:
-                if res["headers"]["status"] != "success":
-                    return 500, res["headers"]["error_message"]
-
-            except KeyError:
-                return 500, "wrong answer"
-
-            if not res["results"]:
-                return 304, None
-
-            return 200, res
+            finally:
+                if response:
+                    response.close()
+                    del response
+                    response = None
 
 
 def _build_request_url(url: str, **params: ty.Any) -> str:

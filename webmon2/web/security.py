@@ -38,6 +38,9 @@ def login() -> ty.Any:
     if "user" in session:
         del session["user"]
 
+    # regenerate new csrf token
+    c.generate_csrf_token()
+
     session.modified = True
 
     if request.method == "POST":
@@ -74,6 +77,9 @@ def login() -> ty.Any:
 
 @BP.route("/login/totp", methods=["POST", "GET"])
 def login_totp() -> ty.Any:
+    # regenerate new csrf token
+    c.generate_csrf_token()
+
     if request.method == "POST":
         db = c.get_db()
         try:

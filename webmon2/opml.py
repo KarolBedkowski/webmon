@@ -41,8 +41,9 @@ def load_opml(
 
 def load_data(db: database.DB, content: bytes, user_id: int) -> None:
     for group_name, items in load_opml(content):
-        group = database.groups.find(db, user_id, group_name)
-        if not group:
+        try:
+            group = database.groups.find(db, user_id, group_name)
+        except database.NotFound:
             group = model.SourceGroup(name=group_name, user_id=user_id)
             group = database.groups.save(db, group)
             _LOG.debug("import opml - new group: %s", group)

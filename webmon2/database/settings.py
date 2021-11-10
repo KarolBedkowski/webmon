@@ -21,17 +21,17 @@ _LOG = logging.getLogger(__name__)
 
 
 _GET_ALL_SQL = """
-select s.key as setting__key,
-    coalesce(us.value, s.value) as setting__value,
-    s.value_type as setting__value_type,
-    s.description as setting__description,
-    us.user_id as setting__user_id
-from settings s
-left join user_settings us on us.key = s.key and us.user_id=%s
+SELECT s.key AS setting__key,
+    coalesce(us.value, s.value) AS setting__value,
+    s.value_type AS setting__value_type,
+    s.description AS setting__description,
+    us.user_id AS setting__user_id
+FROM settings s
+LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
 """
 
 
-def get_all(db: DB, user_id: int) -> ty.Iterable[model.Setting]:
+def get_all(db: DB, user_id: int) -> ty.List[model.Setting]:
     """Get all settings for given user."""
     if not user_id:
         raise ValueError("missing user_id")
@@ -42,14 +42,14 @@ def get_all(db: DB, user_id: int) -> ty.Iterable[model.Setting]:
 
 
 _GET_SQL = """
-select s.key as setting__key,
-    coalesce(us.value, s.value) as setting__value,
-    s.value_type as setting__value_type,
-    s.description as setting__description,
-    us.user_id as setting__user_id
-from settings s
-left join user_settings us on us.key = s.key and us.user_id=%s
-where s.key=%s
+SELECT s.key AS setting__key,
+    coalesce(us.value, s.value) AS setting__value,
+    s.value_type AS setting__value_type,
+    s.description AS setting__description,
+    us.user_id AS setting__user_id
+FROM settings s
+LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
+WHERE s.key=%s
 """
 
 
@@ -63,18 +63,18 @@ def get(db: DB, key: str, user_id: int) -> ty.Optional[model.Setting]:
 
 
 _INSERT_SQL = """
-insert into user_settings (key, value, user_id)
-values (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
+INSERT INTO user_settings (key, value, user_id)
+VALUES (%(setting__key)s, %(setting__value)s, %(setting__user_id)s)
 """
 
 
-def save_all(db: DB, settings: ty.List[model.Setting]) -> None:
+def save_all(db: DB, settings: ty.Iterable[model.Setting]) -> None:
     """Save all settings"""
     rows = [setting.to_row() for setting in settings]
 
     with db.cursor() as cur:
         cur.executemany(
-            "delete from user_settings where key=%s and user_id=%s",
+            "DELETE FROM user_settings WHERE key=%s AND user_id=%s",
             [(setting.key, setting.user_id) for setting in settings],
         )
         cur.executemany(_INSERT_SQL, rows)
@@ -92,5 +92,14 @@ def get_value(
 
 
 def get_dict(db: DB, user_id: int) -> ty.Dict[str, ty.Any]:
-    """Get dictionary of setting for given user."""
+    """Get dictionary of all setting for given user.
+
+    Args:
+        db: database object
+        user_id: user id
+
+    Return:
+        dict: setting key -> setting value -
+
+    """
     return {setting.key: setting.value for setting in get_all(db, user_id)}

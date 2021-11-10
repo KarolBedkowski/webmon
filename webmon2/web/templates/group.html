@@ -20,6 +20,7 @@
 	<section>
 		<form method="POST">
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
 				<label for="group-name">Name</label>
 				<input type="text" name="name" id="group-name" required="required" value="{{ group.name or '' }}" />

@@ -123,6 +123,11 @@ class TestParseTimeRanges(unittest.TestCase):
         res = list(common.parse_hours_range("01:40-aaa"))
         self.assertEqual(len(res), 0)
 
+        res = list(common.parse_hours_range("23:30 - 1:45"))
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0][0], 23 * 60 + 30)
+        self.assertEqual(res[0][1], 1 * 60 + 45)
+
     def test_02_parse_hours_range_02(self):
         res = list(common.parse_hours_range("0:0-12, 01:40-11:35"))
         self.assertEqual(len(res), 2)
@@ -132,104 +137,100 @@ class TestParseTimeRanges(unittest.TestCase):
         self.assertEqual(res[1][1], 11 * 60 + 35)
 
     def test_03_check_date_in_trange_01(self):
-        now = list(time.localtime())
-        print(now)
         tsr = "13-14"
-        now[3], now[4] = 12, 13
+        hour, minutes = 12, 13
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 13, 13
+        hour, minutes = 13, 13
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 14, 13
+        hour, minutes = 14, 13
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
 
     def test_03_check_date_in_trange_02(self):
-        now = list(time.localtime())
         tsr = "23:30 - 1:45"
-        now[3], now[4] = 22, 40
+        hour, minutes = 22, 40
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 23, 40
+        hour, minutes = 23, 40
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 0, 40
+        hour, minutes = 0, 40
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 1, 40
+        hour, minutes = 1, 40
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 1, 50
+        hour, minutes = 1, 50
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 6, 50
+        hour, minutes = 6, 50
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
 
     def test_03_check_date_in_trange_03(self):
-        now = list(time.localtime())
         tsr = " 04:40-10:50, 11 -12,23:30-2:00"
-        now[3], now[4] = 4, 15
+        hour, minutes = 4, 15
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 6, 15
+        hour, minutes = 6, 15
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 10, 55
+        hour, minutes = 10, 55
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 11, 00
+        hour, minutes = 11, 00
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 12, 00
+        hour, minutes = 12, 00
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 12, 1
+        hour, minutes = 12, 1
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 15, 20
+        hour, minutes = 15, 20
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 23, 20
+        hour, minutes = 23, 20
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
-        now[3], now[4] = 23, 30
+        hour, minutes = 23, 30
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 0, 0
+        hour, minutes = 0, 0
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 1, 0
+        hour, minutes = 1, 0
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 2, 0
+        hour, minutes = 2, 0
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), True
+            common.check_date_in_timerange(tsr, hour, minutes), True
         )
-        now[3], now[4] = 2, 15
+        hour, minutes = 2, 15
         self.assertEqual(
-            common.check_date_in_timerange(tsr, time.mktime(tuple(now))), False
+            common.check_date_in_timerange(tsr, hour, minutes), False
         )
 
 

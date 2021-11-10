@@ -17,7 +17,7 @@
 {% block content %}
 	<p>
 		<form id="form">
-			<label for="filter-state">Show:</label>
+			<label for="form-status">Show:</label>
 			<select id="form-status" name="status" value="{{ status }}">
 				{{ rf.render_option("all", "All", status) }}
 				{{ rf.render_option("active", "Active", status) }}
@@ -26,7 +26,7 @@
 				{{ rf.render_option("error", "With errors", status) }}
 				{{ rf.render_option("notupdated", "Not updated", status) }}
 			</select>
-			<label for="formorder">Order by:</label>
+			<label for="form-order">Order by:</label>
 			<select id="form-order" name="order" value="{{ order }}">
 				{{ rf.render_option("name", "Name ▴", order) }}
 				{{ rf.render_option("name_desc", "Name ▾", order) }}
@@ -39,7 +39,7 @@
 	</p>
 
 	{% for source in sources %}
-		{{ rs.render_source(source) }}
+		{{ rs.render_source(source, webmon2) }}
 	{% endfor %}
 {% endblock %}
 

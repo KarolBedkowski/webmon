@@ -16,27 +16,46 @@ from webmon2 import common, model
 
 from . import _dbcommon as dbc
 from ._db import DB
-from ._dbcommon import tyCursor
 
 _LOG = logging.getLogger(__name__)
 
+
+def get_names(db: DB, user_id: int) -> ty.List[ty.Tuple[int, str]]:
+    """
+    Get list of id, name all user groups ordered by name.
+    """
+    if not user_id:
+        raise ValueError("missing user_id")
+
+    with db.cursor() as cur:
+        cur.execute(
+            "SELECT id, name FROM source_groups "
+            "WHERE user_id=%s ORDER BY name",
+            (user_id,),
+        )
+
+        return cur.fetchall()  # type: ignore
+
+
 _GET_SOURCE_GROUPS_SQL = """
-select sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
-    (select count(1)
-        from entries e
-        join sources s on e.source_id = s.id
-        where e.read_mark = %(read_mark)s and s.group_id = sg.id
-    ) as unread,
-    (select count(1) from sources s where s.group_id = sg.id)
-        as sources_count
-from source_groups sg
-where sg.user_id= %(user_id)s
-order by sg.name
+SELECT sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
+    (
+        SELECT count(1)
+        FROM entries e
+        JOIN sources s ON e.source_id = s.id
+        WHERE e.read_mark = %(read_mark)s AND s.group_id = sg.id
+    ) AS unread,
+    (
+        SELECT count(1) FROM sources s WHERE s.group_id = sg.id
+    ) AS sources_count
+FROM source_groups sg
+WHERE sg.user_id = %(user_id)s
+ORDER BY sg.name
 """
 
 
 def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
-    """Get all groups for user with number of unread entries"""
+    """Get all groups for `user_id` with number of unread entries"""
     if not user_id:
         raise ValueError("missing user_id")
 
@@ -62,67 +81,74 @@ def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
 
 
 _GET_SQL = """
-select id as source_group__id,
-    name as source_group__name,
-    user_id as source_group__user_id,
-    feed as source_group__feed,
-    mail_report as source_group__mail_report
-from source_groups
-where id= %s
+SELECT id AS source_group__id,
+    name AS source_group__name,
+    user_id AS source_group__user_id,
+    feed AS source_group__feed,
+    mail_report AS source_group__mail_report
+FROM source_groups
+WHERE id=%s AND user_id=%s
 """
 
 
-def get(
-    db: DB, group_id: int, user_id: ty.Optional[int] = None
-) -> model.SourceGroup:
-    """Get one group. Optionally check is group belong to user.
-    Return None if not found.
+def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
+    """Get one group by `group_id`. Optionally check is group belong to `user_id`.
+
+    Raises:
+        `NotFound`: group not found
     """
     with db.cursor() as cur:
-        cur.execute(_GET_SQL, (group_id,))
+        cur.execute(_GET_SQL, (group_id, user_id))
         row = cur.fetchone()
         if not row:
             raise dbc.NotFound()
 
-    source = model.SourceGroup.from_row(row)
-    if user_id and source.user_id != user_id:
-        raise dbc.NotFound()
-
-    return source
+    return model.SourceGroup.from_row(row)
 
 
 _FIND_SQL = """
-select id as source_group__id,
-    name as source_group__name,
-    user_id as source_group__user_id,
-    feed as source_group__feed,
-    mail_report as source_group__mail_report
-from source_groups
-where name=%s and user_id=%s
+SELECT id AS source_group__id,
+    name AS source_group__name,
+    user_id AS source_group__user_id,
+    feed AS source_group__feed,
+    mail_report AS source_group__mail_report
+FROM source_groups
+WHERE name=%s AND user_id=%s
 """
 
 
-def find(db: DB, user_id: int, name: str) -> ty.Optional[model.SourceGroup]:
-    """Get one group."""
+def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
+    """Get group by `name` for `user_id`.
+
+    Raises:
+        `NotFound`: group not found
+    """
     with db.cursor() as cur:
         cur.execute(_FIND_SQL, (name, user_id))
         row = cur.fetchone()
-        return model.SourceGroup.from_row(row) if row else None
+        if not row:
+            raise dbc.NotFound()
+
+        return model.SourceGroup.from_row(row)
 
 
 _GET_BY_FEED_SQL = """
-select id as source_group__id,
-    name as source_group__name,
-    user_id as source_group__user_id,
-    feed as source_group__feed,
-    mail_report as source_group__mail_report
-from source_groups
-where feed= %s
+SELECT id AS source_group__id,
+    name AS source_group__name,
+    user_id AS source_group__user_id,
+    feed AS source_group__feed,
+    mail_report AS source_group__mail_report
+FROM source_groups
+WHERE feed= %s
 """
 
 
 def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
-    """Get group by feed"""
+    """Get group by `feed` id.
+
+    Raises:
+        `NotFound`: group not found
+    """
     if feed == "off":
         raise dbc.NotFound()
 
@@ -139,8 +165,9 @@ def get_last_update(db: DB, group_id: int) -> ty.Optional[datetime]:
     """Find last update time for entries in group"""
     with db.cursor() as cur:
         cur.execute(
-            "select max(datetime(coalesce(updated, created))) from entries "
-            "where source_id in (select id from sources where group_id= %s)",
+            "SELECT max(datetime(coalesce(updated, created))) "
+            "FROM entries "
+            "WHERE source_id IN (SELECT id FROM sources WHERE group_id= %s)",
             (group_id,),
         )
         row = cur.fetchone()
@@ -148,27 +175,34 @@ def get_last_update(db: DB, group_id: int) -> ty.Optional[datetime]:
 
 
 _INSERT_GROUP_SQL = """
-insert into source_groups (name, user_id, feed, mail_report)
-values (
+INSERT INTO source_groups (name, user_id, feed, mail_report)
+VALUES (
     %(source_group__name)s, %(source_group__user_id)s,
     %(source_group__feed)s, %(source_group__mail_report)s
 )
-returning id
+RETURNING id
 """
 
 _UPDATE_GROUP_SQL = """
-update source_groups
-set name=%(source_group__name)s, feed=%(source_group__feed)s,
+UPDATE source_groups
+SET name=%(source_group__name)s, feed=%(source_group__feed)s,
     mail_report=%(source_group__mail_report)s
-where id=%(source_group__user_id)s
+WHERE id=%(source_group__id)s
 """
 
 
 def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
-    """Save / update group"""
+    """Save / update group.
+    Generate random group.feed if empty.
+    User id is not updated.
+
+    Return:
+        updated group object
+    """
+    _LOG.debug("save: %r", group)
+
     if not group.feed:
-        with db.cursor() as cur:
-            group.feed = _generate_group_feed(cur)
+        group.feed = _generate_group_feed(db)
 
     row = group.to_row()
 
@@ -182,30 +216,35 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     return group
 
 
-def _generate_group_feed(cur: tyCursor) -> str:
+def _generate_group_feed(db: DB) -> str:
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    while True:
-        feed = "".join(random.SystemRandom().choice(chars) for _ in range(32))
-
-        # check for duplicates
-        cur.execute("select 1 from source_groups where feed= %s", (feed,))
-        if not cur.fetchone():
-            return feed
+    with db.cursor() as cur:
+        while True:
+            feed = "".join(
+                random.SystemRandom().choice(chars) for _ in range(32)
+            )
+            # check for duplicates
+            cur.execute("select 1 from source_groups where feed= %s", (feed,))
+            if not cur.fetchone():
+                return feed
 
 
 _GET_NEXT_UNREAD_GROUP_SQL = """
 SELECT group_id
 FROM sources s
 JOIN entries e ON e.source_id = s.id
-WHERE e.read_mark = %s
-    AND s.user_id = %s
+WHERE e.read_mark = %s AND s.user_id = %s
 ORDER BY e.id
 LIMIT 1
 """
 
 
 def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
-    """Find group id with unread entries"""
+    """Find group with unread entries for `user_id`.
+
+    Return:
+        group id or None if not Found
+    """
     with db.cursor() as cur:
         cur.execute(
             _GET_NEXT_UNREAD_GROUP_SQL, (model.EntryReadMark.UNREAD, user_id)
@@ -215,11 +254,11 @@ def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
 
 
 _MARK_READ_SQL = """
-update entries
-set read_mark=%(read_mark)s
-where source_id in (select id from sources where group_id=%(group_id)s)
-    and (id<=%(max_id)s or %(max_id)s<0) and id>=%(min_id)s
-    and read_mark=%(unread)s and user_id=%(user_id)s
+UPDATE entries
+SET read_mark=%(read_mark)s
+WHERE source_id IN (SELECT id FROM sources WHERE group_id=%(group_id)s)
+    AND (id<=%(max_id)s OR %(max_id)s<0) AND id>=%(min_id)s
+    AND read_mark=%(unread)s AND user_id=%(user_id)s
 """
 _MARK_READ_BY_IDS_SQL = """
 UPDATE entries
@@ -237,7 +276,20 @@ def mark_read(
     min_id: ty.Optional[int] = None,
     ids: ty.Optional[ty.List[int]] = None,
 ) -> int:
-    """Mark entries in given group read."""
+    """Mark entries in given `group_id` read.
+    If `ids` is given mark entries from this list; else if `max_id` is given
+    - mark entries in range `min_id` to `max_id` including.
+
+    `ids` or (`max_id` and `min_id`) is required.
+
+    Args:
+        db: database obj
+        group_id: group id (required)
+        min_id, max_id: entries id range
+        ids: list of entries id to set
+    Return:
+        number of changed entries
+    """
     if not group_id:
         raise ValueError("missing group_id")
 
@@ -263,15 +315,19 @@ def mark_read(
 
 
 def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
-    """Save (update or insert) group last modified information"""
+    """Save (update or insert) group last modified information.
+
+    Return:
+        etag value
+    """
     etag_h = hashlib.md5(str(group_id).encode("ascii"))
     etag_h.update(str(last_modified).encode("ascii"))
     etag = etag_h.hexdigest()
 
     with db.cursor() as cur:
         cur.execute(
-            "select last_modified, etag from source_group_state "
-            "where group_id=%s",
+            "SELECT last_modified, etag FROM source_group_state "
+            "WHERE group_id=%s",
             (group_id,),
         )
         row = cur.fetchone()
@@ -282,16 +338,16 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
                 return row[1]  # type: ignore
 
             cur.execute(
-                "update source_group_state "
-                "set last_modified= %s, etag=%s "
-                "where group_id= %s",
+                "UPDATE source_group_state "
+                "SET last_modified= %s, etag=%s "
+                "WHERE group_id= %s",
                 (last_modified, etag, group_id),
             )
         else:
             cur.execute(
                 "insert into source_group_state (group_id, last_modified, "
                 "etag)"
-                "values (%s, %s, %s)",
+                "VALUES (%s, %s, %s)",
                 (group_id, last_modified, etag),
             )
 
@@ -299,13 +355,15 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
 
 
 def get_state(db: DB, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
-    """Get group entries last modified information
-    Returns: last modified date and etag
+    """Get group entries last modified information.
+
+    Return:
+        (last modified date, etag)
     """
     with db.cursor() as cur:
         cur.execute(
-            "select last_modified, etag from source_group_state "
-            "where group_id= %s",
+            "SELECT last_modified, etag FROM source_group_state "
+            "WHERE group_id= %s",
             (group_id,),
         )
         row = cur.fetchone()
@@ -322,37 +380,48 @@ def get_state(db: DB, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
 
 
 def delete(db: DB, user_id: int, group_id: int) -> None:
-    """Delete group; move existing sources to main (or first) group"""
+    """Delete group; move existing sources to main (or first) group."""
     with db.cursor() as cur:
         cur.execute(
-            "select count(1) from source_groups where user_id=%s", (user_id,)
+            "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
         if not cur.fetchone()[0]:
             raise common.OperationError("can't delete last group")
 
     with db.cursor() as cur:
         cur.execute(
-            "select count(1) from sources where group_id=%s", (group_id,)
+            "SELECT count(1) FROM sources WHERE group_id=%s", (group_id,)
         )
         if cur.fetchone()[0]:
-            # there are sources in group
-            # find main
+            # there are sources in group find destination group
             dst_group_id = _find_dst_group(db, user_id, group_id)
             cur.execute(
-                "update sources set group_id= %s where group_id=%s",
+                "UPDATE sources set group_id= %s WHERE group_id=%s",
                 (dst_group_id, group_id),
             )
             _LOG.debug("moved %d sources", cur.rowcount)
 
     with db.cursor() as cur:
-        cur.execute("delete from source_groups where id= %s", (group_id,))
+        cur.execute("DELETE FROM source_groups WHERE id= %s", (group_id,))
 
 
 def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
+    """Find group to move sources.
+
+    Args:
+        user_id: user id
+        group_id: source group id
+
+    Raises:
+        `OperationError`: can't find appropriate group
+
+    Return:
+        destination group id
+    """
     with db.cursor() as cur:
         cur.execute(
-            "select id from source_groups where user_id= %s and name='main' "
-            "and id != %s order by id limit 1",
+            "SELECT id FROM source_groups WHERE user_id= %s AND name='main' "
+            "AND id != %s ORDER BY id LIMIT 1",
             (user_id, group_id),
         )
         row = cur.fetchone()
@@ -362,8 +431,8 @@ def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
 
     with db.cursor() as cur:
         cur.execute(
-            "select id from source_groups where user_id= %s "
-            "and id != %s order by id limit 1",
+            "SELECT id FROM source_groups WHERE user_id= %s "
+            "AND id != %s ORDER BY id LIMIT 1",
             (user_id, group_id),
         )
         row = cur.fetchone()
@@ -377,19 +446,32 @@ def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
 def find_next_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
+    """Find next entry to given in group.
+
+    Args:
+        db: database object
+        group_id: user id (required)
+        entry_id: current entry id
+        unread: look only for unread entries
+    Return:
+        next entry id if exists or None
+
+    FIXME:
+        user_id, order_id ?
+    """
     with db.cursor() as cur:
         if unread:
             cur.execute(
-                "select min(e.id) "
-                "from entries e join sources s on s.id = e.source_id "
-                "where e.id > %s and e.read_mark=%s and s.group_id=%s",
+                "SELECT min(e.id) "
+                "FROM entries e JOIN sources s ON s.id = e.source_id "
+                "WHERE e.id > %s AND e.read_mark=%s AND s.group_id=%s",
                 (entry_id, model.EntryReadMark.UNREAD, group_id),
             )
         else:
             cur.execute(
-                "select min(e.id) "
-                "from entries e join sources s on s.id = e.source_id "
-                "where e.id > %s and s.group_id=%s",
+                "SELECT min(e.id) "
+                "FROM entries e JOIN sources s ON s.id = e.source_id "
+                "WHERE e.id > %s AND s.group_id=%s",
                 (entry_id, group_id),
             )
 
@@ -400,19 +482,32 @@ def find_next_entry_id(
 def find_prev_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
 ) -> ty.Optional[int]:
+    """Find previous entry to given in group.
+
+    Args:
+        db: database object
+        group_id: user id (required)
+        entry_id: current entry id
+        unread: look only for unread entries
+    Return:
+        previous entry id if exists or None
+
+    FIXME:
+        user_id, order_id ?
+    """
     with db.cursor() as cur:
         if unread:
             cur.execute(
-                "select max(e.id) "
-                "from entries e join sources s on s.id = e.source_id "
-                "where e.id < %s and e.read_mark=%s and s.group_id=%s",
+                "SELECT max(e.id) "
+                "FROM entries e JOIN sources s ON s.id = e.source_id "
+                "WHERE e.id < %s AND e.read_mark=%s AND s.group_id=%s",
                 (entry_id, model.EntryReadMark.UNREAD, group_id),
             )
         else:
             cur.execute(
-                "select max(e.id) "
-                "from entries e join sources s on s.id = e.source_id "
-                "where e.id < %s and s.group_id=%s",
+                "SELECT max(e.id) "
+                "FROM entries e JOIN sources s ON s.id = e.source_id "
+                "WHERE e.id < %s AND s.group_id=%s",
                 (entry_id, group_id),
             )
 

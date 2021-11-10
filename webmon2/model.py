@@ -28,7 +28,7 @@ from webmon2 import common, formatters
 _LOG = logging.getLogger(__name__)
 
 
-tyCursor = ty.Type[extensions.cursor]
+Cursor = ty.Type[extensions.cursor]
 ConfDict = ty.Dict[str, ty.Any]
 
 
@@ -45,7 +45,7 @@ class SourceGroup:
     user_id: int
     # id of source group
     id: ty.Optional[int] = None
-    # feed url - hash part
+    # feed url - hash part; if feed is disable - feed = "off"
     feed: ty.Optional[str] = None
     # configuration of mail sending for this group
     mail_report: MailReportMode = MailReportMode.AS_GROUP_SOURCE
@@ -56,6 +56,9 @@ class SourceGroup:
 
     def __str__(self) -> str:
         return common.obj2str(self)
+
+    def __hash__(self) -> int:
+        return hash(tuple(map(str, self.__dict__.values())))
 
     def clone(self) -> SourceGroup:
         sgr = SourceGroup(
@@ -69,7 +72,7 @@ class SourceGroup:
         return sgr
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> SourceGroup:
+    def from_row(cls, row: Cursor) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -143,6 +146,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
     def __str__(self) -> str:
         return common.obj2str(self)
 
+    def __hash__(self) -> int:
+        return hash(tuple(str(getattr(self, key)) for key in self.__slots__))
+
     def clone(self) -> Source:
         src = Source(
             user_id=self.user_id,
@@ -160,7 +166,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         return src
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Source:
+    def from_row(cls, row: Cursor) -> Source:
         source = Source(
             user_id=row["source__user_id"],
             kind=row["source__kind"],
@@ -169,9 +175,8 @@ class Source:  # pylint: disable=too-many-instance-attributes
         )
         source.id = row["source__id"]
         source.interval = row["source__interval"]
-        row_keys = row.keys()
-        source.settings = get_json_if_exists(row_keys, "source__settings", row)
-        source.filters = get_json_if_exists(row_keys, "source__filters", row)
+        source.settings = try_load_json("source__settings", row)
+        source.filters = try_load_json("source__filters", row)
         source.status = SourceStatus(row["source__status"])
         mail_report = row["source__mail_report"]
         if mail_report is None:
@@ -217,7 +222,7 @@ class SourceStateStatus(Enum):
     OK = "ok"
 
 
-States = ty.Dict[str, ty.Any]
+Props = ty.Dict[str, ty.Any]
 IconData = ty.Tuple[str, bytes]
 
 
@@ -231,17 +236,20 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         "success_counter",
         "status",
         "error",
-        "state",
+        "props",
         "icon",
         "icon_data",
+        "last_check",
     )
 
     def __init__(self) -> None:
         self.source_id: int = 0
         # next source update time
         self.next_update: ty.Optional[datetime] = None
-        # last source update time
+        # last source update time (load new new items or update existing)
         self.last_update: ty.Optional[datetime] = None
+        # last check for changes
+        self.last_check: ty.Optional[datetime] = None
         # last source update failed time
         self.last_error: ty.Optional[datetime] = None
         # number of failed updates since last success update
@@ -252,7 +260,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.status: ty.Optional[SourceStateStatus] = None
         self.error: ty.Optional[str] = None
         # additional informations stored by source loader
-        self.state: ty.Optional[States] = None
+        self.props: ty.Optional[Props] = None
         # icon hash
         self.icon: ty.Optional[str] = None
 
@@ -261,6 +269,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def new(source_id: int) -> SourceState:
+        """
+        Create new `SourceState` for given `source_id`.
+        """
         source = SourceState()
         source.source_id = source_id
         source.next_update = datetime.now() + timedelta(minutes=15)
@@ -268,83 +279,124 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         source.success_counter = 0
         return source
 
-    def create_new(self) -> SourceState:
+    def create_new(
+        self, status: ty.Optional[SourceStateStatus] = None, **props: ty.Any
+    ) -> SourceState:
+        """
+        Create new `SourceState` and copy basic data from current object.
+        """
         new_state = SourceState()
         new_state.source_id = self.source_id
         new_state.error_counter = self.error_counter
         new_state.success_counter = self.success_counter
         new_state.icon = self.icon
+        new_state.status = status
+        new_state.props = self.props.copy() if self.props else None
+        new_state.update_props(props)
         return new_state
 
-    def new_ok(self, **states: ty.Any) -> SourceState:
-        state = SourceState()
-        state.source_id = self.source_id
-        state.last_update = datetime.now()
-        state.status = SourceStateStatus.OK
-        state.success_counter = self.success_counter + 1
-        state.last_error = None
-        state.error = None
+    def new_ok(self, **props: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `OK` and copy basic data from
+        current object. Reset error and increment success counters.
+        """
+        state = self.create_new(status=SourceStateStatus.OK, **props)
+        state.success_counter += 1
         state.error_counter = 0
-        state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
         return state
 
-    def new_error(self, error: str, **states: ty.Any) -> SourceState:
-        state = SourceState()
-        state.source_id = self.source_id
+    def new_error(self, error: str, **props: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `ERROR` and copy basic data from
+        current object. Increment error counter.
+        """
+        state = self.create_new(status=SourceStateStatus.ERROR, **props)
         state.error = error
-        state.last_update = self.last_update
-        state.status = SourceStateStatus.ERROR
-        state.success_counter = self.success_counter
-        state.error_counter = self.error_counter + 1
+        state.error_counter += 1
         state.last_error = datetime.now()
-        state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
         return state
 
-    def new_not_modified(self, **states: ty.Any) -> SourceState:
-        state = SourceState()
-        state.source_id = self.source_id
-        state.last_update = datetime.now()
-        state.status = SourceStateStatus.NOT_MODIFIED
-        state.last_error = None
-        state.error = None
+    def new_not_modified(self, **props: ty.Any) -> SourceState:
+        """
+        Create new `SourceState` with statue = `NOT_MODIFIED`,copy basic data
+        from current object. Reset error and increment success counters.
+        """
+        state = self.create_new(status=SourceStateStatus.NOT_MODIFIED, **props)
+        state.last_update = self.last_update
         state.error_counter = 0
-        state.success_counter = self.success_counter + 1
-        state.state = self.state.copy() if self.state else None
-        state.icon = self.icon
-        state.update_state(states)
+        state.success_counter += 1
         return state
 
-    def set_state(self, key: str, value: ty.Any) -> None:
-        if self.state is None:
-            self.state = {key: value}
+    def set_prop(self, key: str, value: ty.Any) -> None:
+        """
+        Update props`value` for `key`.
+        """
+        if self.props is None:
+            self.props = {key: value}
         else:
-            self.state[key] = value
+            self.props[key] = value
 
-    def get_state(self, key: str, default: ty.Any = None) -> ty.Any:
-        return self.state.get(key, default) if self.state else default
+    def get_prop(self, key: str, default: ty.Any = None) -> ty.Any:
+        """
+        Get props value for `key`, return `default` if `key` is not found.
+        """
+        return self.props.get(key, default) if self.props else default
 
-    def update_state(self, states: ty.Optional[States]) -> None:
-        if not states:
+    def del_prop(self, key: str) -> None:
+        """
+        Delete value from props if exists.
+        """
+        if self.props and key in self.props:
+            del self.props[key]
+
+    def visible_props(self) -> ty.Iterable[ty.Tuple[str, str]]:
+        if not self.props:
+            return []
+
+        return ((key, val) for key, val in self.props.items() if key[0] != "_")
+
+    def update_props(self, props: ty.Optional[Props]) -> None:
+        """
+        Update4 states from `states` dict.
+        """
+        if not props:
             return
 
-        if not self.state:
-            self.state = {}
+        if not self.props:
+            self.props = {}
 
-        self.state.update(states)
+        self.props.update(props)
 
     def set_icon(
         self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
     ) -> ty.Optional[str]:
+        """
+        Set icon; create and set hash into `icon` field; put data from
+        `content_type_data` into `icon_data` field.
+        If `content_type_data` is None icon is not updated but current icon
+        has is returned (if any).
+
+        Return:
+            binary data hash (new or current)
+        """
         if not content_type_data:
             return self.icon
 
         self.icon = hashlib.sha1(content_type_data[1]).hexdigest()
         self.icon_data = content_type_data
         return self.icon
+
+    def adjust_next_update(self, interval: int) -> None:
+        """
+        Change next update time to last_check/last_update/now + interval.
+        """
+        last = datetime.now()
+        if self.last_check:
+            last = max(self.last_check, last)
+        elif self.last_update:
+            last = max(self.last_update, last)
+
+        self.next_update = last + timedelta(seconds=interval)
 
     def __str__(self) -> str:
         return common.obj2str(self)
@@ -359,12 +411,13 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             "source_state__success_counter": self.success_counter,
             "source_state__status": self.status.value if self.status else None,
             "source_state__error": self.error,
-            "source_state__state": json.dumps(self.state),
+            "source_state__props": json.dumps(self.props),
             "source_state__icon": self.icon,
+            "source_state__last_check": self.last_check,
         }
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> SourceState:
+    def from_row(cls, row: Cursor) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -374,9 +427,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter = row["source_state__success_counter"]
         state.status = SourceStateStatus(row["source_state__status"])
         state.error = row["source_state__error"]
-        row_keys = row.keys()
-        state.state = get_json_if_exists(row_keys, "source_state__state", row)
+        state.props = try_load_json("source_state__props", row)
         state.icon = row["source_state__icon"]
+        state.last_check = row["source_state__last_check"]
         return state
 
 
@@ -481,6 +534,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return entry
 
     def calculate_oid(self) -> str:
+        """
+        Calculate oid for entry using source_id, title, url and content.
+        """
         data = "".join(
             map(str, (self.source_id, self.title, self.url, self.content))
         )
@@ -491,15 +547,26 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def get_opt(
         self, key: str, default: ty.Optional[OptValue] = None
     ) -> ty.Optional[OptValue]:
+        """
+        Get additional data for entry identified by `key`; return `default` if
+        not data found.
+        """
         return self.opts.get(key, default) if self.opts else default
 
     def set_opt(self, key: str, value: ty.Any) -> None:
+        """
+        Set additional information for entry using `key`.
+        """
         if self.opts is None:
             self.opts = {}
 
         self.opts[key] = value
 
     def human_title(self) -> str:
+        """
+        Return entry title; if it is not defined explicit try to get content
+        limited do 50 characters.
+        """
         if self.title:
             return self.title
 
@@ -512,6 +579,11 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.content
 
     def is_long_content(self) -> bool:
+        """
+        Check is content is long (should be truncated on preview).
+
+        TODO: move it do `opts`.
+        """
         if self.content:
             lines = self.content.count("\n")
             characters = len(self.content)
@@ -529,8 +601,12 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         self.opts["content-type"] = content_type
 
     content_type = property(_get_content_type, _set_content_type)
+    """Content type of entry content."""
 
     def get_summary(self) -> ty.Optional[str]:
+        """
+        Get summary of entry content for preview.
+        """
         return formatters.entry_summary(self.content, self._get_content_type())
 
     def validate(self) -> None:
@@ -544,6 +620,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             _LOG.error("missing title %s", self)
 
     def calculate_icon_hash(self) -> ty.Optional[str]:
+        """
+        Calculate hash of icon binary data.
+        """
         if not self.icon_data:
             return self.icon
 
@@ -574,7 +653,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Entry:
+    def from_row(cls, row: Cursor) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -585,11 +664,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         entry.oid = row["entry__oid"]
         entry.title = row["entry__title"]
         entry.url = row["entry__url"]
-        row_keys = row.keys()
-        entry.opts = get_json_if_exists(row_keys, "entry__opts", row)
-        if "entry__content" in row_keys:
-            entry.content = row["entry__content"]
-
+        entry.opts = try_load_json("entry__opts", row)
+        # entry content may be not loaded
+        entry.content = row.get("entry__content", None)
         entry.user_id = row["entry__user_id"]
         entry.icon = row["entry__icon"]
         entry.score = row["entry__score"]
@@ -612,7 +689,7 @@ class Setting:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> Setting:
+    def from_row(cls, row: Cursor) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
@@ -647,7 +724,7 @@ class User:
     totp: ty.Optional[str] = None
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> User:
+    def from_row(cls, row: Cursor) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -681,6 +758,9 @@ class User:
         )
         return user
 
+    def __hash__(self) -> int:
+        return hash(tuple(map(str, self.__dict__.values())))
+
 
 @dataclass
 class ScoringSett:
@@ -697,7 +777,7 @@ class ScoringSett:
         return bool(self.user_id and self.pattern and self.pattern.strip())
 
     @classmethod
-    def from_row(cls, row: tyCursor) -> ScoringSett:
+    def from_row(cls, row: Cursor) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],
@@ -719,16 +799,13 @@ class ScoringSett:
 UserSources = ty.Dict[int, Source]
 
 
-def get_json_if_exists(
-    row_keys: ty.KeysView[str],
-    key: str,
-    row: tyCursor,
-    default: ty.Any = None,
-) -> ty.Any:
-    if key not in row_keys:
-        return default
-
-    value = row[key]
+def try_load_json(column: str, row: Cursor, default: ty.Any = None) -> ty.Any:
+    """
+    Try load json object form database `row` object and `column`.
+    If value is None - return default; if value is not string - return as is,
+    otherwise parse value via json parser.
+    """
+    value = row.get(column)
     if value is None:
         return default
 

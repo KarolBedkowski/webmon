@@ -20,7 +20,6 @@ from flask import (
     abort,
     current_app,
     flash,
-    g,
     json,
     redirect,
     render_template,
@@ -169,11 +168,13 @@ def manifest_json() -> Response:
 @BP.route("/binary/<datahash>")
 def binary(datahash: str) -> ty.Any:
     db = c.get_db()
-    data_content_type = database.binaries.get(db, datahash, session["user"])
-    if not data_content_type:
+    try:
+        data_content_type = database.binaries.get(
+            db, datahash, session["user"]
+        )
+    except database.NotFound:
         return abort(404)
     data, content_type = data_content_type
-    g.non_action = True
     resp = Response(data, mimetype=content_type)
     resp.headers["Cache-Control"] = "max-age=31536000, public, immutable"
     return resp

@@ -22,10 +22,12 @@ from configparser import ConfigParser
 from datetime import datetime, timedelta
 
 import html2text as h2t
+from prometheus_client import Counter
 
 from webmon2 import common, database, formatters, model
 
 _LOG = logging.getLogger(__name__)
+_SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
 
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
@@ -41,6 +43,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     if _is_silent_hour(conf):
         return
 
+    # it is time for send mail?
     last_send = database.users.get_state(
         db,
         user.id,
@@ -64,6 +67,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     if content and not _send_mail(conf, content, app_conf, user):
         return
 
+    _SENT_MAIL_COUNT.inc()
     database.users.set_state(
         db, user.id, "mail_last_send", datetime.now().timestamp()
     )
@@ -72,9 +76,16 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
 def _process_groups(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int
 ) -> ty.Iterable[str]:
+    """
+    Iterate over source groups for `user_id` and build mail body.
+    """
     for group in database.groups.get_all(db, user_id):
         if group.mail_report == model.MailReportMode.NO_SEND:
             _LOG.debug("group %s skipped", group.name)
+            continue
+
+        if not group.unread:
+            _LOG.debug("no unread entries in group %s", group.name)
             continue
 
         assert group.id
@@ -84,6 +95,9 @@ def _process_groups(
 def _process_group(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, group_id: int
 ) -> ty.Iterator[str]:
+    """
+    Process sources in `group_id` and build mail body part.
+    """
     _LOG.debug("processing group %d", group_id)
     sources = [
         source
@@ -110,6 +124,9 @@ def _process_group(
 def _proces_source(
     db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, source_id: int
 ) -> ty.Iterator[str]:
+    """
+    Build mail content for `source_id`.
+    """
     _LOG.debug("processing source %d", source_id)
 
     entries = [
@@ -141,17 +158,18 @@ def _proces_source(
     yield "\n\n"
 
 
-_HEADER_LINE = re.compile(r"^#+ .+")
-
-
 def _adjust_header(line: str, prefix: str = "###") -> str:
-    if line and _HEADER_LINE.match(line):
+    if line and re.compile(r"^#+ .+").match(line):
         return prefix + line
 
     return line
 
 
 def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
+    """
+    Render entry as markdown document.
+    If entry content type is not plain or markdown try convert it to plain text.
+    """
     title = (entry.title or "") + " " + entry.updated.strftime("%x %X")  # type: ignore
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -167,12 +185,12 @@ def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
     yield "\n"
     if entry.content:
         content_type = entry.content_type
-        if content_type not in ("plain", "markdown"):
+        if content_type in ("plain", "markdown"):
+            yield "\n".join(map(_adjust_header, entry.content.split("\n")))
+        else:
             conv = h2t.HTML2Text(bodywidth=74)
             conv.protect_links = True
             yield conv.handle(entry.content)
-        else:
-            yield "\n".join(map(_adjust_header, entry.content.split("\n")))
 
         yield "\n"
 
@@ -180,6 +198,11 @@ def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
 def _prepare_msg(
     conf: ty.Dict[str, ty.Any], content: str
 ) -> email.mime.base.MIMEBase:
+    """
+    Prepare email message according to `conf` and with `content`.
+    If `mail_html` enabled build multi part message (convert `content` using
+    markdown -> html converter).
+    """
     body_plain = (
         _encrypt(conf, content) if conf.get("mail_encrypt") else content
     )
@@ -193,6 +216,7 @@ def _prepare_msg(
     html = formatters.format_markdown(content)
     if conf.get("mail_encrypt"):
         html = _encrypt(conf, html)
+
     msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
     return msg
 

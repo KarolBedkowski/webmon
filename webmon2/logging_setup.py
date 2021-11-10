@@ -17,6 +17,8 @@ import typing as ty
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 
+_ = ty
+
 
 class ColorFormatter(logging.Formatter):
     """Formatter for logs that color messages according to level."""
@@ -57,12 +59,16 @@ def _create_dirs_for_log(filename: str) -> str:
     return log_fullpath
 
 
-def _filter_metrics_reqs(record: logging.LogRecord) -> bool:
-    """Filter that remove successful request to /metrics endpoint"""
-    return (
-        record.levelno != logging.INFO
-        or '/metrics HTTP/1.1" 200' not in record.getMessage()
-    )
+class NoMetricsLogFilter(
+    logging.Filter
+):  # pylint: disable=too-few-public-methods
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filter that remove successful request to /metrics endpoint"""
+        return (
+            record.levelno != logging.INFO
+            or record.name != "werkzeug"
+            or '/metrics HTTP/1.1" 200' not in record.getMessage()
+        )
 
 
 def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
@@ -90,14 +96,14 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
         logger.setLevel(logging.WARN)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
-        log_werkzeug.setLevel(logging.WARN)
-        log_werkzeug.addFilter(_filter_metrics_reqs)
+        logger.addFilter(NoMetricsLogFilter())
+        log_werkzeug.addFilter(NoMetricsLogFilter())
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
-        log_werkzeug.setLevel(logging.WARN)
-        log_werkzeug.addFilter(_filter_metrics_reqs)
+        logger.addFilter(NoMetricsLogFilter())
+        log_werkzeug.addFilter(NoMetricsLogFilter())
 
     if filename:
         log_fullpath = _create_dirs_for_log(filename)

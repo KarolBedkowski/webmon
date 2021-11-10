@@ -11,11 +11,11 @@ Web gui
 """
 
 import logging
+import math
 import typing as ty
 
 from flask import (
     Blueprint,
-    flash,
     redirect,
     render_template,
     request,
@@ -70,10 +70,49 @@ def entries_starred() -> ty.Any:
 
 @BP.route("/history")
 def entries_history() -> ty.Any:
+    """
+    Present history of read entries.
+    Entries are paginated.
+
+    Query arguments:
+        page: 0-based page to show; default: 0
+        group: group_id to show; default: all
+        source: source_id to show; default: all
+    """
     db = c.get_db()
     user_id = session["user"]
-    entries_ = list(database.entries.get_history(db, user_id))
-    return render_template("history.html", entries=entries_)
+    page = int(request.args.get("page", "0"))
+    group_id = int(request.args.get("group", "0")) or None
+    source_id = int(request.args.get("source", "0")) or None
+    groups = database.groups.get_names(db, user_id)
+    sources = database.sources.get_names(db, user_id, group_id)
+
+    # deselect given source if not in group
+    if not any(1 for id_, _ in sources if id_ == source_id):
+        source_id = None
+
+    entries_, total, = database.entries.get_history(
+        db,
+        user_id,
+        group_id=group_id,
+        source_id=source_id,
+        offset=page * c.PAGE_LIMIT,
+        limit=c.PAGE_LIMIT,
+    )
+
+    return render_template(
+        "history.html",
+        entries=entries_,
+        next_page=min(page + 1, int(total / c.PAGE_LIMIT)),
+        prev_page=max(page - 1, 0),
+        last_page=math.ceil(total / c.PAGE_LIMIT) - 1,
+        page=page,
+        total_entries=total,
+        sources=sources,
+        groups=groups,
+        group_id=group_id or 0,
+        source_id=source_id or 0,
+    )
 
 
 def _get_req_source(
@@ -145,11 +184,11 @@ def entries_search() -> str:
     )
 
 
-@BP.route("/<mode>/mark/read")
-def entries_mark_read(mode: str) -> ty.Any:
+@BP.route("/<mode>/mark/read", methods=["POST"])
+def entries_mark_read(mode: str) -> ty.Any:  # pylint: disable=unused-argument
     db = c.get_db()
     user_id = session["user"]  # type: int
-    ids = [int(id_) for id_ in request.args.get("ids", "").split(",")] or None
+    ids = [int(id_) for id_ in request.form.get("ids", "").split(",")] or None
     marked = database.entries.mark_read(
         db,
         user_id,
@@ -158,5 +197,4 @@ def entries_mark_read(mode: str) -> ty.Any:
         ids=ids,
     )
     db.commit()
-    flash(f"{marked} entries marked read")
-    return redirect(url_for("entries.entries", mode=mode))
+    return {"marked": marked}

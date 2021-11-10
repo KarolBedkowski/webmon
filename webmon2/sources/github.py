@@ -122,7 +122,7 @@ class GithubInput(AbstractSource, GitHubMixin):
         if not data_since:
             return state.new_not_modified(etag=repository.etag), []
 
-        etag = state.get_state("etag")
+        etag = state.get_prop("etag")
         if hasattr(repository, "commits"):
             commits = list(repository.commits(since=data_since))
         else:
@@ -155,6 +155,10 @@ class GithubInput(AbstractSource, GitHubMixin):
 
         entry = _build_entry(self._source, repository, content)
         entry.icon = new_state.icon
+
+        del repository
+        repository = None
+
         return new_state, [entry]
 
     @classmethod
@@ -224,7 +228,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             return state.new_not_modified(etag=repository.etag), []
 
         tags = _load_tags(
-            repository, self._conf["max_items"], state.get_state("etag")
+            repository, self._conf["max_items"], state.get_prop("etag")
         )
 
         if state.last_update:
@@ -248,6 +252,10 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
 
         entry = _build_entry(self._source, repository, content)
         entry.icon = new_state.icon
+
+        del repository
+        repository = None
+
         return new_state, [entry]
 
     def _state_update_icon(self, new_state: model.SourceState) -> None:
@@ -336,7 +344,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
             new_state = state.new_not_modified(etag=repository.etag)
             return new_state, []
 
-        etag = state.get_state("etag")
+        etag = state.get_prop("etag")
         max_items = self._conf["max_items"] or 100
         if hasattr(repository, "releases"):
             releases = list(repository.releases(max_items, etag=etag))
@@ -373,6 +381,9 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
 
         for entry in entries:
             entry.icon = new_state.icon
+
+        del repository
+        repository = None
 
         return new_state, entries
 

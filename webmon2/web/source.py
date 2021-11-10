@@ -24,7 +24,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import database, filters, model, sources
+from webmon2 import common, database, filters, model, sources
 
 from . import _commons as c
 from . import forms
@@ -99,27 +99,43 @@ def source_edit(
     ]
     errors = {}
     user_id = session["user"]
+    entity_hash = str(hash(source))
 
     if request.method == "POST":
-        source_form.update_from_request(request.form)
-        errors = source_form.validate()
-        u_source = source_form.update_model(source)
-        assert u_source.settings is not None
-        errors.update(src.validate_conf(u_source.settings, user_settings))
-        if not errors:
-            next_action = request.form.get("next_action")
-            if next_action == "save_activate":
-                u_source.status = model.SourceStatus.ACTIVE
+        if entity_hash == request.form["_entity_hash"]:
+            source_form.update_from_request(request.form)
+            errors = source_form.validate()
+            u_source = source_form.update_model(source)
+            assert u_source.settings is not None
+            errors.update(src.validate_conf(u_source.settings, user_settings))
+            if not errors:
+                next_action = request.form.get("next_action")
+                if next_action == "save_activate":
+                    u_source.status = model.SourceStatus.ACTIVE
 
-            u_source = database.sources.save(db, u_source)
-            db.commit()
-            flash("Source saved")
-            if next_action == "edit_filters":
-                return redirect(
-                    url_for("source.source_filters", source_id=u_source.id)
-                )
+                u_source = database.sources.save(db, u_source)
 
-            return redirect(url_for("root.sources"))
+                # adjust next check time when interval changed
+                if (
+                    source_id
+                    and source.interval != u_source.interval
+                    and u_source.interval
+                ):
+                    interval = common.parse_interval(u_source.interval)
+                    assert source.state
+                    source.state.adjust_next_update(interval)
+                    database.sources.save_state(db, source.state, user_id)
+
+                db.commit()
+                flash("Source saved")
+                if next_action == "edit_filters":
+                    return redirect(
+                        url_for("source.source_filters", source_id=u_source.id)
+                    )
+
+                return redirect(url_for("root.sources"))
+        else:
+            flash("Source changed somewhere else; reloading...")
 
     return render_template(
         "source.html",
@@ -128,6 +144,7 @@ def source_edit(
         errors=errors,
         source_cls=src,
         source=source,
+        entity_hash=entity_hash,
     )
 
 
@@ -171,7 +188,7 @@ def source_entries(
     )
 
 
-@BP.route("/<int:source_id>/mark/read")
+@BP.route("/<int:source_id>/mark/read", methods=["POST"])
 def source_mark_read(source_id: int) -> ty.Any:
     """Mark all entries in source read."""
     db = c.get_db()
@@ -181,30 +198,29 @@ def source_mark_read(source_id: int) -> ty.Any:
     r_ids = request.args.get("ids")
     ids = list(map(int, r_ids.split(","))) if r_ids else None
 
-    database.sources.mark_read(
+    marked = database.sources.mark_read(
         db, user_id, source_id, max_id=max_id, min_id=min_id, ids=ids
     )
     db.commit()
     if request.args.get("go") == "next":
         n_source_id = database.sources.find_next_unread(db, user_id)
         if n_source_id:
-            return redirect(
-                url_for("source.source_entries", source_id=n_source_id)
-            )
-
-        flash("No more unread sources...")
+            return {
+                "url": url_for("source.source_entries", source_id=n_source_id),
+                "marked": marked,
+            }
 
     if min_id:
-        return redirect(
-            url_for(
-                "source.source_entries",
-                source_id=source_id,
-                page=request.args.get("page"),
-                mode=request.args.get("mode"),
-            )
+        dst = url_for(
+            "source.source_entries",
+            source_id=source_id,
+            page=request.args.get("page"),
+            mode=request.args.get("mode"),
         )
+    else:
+        dst = url_for("root.sources")
 
-    return redirect(url_for("root.sources"))
+    return {"url": dst, "marked": marked}
 
 
 @BP.route("/<int:source_id>/filters")
@@ -275,12 +291,17 @@ def source_filter_edit(source_id: int, idx: ty.Union[int, str]) -> ty.Any:
         ]
     )
 
+    entity_hash = str(hash(source))
+
     if request.method == "POST":
-        form.update_from_request(request.form)
-        conf.update(form.values_map())
-        errors = dict(fltr.validate_conf(conf))
-        if not errors:
-            return _save_filter(db, source_id, sfidx, conf)
+        if entity_hash == request.form["_entity_hash"]:
+            form.update_from_request(request.form)
+            conf.update(form.values_map())
+            errors = dict(fltr.validate_conf(conf))
+            if not errors:
+                return _save_filter(db, source_id, sfidx, conf)
+        else:
+            flash("Source changed somewhere else; reloading...")
 
     return render_template(
         "filter_edit.html",
@@ -289,6 +310,7 @@ def source_filter_edit(source_id: int, idx: ty.Union[int, str]) -> ty.Any:
         form=form,
         errors=errors,
         fltr=fltr,
+        entity_hash=entity_hash,
     )
 
 

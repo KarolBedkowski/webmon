@@ -147,6 +147,8 @@ class GitLabCommits(AbstractGitLabSource):
             project, state.last_update
         )
         if not data_since:
+            del project
+            project = None
             return state.new_not_modified(), []
 
         commits = project.commits.list(since=data_since)
@@ -156,6 +158,8 @@ class GitLabCommits(AbstractGitLabSource):
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(self._get_favicon()))
 
+            del project
+            project = None
             return new_state, []
 
         short_list = self._conf.get("short_list")
@@ -177,6 +181,10 @@ class GitLabCommits(AbstractGitLabSource):
 
         entry = _build_entry(self._source, project, content)
         entry.icon = new_state.icon
+
+        del project
+        project = None
+
         return new_state, [entry]
 
     @classmethod
@@ -252,6 +260,10 @@ class GitLabTagsSource(AbstractGitLabSource):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(self._get_favicon()))
+
+            del project
+            project = None
+
             return new_state, []
 
         try:
@@ -265,6 +277,10 @@ class GitLabTagsSource(AbstractGitLabSource):
 
         entry = _build_entry(self._source, project, content)
         entry.icon = new_state.icon
+
+        del project
+        project = None
+
         return new_state, [entry]
 
     def _state_update_icon(self, new_state: model.SourceState) -> None:
@@ -322,6 +338,9 @@ class GitLabReleasesSource(AbstractGitLabSource):
             project, state.last_update
         )
         if not data_since:
+            del project
+            project = None
+
             return state.new_not_modified(), []
 
         releases = project.releases.list(
@@ -333,6 +352,9 @@ class GitLabReleasesSource(AbstractGitLabSource):
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(self._get_favicon()))
+
+            del project
+            project = None
 
             return new_state, []
 
@@ -347,6 +369,9 @@ class GitLabReleasesSource(AbstractGitLabSource):
 
         for entry in entries:
             entry.icon = new_state.icon
+
+        del project
+        project = None
 
         return new_state, entries
 

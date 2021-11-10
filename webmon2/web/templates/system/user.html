@@ -16,6 +16,7 @@
 	<h3>Change password</h3>
 	<form method="POST" autocomplete="new-password">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
+		<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 		<div class="form-wrapper">
 			<label>Current password:</label>
 			<input type="password" name="curr_password" required="required" />

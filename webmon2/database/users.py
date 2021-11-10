@@ -16,7 +16,6 @@ from webmon2 import model
 
 from . import _dbcommon as dbc
 from ._db import DB
-from ._dbcommon import tyCursor
 
 _LOG = logging.getLogger(__name__)
 
@@ -26,11 +25,10 @@ class LoginAlreadyExistsError(Exception):
 
 
 _GET_ALL_SQL = """
-select id as user__id, login as user__login, email as user__email,
-    password as user__password, active as user__admin, admin as user__admin,
-    active as user__active,
-    totp as user__totp
-from users
+SELECT id AS user__id, login AS user__login, email AS user__email,
+    password AS user__password, active AS user__admin, admin AS user__admin,
+    active AS user__active, totp AS user__totp
+FROM users
 """
 
 
@@ -43,28 +41,39 @@ def get_all(db: DB) -> ty.Iterable[model.User]:
 
 
 _GET_BY_ID_SQL = """
-select id as user__id, login as user__login, email as user__email,
-    password as user__password, active as user__admin, admin as user__admin,
-    active as user__active,
-    totp as user__totp
-from users
-where id=%s
+SELECT id AS user__id, login AS user__login, email AS user__email,
+    password AS user__password, active AS user__admin, admin AS user__admin,
+    active AS user__active, totp AS user__totp
+FROM users
+WHERE id=%s
 """
 
 _GET_BY_LOGIN_SQL = """
-select id as user__id, login as user__login, email as user__email,
-    password as user__password, active as user__admin, admin as user__admin,
-    active as user__active,
-    totp as user__totp
-from users
-where login=%s
+SELECT id AS user__id, login AS user__login, email AS user__email,
+    password AS user__password, active AS user__admin, admin AS user__admin,
+    active AS user__active, totp AS user__totp
+FROM users
+WHERE login=%s
 """
 
 
 def get(
     db: DB, id_: ty.Optional[int] = None, login: ty.Optional[str] = None
 ) -> model.User:
-    """Get user by id or login"""
+    """Get user by id or login.
+
+    Args:
+        db: database object
+        id_: user id; required if `login` is not given
+        login: user login; require if `id_` is not given
+
+    Raises:
+        `NotFound`: user not found
+
+    Return:
+        `User`
+
+    """
     with db.cursor() as cur:
         if id_:
             cur.execute(_GET_BY_ID_SQL, (id_,))
@@ -82,45 +91,61 @@ def get(
 
 
 _UPDATE_USER_SQL = """
-update users set login=%(user__login)s, email=%(user__email)s,
-password=%(user__password)s, active=%(user__active)s, admin=%(user__admin)s,
-totp=%(user__totp)s
-where id=%(user__id)s
+UPDATE users SET login=%(user__login)s, email=%(user__email)s,
+    password=%(user__password)s, active=%(user__active)s, admin=%(user__admin)s,
+    totp=%(user__totp)s
+WHERE id=%(user__id)s
 """
 _INSERT_USER_SQL = """
-insert into users (login, email, password, active, admin, totp)
-values (%(user__login)s, %(user__email)s, %(user__password)s, %(user__active)s,
+INSERT INTO users (login, email, password, active, admin, totp)
+VALUES (%(user__login)s, %(user__email)s, %(user__password)s, %(user__active)s,
     %(user__admin)s, %(user__totp)s)
-returning id
+RETURNING id
 """
 
 
 def save(db: DB, user: model.User) -> model.User:
-    """Insert or update user"""
-    with db.cursor() as cur:
-        if user.id:
+    """Insert or update user.
+
+    Raises:
+        `LoginAlreadyExistsError`: login exist for another user  (check only for
+            new user)
+
+    Return:
+        updated user
+    """
+    if user.id:
+        with db.cursor() as cur:
             cur.execute(_UPDATE_USER_SQL, user.to_row())
-        else:
-            cur.execute("select 1 from users where login=%s", (user.login,))
+    else:
+        # check is login exists
+        with db.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE login=%s", (user.login,))
             if cur.fetchone():
-                cur.close()
                 raise LoginAlreadyExistsError()
 
+        with db.cursor() as cur:
             cur.execute(_INSERT_USER_SQL, user.to_row())
             user_id = cur.fetchone()[0]
             user.id = user_id
-            _create_new_user_data(cur, user_id)
+
+        _create_new_user_data(db, user_id)
 
     return user
 
 
-def _create_new_user_data(cur: tyCursor, user_id: int) -> None:
-    cur.execute(
-        "select count(1) from source_groups where user_id=%s", (user_id,)
-    )
-    if not cur.fetchone()[0]:
+def _create_new_user_data(db: DB, user_id: int) -> None:
+    """Create default sources group when not exists for given user"""
+    with db.cursor() as cur:
         cur.execute(
-            "insert into source_groups(user_id, name) values (%s, %s)",
+            "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
+        )
+        if cur.fetchone()[0]:
+            return
+
+    with db.cursor() as cur:
+        cur.execute(
+            "INSERT INTO source_groups(user_id, name) VALUES (%s, %s)",
             (user_id, "main"),
         )
 
@@ -135,9 +160,19 @@ def get_state(
     default: ty.Optional[State] = None,
     conv: ty.Optional[ty.Callable[[str], State]] = None,
 ) -> State:
+    """Get state value for given user.
+
+    Args:
+        db: database object
+        user_id: user id
+        key: state key
+        default: default value if given key not exists; default None
+        conv: optional function used to convert string value to expected type
+
+    """
     with db.cursor() as cur:
         cur.execute(
-            "select value from users_state where user_id=%s and key=%s",
+            "SELECT value FROM users_state WHERE user_id=%s AND key=%s",
             (user_id, key),
         )
         row = cur.fetchone()
@@ -157,15 +192,12 @@ DO UPDATE SET value=EXCLUDED.value
 
 
 def set_state(db: DB, user_id: int, key: str, value: ty.Any) -> None:
+    """Update / store state value for `user_id` and `key`."""
     with db.cursor() as cur:
         cur.execute(_SET_STATE_SQL, (user_id, key, value))
 
 
-_DELETE_USER_SQL = """
-    DELETE FROM users WHERE id=%s
-"""
-
-
 def delete(db: DB, user_id: int) -> None:
+    """Remove user from database."""
     with db.cursor() as cur:
-        cur.execute(_DELETE_USER_SQL, (user_id,))
+        cur.execute("DELETE FROM users WHERE id=%s", (user_id,))

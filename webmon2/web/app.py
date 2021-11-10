@@ -12,7 +12,6 @@ Web gui application
 
 import logging
 import os
-import random
 import time
 import typing as ty
 from argparse import Namespace
@@ -28,18 +27,20 @@ from flask import (
     session,
     url_for,
 )
+from gevent.pool import Pool
+from gevent.pywsgi import LoggingLogAdapter, WSGIServer
+from prometheus_client import Counter, Histogram
+from werkzeug.exceptions import NotFound
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 try:
     from flask_minify import minify
 except ImportError:
     minify = None
 
-from gevent.pool import Pool
-from gevent.pywsgi import WSGIServer
-from prometheus_client import Counter, Histogram
-from werkzeug.middleware.dispatcher import DispatcherMiddleware
-from werkzeug.middleware.proxy_fix import ProxyFix
 
+import webmon2
 from webmon2 import database, worker
 
 from . import _commons as c
@@ -78,7 +79,7 @@ def _start_bg_tasks(args: Namespace) -> None:
 
 
 _CSP = (
-    "default-src 'self'; "
+    "default-src 'self' 'unsafe-inline'; "
     "script-src 'self' 'unsafe-inline'; "
     "img-src *; media-src *; "
     "frame-src *; "
@@ -135,16 +136,15 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             return abort(400)
 
         path = request.path
-        g.non_action = (
-            path.startswith("/static")
+
+        # pages that not need valid user
+        if (
+            path == "/favicon.ico"
+            or path.startswith("/static")
             or path.startswith("/sec/login")
             or path.startswith("/metrics")
             or path.startswith("/atom")
-            or path.startswith("/binary/")
-            or path == "/favicon.ico"
-            or path == "/manifest.json"
-        )
-        if g.non_action or path.startswith("/entry/mark/"):
+        ):
             return None
 
         user_id = session.get("user")
@@ -156,6 +156,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
             return redirect(url_for("sec.login"))
 
+        #  pates that not need load additional data
+        if (
+            path.startswith("/binary/")
+            or path == "/manifest.json"
+            or path.startswith("/entry/mark/")
+        ):
+            return None
+
         if request.method == "GET":
             _count_unread(user_id)
 
@@ -165,18 +173,20 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def after_request(  # pylint: disable=unused-variable
         resp: Response,
     ) -> Response:
-        if hasattr(g, "non_action") and not g.non_action:
-            if not resp.headers.get("Cache-Control"):
-                resp.headers[
-                    "Cache-Control"
-                ] = "no-cache, max-age=0, must-revalidate, no-store"
-            resp.headers["Access-Control-Expose-Headers"] = "X-CSRF-TOKEN"
-            resp.headers["X-CSRF-TOKEN"] = str(session.get("_csrf_token"))
+        cont_type = (resp.content_type.split(";") or [""])[0]
+        if cont_type in (
+            "application/json",
+            "application/atom+xml",
+            "text/plain",
+        ):
+            _set_cache_contol_no_cache(resp)
+        if cont_type == "text/html":
+            _set_cache_contol_no_cache(resp)
             resp.headers["Content-Security-Policy"] = _CSP
             resp.headers["X-Content-Type-Options"] = "nosniff"
             resp.headers["X-Frame-Options"] = "DENY"
-        else:
-            resp.headers["Cache-Control"] = "public, max-age=604800"
+        elif not resp.headers.get("Cache-Control"):
+            resp.headers["Cache-Control"] = "public, max-age=31536000"
 
         resp_time = time.time() - request.req_start_time  # type: ignore
         _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
@@ -187,12 +197,17 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         ).inc()
         return resp
 
+    @app.context_processor
+    def handle_context() -> ty.Dict[str, ty.Any]:
+        """Inject object into jinja2 templates."""
+        return {"webmon2": webmon2}
+
     return app
 
 
-def _generate_csrf_token() -> str:
-    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    return "".join(random.SystemRandom().choice(chars) for _ in range(32))
+def _set_cache_contol_no_cache(resp: Response) -> None:
+    if not resp.headers.get("Cache-Control"):
+        resp.headers["Cache-Control"] = "no-cache, max-age=0"
 
 
 def _check_csrf_token() -> bool:
@@ -203,12 +218,8 @@ def _check_csrf_token() -> bool:
             _LOG.info("bad csrf token")
             return False
 
-        session["_csrf_token"] = _generate_csrf_token()
-        session.modified = True
-
     elif "_csrf_token" not in session:
-        session["_csrf_token"] = _generate_csrf_token()
-        session.modified = True
+        c.generate_csrf_token()
 
     return True
 
@@ -228,13 +239,8 @@ _REQUEST_LATENCY = Histogram(
     "webmon2_request_latency_seconds",
     "Request latency",
     ["endpoint", "method"],
-    buckets=[0.01, 0.1, 0.5, 1.0, 3.0, 10.0],
+    buckets=[0.5, 1.0, 3.0, 10.0],
 )
-
-
-def simple_not_found(_env: ty.Any, resp: Response) -> ty.Any:
-    resp("400 Notfound", [("Content-Type", "text/plain")])
-    return [b"Not found"]
 
 
 def create_app(args: Namespace, conf: ConfigParser) -> Flask:
@@ -243,12 +249,13 @@ def create_app(args: Namespace, conf: ConfigParser) -> Flask:
 
     if web_root != "/":
         app.wsgi_app = DispatcherMiddleware(  # type: ignore
-            simple_not_found, {web_root: app.wsgi_app}
+            NotFound(), {web_root: app.wsgi_app}
         )
 
     app.wsgi_app = ProxyFix(  # type: ignore
-        app.wsgi_app, x_proto=1, x_host=0, x_port=0, x_prefix=0
+        app.wsgi_app, x_proto=1, x_host=1, x_port=1, x_prefix=1
     )
+
     return app
 
 
@@ -260,5 +267,10 @@ def start_app(args: Namespace, conf: ConfigParser) -> None:
         app.run(host=host, port=port, debug=True)
     else:
         pool = Pool(conf.getint("web", "pool", fallback=10))
-        http_server = WSGIServer((host, port), app, spawn=pool)
+        http_server = WSGIServer(
+            (host, port),
+            app,
+            spawn=pool,
+            log=LoggingLogAdapter(logging.getLogger("werkzeug")),
+        )
         http_server.serve_forever()

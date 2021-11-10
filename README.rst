@@ -1,4 +1,4 @@
-webmon ver 2.5.x
+webmon ver 2.6.x
 ================
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
@@ -12,6 +12,7 @@ Dependences
 -----------
 
 * Python 3.0+
+* Postgresql 10+
 * requests
 * yaml
 * html2text (for html2text filter)
@@ -27,10 +28,20 @@ Dependences
 * sdnotify (optional for systemd service)
 
 
+Installation
+------------
+
+1. `pip3 install webmon2<version>.whl`
+2. create database (`createuser -P webmon2; createdb -O webmon2 webmon2`)
+3. create configuration file (see below)
+4. update schema: `webmon2 update-schema`
+
+
+
 Usage
 -----
 
-1. launch `webmon2.py -h`
+1. launch `webmon2 -h` to see help
 
 Global Options
 ^^^^^^^^^^^^^^

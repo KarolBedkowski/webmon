@@ -10,9 +10,10 @@
 Common gui api functions
 """
 import math
+import secrets
 import typing as ty
 
-from flask import g
+from flask import g, session
 
 from webmon2 import model
 from webmon2.database import DB
@@ -49,3 +50,11 @@ def get_db() -> DB:
         database = g.db = DB.get()
 
     return database
+
+
+def generate_csrf_token() -> None:
+    """
+    Generate new random csrf token and store it in session.
+    """
+    session["_csrf_token"] = secrets.token_urlsafe(16)
+    session.modified = True

@@ -25,13 +25,19 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
-    print("no stackprinter")
     try:
         from rich.traceback import install
 
         install()
     except ImportError:
-        print("no rich.trackback")
+        pass
+
+try:
+    import icecream
+
+    icecream.install()
+except ImportError:  # Graceful fallback if IceCream isn't installed.
+    pass
 
 try:
     import sdnotify
@@ -46,7 +52,7 @@ __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.5.12"
+VERSION = "2.6.0"
 APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")

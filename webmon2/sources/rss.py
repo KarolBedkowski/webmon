@@ -80,12 +80,15 @@ class RssSource(AbstractSource):
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
             self._conf["url"],
-            etag=state.get_state("etag"),
+            etag=state.get_prop("etag"),
             modified=state.last_update,
         )
         status = doc.get("status") if doc else 400
         if status not in (200, 301, 302, 304):
-            return _fail_error(state, doc, status)
+            res = _fail_error(state, doc, status)
+            del doc
+            doc = None
+            return res
 
         # self._check_sy_updateperiod(doc.feed)
 
@@ -100,6 +103,8 @@ class RssSource(AbstractSource):
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
 
+            del doc
+            doc = None
             return new_state, []
 
         new_state = state.new_ok(etag=doc.get("etag"))
@@ -109,22 +114,27 @@ class RssSource(AbstractSource):
         expires = common.parse_http_date(doc.headers.get("expires"))
         if expires:
             new_state.next_update = expires
-            new_state.set_state("expires", str(expires))
+            new_state.set_prop("expires", str(expires))
 
         if status == 301:  # permanent redirects
-            new_state.set_state("info", "Permanently redirects: " + doc.href)
+            new_state.set_prop("info", "Permanently redirects: " + doc.href)
             self._update_source(new_url=doc.href)
         elif status == 302:
-            new_state.set_state("info", "Temporary redirects: " + doc.href)
+            new_state.set_prop("info", "Temporary redirects: " + doc.href)
             self._update_source(new_url=doc.href)
+        else:
+            new_state.del_prop("info")
 
         load_article = self._conf["load_article"]
         load_content = self._conf["load_content"]
-        items = [
-            self._load_entry(entry, load_content, load_article)
-            for entry in self._limit_items(entries)
-        ]
+        with requests.Session() as sess:
+            items = [
+                self._load_entry(entry, load_content, load_article, sess)
+                for entry in self._limit_items(entries)
+            ]
 
+        del doc
+        doc = None
         return new_state, items
 
     def _limit_items(
@@ -143,6 +153,7 @@ class RssSource(AbstractSource):
         entry: feedparser.FeedParserDict,
         load_content: bool,
         load_article: bool,
+        sess: requests.Session,
     ) -> model.Entry:
         now = datetime.datetime.now()
         result = model.Entry.for_source(self._source)
@@ -152,7 +163,7 @@ class RssSource(AbstractSource):
         result.created = _get_val(entry, "published_parsed", now)
         result.status = model.EntryStatus.NEW
         if load_article:
-            result = self._load_article(result)
+            result = self._load_article(result, sess)
         elif load_content:
             result.content = entry.get("summary") or (
                 entry["content"][0].value
@@ -164,11 +175,14 @@ class RssSource(AbstractSource):
         return result
 
     # pylint: disable=no-self-use
-    def _load_article(self, entry: model.Entry) -> model.Entry:
+    def _load_article(
+        self, entry: model.Entry, sess: requests.Session
+    ) -> model.Entry:
         if not entry.url:
             return entry
+        response = None
         try:
-            response = requests.request(
+            response = sess.request(
                 url=entry.url,
                 method="GET",
                 headers={"User-agent": self.AGENT},
@@ -191,6 +205,11 @@ class RssSource(AbstractSource):
 
         except Exception as err:  # pylint: disable=broad-except
             entry.content = "Loading article error: " + str(err)
+        finally:
+            if response:
+                response.close()
+                del response
+                response = None
 
         return entry
 
