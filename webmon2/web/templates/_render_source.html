@@ -35,6 +35,10 @@
 					Times: {{ source.state.error_counter}}</p>
 				{% endif %}
 			{% endif %}
+			{% set url = source.get_setting('web_url') or source.get_setting('url') %}
+			{% if url %}
+				<p>Page URL: <a href="{{ url | safe }}">{{ url }}</a></p>
+			{% endif %}
 			{% if source.state.get_prop('info') %}
 				<p>{{ source.state.props['info'] }}</p>
 			{% endif %}

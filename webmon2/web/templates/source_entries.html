@@ -30,6 +30,10 @@
 		<a href="{{ url_for('source.source_entries', source_id=source.id, mode='all') }}">⊛ Show all</a>
 		{% endif %}
 		<a href="{{ url_for("entries.entries_search", source_id=source.id) }}">🔍 Search</a>
+		{% set url = source.get_setting('web_url') or source.get_setting('url') %}
+		{% if url %}
+		<a href="{{ url | safe }}">🔗 Website</a>
+		{% endif %}
 	</div>
 	{{ nav_bar() }}
 {% endblock %}

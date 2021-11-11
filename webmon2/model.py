@@ -149,6 +149,12 @@ class Source:  # pylint: disable=too-many-instance-attributes
     def __hash__(self) -> int:
         return hash(tuple(str(getattr(self, key)) for key in self.__slots__))
 
+    def get_setting(self, key: str) -> ty.Any:
+        if self.settings:
+            return self.settings.get(key)
+
+        return None
+
     def clone(self) -> Source:
         src = Source(
             user_id=self.user_id,
