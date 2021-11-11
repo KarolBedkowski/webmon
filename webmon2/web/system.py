@@ -36,7 +36,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import common, database, imp_exp, main, model, opml, security
+from webmon2 import VERSION, common, database, imp_exp, model, opml, security
 
 from . import _commons as c
 from . import forms
@@ -411,7 +411,7 @@ def sys_info() -> ty.Any:
         abort(403)
 
     info = [
-        ("Version", main.VERSION),
+        ("Version", VERSION),
     ]
 
     db = c.get_db()
