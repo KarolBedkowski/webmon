@@ -69,6 +69,18 @@ class GitHubMixin:
         return repository
 
 
+def _update_source(src: AbstractSource) -> None:
+    """
+    Make some updates in source settings (if necessary).
+    """
+    if src._source.settings.get("url"):  # type: ignore
+        return
+
+    # pylint: disable=protected-access
+    src._updated_source = src._updated_source or src._source.clone()  #
+    src.__class__.before_save(src._updated_source)
+
+
 def _build_entry(
     source: model.Source, repository: Repository, content: str
 ) -> model.Entry:
@@ -115,6 +127,7 @@ class GithubInput(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
+        _update_source(self)
         repository = self._github_get_repository(self._conf)
         data_since = self._github_check_repo_updated(
             repository, state.last_update
@@ -160,6 +173,19 @@ class GithubInput(AbstractSource, GitHubMixin):
         repository = None
 
         return new_state, [entry]
+
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}"
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -222,6 +248,7 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
+        _update_source(self)
         conf = self._conf
         repository = self._github_get_repository(conf)
         if not self._github_check_repo_updated(repository, state.last_update):
@@ -261,6 +288,19 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
     def _state_update_icon(self, new_state: model.SourceState) -> None:
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
+
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/tags"
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -339,6 +379,7 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
+        _update_source(self)
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(repository, state.last_update):
             new_state = state.new_not_modified(etag=repository.etag)
@@ -386,6 +427,19 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         repository = None
 
         return new_state, entries
+
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/releases"
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:

@@ -93,6 +93,16 @@ class AbstractGitLabSource(AbstractSource):
 
         return url + _FAVICON
 
+    def _update_source(self) -> None:
+        """
+        Make some updates in source settings (if necessary).
+        """
+        if self._source.settings.get("url"):  # type: ignore
+            return
+
+        self._updated_source = self._updated_source or self._source.clone()
+        self.__class__.before_save(self._updated_source)
+
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
@@ -139,6 +149,7 @@ class GitLabCommits(AbstractGitLabSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
+        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
@@ -186,6 +197,20 @@ class GitLabCommits(AbstractGitLabSource):
         project = None
 
         return new_state, [entry]
+
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = conf["gitlab_url"]
+            if not glurl.endswith("/"):
+                conf["gitlab_url"] = glurl = glurl + "/"
+            conf["url"] = f"{glurl}{conf['project']}/"
+
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -242,6 +267,7 @@ class GitLabTagsSource(AbstractGitLabSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
+        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
@@ -288,6 +314,20 @@ class GitLabTagsSource(AbstractGitLabSource):
             new_state.set_icon(self._load_binary(self._get_favicon()))
 
     @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = conf["gitlab_url"]
+            if not glurl.endswith("/"):
+                conf["gitlab_url"] = glurl = glurl + "/"
+            conf["url"] = f"{glurl}{conf['project']}/-/tags"
+
+        return source
+
+    @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
 
@@ -330,6 +370,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
 
+        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
@@ -374,6 +415,20 @@ class GitLabReleasesSource(AbstractGitLabSource):
         project = None
 
         return new_state, entries
+
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = conf["gitlab_url"]
+            if not glurl.endswith("/"):
+                conf["gitlab_url"] = glurl = glurl + "/"
+            conf["url"] = f"{glurl}{conf['project']}/-/releases"
+
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:

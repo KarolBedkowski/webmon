@@ -89,6 +89,13 @@ class AbstractSource:
                     f'invalid value {values[0]!r} for "{param.description}"',
                 )
 
+    @classmethod
+    def before_save(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        return source
+
     def load(
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
