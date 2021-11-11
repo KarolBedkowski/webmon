@@ -38,11 +38,17 @@ pyotp = { version = "^2.6", optional = true}
 PyQRCode = { version = "^1.2", optional = true}
 psycopg2 = "^2.8"
 defusedxml = "^0.6"
-Flask-Minify = { version="^0.32",  optional = true }
+Flask-Minify = { version="^0.32", optional = true }
+sdnotify = {version="*", optional=true}
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.15.0"
 stackprinter = "*"
+
+[tool.poetry.extras]
+minify = ["Flask-Minify"]
+otp = ["pyotp", "PyQRCode"]
+sd = ["sdnotify"]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
