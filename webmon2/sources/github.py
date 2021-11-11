@@ -30,10 +30,14 @@ _GITHUB_ICON = "https://github.com/favicon.ico"
 _ = ty
 
 
-class GitHubMixin:
+class GitHubAbstractSource(AbstractSource):
     """Support functions for GitHub"""
 
-    # pylint: disable=too-few-public-methods
+    def __init__(
+        self, source: model.Source, sys_settings: model.ConfDict
+    ) -> None:
+        super().__init__(source, sys_settings)
+        self._update_source()
 
     @staticmethod
     def _github_check_repo_updated(
@@ -68,17 +72,25 @@ class GitHubMixin:
         repository = github.repository(conf["owner"], conf["repository"])
         return repository
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
 
-def _update_source(src: AbstractSource) -> None:
-    """
-    Make some updates in source settings (if necessary).
-    """
-    if src._source.settings.get("url"):  # type: ignore
-        return
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
 
-    # pylint: disable=protected-access
-    src._updated_source = src._updated_source or src._source.clone()  #
-    src.__class__.before_save(src._updated_source)
+    def _update_source(self) -> None:
+        """
+        Make some updates in source settings (if necessary).
+        """
+        if not self._source.settings or self._source.settings.get("url"):
+            return
+
+        self._updated_source = self._updated_source or self._source.clone()
+        self.__class__.before_save(self._updated_source)
 
 
 def _build_entry(
@@ -94,7 +106,7 @@ def _build_entry(
     return entry
 
 
-class GithubInput(AbstractSource, GitHubMixin):
+class GithubInput(GitHubAbstractSource):
     """Load last commits from github."""
 
     name = "github_commits"
@@ -127,7 +139,6 @@ class GithubInput(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
-        _update_source(self)
         repository = self._github_get_repository(self._conf)
         data_since = self._github_check_repo_updated(
             repository, state.last_update
@@ -218,7 +229,7 @@ def _format_gh_commit_long(commit: RepoCommit, full_message: bool) -> str:
     return "\n".join(result)
 
 
-class GithubTagsSource(AbstractSource, GitHubMixin):
+class GithubTagsSource(GitHubAbstractSource):
     """Load last tags from github."""
 
     name = "github_tags"
@@ -248,7 +259,6 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
-        _update_source(self)
         conf = self._conf
         repository = self._github_get_repository(conf)
         if not self._github_check_repo_updated(repository, state.last_update):
@@ -349,7 +359,7 @@ def _format_gh_tag(tag: RepoTag) -> str:
     return res
 
 
-class GithubReleasesSource(AbstractSource, GitHubMixin):
+class GithubReleasesSource(GitHubAbstractSource):
     """Load last releases from github."""
 
     name = "github_releases"
@@ -379,7 +389,6 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
-        _update_source(self)
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(repository, state.last_update):
             new_state = state.new_not_modified(etag=repository.etag)

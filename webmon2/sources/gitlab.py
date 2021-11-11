@@ -46,6 +46,12 @@ class AbstractGitLabSource(AbstractSource):
         ),
     ]
 
+    def __init__(
+        self, source: model.Source, sys_settings: model.ConfDict
+    ) -> None:
+        super().__init__(source, sys_settings)
+        self._update_source()
+
     @staticmethod
     def _gitlab_check_project_updated(
         project: gobj.projects.Project, last_updated: ty.Optional[datetime]
@@ -97,7 +103,7 @@ class AbstractGitLabSource(AbstractSource):
         """
         Make some updates in source settings (if necessary).
         """
-        if self._source.settings.get("url"):  # type: ignore
+        if not self._source.settings or self._source.settings.get("url"):
             return
 
         self._updated_source = self._updated_source or self._source.clone()
@@ -149,7 +155,6 @@ class GitLabCommits(AbstractGitLabSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
-        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
@@ -267,7 +272,6 @@ class GitLabTagsSource(AbstractGitLabSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return commits."""
-        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
@@ -370,7 +374,6 @@ class GitLabReleasesSource(AbstractGitLabSource):
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return releases."""
 
-        self._update_source()
         project = self._gitlab_get_project()
         if not project:
             return state.new_error("Project not found"), []
