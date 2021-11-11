@@ -8,7 +8,16 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-from . import binaries, entries, groups, scoring, settings, sources, users
+from . import (
+    binaries,
+    entries,
+    groups,
+    scoring,
+    settings,
+    sources,
+    system,
+    users,
+)
 from ._db import DB
 from ._dbcommon import Cursor, NotFound
 
@@ -24,5 +33,6 @@ __all__ = (
     "sources",
     "binaries",
     "scoring",
+    "system",
     "Cursor",
 )

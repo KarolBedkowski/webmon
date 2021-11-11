@@ -699,7 +699,7 @@ class Setting:
             value=value,
             value_type=row["setting__value_type"],
             description=row["setting__description"],
-            user_id=row["setting__user_id"],
+            user_id=row.get("setting__user_id"),
         )
 
     def to_row(self) -> common.Row:

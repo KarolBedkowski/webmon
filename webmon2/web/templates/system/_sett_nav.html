@@ -6,6 +6,7 @@
 		<a href="{{ url_for("system.sett_scoring") }}">Scoring</a>
 		{% if session["user_admin"] %}
 		<a href="{{ url_for("system.sett_sys_users") }}">Sys users</a>
+		<a href="{{ url_for("system.sys_info") }}">Sys info</a>
 		{% endif %}
 	</nav>
 {%- endmacro %}

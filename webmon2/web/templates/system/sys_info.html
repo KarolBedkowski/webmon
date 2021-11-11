@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+  <body>
+{% block styles %}
+<style>
+	table th {text-align: center;}
+	table tr td:nth-child(4),td:nth-child(5),td:nth-child(6) { text-align: center;}
+	table,td,th {border: 1px solid black; border-collapse: collapse;}
+	td,th {padding: 0.1em;}
+</style>
+{% endblock %}
+
+{% block header %}
+  <h1>{% block title %}Settings{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<h2>System informations</h2>
+
+	<ul>
+	{% for key, value in info %}
+		<li><b>{{ key }}</b>: {{ value }}</li>
+	{% endfor %}
+	</ul>
+
+	<h3>Global settings</h3>
+
+	<ul>
+	{% for sett in settings %}
+		<li><b>{{ sett.description }}</b> ({{ sett.key }}): {{ sett.value }}</li>
+	{% endfor %}
+	</ul>
+
+	<h3>Effective config</h3>
+
+	<ul>
+	{% for sec in app_conf.sections() %}
+		{% for name, value in app_conf.items(sec) %}
+		<li><b>{{ sec }} / {{ name }}</b>: {{ value }}</li>
+		{% endfor %}
+	{% endfor %}
+	</ul>
+
+	<h3>DB tables size</h3>
+
+	<ul>
+	{% for name, size in db_tab_sizes %}
+	<li><b>{{ name }}</b>: {{ size }}</li>
+	{% endfor %}
+	</ul>
+
+
+{% endblock %}
+
+  </body>
+</html>

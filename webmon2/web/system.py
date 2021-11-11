@@ -26,6 +26,7 @@ except ImportError:
 from flask import (
     Blueprint,
     abort,
+    current_app,
     flash,
     make_response,
     redirect,
@@ -35,7 +36,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import common, database, imp_exp, model, opml, security
+from webmon2 import common, database, imp_exp, main, model, opml, security
 
 from . import _commons as c
 from . import forms
@@ -401,4 +402,27 @@ def sys_qrcode() -> ty.Any:
             "Pragma": "no-cache",
             "Expires": "0",
         },
+    )
+
+
+@BP.route("/settings/system/info")
+def sys_info() -> ty.Any:
+    if not session["user_admin"]:
+        abort(403)
+
+    info = [
+        ("Version", main.VERSION),
+    ]
+
+    db = c.get_db()
+    info.extend(database.system.get_sysinfo(db))
+    settings = database.settings.get_global(db)
+    db_tab_sizes = database.system.get_table_sizes(db)
+
+    return render_template(
+        "system/sys_info.html",
+        info=info,
+        settings=settings,
+        app_conf=current_app.config["app_conf"],
+        db_tab_sizes=db_tab_sizes,
     )
