@@ -90,9 +90,11 @@ class AbstractSource:
                 )
 
     @classmethod
-    def before_save(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
         """
-        Update configuration before save; apply some additional data.
+        Update source configuration; apply some additional data.
+        `upgrade_conf` is launched before save source and may be run on source
+        init (defined in source).
         """
         return source
 

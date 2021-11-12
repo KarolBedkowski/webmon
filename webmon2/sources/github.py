@@ -90,7 +90,7 @@ class GitHubAbstractSource(AbstractSource):
             return
 
         self._updated_source = self._updated_source or self._source.clone()
-        self.__class__.before_save(self._updated_source)
+        self.__class__.upgrade_conf(self._updated_source)
 
 
 def _build_entry(
@@ -186,7 +186,7 @@ class GithubInput(GitHubAbstractSource):
         return new_state, [entry]
 
     @classmethod
-    def before_save(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -300,7 +300,7 @@ class GithubTagsSource(GitHubAbstractSource):
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
     @classmethod
-    def before_save(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -438,7 +438,7 @@ class GithubReleasesSource(GitHubAbstractSource):
         return new_state, entries
 
     @classmethod
-    def before_save(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """

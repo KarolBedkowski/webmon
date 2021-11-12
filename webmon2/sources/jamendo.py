@@ -111,7 +111,7 @@ class JamendoAbstractSource(AbstractSource):
             return
 
         self._updated_source = self._updated_source or self._source.clone()
-        self.__class__.before_save(self._updated_source)
+        self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -124,7 +124,7 @@ class JamendoAbstractSource(AbstractSource):
         raise NotImplementedError()
 
     @classmethod
-    def before_save(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
