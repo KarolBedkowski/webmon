@@ -38,7 +38,11 @@ class AbstractSource:
     ) -> None:
         super().__init__()
         self._source = source
+
+        # when _updated_source is set, after loading this configuration overwrite
+        # data in database
         self._updated_source = None  # type: ty.Optional[model.Source]
+
         self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings,
@@ -63,6 +67,9 @@ class AbstractSource:
 
     @property
     def updated_source(self) -> ty.Optional[model.Source]:
+        """
+        Get updated source configuration (if was updated).
+        """
         return self._updated_source
 
     @classmethod

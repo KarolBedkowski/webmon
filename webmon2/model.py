@@ -138,6 +138,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         # default score given for entries this source
         self.default_score: int = 0
 
+        # ref objects
         self.group: ty.Optional[SourceGroup] = None
         self.state: ty.Optional[SourceState] = None
         # is source has unread entries
