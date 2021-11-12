@@ -42,56 +42,49 @@ _GET_ENTRIES_SQL_MAIN_COLS = """
 """
 
 
-def _build_find_sql(  # pylint: disable=too-many-arguments
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
-    read: bool = False,
-    order: str = "",
-    limit: ty.Optional[int] = None,
-    offset: ty.Optional[int] = None,
-    star: bool = False,
-    text_query: int = 0,
-) -> str:
+def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
     """
     Build sql for fetch entries
 
-    Args:
+    Args may contain:
         source_id: if not None - add filter for `source_id`
         group_id: if not None - add filter for `group_id`
         read: if true - add filter for `read_mark` = `read`
         order: add "ORDER BY " + `order` clause
-        limit: add "LIMIT" + `limit` clause
-        offset: add "OFFSET " + `offset` clause
+        limit: add "LIMIT" + `limit` parameter
+        offset: add "OFFSET " + `offset` parameter
         star: if true - add filter for `star_mark` = `star`
-        text_query: if 1 - add `query` for text search in titles
-                    if 2 - add `query` for text search in titles and content
+        title_query:  `title_query` for text search in titles
+        query: add `query` for text search in titles and content
 
     """
     query = dbc.Query(_GET_ENTRIES_SQL_MAIN_COLS, "entries e")
     query.add_where("e.user_id = %(user_id)s")
-    query.order = order
-    query.limit = limit
-    query.offset = offset
+    query.order = args.get("order")
+    query.limit = args.get("limit") is not None
+    query.offset = args.get("offset") is not None
 
+    source_id = args.get("source_id")
     if source_id:
         query.add_where("AND e.source_id = %(source_id)s")
 
-    elif group_id:
+    group_id = args.get("group_id")
+    if group_id:
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    if read:
+    if args.get("read"):
         query.add_where("AND read_mark = %(read)s")
 
-    if star:
+    if args.get("star"):
         query.add_where("AND e.star_mark = %(star)s")
 
-    if text_query == 1:
+    if args.get("title_query"):
         query.add_where(
             "AND to_tsvector(title) "
-            "@@ to_tsquery('pg_catalog.simple', %(query)s)"
+            "@@ to_tsquery('pg_catalog.simple', %(title_query)s)"
         )
-    elif text_query == 2:
+    elif args.get("query"):
         query.add_where(
             "AND to_tsvector(content || ' ' || title) "
             "@@ to_tsquery('pg_catalog.simple', %(query)s)"
@@ -115,10 +108,11 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
         raise ValueError("missing user_id")
 
     user_sources = sources.get_all_dict(db, user_id)
-    sql = _build_find_sql(star=True)
+    args = {"user_id": user_id, "star": 1}
+    sql = _build_find_sql(args)
 
     with db.cursor() as cur:
-        cur.execute(sql, {"user_id": user_id, "star": 1})
+        cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
 
@@ -156,23 +150,23 @@ def get_history(  # pylint: disable=too-many-arguments
     else:
         user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    sql = _build_find_sql(source_id, group_id, read=True)
-
     params = {
         "user_id": user_id,
         "read": model.EntryReadMark.MANUAL_READ,
         "source_id": source_id,
         "group_id": group_id,
-        "limit": limit,
-        "offset": offset,
     }
 
+    sql = _build_find_sql(params)
     _LOG.debug("get_history: %s", sql)
 
     # count all
     with db.cursor() as cur:
         cur.execute(f"select count(1) from ({sql}) subq", params)
         total = int(cur.fetchone()[0])
+
+    params["limit"] = limit
+    params["offset"] = offset
 
     sql += " ORDER BY e.id OFFSET %(offset)s LIMIT %(limit)s"
     _LOG.debug("get_history: %s", sql)
@@ -281,12 +275,12 @@ def find(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
-        "read": model.EntryReadMark.UNREAD,
+        "order": _get_order_sql(order),
     }
-    sql = _build_find_sql(
-        source_id, group_id, unread, _get_order_sql(order), limit, offset
-    )
+    if unread:
+        args["read"] = model.EntryReadMark.UNREAD
 
+    sql = _build_find_sql(args)
     _LOG.debug("find(%r): %s", args, sql)
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
@@ -320,17 +314,16 @@ def find_fulltext(
     """
     args = {
         "user_id": user_id,
-        "query": query,
         "group_id": group_id,
         "source_id": source_id,
+        "order": _get_order_sql(order),
     }
+    if title_only:
+        args["title_query"] = query
+    else:
+        args["query"] = query
 
-    sql = _build_find_sql(
-        source_id,
-        group_id,
-        order=_get_order_sql(order),
-        text_query=1 if title_only else 2,
-    )
+    sql = _build_find_sql(args)
     _LOG.debug("find_fulltext: %s", sql)
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
@@ -343,10 +336,16 @@ def find_fulltext(
 def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
-    sql = _build_find_sql(group_id=group_id, order="e.id DESC", limit=100)
+    args = {
+        "group_id": group_id,
+        "user_id": user_id,
+        "order": "e.id DESC",
+        "limit": 100,
+    }
+    sql = _build_find_sql(args)
 
     with db.cursor() as cur:
-        cur.execute(sql, {"group_id": group_id, "user_id": user_id})
+        cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
 

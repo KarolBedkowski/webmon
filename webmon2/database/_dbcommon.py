@@ -25,9 +25,9 @@ class Query:
         self.cols: ty.List[str] = [cols]
         self.from_: ty.List[str] = [from_]
         self.where: ty.List[str] = []
-        self.order: str = ""
-        self.limit: ty.Optional[int] = None
-        self.offset: ty.Optional[int] = None
+        self.order: ty.Optional[str] = None
+        self.limit: bool = False
+        self.offset: bool = False
 
     def add_select(self, col: str):
         self.cols.append(col)
@@ -53,8 +53,8 @@ class Query:
         if self.order:
             yield f"ORDER BY {self.order}"
 
-        if self.limit is not None:
-            yield f"LIMIT {self.limit}"
+        if self.limit:
+            yield "LIMIT %(limit)s"
 
-        if self.offset is not None:
-            yield f"OFFSET {self.offset}"
+        if self.offset:
+            yield "OFFSET %(offset)s"
