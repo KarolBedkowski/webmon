@@ -23,9 +23,7 @@ from ._dbcommon import Cursor
 _ = ty
 _LOG = logging.getLogger(__name__)
 
-
-_GET_ENTRIES_SQL_MAIN = """
-SELECT
+_GET_ENTRIES_SQL_MAIN_COLS = """
     e.id AS entry__id,
     e.source_id AS entry__source_id,
     e.updated AS entry__updated,
@@ -41,117 +39,58 @@ SELECT
     e.user_id AS entry__user_id,
     e.icon AS entry__icon,
     e.score AS entry__score
-FROM entries e
 """
 
-_GET_ENTRIES_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE e.user_id = %(user_id)s
-"""
-)
 
-_GET_UNREAD_ENTRIES_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE read_mark = %(unread)s AND e.user_id=%(user_id)s
-"""
-)
+def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
+    """
+    Build sql for fetch entries
 
-_GET_UNREAD_ENTRIES_BY_SOURCE_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE read_mark = %(unread)s
-    AND e.source_id=%(source_id)s
-    AND e.user_id=%(user_id)s
-"""
-)
+    Args may contain:
+        source_id: if not None - add filter for `source_id`
+        group_id: if not None - add filter for `group_id`
+        read: if true - add filter for `read_mark` = `read`
+        order: add "ORDER BY " + `order` clause
+        limit: add "LIMIT" + `limit` parameter
+        offset: add "OFFSET " + `offset` parameter
+        star: if true - add filter for `star_mark` = `star`
+        title_query:  `title_query` for text search in titles
+        query: add `query` for text search in titles and content
 
-_GET_ENTRIES_BY_SOURCE_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE e.source_id = %(source_id)s AND e.user_id=%(user_id)s
-"""
-)
+    """
+    query = dbc.Query(_GET_ENTRIES_SQL_MAIN_COLS, "entries e")
+    query.add_where("e.user_id = %(user_id)s")
+    query.order = args.get("order")
+    query.limit = args.get("limit") is not None
+    query.offset = args.get("offset") is not None
 
-_GET_UNREAD_ENTRIES_BY_GROUP_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-JOIN sources s ON s.id = e.source_id
-WHERE read_mark = %(unread)s
-    AND s.group_id = %(group_id)s
-    AND e.user_id = %(user_id)s
-"""
-)
-
-_GET_ENTRIES_BY_GROUP_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-JOIN sources s ON s.id = e.source_id
-WHERE s.group_id = %(group_id)s
-    AND e.user_id=%(user_id)s
-"""
-)
-
-_GET_STARRED_ENTRIES_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE e.star_mark = 1 AND e.user_id=%(user_id)s
-"""
-)
-
-_GET_ENTRIES_BY_GROUP_FEED_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-JOIN sources s ON s.id = e.source_id
-WHERE s.group_id = %(group_id)s
-ORDER BY e.id DESC
-LIMIT 100
-"""
-)
-
-_GET_HISTORY_ENTRIES_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE e.read_mark = %(read)s AND e.user_id=%(user_id)s
-"""
-)
-
-_GET_ENTRIES_FULLTEXT_TITLE_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE to_tsvector(title) @@ to_tsquery('pg_catalog.simple', %(query)s)
-    AND e.user_id=%(user_id)s
-"""
-)
-
-_GET_ENTRIES_FULLTEXT_SQL = (
-    _GET_ENTRIES_SQL_MAIN
-    + """
-WHERE to_tsvector(content || ' ' || title)
-        @@ to_tsquery('pg_catalog.simple', %(query)s)
-    AND e.user_id=%(user_id)s
-"""
-)
-
-
-def _get_find_sql(
-    source_id: ty.Optional[int], group_id: ty.Optional[int], unread: bool
-) -> str:
+    source_id = args.get("source_id")
     if source_id:
-        if unread:
-            return _GET_UNREAD_ENTRIES_BY_SOURCE_SQL
-        return _GET_ENTRIES_BY_SOURCE_SQL
+        query.add_where("AND e.source_id = %(source_id)s")
 
+    group_id = args.get("group_id")
     if group_id:
-        if unread:
-            return _GET_UNREAD_ENTRIES_BY_GROUP_SQL
-        return _GET_ENTRIES_BY_GROUP_SQL
+        query.add_from("JOIN sources s ON s.id = e.source_id")
+        query.add_where("AND s.group_id = %(group_id)s")
 
-    if unread:
-        return _GET_UNREAD_ENTRIES_SQL
+    if args.get("read"):
+        query.add_where("AND read_mark = %(read)s")
 
-    return _GET_ENTRIES_SQL
+    if args.get("star"):
+        query.add_where("AND e.star_mark = %(star)s")
+
+    if args.get("title_query"):
+        query.add_where(
+            "AND to_tsvector(title) "
+            "@@ to_tsquery('pg_catalog.simple', %(title_query)s)"
+        )
+    elif args.get("query"):
+        query.add_where(
+            "AND to_tsvector(content || ' ' || title) "
+            "@@ to_tsquery('pg_catalog.simple', %(query)s)"
+        )
+
+    return query.build()
 
 
 def _yield_entries(
@@ -169,9 +108,11 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
         raise ValueError("missing user_id")
 
     user_sources = sources.get_all_dict(db, user_id)
+    args = {"user_id": user_id, "star": 1}
+    sql = _build_find_sql(args)
 
     with db.cursor() as cur:
-        cur.execute(_GET_STARRED_ENTRIES_SQL, {"user_id": user_id})
+        cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
 
@@ -209,30 +150,26 @@ def get_history(  # pylint: disable=too-many-arguments
     else:
         user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    sql = _GET_HISTORY_ENTRIES_SQL
-    if source_id:
-        sql += " AND source_id = %(source_id)s"
-    if group_id:
-        sql += (
-            " AND source_id in "
-            "(select id from sources where group_id=%(group_id)s)"
-        )
-
     params = {
         "user_id": user_id,
         "read": model.EntryReadMark.MANUAL_READ,
         "source_id": source_id,
         "group_id": group_id,
-        "limit": limit,
-        "offset": offset,
     }
+
+    sql = _build_find_sql(params)
+    _LOG.debug("get_history: %s", sql)
 
     # count all
     with db.cursor() as cur:
-        cur.execute(f"select count(1) from ({sql}) ss", params)
+        cur.execute(f"select count(1) from ({sql}) subq", params)
         total = int(cur.fetchone()[0])
 
-    sql += " ORDER BY e.id LIMIT %(limit)s OFFSET %(offset)s"
+    params["limit"] = limit
+    params["offset"] = offset
+
+    sql += " ORDER BY e.id OFFSET %(offset)s LIMIT %(limit)s"
+    _LOG.debug("get_history: %s", sql)
 
     with db.cursor() as cur:
         cur.execute(sql, params)
@@ -291,21 +228,21 @@ def get_total_count(
 
 
 _ORDER_SQL = {
-    "update": " order by e.updated",
-    "update_desc": " order by e.updated desc",
-    "title": " order by e.title",
-    "title_desc": " order by e.title desc",
-    "score": " order by e.score",
-    "score_desc": " order by e.score desc",
+    "update": "e.updated",
+    "update_desc": "e.updated desc",
+    "title": "e.title",
+    "title_desc": "e.title desc",
+    "score": "e.score",
+    "score_desc": "e.score desc",
 }
 
 
 def _get_order_sql(order: ty.Optional[str]) -> str:
     """Get sql part for order entries."""
     if not order:
-        return " order by e.updated"
+        return "e.updated"
 
-    return _ORDER_SQL.get(order, " order by e.updated")
+    return _ORDER_SQL.get(order, "e.updated")
 
 
 # pylint: disable=too-many-arguments,too-many-locals
@@ -338,14 +275,12 @@ def find(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
-        "unread": model.EntryReadMark.UNREAD,
+        "order": _get_order_sql(order),
     }
-    sql = _get_find_sql(source_id, group_id, unread)
-    sql += _get_order_sql(order)
-    if limit:
-        # for unread there is no pagination
-        sql += " LIMIT %(limit)s OFFSET %(offset)s"
+    if unread:
+        args["read"] = model.EntryReadMark.UNREAD
 
+    sql = _build_find_sql(args)
     _LOG.debug("find(%r): %s", args, sql)
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
@@ -379,24 +314,17 @@ def find_fulltext(
     """
     args = {
         "user_id": user_id,
-        "query": query,
         "group_id": group_id,
         "source_id": source_id,
+        "order": _get_order_sql(order),
     }
-    sql = (
-        _GET_ENTRIES_FULLTEXT_TITLE_SQL
-        if title_only
-        else _GET_ENTRIES_FULLTEXT_SQL
-    )
-
-    if source_id:
-        sql += " AND e.source_id=%(source_id)s "
-    elif group_id:
-        sql += " AND s.group_id=%(group_id)s "
+    if title_only:
+        args["title_query"] = query
     else:
-        sql += " AND e.user_id=%(user_id)s "
+        args["query"] = query
 
-    sql += _get_order_sql(order)
+    sql = _build_find_sql(args)
+    _LOG.debug("find_fulltext: %s", sql)
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
@@ -408,8 +336,16 @@ def find_fulltext(
 def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     """Find all entries by group feed."""
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
+    args = {
+        "group_id": group_id,
+        "user_id": user_id,
+        "order": "e.id DESC",
+        "limit": 100,
+    }
+    sql = _build_find_sql(args)
+
     with db.cursor() as cur:
-        cur.execute(_GET_ENTRIES_BY_GROUP_FEED_SQL, {"group_id": group_id})
+        cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
 
