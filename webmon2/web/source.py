@@ -17,6 +17,7 @@ from flask import (
     Blueprint,
     abort,
     flash,
+    g,
     redirect,
     render_template,
     request,
@@ -178,9 +179,12 @@ def source_entries(
         )
     )
 
-    total_entries = database.entries.get_total_count(
-        db, user_id, unread=unread, source_id=source_id
-    )
+    # total number of unread entries should be in globals
+    total_entries = g.get("entries_unread_count")
+    if total_entries is None or not unread:
+        total_entries = database.entries.get_total_count(
+            db, user_id, unread=unread, source_id=source_id
+        )
 
     data = c.preprate_entries_list(entries, page, total_entries, "update")
 

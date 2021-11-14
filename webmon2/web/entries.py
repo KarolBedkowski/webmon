@@ -16,6 +16,7 @@ import typing as ty
 
 from flask import (
     Blueprint,
+    g,
     redirect,
     render_template,
     request,
@@ -48,9 +49,12 @@ def entries(mode: str, page: int) -> ty.Any:
     unread = mode == "unread"
     user_id = session["user"]
     order = request.args.get("order", "name")
-    total_entries = database.entries.get_total_count(
-        db, user_id, unread=unread
-    )
+    # total number of unread entries should be in globals
+    total_entries = g.get("entries_unread_count")
+    if total_entries is None or not unread:
+        total_entries = database.entries.get_total_count(
+            db, user_id, unread=unread
+        )
     entries_ = list(
         database.entries.find(
             db, user_id, limit=limit, offset=offset, unread=unread, order=order
