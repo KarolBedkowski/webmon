@@ -112,11 +112,28 @@ class AbstractSource:
         raise NotImplementedError()
 
     def _load_binary(
-        self, url: str, only_images: bool = True
+        self,
+        url: str,
+        only_images: bool = True,
+        session: ty.Optional[requests.Session] = None,
     ) -> ty.Optional[ty.Tuple[str, bytes]]:
+        """
+        Load binary from given url.
+
+        Args:
+            url: url of binary to load
+            only_images: if true accept only image-like files
+            session: optional requests.Session to reuse
+
+        Return:
+            None on error
+            (<content type>, <binary data>) on success
+        """
         _LOG.debug("loading binary %s", url)
+        # reuse requests.session if available
+        req = session.request if session else requests.request
         try:
-            response = requests.request(
+            response = req(
                 url=url,
                 method="GET",
                 headers={"User-agent": self.AGENT},
