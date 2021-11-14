@@ -20,7 +20,13 @@
 
 
 {% block header %}
-	<h1>{% block title %}Entries{% endblock %} ({{ total_entries }})</h1>
+	<h1>{% block title %}Entries{% endblock %}
+		{% if showed == 'all' %}
+			({{ total_entries }})
+		{% else %}
+			<span class="entries_unread_cnt">({{ total_entries }})</span>
+		{% endif %}
+	</h1>
 	<div class="actions">
 		{% if max_id %}
 		<a href="{{ url_for('entries.entries_mark_read', mode=showed, max_id=max_id, min_id=min_id) }}" data-action="mark-all-read">✔︎ Mark visible read</a>

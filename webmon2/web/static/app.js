@@ -85,12 +85,12 @@
 						article.dataset["state"] = data.result;
 					}
 					let num_count = data.unread;
-					let num_field = document.getElementById("entries_unread_cnt");
-					if (num_count > 0) {
-						num_field.innerHTML = "(" + num_count + ")";
-					} else {
-						num_field.innerHTML = "";
-					}
+					let val = (num_count > 0) ? "(" + num_count + ")" : "";
+					document.querySelectorAll(".entries_unread_cnt").forEach(
+						function(field) {
+							field.innerHTML = val;
+						}
+					);
 				}, () => {
 					element.attributes.processing = false;
 				});
