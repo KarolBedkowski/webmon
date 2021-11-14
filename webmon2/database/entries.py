@@ -73,10 +73,10 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    if args.get("read"):
+    if args.get("read") is not None:
         query.add_where("AND read_mark = %(read)s")
 
-    if args.get("star"):
+    if args.get("star") is not None:
         query.add_where("AND e.star_mark = %(star)s")
 
     if args.get("title_query"):
