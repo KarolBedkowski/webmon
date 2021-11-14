@@ -40,8 +40,9 @@ class WebSource(AbstractSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
-        with requests.Session() as sess:
-            new_state, entries = self._load(state, sess)
+        with requests.Session() as session:
+            new_state, entries = self._load(state, session)
+
         if new_state.status != model.SourceStateStatus.ERROR:
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
@@ -55,13 +56,13 @@ class WebSource(AbstractSource):
         return new_state, entries
 
     def _load(
-        self, state: model.SourceState, sess: requests.Session
+        self, state: model.SourceState, session: requests.Session
     ) -> ty.Tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
         headers = _prepare_headers(state)
         response = None
         try:
-            response = sess.request(
+            response = session.request(
                 url=url,
                 method="GET",
                 headers=headers,
@@ -75,7 +76,7 @@ class WebSource(AbstractSource):
             if response.status_code == 304:
                 new_state = state.new_not_modified()
                 if not new_state.icon:
-                    new_state.set_icon(self._load_image(url))
+                    new_state.set_icon(self._load_image(url, session))
 
                 return new_state, []
 
@@ -91,7 +92,7 @@ class WebSource(AbstractSource):
                 last_modified=response.headers.get("last_modified"),
             )
             if not new_state.icon:
-                new_state.set_icon(self._load_image(url))
+                new_state.set_icon(self._load_image(url, session))
 
             url = self._check_redirects(response, new_state) or url
             entry = model.Entry.for_source(self._source)
@@ -160,14 +161,14 @@ class WebSource(AbstractSource):
             self._updated_source.settings["url"] = new_url
 
     def _load_image(
-        self, url: str
+        self, url: str, session: requests.Session
     ) -> ty.Optional[ty.Tuple[str, bytes]]:  # pylint: disable=no-self-use
         url_splited = urlsplit(url)
         favicon_url = urlunsplit(
             (url_splited[0], url_splited[1], "favicon.ico", "", "")
         )
         if favicon_url:
-            return self._load_binary(favicon_url)
+            return self._load_binary(favicon_url, session=session)
 
         return None
 
