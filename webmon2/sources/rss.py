@@ -93,6 +93,7 @@ class RssSource(AbstractSource):
         # self._check_sy_updateperiod(doc.feed)
 
         try:
+            # pylint: disable=unsubscriptable-object
             self._update_source(web_url=doc["feed"]["link"])
         except KeyError:
             pass

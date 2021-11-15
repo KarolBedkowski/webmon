@@ -29,7 +29,7 @@ class Query:
         self.limit: bool = False
         self.offset: bool = False
 
-    def add_select(self, col: str):
+    def add_select(self, col: str) -> None:
         self.cols.append(col)
 
     def add_from(self, from_: str) -> None:
