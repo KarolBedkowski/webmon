@@ -415,7 +415,7 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
         return
 
     _LOG.debug("_send_mails start")
-    users = list(database.users.get_all(db))
+    users = list(database.users.get_all_active(db))
     for user in users:
         db.begin()
         try:

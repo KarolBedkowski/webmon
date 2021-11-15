@@ -40,6 +40,23 @@ def get_all(db: DB) -> ty.Iterable[model.User]:
             yield model.User.from_row(row)
 
 
+_GET_ACTIVE_SQL = """
+SELECT id AS user__id, login AS user__login, email AS user__email,
+    password AS user__password, active AS user__admin, admin AS user__admin,
+    active AS user__active, totp AS user__totp
+FROM users
+WHERE active
+"""
+
+
+def get_all_active(db: DB) -> ty.Iterable[model.User]:
+    """Get all active users"""
+    with db.cursor() as cur:
+        cur.execute(_GET_ACTIVE_SQL)
+        for row in cur:
+            yield model.User.from_row(row)
+
+
 _GET_BY_ID_SQL = """
 SELECT id AS user__id, login AS user__login, email AS user__email,
     password AS user__password, active AS user__admin, admin AS user__admin,
