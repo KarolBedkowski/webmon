@@ -431,15 +431,29 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
 
 def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     """
-    Calculate next update time for `source` for error result as now +
-    source.interval (or 1 day) + random time between 1 and 3 hours.
+    Calculate next update time for `source` for error result.
+
+    Next check is calculated as:
+        now
+        + min(1h + (2 ^ current error_counter)h, source.interval)
+        + random 10-30 minutes,
     """
-    next_check_delta = common.parse_interval(source.interval or "1d")
-    # add some random time
-    next_check_delta += random.randint(3600, 3 * 3600)
-    return datetime.datetime.now() + datetime.timedelta(
+    assert source.state
+    error_counter = source.state.error_counter
+
+    delta1 = 3600 + pow(2, error_counter) * 3600
+    delta2 = common.parse_interval(source.interval or "1d")
+    next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
+    next_check = datetime.datetime.now() + datetime.timedelta(
         seconds=next_check_delta
     )
+    _LOG.debug(
+        "calculated next interval for %s: +%s = %s",
+        source.id,
+        next_check_delta,
+        next_check,
+    )
+    return next_check
 
 
 def _save_state_error(
