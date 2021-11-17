@@ -81,12 +81,13 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
 
     if args.get("title_query"):
         query.add_where(
-            "AND to_tsvector(title) "
+            "AND to_tsvector('simple'::regconfig, (title)::text) "
             "@@ to_tsquery('pg_catalog.simple', %(title_query)s)"
         )
     elif args.get("query"):
         query.add_where(
-            "AND to_tsvector(content || ' ' || title) "
+            "AND to_tsvector('simple'::regconfig, "
+            "(content || ' '::text) || (title)::text) "
             "@@ to_tsquery('pg_catalog.simple', %(query)s)"
         )
 
