@@ -27,6 +27,17 @@ _FAVICON = "favicon.ico"
 _ = ty
 
 
+def _get_gitlab_url(source: model.Source) -> str:
+    glurl = None
+    if source.settings:
+        glurl = source.settings.get("gitlab_url")
+        if glurl and not glurl.endswith("/"):
+            # in custom gitlab url add / at the end if missing
+            glurl = glurl + "/"
+
+    return glurl or _GITLAB_DEFAULT_URL
+
+
 class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
 
@@ -103,10 +114,24 @@ class AbstractGitLabSource(AbstractSource):
         """
         Make some updates in source settings (if necessary).
         """
-        if not self._source.settings or self._source.settings.get("url"):
+        if not self._source.settings:
+            return
+
+        url = self._source.settings.get("url")
+        if (
+            self._source.settings.get("gitlab_url") != "/"
+            and url != "/"
+            and url
+        ):
             return
 
         self._updated_source = self._updated_source or self._source.clone()
+        assert self._updated_source.settings
+
+        if self._source.settings.get("gitlab_url") == "/":
+            self._source.settings["gitlab_url"] = None
+            self._updated_source.settings["gitlab_url"] = None
+
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
@@ -210,9 +235,7 @@ class GitLabCommits(AbstractGitLabSource):
         """
         if source.settings:
             conf = source.settings
-            glurl = conf["gitlab_url"]
-            if not glurl.endswith("/"):
-                conf["gitlab_url"] = glurl = glurl + "/"
+            glurl = _get_gitlab_url(source)
             conf["url"] = f"{glurl}{conf['project']}/"
 
         return source
@@ -324,9 +347,7 @@ class GitLabTagsSource(AbstractGitLabSource):
         """
         if source.settings:
             conf = source.settings
-            glurl = conf["gitlab_url"]
-            if not glurl.endswith("/"):
-                conf["gitlab_url"] = glurl = glurl + "/"
+            glurl = _get_gitlab_url(source)
             conf["url"] = f"{glurl}{conf['project']}/-/tags"
 
         return source
@@ -426,9 +447,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
         """
         if source.settings:
             conf = source.settings
-            glurl = conf["gitlab_url"]
-            if not glurl.endswith("/"):
-                conf["gitlab_url"] = glurl = glurl + "/"
+            glurl = _get_gitlab_url(source)
             conf["url"] = f"{glurl}{conf['project']}/-/releases"
 
         return source
