@@ -135,13 +135,9 @@ def group_entries(
         )
     )
 
-    # total number of unread entries should be in globals
-    total_entries = g.get("entries_unread_count")
-    if total_entries is None or not unread:
-        total_entries = database.entries.get_total_count(
-            db, user_id, unread=unread, group_id=group_id
-        )
-
+    total_entries = database.entries.get_total_count(
+        db, user_id, unread=unread, group_id=group_id
+    )
     data = c.preprate_entries_list(entries, page, total_entries, order)
 
     return render_template(
