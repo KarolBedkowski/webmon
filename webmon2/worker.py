@@ -37,6 +37,7 @@ _WORKER_PROCESSING_TIME = Counter(
     "webmon2_worker_processing_seconds",
     "Worker processing time",
 )
+_ENTRIES_LOADED = Counter("webmon2_entries_loaded", "Entries loaded count")
 _CLEAN_COUNTER = Counter(
     "webmon2_clean_items",
     "Number of deleted entries",
@@ -228,6 +229,8 @@ class FetchWorker(threading.Thread):
             icon = entries[0].icon
             if not new_state.icon and icon:
                 new_state.icon = icon
+
+            _ENTRIES_LOADED.inc(len(entries))
 
         # update source state properties
         new_state.last_check = datetime.datetime.now()
