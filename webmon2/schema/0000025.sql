@@ -11,6 +11,7 @@ DROP INDEX IF EXISTS entries_idx2;
 DROP INDEX IF EXISTS entries_up_star_idx;
 DROP INDEX IF EXISTS source_states_next_update_idx;
 DROP INDEX IF EXISTS scoring_sett_idx1;
+DROP INDEX IF EXISTS sources_name_idx;
 
 CREATE INDEX IF NOT EXISTS entries_idx3 ON entries USING btree (source_id) WHERE read_mark = 0;
 CREATE INDEX IF NOT EXISTS entries_idx4 ON entries USING btree (user_id) WHERE read_mark = 0;
