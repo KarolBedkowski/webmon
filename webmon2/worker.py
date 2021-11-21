@@ -63,6 +63,9 @@ class CheckWorker(threading.Thread):
         self._sdn = sdn
         # time of next cleanup start
         self._next_cleanup_start: float = time.time()
+        self._work_interval = (
+            15 if self._debug else self._conf.getint("main", "work_interval")
+        )
 
     def _notify(self, msg: str) -> None:
         """
@@ -72,10 +75,14 @@ class CheckWorker(threading.Thread):
             self._sdn.notify(msg)
 
     def run(self) -> None:
-        _LOG.info("CheckWorker started; workers: %d", self.num_workers)
+        _LOG.info(
+            "CheckWorker started; workers: %d; interval: %d",
+            self.num_workers,
+            self._work_interval,
+        )
         gc_cntr = 0
+        time.sleep(15)  # initial sleep
         while True:
-            time.sleep(15 if self._debug else 60)
             self._notify("STATUS=processing")
             start = time.time()
             with database.DB.get() as db:
@@ -114,6 +121,7 @@ class CheckWorker(threading.Thread):
                 gc_cntr = 0
 
             self._notify("STATUS=running")
+            time.sleep(self._work_interval)
 
     def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)

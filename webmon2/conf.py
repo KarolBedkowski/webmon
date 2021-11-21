@@ -23,6 +23,7 @@ workers = 2
 database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
 db_pool_min = 2
 db_pool_max = 20
+work_interval = 300
 
 [web]
 address = 127.0.0.1
@@ -119,6 +120,14 @@ def update_from_args(
 
 # pylint: disable=too-many-branches
 def validate(conf: ConfigParser) -> bool:
+    # validate all sections
+    valid_web = _validate_web(conf)
+    valid_main = _validate_main(conf)
+    valid_smtp = _validate_smtp(conf)
+    return valid_web and valid_main and valid_smtp
+
+
+def _validate_web(conf: ConfigParser) -> bool:
     valid = True
 
     if not conf.get("web", "root"):
@@ -140,6 +149,12 @@ def validate(conf: ConfigParser) -> bool:
             _LOG.error("Invalid web port")
             valid = False
 
+    return valid
+
+
+def _validate_main(conf: ConfigParser) -> bool:
+    valid = True
+
     if not conf.get("main", "database"):
         _LOG.error("Missing database configuration")
         valid = False
@@ -153,6 +168,22 @@ def validate(conf: ConfigParser) -> bool:
         if workers < 1:
             _LOG.error("Invalid workers parameter")
             valid = False
+
+    try:
+        work_interval = int(conf.get("main", "work_interval"))
+    except ValueError:
+        _LOG.error("Invalid work_interval parameter")
+        valid = False
+    else:
+        if work_interval < 1:
+            _LOG.error("Invalid work_interval parameter")
+            valid = False
+
+    return valid
+
+
+def _validate_smtp(conf: ConfigParser) -> bool:
+    valid = True
 
     if conf.getboolean("smtp", "enabled"):
         if not conf.get("smtp", "address"):
