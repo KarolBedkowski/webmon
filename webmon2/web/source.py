@@ -17,7 +17,6 @@ from flask import (
     Blueprint,
     abort,
     flash,
-    g,
     redirect,
     render_template,
     request,

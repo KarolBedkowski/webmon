@@ -18,17 +18,6 @@ from ._db import DB
 _LOG = logging.getLogger(__name__)
 
 
-_GET_STATS_SQL = """
-SELECT s.key AS setting__key,
-    coalesce(us.value, s.value) AS setting__value,
-    s.value_type AS setting__value_type,
-    s.description AS setting__description,
-    us.user_id AS setting__user_id
-FROM settings s
-LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
-"""
-
-
 _GET_DB_TAB_SIZESSQL = """
 SELECT relname AS "tables", pg_size_pretty(pg_total_relation_size (c.oid)) AS "size"
 FROM pg_class c
