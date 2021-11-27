@@ -25,7 +25,7 @@
 				<section class="menu">
 					<a href="{{ url_for("root.index") }}"><img src="{{ url_for('static', filename="icon.svg") }}" width="32" heifht="32" /></a>
 					<a href="{{ url_for("entries.entries", mode='unread') }}">
-						Entries <b id="entries_unread_cnt">{% if g.entries_unread_count %}({{ g.entries_unread_count }}){% endif %}</b></a>
+						Entries <b class="entries_unread_cnt">{% if g.entries_unread_count %}({{ g.entries_unread_count }}){% endif %}</b></a>
 					<a href="{{ url_for("entries.entries_starred") }}">Starred</a>
 					<a href="{{ url_for("entries.entries_history") }}">History</a>
 					<a href="{{ url_for("root.sources") }}">Sources</a>

@@ -4,7 +4,7 @@ import os
 
 from setuptools import find_packages, setup
 
-from webmon2 import main
+import webmon2
 
 CLASSIFIERS = [
     "Development Status :: 4 - Beta",
@@ -40,8 +40,8 @@ with open("README.rst", "r", encoding="UTF-8") as fdesc:
     description = fdesc.read()
 
 setup(
-    name=main.APP_NAME,
-    version=main.VERSION,
+    name=webmon2.APP_NAME,
+    version=webmon2.VERSION,
     description="webmon2 - monitor web page changes.",
     long_description=description,
     classifiers=CLASSIFIERS,

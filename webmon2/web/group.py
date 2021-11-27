@@ -137,7 +137,6 @@ def group_entries(
     total_entries = database.entries.get_total_count(
         db, user_id, unread=unread, group_id=group_id
     )
-
     data = c.preprate_entries_list(entries, page, total_entries, order)
 
     return render_template(

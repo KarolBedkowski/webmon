@@ -136,6 +136,21 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             return abort(400)
 
         path = request.path
+        user_id = session.get("user")
+        if user_id is not None:
+            # user is logged
+            # path that not need load additional data
+            if (
+                path.startswith("/binary/")
+                or path == "/manifest.json"
+                or path.startswith("/entry/mark/")
+            ):
+                return None
+
+            if request.method == "GET":
+                _count_unread(user_id)
+
+            return None
 
         # pages that not need valid user
         if (
@@ -147,27 +162,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         ):
             return None
 
-        user_id = session.get("user")
-        if user_id is None:
-            # back url is registered only for get request to prevent bad request
-            if request.method == "GET":
-                session["_back_url"] = request.url
-                session.modified = True
+        # login is requred; redirect to login page
 
-            return redirect(url_for("sec.login"))
-
-        #  pates that not need load additional data
-        if (
-            path.startswith("/binary/")
-            or path == "/manifest.json"
-            or path.startswith("/entry/mark/")
-        ):
-            return None
-
+        # back url is registered only for get request to prevent bad request
         if request.method == "GET":
-            _count_unread(user_id)
+            session["_back_url"] = request.url
+            session.modified = True
 
-        return None
+        return redirect(url_for("sec.login"))
 
     @app.after_request
     def after_request(  # pylint: disable=unused-variable

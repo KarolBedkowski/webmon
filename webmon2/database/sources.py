@@ -451,11 +451,13 @@ def save_state(
 
 
 _GET_SOURCES_TO_FETCH_SQL = """
-SELECT ss.source_id
-FROM source_state  ss
+SELECT s.id
+FROM source_state ss
 JOIN sources s ON s.id = ss.source_id
+JOIN users u ON s.user_id = u.id
 WHERE ss.next_update <= now()
     AND s.status = %s
+    AND u.active
 """
 
 

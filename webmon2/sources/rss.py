@@ -92,6 +92,12 @@ class RssSource(AbstractSource):
 
         # self._check_sy_updateperiod(doc.feed)
 
+        try:
+            # pylint: disable=unsubscriptable-object
+            self._update_source(web_url=doc["feed"]["link"])
+        except KeyError:
+            pass
+
         entries = doc.get("entries")
         if state.last_update:
             entries = list(
@@ -277,17 +283,25 @@ class RssSource(AbstractSource):
     def _update_source(
         self,
         new_url: ty.Optional[str] = None,
+        web_url: ty.Optional[str] = None,
         interval: ty.Optional[str] = None,
     ) -> None:
-        self._updated_source = self._updated_source or self._source.clone()
+        assert self._source.settings is not None
 
-        if new_url:
+        if new_url and new_url != self._source.settings.get("url"):
+            self._updated_source = self._updated_source or self._source.clone()
             assert self._updated_source.settings is not None
             self._updated_source.settings["url"] = new_url
 
-        if interval:
+        if interval and interval != self._source.interval:
             _LOG.debug("interval updated: %s", interval)
+            self._updated_source = self._updated_source or self._source.clone()
             self._updated_source.interval = interval
+
+        if web_url and web_url != self._source.settings.get("web_url"):
+            self._updated_source = self._updated_source or self._source.clone()
+            assert self._updated_source.settings is not None
+            self._updated_source.settings["web_url"] = web_url
 
 
 def _fail_error(

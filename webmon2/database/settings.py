@@ -103,3 +103,20 @@ def get_dict(db: DB, user_id: int) -> ty.Dict[str, ty.Any]:
 
     """
     return {setting.key: setting.value for setting in get_all(db, user_id)}
+
+
+_GET_GLOBAL_SQL = """
+SELECT s.key AS setting__key,
+    s.value AS setting__value,
+    s.value_type AS setting__value_type,
+    s.description AS setting__description
+FROM settings s
+ORDER by description
+"""
+
+
+def get_global(db: DB) -> ty.List[model.Setting]:
+    """Get global settings."""
+    with db.cursor() as cur:
+        cur.execute(_GET_GLOBAL_SQL)
+        return [model.Setting.from_row(row) for row in cur]

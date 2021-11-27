@@ -37,6 +37,7 @@ _WORKER_PROCESSING_TIME = Counter(
     "webmon2_worker_processing_seconds",
     "Worker processing time",
 )
+_ENTRIES_LOADED = Counter("webmon2_entries_loaded", "Entries loaded count")
 _CLEAN_COUNTER = Counter(
     "webmon2_clean_items",
     "Number of deleted entries",
@@ -62,6 +63,9 @@ class CheckWorker(threading.Thread):
         self._sdn = sdn
         # time of next cleanup start
         self._next_cleanup_start: float = time.time()
+        self._work_interval = (
+            15 if self._debug else self._conf.getint("main", "work_interval")
+        )
 
     def _notify(self, msg: str) -> None:
         """
@@ -71,10 +75,14 @@ class CheckWorker(threading.Thread):
             self._sdn.notify(msg)
 
     def run(self) -> None:
-        _LOG.info("CheckWorker started; workers: %d", self.num_workers)
+        _LOG.info(
+            "CheckWorker started; workers: %d; interval: %d",
+            self.num_workers,
+            self._work_interval,
+        )
         gc_cntr = 0
+        time.sleep(15)  # initial sleep
         while True:
-            time.sleep(15 if self._debug else 60)
             self._notify("STATUS=processing")
             start = time.time()
             with database.DB.get() as db:
@@ -113,6 +121,7 @@ class CheckWorker(threading.Thread):
                 gc_cntr = 0
 
             self._notify("STATUS=running")
+            time.sleep(self._work_interval)
 
     def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf)
@@ -228,6 +237,8 @@ class FetchWorker(threading.Thread):
             icon = entries[0].icon
             if not new_state.icon and icon:
                 new_state.icon = icon
+
+            _ENTRIES_LOADED.inc(len(entries))
 
         # update source state properties
         new_state.last_check = datetime.datetime.now()
@@ -415,7 +426,7 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
         return
 
     _LOG.debug("_send_mails start")
-    users = list(database.users.get_all(db))
+    users = list(database.users.get_all_active(db))
     for user in users:
         db.begin()
         try:
@@ -431,15 +442,29 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
 
 def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     """
-    Calculate next update time for `source` for error result as now +
-    source.interval (or 1 day) + random time between 1 and 3 hours.
+    Calculate next update time for `source` for error result.
+
+    Next check is calculated as:
+        now
+        + min(1h + (2 ^ current error_counter)h, source.interval)
+        + random 10-30 minutes,
     """
-    next_check_delta = common.parse_interval(source.interval or "1d")
-    # add some random time
-    next_check_delta += random.randint(3600, 3 * 3600)
-    return datetime.datetime.now() + datetime.timedelta(
+    assert source.state
+    error_counter = source.state.error_counter
+
+    delta1 = 3600 + pow(2, error_counter) * 3600
+    delta2 = common.parse_interval(source.interval or "1d")
+    next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
+    next_check = datetime.datetime.now() + datetime.timedelta(
         seconds=next_check_delta
     )
+    _LOG.debug(
+        "calculated next interval for %s: +%s = %s",
+        source.id,
+        next_check_delta,
+        next_check,
+    )
+    return next_check
 
 
 def _save_state_error(

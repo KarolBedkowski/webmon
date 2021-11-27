@@ -30,10 +30,14 @@ _GITHUB_ICON = "https://github.com/favicon.ico"
 _ = ty
 
 
-class GitHubMixin:
+class GitHubAbstractSource(AbstractSource):
     """Support functions for GitHub"""
 
-    # pylint: disable=too-few-public-methods
+    def __init__(
+        self, source: model.Source, sys_settings: model.ConfDict
+    ) -> None:
+        super().__init__(source, sys_settings)
+        self._update_source()
 
     @staticmethod
     def _github_check_repo_updated(
@@ -68,6 +72,26 @@ class GitHubMixin:
         repository = github.repository(conf["owner"], conf["repository"])
         return repository
 
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
+    def _update_source(self) -> None:
+        """
+        Make some updates in source settings (if necessary).
+        """
+        if not self._source.settings or self._source.settings.get("url"):
+            return
+
+        self._updated_source = self._updated_source or self._source.clone()
+        self.__class__.upgrade_conf(self._updated_source)
+
 
 def _build_entry(
     source: model.Source, repository: Repository, content: str
@@ -82,7 +106,7 @@ def _build_entry(
     return entry
 
 
-class GithubInput(AbstractSource, GitHubMixin):
+class GithubInput(GitHubAbstractSource):
     """Load last commits from github."""
 
     name = "github_commits"
@@ -162,6 +186,19 @@ class GithubInput(AbstractSource, GitHubMixin):
         return new_state, [entry]
 
     @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}"
+        return source
+
+    @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
 
@@ -192,7 +229,7 @@ def _format_gh_commit_long(commit: RepoCommit, full_message: bool) -> str:
     return "\n".join(result)
 
 
-class GithubTagsSource(AbstractSource, GitHubMixin):
+class GithubTagsSource(GitHubAbstractSource):
     """Load last tags from github."""
 
     name = "github_tags"
@@ -263,6 +300,19 @@ class GithubTagsSource(AbstractSource, GitHubMixin):
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
     @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/tags"
+        return source
+
+    @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
 
@@ -309,7 +359,7 @@ def _format_gh_tag(tag: RepoTag) -> str:
     return res
 
 
-class GithubReleasesSource(AbstractSource, GitHubMixin):
+class GithubReleasesSource(GitHubAbstractSource):
     """Load last releases from github."""
 
     name = "github_releases"
@@ -386,6 +436,19 @@ class GithubReleasesSource(AbstractSource, GitHubMixin):
         repository = None
 
         return new_state, entries
+
+    @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/releases"
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:

@@ -46,14 +46,21 @@ try:
 except ImportError:
     HAS_SDNOTIFY = False
 
-from . import cli, conf, database, logging_setup, web, worker
+from . import (
+    APP_NAME,
+    VERSION,
+    cli,
+    conf,
+    database,
+    logging_setup,
+    web,
+    worker,
+)
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
 _ = ty
 
-VERSION = "2.6.0"
-APP_NAME = "webmon2"
 
 _LOG = logging.getLogger("main")
 _DEFAULT_DB_FILE = "~/.local/share/" + APP_NAME + "/" + APP_NAME + ".db"

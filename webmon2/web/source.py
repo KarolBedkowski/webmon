@@ -113,6 +113,7 @@ def source_edit(
                 if next_action == "save_activate":
                     u_source.status = model.SourceStatus.ACTIVE
 
+                u_source = src.upgrade_conf(u_source)
                 u_source = database.sources.save(db, u_source)
 
                 # adjust next check time when interval changed

@@ -30,6 +30,10 @@
 				{% if entry.url %}
 					| <a href="{{ entry.url }}">Original content</a>
 				{% endif %}
+				{% set url = entry.source.get_setting('web_url') or entry.source.get_setting('url') %}
+				{% if url %}
+					| <a href="{{ url | safe }}">🔗 Website</a>
+				{% endif %}
 			</div>
 		</header>
 		{% set content_type = entry.get_opt('content-type') %}

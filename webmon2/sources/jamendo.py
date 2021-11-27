@@ -36,7 +36,13 @@ _JAMENDO_ICON = (
 
 
 # pylint: disable=too-few-public-methods
-class JamendoMixin:
+class JamendoAbstractSource(AbstractSource):
+    def __init__(
+        self, source: model.Source, sys_settings: model.ConfDict
+    ) -> None:
+        super().__init__(source, sys_settings)
+        self._update_source()
+
     # pylint: disable=no-self-use
     def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
         last_update = datetime.datetime.now() - datetime.timedelta(
@@ -97,6 +103,38 @@ class JamendoMixin:
                     del response
                     response = None
 
+    def _update_source(self) -> None:
+        """
+        Make some updates in source settings (if necessary).
+        """
+        if not self._source.settings or self._source.settings.get("url"):
+            return
+
+        self._updated_source = self._updated_source or self._source.clone()
+        self.__class__.upgrade_conf(self._updated_source)
+
+    @classmethod
+    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+        raise NotImplementedError()
+
+    @classmethod
+    def from_opml(
+        cls, opml_node: ty.Dict[str, ty.Any]
+    ) -> ty.Optional[model.Source]:
+        raise NotImplementedError()
+
+    @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            conf[
+                "url"
+            ] = f"https://www.jamendo.com/artist/{conf['artist_id']}/"
+        return source
+
 
 def _build_request_url(url: str, **params: ty.Any) -> str:
     return url + "&".join(
@@ -130,7 +168,7 @@ def _create_entry(
     return entry
 
 
-class JamendoAlbumsSource(AbstractSource, JamendoMixin):
+class JamendoAlbumsSource(JamendoAbstractSource):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
@@ -231,7 +269,7 @@ def _jamendo_format_long_list(
             )
 
 
-class JamendoTracksSource(AbstractSource, JamendoMixin):
+class JamendoTracksSource(JamendoAbstractSource):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"

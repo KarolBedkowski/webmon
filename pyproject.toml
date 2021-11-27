@@ -1,67 +1,72 @@
 [tool.poetry]
-name = "webmon2"
-version = "2.6.0"
-description = ""
 authors = ["Karol Będkowski <karol.bedkowski@gmail.com>"]
-license = "GPL-2.0-or-later"
-readme = "README.rst"
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
-    "Programming Language :: Python :: 3 :: Only",
-    "Environment :: Web Environment",
-    "Framework :: Flask",
-    "Topic :: Internet :: WWW/HTTP",
-    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+  "Development Status :: 4 - Beta",
+  "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: Web Environment",
+  "Framework :: Flask",
+  "Topic :: Internet :: WWW/HTTP",
+  "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
+description = ""
 include = ["ChangeLog"]
-
+license = "GPL-2.0-or-later"
+name = "webmon2"
+readme = "README.rst"
+version = "2.6.1"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-Werkzeug = "^2.0"
-requests = "^2.21.0"
-markdown2 = "^2.4"
-lxml = "^4.3"
-PyYAML = ">3"
-feedparser = "^6.0"
-html2text = "^2020.1.16"
-"github3.py" = "^2.0"
 Flask = "^2.0"
+Flask-Minify = { version = "^0.32", optional = true }
+PyQRCode = { version = "^1.2", optional = true }
+PyYAML = ">3"
+Werkzeug = "^2.0"
 cssselect = "^1.1"
-prometheus-client = "^0.11"
+defusedxml = "^0.6"
+feedparser = "^6.0"
 gevent = "*"
-readability-lxml = "^0.8"
+"github3.py" = "^2.0"
+html2text = "^2020.1.16"
+lxml = "^4.3"
+markdown2 = "^2.4"
+prometheus-client = "^0.11"
+psycopg2 = "^2.8"
+pyotp = { version = "^2.6", optional = true }
+python = "^3.7"
 python-dateutil = "^2.8"
 python-gitlab = "^2.10"
-pyotp = { version = "^2.6", optional = true}
-PyQRCode = { version = "^1.2", optional = true}
-psycopg2 = "^2.8"
-defusedxml = "^0.6"
-Flask-Minify = { version="^0.32",  optional = true }
+readability-lxml = "^0.8"
+requests = "^2.21.0"
+sdnotify = { version = "*", optional = true }
 
 [tool.poetry.dev-dependencies]
 pre-commit = "^2.15.0"
 stackprinter = "*"
 
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry.extras]
+minify = ["Flask-Minify"]
+otp = ["pyotp", "PyQRCode"]
+sd = ["sdnotify"]
+
+[tool.poetry.scripts]
+webmon2 = "webmon2.main:main"
 
 [tool.black]
 line-length = 79
 
 [tool.isort]
-profile = "black"
 line_length = 79
 multi_line_output = 3
+profile = "black"
 skip = "migrations"
-
-[tool.poetry.scripts]
-webmon2 = "webmon2.main:main"
 
 [tool.bandit]
 skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
 
 [mypy]
 python_version = 3.7

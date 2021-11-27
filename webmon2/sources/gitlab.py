@@ -27,6 +27,17 @@ _FAVICON = "favicon.ico"
 _ = ty
 
 
+def _get_gitlab_url(source: model.Source) -> str:
+    glurl = None
+    if source.settings:
+        glurl = source.settings.get("gitlab_url")
+        if glurl and not glurl.endswith("/"):
+            # in custom gitlab url add / at the end if missing
+            glurl = glurl + "/"
+
+    return glurl or _GITLAB_DEFAULT_URL
+
+
 class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
 
@@ -45,6 +56,12 @@ class AbstractGitLabSource(AbstractSource):
             global_param=True,
         ),
     ]
+
+    def __init__(
+        self, source: model.Source, sys_settings: model.ConfDict
+    ) -> None:
+        super().__init__(source, sys_settings)
+        self._update_source()
 
     @staticmethod
     def _gitlab_check_project_updated(
@@ -92,6 +109,30 @@ class AbstractGitLabSource(AbstractSource):
             url += "/"
 
         return url + _FAVICON
+
+    def _update_source(self) -> None:
+        """
+        Make some updates in source settings (if necessary).
+        """
+        if not self._source.settings:
+            return
+
+        url = self._source.settings.get("url")
+        if (
+            self._source.settings.get("gitlab_url") != "/"
+            and url != "/"
+            and url
+        ):
+            return
+
+        self._updated_source = self._updated_source or self._source.clone()
+        assert self._updated_source.settings
+
+        if self._source.settings.get("gitlab_url") == "/":
+            self._source.settings["gitlab_url"] = None
+            self._updated_source.settings["gitlab_url"] = None
+
+        self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -186,6 +227,18 @@ class GitLabCommits(AbstractGitLabSource):
         project = None
 
         return new_state, [entry]
+
+    @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = _get_gitlab_url(source)
+            conf["url"] = f"{glurl}{conf['project']}/"
+
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -288,6 +341,18 @@ class GitLabTagsSource(AbstractGitLabSource):
             new_state.set_icon(self._load_binary(self._get_favicon()))
 
     @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = _get_gitlab_url(source)
+            conf["url"] = f"{glurl}{conf['project']}/-/tags"
+
+        return source
+
+    @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
         raise NotImplementedError()
 
@@ -374,6 +439,18 @@ class GitLabReleasesSource(AbstractGitLabSource):
         project = None
 
         return new_state, entries
+
+    @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update configuration before save; apply some additional data.
+        """
+        if source.settings:
+            conf = source.settings
+            glurl = _get_gitlab_url(source)
+            conf["url"] = f"{glurl}{conf['project']}/-/releases"
+
+        return source
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:

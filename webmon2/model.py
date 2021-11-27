@@ -138,6 +138,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         # default score given for entries this source
         self.default_score: int = 0
 
+        # ref objects
         self.group: ty.Optional[SourceGroup] = None
         self.state: ty.Optional[SourceState] = None
         # is source has unread entries
@@ -148,6 +149,12 @@ class Source:  # pylint: disable=too-many-instance-attributes
 
     def __hash__(self) -> int:
         return hash(tuple(str(getattr(self, key)) for key in self.__slots__))
+
+    def get_setting(self, key: str) -> ty.Any:
+        if self.settings:
+            return self.settings.get(key)
+
+        return None
 
     def clone(self) -> Source:
         src = Source(
@@ -699,7 +706,7 @@ class Setting:
             value=value,
             value_type=row["setting__value_type"],
             description=row["setting__description"],
-            user_id=row["setting__user_id"],
+            user_id=row.get("setting__user_id"),
         )
 
     def to_row(self) -> common.Row:

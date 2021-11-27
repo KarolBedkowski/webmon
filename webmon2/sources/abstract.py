@@ -38,7 +38,11 @@ class AbstractSource:
     ) -> None:
         super().__init__()
         self._source = source
+
+        # when _updated_source is set, after loading this configuration overwrite
+        # data in database
         self._updated_source = None  # type: ty.Optional[model.Source]
+
         self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params},
             sys_settings,
@@ -63,6 +67,9 @@ class AbstractSource:
 
     @property
     def updated_source(self) -> ty.Optional[model.Source]:
+        """
+        Get updated source configuration (if was updated).
+        """
         return self._updated_source
 
     @classmethod
@@ -89,6 +96,15 @@ class AbstractSource:
                     f'invalid value {values[0]!r} for "{param.description}"',
                 )
 
+    @classmethod
+    def upgrade_conf(cls, source: model.Source) -> model.Source:
+        """
+        Update source configuration; apply some additional data.
+        `upgrade_conf` is launched before save source and may be run on source
+        init (defined in source).
+        """
+        return source
+
     def load(
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
@@ -96,11 +112,28 @@ class AbstractSource:
         raise NotImplementedError()
 
     def _load_binary(
-        self, url: str, only_images: bool = True
+        self,
+        url: str,
+        only_images: bool = True,
+        session: ty.Optional[requests.Session] = None,
     ) -> ty.Optional[ty.Tuple[str, bytes]]:
+        """
+        Load binary from given url.
+
+        Args:
+            url: url of binary to load
+            only_images: if true accept only image-like files
+            session: optional requests.Session to reuse
+
+        Return:
+            None on error
+            (<content type>, <binary data>) on success
+        """
         _LOG.debug("loading binary %s", url)
+        # reuse requests.session if available
+        req = session.request if session else requests.request
         try:
-            response = requests.request(
+            response = req(
                 url=url,
                 method="GET",
                 headers={"User-agent": self.AGENT},
