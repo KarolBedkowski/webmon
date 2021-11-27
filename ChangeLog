@@ -1,5 +1,33 @@
 # Changelog
 
+## 2.6.1 2021-11-27
+
+### Bug Fixes
+
+- Fix loading unread/unstar entries
+- Update number of unread entries in headers after mark
+- Process sources/mails only for active users
+- Fix invalid number of entries in group/source
+- Fix gitlab set invalid gitlab_url when fix url
+
+### Features
+
+- Add basic sys info page
+- Allow sources to update own config when saving changes and before use
+- Rss load and store web page url
+- Add website link to source and entries information
+- Jamendo - add artist page url to source/entries
+- Change algorithm calculating next check time after error
+- Allow to configure interval between check for work
+
+### Performance
+
+- Remove redundant/unused indexes; add new
+- Load number of unread entries only once (in req context)
+- Tune queries & indexes
+- Tune sql/indexes
+
+
 ## 2.6.0 2021-11-10
 
 ### Bug Fixes
