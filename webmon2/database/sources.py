@@ -450,13 +450,13 @@ def save_state(
     return state
 
 
-_GET_SOURCES_TO_FETCH_SQL = """
+_GET_SOURCES_TO_FETCH_SQL = f"""
 SELECT s.id
 FROM source_state ss
 JOIN sources s ON s.id = ss.source_id
 JOIN users u ON s.user_id = u.id
 WHERE ss.next_update <= now()
-    AND s.status = %s
+    AND s.status = {model.SourceStatus.ACTIVE}
     AND u.active
 """
 
@@ -464,18 +464,18 @@ WHERE ss.next_update <= now()
 def get_sources_to_fetch(db: DB) -> ty.List[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
-        cur.execute(_GET_SOURCES_TO_FETCH_SQL, (model.SourceStatus.ACTIVE,))
+        cur.execute(_GET_SOURCES_TO_FETCH_SQL)
         return [row[0] for row in cur]
 
 
-_REFRESH_SQL = """
+_REFRESH_SQL = f"""
 UPDATE source_state
 SET next_update=now()
 WHERE (last_update IS NULL OR last_update < now() - '-1 minutes'::interval)
     AND source_id IN (
         SELECT id FROM sources
         WHERE user_id=%(user_id)s
-            AND status=%(active)s
+            AND status={model.SourceStatus.ACTIVE}
     )
 """
 
@@ -493,11 +493,11 @@ def refresh(
     sql = _REFRESH_SQL
     if group_id:
         sql += (
-            "and source_id in "
+            " and source_id in "
             "(select id from sources where group_id=%(group_id)s)"
         )
     elif source_id:
-        sql += "and source_id=%(source_id)s"
+        sql += " and source_id=%(source_id)s"
 
     with db.cursor() as cur:
         cur.execute(
@@ -506,7 +506,6 @@ def refresh(
                 "group_id": group_id,
                 "source_id": source_id,
                 "user_id": user_id,
-                "active": model.SourceStatus.ACTIVE,
             },
         )
         updated = cur.rowcount
@@ -514,12 +513,13 @@ def refresh(
     return updated  # type: ignore
 
 
-_REFRESH_ERRORS_SQL = """
+_REFRESH_ERRORS_SQL = f"""
 UPDATE source_state
 SET next_update=now()
 WHERE status='error'
     AND source_id IN (
-        SELECT id FROM sources WHERE user_id=%s AND status=%s
+        SELECT id FROM sources
+        WHERE user_id=%s AND status={model.SourceStatus.ACTIVE}
     )
 """
 
@@ -527,24 +527,26 @@ WHERE status='error'
 def refresh_errors(db: DB, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
-        cur.execute(_REFRESH_ERRORS_SQL, (user_id, model.SourceStatus.ACTIVE))
+        cur.execute(_REFRESH_ERRORS_SQL, (user_id,))
         return cur.rowcount  # type: ignore
 
 
-_MARK_READ_SQL = """
+_MARK_READ_SQL = f"""
 UPDATE entries
-SET read_mark=%(read_mark)s
+SET read_mark={model.EntryReadMark.READ}
 WHERE source_id=%(source_id)s
     AND (id<=%(max_id)s OR %(max_id)s<0) AND id>=%(min_id)s
-    AND read_mark=%(unread)s AND user_id=%(user_id)s
+    AND read_mark={model.EntryReadMark.UNREAD}
+    AND user_id=%(user_id)s
 """
 
-_MARK_READ_BY_IDS_SQL = """
+_MARK_READ_BY_IDS_SQL = f"""
 UPDATE entries
-SET read_mark=%(read_mark)s
+SET read_mark={model.EntryReadMark.READ}
 WHERE source_id=%(source_id)s
     AND id=ANY(%(ids)s)
-    AND read_mark=%(unread)s AND user_id=%(user_id)s
+    AND read_mark={model.EntryReadMark.UNREAD}
+    AND user_id=%(user_id)s
 """
 
 
@@ -564,8 +566,6 @@ def mark_read(
         "min_id": min_id,
         "user_id": user_id,
         "ids": ids,
-        "read_mark": model.EntryReadMark.READ,
-        "unread": model.EntryReadMark.UNREAD,
     }
     with db.cursor() as cur:
         if ids:
@@ -622,8 +622,9 @@ def find_next_entry_id(
             cur.execute(
                 "SELECT min(e.id) "
                 "FROM entries e "
-                "WHERE e.id > %s AND e.read_mark=%s AND e.source_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, source_id),
+                f"WHERE e.id > %s AND e.read_mark={model.EntryReadMark.UNREAD}"
+                " AND e.source_id=%s",
+                (entry_id, source_id),
             )
         else:
             cur.execute(
@@ -645,8 +646,9 @@ def find_prev_entry_id(
             cur.execute(
                 "SELECT max(e.id) "
                 "FROM entries e "
-                "WHERE e.id < %s AND e.read_mark=%s AND e.source_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, source_id),
+                f"WHERE e.id < %s AND e.read_mark={model.EntryReadMark.UNREAD}"
+                " AND e.source_id=%s",
+                (entry_id, source_id),
             )
         else:
             cur.execute(
@@ -665,8 +667,8 @@ def find_next_unread(db: DB, user_id: int) -> ty.Optional[int]:
         cur.execute(
             "SELECT e.source_id "
             "FROM entries e "
-            "WHERE e.user_id = %s AND e.read_mark=%s",
-            (user_id, model.EntryReadMark.UNREAD),
+            f"WHERE e.user_id = %s AND e.read_mark={model.EntryReadMark.UNREAD}",
+            (user_id,),
         )
         row = cur.fetchone()
         return row[0] if row else None

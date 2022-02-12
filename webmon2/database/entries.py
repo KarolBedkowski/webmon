@@ -204,7 +204,6 @@ def get_total_count(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
-        "unread": model.EntryReadMark.UNREAD,
     }
 
     if source_id:
@@ -219,7 +218,7 @@ def get_total_count(
         sql = "SELECT count(1) FROM entries WHERE user_id=%(user_id)s"
 
     if unread:
-        sql += " AND read_mark=%(unread)s"
+        sql += f" AND read_mark={model.EntryReadMark.UNREAD}"
 
     _LOG.debug("get_total_count(%r): %s", args, sql)
 
@@ -504,9 +503,11 @@ def delete_old(
     """
     with db.cursor() as cur:
         cur.execute(
-            "DELETE FROM entries WHERE star_mark = 0 AND read_mark != %s "
-            "AND updated < %s AND user_id = %s",
-            (model.EntryReadMark.UNREAD, max_datetime, user_id),
+            "DELETE FROM entries "
+            "WHERE star_mark = 0"
+            f" AND read_mark != {model.EntryReadMark.UNREAD}"
+            " AND updated < %s AND user_id = %s",
+            (max_datetime, user_id),
         )
         deleted_entries = cur.rowcount
         cur.execute(
@@ -649,24 +650,17 @@ def mark_all_read(
     with db.cursor() as cur:
         if max_date:
             cur.execute(
-                "UPDATE entries SET read_mark=%s WHERE user_id=%s "
-                "AND read_mark=%s AND updated<%s",
-                (
-                    model.EntryReadMark.READ,
-                    user_id,
-                    model.EntryReadMark.UNREAD,
-                    max_date,
-                ),
+                f"UPDATE entries SET read_mark={model.EntryReadMark.READ} "
+                "WHERE user_id=%sAND updated<%s"
+                f" AND read_mark={model.EntryReadMark.UNREAD}",
+                (user_id, max_date),
             )
         else:
             cur.execute(
-                "UPDATE entries set read_mark=%s WHERE user_id=%s "
-                "AND read_mark=%s",
-                (
-                    model.EntryReadMark.READ,
-                    user_id,
-                    model.EntryReadMark.UNREAD,
-                ),
+                f"UPDATE entries set read_mark={model.EntryReadMark.READ} "
+                "WHERE user_id=%s "
+                f"AND read_mark={model.EntryReadMark.UNREAD}",
+                (user_id,),
             )
 
         return cur.rowcount  # type: ignore
@@ -675,10 +669,11 @@ def mark_all_read(
 _GET_RELATED_RM_ENTRY_SQL = """
 WITH DATA AS (
 	SELECT e.id,
-		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
-		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
+		lag(id) OVER (PARTITION BY (user_id) ORDER BY {order}) AS prev,
+		lead(id) OVER (PARTITION BY (user_id) ORDER BY {order}) AS NEXT
 	FROM entries e
-	WHERE user_id = %(user_id)s AND read_mark = %(read_mark)s
+	WHERE user_id = %(user_id)s
+	    AND (read_mark = {read_mark} or e.id = %(entry_id)s)
 	ORDER BY {order}
 )
 SELECT prev, next
@@ -689,8 +684,8 @@ WHERE id=%(entry_id)s
 _GET_RELATED_ENTRY_SQL = """
 WITH DATA AS (
 	SELECT e.id,
-		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
-		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+		lag(id) OVER (PARTITION BY (user_id) ORDER by {order}) AS prev,
+		lead(id) OVER (PARTITION BY (user_id) ORDER by {order}) AS NEXT
 	FROM entries e
 	WHERE user_id = %(user_id)s
 	ORDER BY {order}
@@ -713,7 +708,9 @@ def _get_related_sql(unread: bool, order: ty.Optional[str]) -> str:
         order_key = "score desc"
 
     if unread:
-        return _GET_RELATED_RM_ENTRY_SQL.format(order=order_key)
+        return _GET_RELATED_RM_ENTRY_SQL.format(
+            order=order_key, read_mark=model.EntryReadMark.UNREAD
+        )
     return _GET_RELATED_ENTRY_SQL.format(order=order_key)
 
 
@@ -739,13 +736,13 @@ def find_next_entry_id(
         args = {
             "entry_id": entry_id,
             "user_id": user_id,
-            "read_mark": model.EntryReadMark.UNREAD,
         }
 
         sql = _get_related_sql(unread, order)
         _LOG.debug("find_next_entry_id(%r): %s", args, sql)
         cur.execute(sql, args)
         row = cur.fetchone()
+        _LOG.debug("res: %r", row)
         return row[1] if row else None
 
 
@@ -771,7 +768,6 @@ def find_prev_entry_id(
         args = {
             "entry_id": entry_id,
             "user_id": user_id,
-            "read_mark": model.EntryReadMark.UNREAD,
         }
         sql = _get_related_sql(unread, order)
         _LOG.debug("find_prev_entry_id(%r): %s", args, sql)

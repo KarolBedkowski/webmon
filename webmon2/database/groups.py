@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -37,13 +37,14 @@ def get_names(db: DB, user_id: int) -> ty.List[ty.Tuple[int, str]]:
         return cur.fetchall()  # type: ignore
 
 
-_GET_SOURCE_GROUPS_SQL = """
+_GET_SOURCE_GROUPS_SQL = f"""
 SELECT sg.id, sg.name, sg.user_id, sg.feed, sg.mail_report,
     (
         SELECT count(1)
         FROM entries e
         JOIN sources s ON e.source_id = s.id
-        WHERE e.read_mark = %(read_mark)s AND s.group_id = sg.id
+        WHERE e.read_mark = {model.EntryReadMark.UNREAD}
+        AND s.group_id = sg.id
     ) AS unread,
     (
         SELECT count(1) FROM sources s WHERE s.group_id = sg.id
@@ -60,10 +61,7 @@ def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
         raise ValueError("missing user_id")
 
     with db.cursor() as cur:
-        cur.execute(
-            _GET_SOURCE_GROUPS_SQL,
-            {"user_id": user_id, "read_mark": model.EntryReadMark.UNREAD},
-        )
+        cur.execute(_GET_SOURCE_GROUPS_SQL, {"user_id": user_id})
         groups = [
             model.SourceGroup(
                 id=id,
@@ -229,11 +227,11 @@ def _generate_group_feed(db: DB) -> str:
                 return feed
 
 
-_GET_NEXT_UNREAD_GROUP_SQL = """
+_GET_NEXT_UNREAD_GROUP_SQL = f"""
 SELECT group_id
 FROM sources s
 JOIN entries e ON e.source_id = s.id
-WHERE e.read_mark = %s AND s.user_id = %s
+WHERE e.read_mark = {model.EntryReadMark.UNREAD} AND s.user_id = %s
 ORDER BY e.id
 LIMIT 1
 """
@@ -246,24 +244,24 @@ def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
         group id or None if not Found
     """
     with db.cursor() as cur:
-        cur.execute(
-            _GET_NEXT_UNREAD_GROUP_SQL, (model.EntryReadMark.UNREAD, user_id)
-        )
+        cur.execute(_GET_NEXT_UNREAD_GROUP_SQL, (user_id,))
         row = cur.fetchone()
         return row[0] if row else None
 
 
-_MARK_READ_SQL = """
+_MARK_READ_SQL = f"""
 UPDATE entries
-SET read_mark=%(read_mark)s
+SET read_mark={model.EntryReadMark.READ}
 WHERE source_id IN (SELECT id FROM sources WHERE group_id=%(group_id)s)
     AND (id<=%(max_id)s OR %(max_id)s<0) AND id>=%(min_id)s
-    AND read_mark=%(unread)s AND user_id=%(user_id)s
+    AND read_mark={model.EntryReadMark.UNREAD}
+    AND user_id=%(user_id)s
 """
-_MARK_READ_BY_IDS_SQL = """
+_MARK_READ_BY_IDS_SQL = f"""
 UPDATE entries
-SET read_mark=%(read_mark)s
-WHERE id=ANY(%(ids)s) AND read_mark=%(unread)s AND user_id=%(user_id)s
+SET read_mark={model.EntryReadMark.READ}
+WHERE id=ANY(%(ids)s) AND read_mark={model.EntryReadMark.UNREAD}
+    AND user_id=%(user_id)s
 """
 
 
@@ -302,8 +300,6 @@ def mark_read(
         "max_id": max_id,
         "user_id": user_id,
         "ids": ids,
-        "read_mark": model.EntryReadMark.READ,
-        "unread": model.EntryReadMark.UNREAD,
     }
     with db.cursor() as cur:
         if ids:
@@ -464,8 +460,9 @@ def find_next_entry_id(
             cur.execute(
                 "SELECT min(e.id) "
                 "FROM entries e JOIN sources s ON s.id = e.source_id "
-                "WHERE e.id > %s AND e.read_mark=%s AND s.group_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, group_id),
+                f"WHERE e.id > %s AND e.read_mark={model.EntryReadMark.UNREAD}"
+                " AND s.group_id=%s",
+                (entry_id, group_id),
             )
         else:
             cur.execute(
@@ -500,8 +497,9 @@ def find_prev_entry_id(
             cur.execute(
                 "SELECT max(e.id) "
                 "FROM entries e JOIN sources s ON s.id = e.source_id "
-                "WHERE e.id < %s AND e.read_mark=%s AND s.group_id=%s",
-                (entry_id, model.EntryReadMark.UNREAD, group_id),
+                f"WHERE e.id < %s AND e.read_mark={model.EntryReadMark.UNREAD}"
+                " AND s.group_id=%s",
+                (entry_id, group_id),
             )
         else:
             cur.execute(
