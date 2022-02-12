@@ -678,12 +678,13 @@ WITH DATA AS (
 		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
 		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
 	FROM entries e
-	WHERE user_id = %(user_id)s AND read_mark = %(read_mark)s
+	WHERE user_id = %(user_id)s
+	    AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
 	ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA
-WHERE id=%(entry_id)s
+WHERE id = %(entry_id)s
 """
 
 _GET_RELATED_ENTRY_SQL = """
