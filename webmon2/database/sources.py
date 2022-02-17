@@ -259,11 +259,12 @@ def save(db: DB, source: model.Source) -> model.Source:
     """
     row = source.to_row()
     with db.cursor() as cur:
-        if source.id is None:
+        if not source.id:
             cur.execute(_INSERT_SOURCE_SQL, row)
             source.id = cur.fetchone()[0]
             # create state for new source
             state = model.SourceState.new(source.id)
+            state.status = model.SourceStateStatus.NEW
             save_state(db, state, source.user_id)
         else:
             cur.execute(_UPDATE_SOURCE_SQL, row)

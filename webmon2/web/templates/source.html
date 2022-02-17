@@ -68,7 +68,7 @@
 					{% else %}
 						<a href="#" data-action="hist-back">Back</a>
 					{% endif %}
-					{% if form.status == webmon2.model.SourceState.NOT_ACTIVATED %}
+					{% if form.status == webmon2.model.SourceStatus.NOT_ACTIVATED %}
 						<button type="submit" value="save_activate" name="next_action">Save &amp; activate</button>
 					{% else %}
 						<button type="submit">Save</button>
