@@ -20,6 +20,10 @@ class NotFound(Exception):
     pass
 
 
+class SyntaxError(Exception):
+    pass
+
+
 class Query:
     def __init__(self, cols: str, from_: str) -> None:
         self.cols: ty.List[str] = [cols]

@@ -24,7 +24,9 @@
 
 {% block content %}
 	{% if query %}
-		{% if not entries %}
+		{% if error %}
+			<p>Error: {{ error }}</p>
+		{% elif not entries %}
 			<p>No entries...</p>
 		{% endif %}
 		{% for entry in entries %}

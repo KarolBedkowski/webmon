@@ -13,6 +13,8 @@ import logging
 import typing as ty
 from datetime import date, datetime
 
+import psycopg2
+
 from webmon2 import model
 
 from . import _dbcommon as dbc
@@ -82,13 +84,13 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
     if args.get("title_query"):
         query.add_where(
             "AND to_tsvector('simple'::regconfig, (title)::text) "
-            "@@ to_tsquery('pg_catalog.simple', %(title_query)s)"
+            "@@ to_tsquery('simple'::regconfig, %(title_query)s)"
         )
     elif args.get("query"):
         query.add_where(
             "AND to_tsvector('simple'::regconfig, "
             "(content || ' '::text) || (title)::text) "
-            "@@ to_tsquery('pg_catalog.simple', %(query)s)"
+            "@@ to_tsquery('simple'::regconfig, %(query)s)"
         )
 
     return query.build()
@@ -320,9 +322,9 @@ def find_fulltext(
         "order": _get_order_sql(order),
     }
     if title_only:
-        args["title_query"] = query + ":*"
+        args["title_query"] = query.replace(" ", "+") + ":*"
     else:
-        args["query"] = query + ":*"
+        args["query"] = query.replace(" ", "+") + ":*"
 
     sql = _build_find_sql(args)
     _LOG.debug("find_fulltext: %s", sql)
@@ -330,7 +332,11 @@ def find_fulltext(
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
     with db.cursor() as cur:
-        cur.execute(sql, args)
+        try:
+            cur.execute(sql, args)
+        except psycopg2.errors.SyntaxError as err:
+            _LOG.error("find_fulltext syntax error: %s", err)
+            raise dbc.SyntaxError() from err
         yield from _yield_entries(cur, user_sources)
 
 
