@@ -320,9 +320,9 @@ def find_fulltext(
         "order": _get_order_sql(order),
     }
     if title_only:
-        args["title_query"] = query
+        args["title_query"] = query + ":*"
     else:
-        args["query"] = query
+        args["query"] = query + ":*"
 
     sql = _build_find_sql(args)
     _LOG.debug("find_fulltext: %s", sql)
