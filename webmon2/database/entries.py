@@ -75,11 +75,14 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    if args.get("read") is not None:
-        query.add_where("AND read_mark = %(read)s")
+    read = args.get("read")
+    if read is not None:
+        query.add_where(f"AND read_mark = {read}")
 
     if args.get("star") is not None:
         query.add_where("AND e.star_mark = %(star)s")
+
+    # TODO: and e.title %> 'depen' -- injection' ORDER BY e.title <-> 'depende'
 
     if args.get("title_query"):
         query.add_where(
@@ -206,7 +209,6 @@ def get_total_count(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
-        "unread": model.EntryReadMark.UNREAD,
     }
 
     if source_id:
@@ -221,7 +223,7 @@ def get_total_count(
         sql = "SELECT count(1) FROM entries WHERE user_id=%(user_id)s"
 
     if unread:
-        sql += " AND read_mark=%(unread)s"
+        sql += f" AND read_mark={model.EntryReadMark.UNREAD}"
 
     _LOG.debug("get_total_count(%r): %s", args, sql)
 
