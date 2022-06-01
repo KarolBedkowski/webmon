@@ -54,7 +54,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         interval = timedelta(
             seconds=common.parse_interval(conf.get("mail_interval", "1h"))
         )
-        if last_send + interval > datetime.now():
+        if last_send + interval > datetime.utcnow():
             _LOG.debug("still waiting for send mail")
             return
 
@@ -69,7 +69,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
 
     _SENT_MAIL_COUNT.inc()
     database.users.set_state(
-        db, user.id, "mail_last_send", datetime.now().timestamp()
+        db, user.id, "mail_last_send", datetime.utcnow().timestamp()
     )
 
 

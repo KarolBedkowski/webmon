@@ -25,7 +25,7 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
     if date is None:
         return ""
 
-    diff = (datetime.datetime.now() - date).total_seconds()
+    diff = (datetime.datetime.utcnow() - date).total_seconds()
     if diff < 60:
         return "<1m"
 

@@ -46,7 +46,7 @@ class WebSource(AbstractSource):
         if new_state.status != model.SourceStateStatus.ERROR:
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
-            next_update = datetime.datetime.now() + datetime.timedelta(
+            next_update = datetime.datetime.utcnow() + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
             new_state.next_update = max(
@@ -96,7 +96,7 @@ class WebSource(AbstractSource):
 
             url = self._check_redirects(response, new_state) or url
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now()
+            entry.updated = entry.created = datetime.datetime.utcnow()
             entry.status = (
                 model.EntryStatus.UPDATED
                 if state.last_update

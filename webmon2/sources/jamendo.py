@@ -45,7 +45,7 @@ class JamendoAbstractSource(AbstractSource):
 
     # pylint: disable=no-self-use
     def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
-        last_update = datetime.datetime.now() - datetime.timedelta(
+        last_update = datetime.datetime.utcnow() - datetime.timedelta(
             days=_JAMENDO_MAX_AGE
         )
         if state.last_update and state.last_update > last_update:
@@ -379,10 +379,10 @@ def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
         return datetime.datetime.fromisoformat(data["releasedate"])
     except ValueError:
         _LOG.debug("wrong releasedate in %s", data)
-        return datetime.datetime.now()
+        return datetime.datetime.utcnow()
     except KeyError:
         _LOG.debug("missing releasedate in %s", data)
-        return datetime.datetime.now()
+        return datetime.datetime.utcnow()
 
 
 # class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

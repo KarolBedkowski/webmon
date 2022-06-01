@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2021
+# Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
 # pylint: disable=too-many-arguments
@@ -281,7 +281,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         source = SourceState()
         source.source_id = source_id
-        source.next_update = datetime.now() + timedelta(minutes=15)
+        source.next_update = datetime.utcnow() + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
         return source
@@ -320,7 +320,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = self.create_new(status=SourceStateStatus.ERROR, **props)
         state.error = error
         state.error_counter += 1
-        state.last_error = datetime.now()
+        state.last_error = datetime.utcnow()
         return state
 
     def new_not_modified(self, **props: ty.Any) -> SourceState:
@@ -397,7 +397,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         Change next update time to last_check/last_update/now + interval.
         """
-        last = datetime.now()
+        last = datetime.utcnow()
         if self.last_check:
             last = max(self.last_check, last)
         elif self.last_update:

@@ -33,18 +33,22 @@ class DymmySource(AbstractSource):
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
 
-        last_check = state.get_prop("last_check")
+        try:
+            last_check = int(state.get_prop("last_check"))
+        except ValueError:
+            last_check = 1
 
+        ic(last_check)
         if (
             last_check
-            and last_check > datetime.datetime.now().timestamp() - 120
+            and last_check > datetime.datetime.utcnow().timestamp() - 120
         ):
             return state.new_not_modified(), []
 
         entries = []  # type: ty.List[model.Entry]
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now()
+            entry.updated = entry.created = datetime.datetime.utcnow()
             entry.status = model.EntryStatus.NEW
             entry.title = (
                 self._source.name + " " + str(entry.updated) + " " + str(idx)
@@ -55,10 +59,15 @@ class DymmySource(AbstractSource):
 
         new_state = state.new_ok()
         assert self._source.interval is not None
-        new_state.next_update = datetime.datetime.now() + datetime.timedelta(
-            seconds=common.parse_interval(self._source.interval)
+        new_state.next_update = (
+            datetime.datetime.utcnow()
+            + datetime.timedelta(
+                seconds=common.parse_interval(self._source.interval)
+            )
         )
-        new_state.set_prop("last_check", datetime.datetime.now().timestamp())
+        new_state.set_prop(
+            "last_check", datetime.datetime.utcnow().timestamp()
+        )
         return new_state, entries
 
     @classmethod

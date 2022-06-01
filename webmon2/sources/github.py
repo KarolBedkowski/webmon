@@ -48,7 +48,7 @@ class GitHubAbstractSource(AbstractSource):
             to load
         """
         if not last_updated:
-            min_date = datetime.now() - timedelta(days=_GITHUB_MAX_AGE)
+            min_date = datetime.utcnow() - timedelta(days=_GITHUB_MAX_AGE)
             return min_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         if repository.updated_at <= last_updated.replace(tzinfo=tz.tzlocal()):
@@ -101,7 +101,7 @@ def _build_entry(
     entry.title = source.name
     entry.status = model.EntryStatus.NEW
     entry.content = content
-    entry.created = entry.updated = datetime.now()
+    entry.created = entry.updated = datetime.utcnow()
     entry.set_opt("content-type", "markdown")
     return entry
 

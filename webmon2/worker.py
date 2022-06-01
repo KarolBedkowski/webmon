@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2021
+# Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -202,9 +202,11 @@ class FetchWorker(threading.Thread):
         assert source.state and source.interval is not None
         # calculate next update time; source may overwrite user settings
         if new_state.last_update:
-            last_update = max(new_state.last_update, datetime.datetime.now())
+            last_update = max(
+                new_state.last_update, datetime.datetime.utcnow()
+            )
         else:
-            new_state.last_update = last_update = datetime.datetime.now()
+            new_state.last_update = last_update = datetime.datetime.utcnow()
 
         next_update = last_update + datetime.timedelta(
             seconds=common.parse_interval(source.interval)
@@ -241,7 +243,7 @@ class FetchWorker(threading.Thread):
             _ENTRIES_LOADED.inc(len(entries))
 
         # update source state properties
-        new_state.last_check = datetime.datetime.now()
+        new_state.last_check = datetime.datetime.utcnow()
         new_state.set_prop(
             "last_update_duration", f"{time.time() - start:0.2f}"
         )
@@ -381,7 +383,7 @@ def _delete_old_entries(db: database.DB) -> None:
             )
             if not keep_days:
                 continue
-            max_datetime = datetime.datetime.now() - datetime.timedelta(
+            max_datetime = datetime.datetime.utcnow() - datetime.timedelta(
                 days=keep_days
             )
             deleted_entries, deleted_oids = database.entries.delete_old(
@@ -455,7 +457,7 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     delta1 = 3600 + pow(2, error_counter) * 3600
     delta2 = common.parse_interval(source.interval or "1d")
     next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
-    next_check = datetime.datetime.now() + datetime.timedelta(
+    next_check = datetime.datetime.utcnow() + datetime.timedelta(
         seconds=next_check_delta
     )
     _LOG.debug(
@@ -482,6 +484,6 @@ def _save_state_error(
 
     new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
-    new_state.last_check = datetime.datetime.now()
+    new_state.last_check = datetime.datetime.utcnow()
 
     database.sources.save_state(db, new_state, source.user_id)

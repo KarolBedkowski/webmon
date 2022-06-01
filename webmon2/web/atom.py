@@ -123,7 +123,7 @@ def group(key: str) -> Response:
                 description=body,
                 args={
                     "pubDate": (
-                        entry.updated or entry.created or datetime.now()
+                        entry.updated or entry.created or datetime.utcnow()
                     ).isoformat()
                 },
             )
