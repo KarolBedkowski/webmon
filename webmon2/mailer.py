@@ -19,7 +19,7 @@ import smtplib
 import subprocess
 import typing as ty
 from configparser import ConfigParser
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import html2text as h2t
 from prometheus_client import Counter
@@ -54,7 +54,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         interval = timedelta(
             seconds=common.parse_interval(conf.get("mail_interval", "1h"))
         )
-        if last_send + interval > datetime.utcnow():
+        if last_send + interval > datetime.now(timezone.utc):
             _LOG.debug("still waiting for send mail")
             return
 
@@ -69,7 +69,10 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
 
     _SENT_MAIL_COUNT.inc()
     database.users.set_state(
-        db, user.id, "mail_last_send", datetime.utcnow().timestamp()
+        db,
+        user.id,
+        "mail_last_send",
+        datetime.now(timezone.utc).timestamp(),
     )
 
 

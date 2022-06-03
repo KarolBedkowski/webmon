@@ -16,7 +16,7 @@ import logging
 import typing as ty
 import urllib
 import xml.etree.ElementTree
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import Blueprint, Response, abort, request, url_for
 
@@ -123,7 +123,9 @@ def group(key: str) -> Response:
                 description=body,
                 args={
                     "pubDate": (
-                        entry.updated or entry.created or datetime.utcnow()
+                        entry.updated
+                        or entry.created
+                        or datetime.now(timezone.utc)
                     ).isoformat()
                 },
             )

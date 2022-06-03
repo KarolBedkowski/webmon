@@ -62,6 +62,8 @@ def login() -> ty.Any:
 
             session["user"] = user.id
             session["user_admin"] = bool(user.admin)
+            session["_user_tz"] = request.form["_user_tz"]
+
             back = session.get("_back_url")
             if back:
                 del session["_back_url"]

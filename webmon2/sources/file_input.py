@@ -63,7 +63,9 @@ class FileSource(AbstractSource):
             )
 
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.utcnow()
+            entry.updated = entry.created = datetime.datetime.now(
+                dateime.timezone.utc
+            )
             entry.status = (
                 model.EntryStatus.UPDATED
                 if state.last_update
@@ -75,11 +77,10 @@ class FileSource(AbstractSource):
             entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
             assert self._source.interval is not None
-            new_state.next_update = (
-                datetime.datetime.utcnow()
-                + datetime.timedelta(
-                    seconds=common.parse_interval(self._source.interval)
-                )
+            new_state.next_update = datetime.datetime.now(
+                datetime.timezone.utc
+            ) + datetime.timedelta(
+                seconds=common.parse_interval(self._source.interval)
             )
             return new_state, [entry]
         except IOError as err:

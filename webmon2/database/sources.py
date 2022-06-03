@@ -458,7 +458,6 @@ SELECT s.id
 FROM source_state ss
 JOIN sources s ON s.id = ss.source_id
 JOIN users u ON s.user_id = u.id
-WHERE ss.next_update <= now()
 WHERE ss.next_update <= now() at time zone 'utc'
     AND s.status = {model.SourceStatus.ACTIVE}
     AND u.active

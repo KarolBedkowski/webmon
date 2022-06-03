@@ -11,7 +11,7 @@ Inputs related to gitlab
 """
 import logging
 import typing as ty
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import gitlab
 import gitlab.v4.objects as gobj
@@ -72,7 +72,9 @@ class AbstractGitLabSource(AbstractSource):
             to load
         """
         if not last_updated:
-            min_date = datetime.utcnow() - timedelta(days=_GITLAB_MAX_AGE)
+            min_date = datetime.now(timezone.utc) - timedelta(
+                days=_GITLAB_MAX_AGE
+            )
             return min_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         last_activity_at = project.last_activity_at
@@ -153,7 +155,7 @@ def _build_entry(
     entry.title = source.name
     entry.status = model.EntryStatus.NEW
     entry.content = content
-    entry.created = entry.updated = datetime.utcnow()
+    entry.created = entry.updated = datetime.now(timezone.utc)
     entry.set_opt("content-type", "markdown")
     return entry
 
