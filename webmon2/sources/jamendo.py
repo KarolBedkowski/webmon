@@ -376,7 +376,10 @@ def _jamendo_track_format(
 
 def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
     try:
-        return datetime.datetime.fromisoformat(data["releasedate"])
+        releasedate = datetime.datetime.fromisoformat(data["releasedate"])
+        if not releasedate.tzinfo:
+            releasedate = releasedate.replace(tzinfo=datetime.timezone.utc)
+        return releasedate
     except ValueError:
         _LOG.debug("wrong releasedate in %s", data)
         return datetime.datetime.now(datetime.timezone.utc)()

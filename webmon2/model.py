@@ -397,7 +397,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         Change next update time to last_check/last_update/now + interval.
         """
-        last = datetime.now(timezone.utc)()
+        last = datetime.now(timezone.utc)
         if self.last_check:
             last = max(self.last_check, last)
         elif self.last_update:
