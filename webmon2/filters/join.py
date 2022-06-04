@@ -32,10 +32,16 @@ def _join_entries(
     if next_entry.title:
         if not first_entry.title:
             title = "… | " + next_entry.title
-        elif len(first_entry.title) < 80:
+        elif (
+            len(first_entry.title) < 80
+            and first_entry.title != next_entry.title
+        ):
             title = first_entry.title + " | " + next_entry.title
-            if len(title) > 80:
-                title = title[:80] + "…"
+        else:
+            title = first_entry.title
+
+        if len(title) > 80:
+            title = title[:80] + "…"
 
         first_entry.title = title
 
