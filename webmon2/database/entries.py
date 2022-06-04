@@ -14,6 +14,7 @@ import typing as ty
 from datetime import date, datetime
 
 import psycopg2
+import psycopg2.errors
 
 from webmon2 import model
 

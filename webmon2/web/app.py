@@ -175,7 +175,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def after_request(  # pylint: disable=unused-variable
         resp: Response,
     ) -> Response:
-        cont_type = (resp.content_type.split(";") or [""])[0]
+        cont_type = (resp.content_type or "").partition(";")[0]
         if cont_type in (
             "application/json",
             "application/atom+xml",

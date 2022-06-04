@@ -35,7 +35,7 @@ class DB:
 
     def __init__(self) -> None:
         super().__init__()
-        self._conn: psycopg2.extensions.connection = None
+        self._conn: ty.Optional[psycopg2.extensions.connection] = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
@@ -54,15 +54,18 @@ class DB:
             self.close()
             self.connect()
 
+        assert self._conn
         return self._conn.cursor(cursor_factory=extras.DictCursor)
 
     def begin(self) -> None:
         pass
 
     def commit(self) -> None:
+        assert self._conn
         self._conn.commit()
 
     def rollback(self) -> None:
+        assert self._conn
         self._conn.rollback()
 
     @classmethod
@@ -70,12 +73,11 @@ class DB:
         cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
     ) -> None:
         _LOG.info("initializing database")
-        conn_str = extensions.parse_dsn(conn_str)
         cls.POOL = pool.ThreadedConnectionPool(
             min_conn,
             max_conn,
+            conn_str,
             connection_factory=extras.LoggingConnection,
-            **conn_str
         )
         # common.create_missing_dir(os.path.dirname(filename))
         with DB() as db:
@@ -115,6 +117,7 @@ class DB:
             self.rollback()
 
     def update_schema(self) -> None:
+        assert self._conn
         self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)

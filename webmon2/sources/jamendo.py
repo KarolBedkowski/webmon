@@ -382,10 +382,10 @@ def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
         return releasedate
     except ValueError:
         _LOG.debug("wrong releasedate in %s", data)
-        return datetime.datetime.now(datetime.timezone.utc)()
+        return datetime.datetime.now(datetime.timezone.utc)
     except KeyError:
         _LOG.debug("missing releasedate in %s", data)
-        return datetime.datetime.now(datetime.timezone.utc)()
+        return datetime.datetime.now(datetime.timezone.utc)
 
 
 # class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

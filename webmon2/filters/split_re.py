@@ -52,7 +52,7 @@ class SelectByRE(AbstractFilter):
             raise ValueError("Invalid re selector for filtering") from err
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        for match in self._re.finditer(entry.content):
+        for match in self._re.finditer(entry.content or ""):
             if not match:
                 continue
 

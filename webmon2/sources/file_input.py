@@ -64,7 +64,7 @@ class FileSource(AbstractSource):
 
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now(
-                dateime.timezone.utc
+                datetime.timezone.utc
             )
             entry.status = (
                 model.EntryStatus.UPDATED
