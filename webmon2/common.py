@@ -289,6 +289,8 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
             return parsed.astimezone(tz.tzlocal()).replace(tzinfo=None)
     except TypeError:
         pass
+    except ValueError as err:
+        _LOG.debug("parse_http_date '%s' error: %s", date, err)
 
     return None
 
