@@ -273,9 +273,9 @@ def sett_scoring() -> ty.Any:
     user_id = session["user"]
     db = c.get_db()
     if request.method == "POST":
-        scs = filter(
-            lambda x: x.valid(),
-            [
+        scs = (
+            item
+            for item in (
                 model.ScoringSett(
                     user_id=user_id,
                     pattern=sett.get("pattern"),  # type: ignore
@@ -283,7 +283,8 @@ def sett_scoring() -> ty.Any:
                     score_change=sett.get("score"),  # type: ignore
                 )
                 for sett in common.parse_form_list_data(request.form, "r")
-            ],
+            )
+            if item.valid()
         )
         database.scoring.save(db, user_id, scs)
         db.commit()

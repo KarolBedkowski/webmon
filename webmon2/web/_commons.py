@@ -45,7 +45,7 @@ def preprate_entries_list(
 
 
 def get_db() -> DB:
-    database: DB = getattr(g, "db", None)
+    database: ty.Optional[DB] = getattr(g, "db", None)
     if database is None:
         database = g.db = DB.get()
 

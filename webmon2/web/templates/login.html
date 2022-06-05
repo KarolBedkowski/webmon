@@ -38,6 +38,7 @@
 							<label>Password</label></br>
 							<input type="password" name="password" required="required" />
 						</p>
+						<input type="hidden" name="_user_tz" id="user_tz"/>
 						<p><button type="submit">Login</button><p>
 					</form>
 				</div>
@@ -46,6 +47,7 @@
 	</body>
 	<script type="text/javascript">
 		document.addEventListener("DOMContentLoaded", function() {
+			document.getElementById("user_tz").value = Intl.DateTimeFormat().resolvedOptions().timeZone;
 		});
 	</script>
 </html>

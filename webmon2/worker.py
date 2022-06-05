@@ -203,10 +203,13 @@ class FetchWorker(threading.Thread):
         # calculate next update time; source may overwrite user settings
         if new_state.last_update:
             last_update = max(
-                new_state.last_update, datetime.datetime.utcnow()
+                new_state.last_update,
+                datetime.datetime.now(datetime.timezone.utc),
             )
         else:
-            new_state.last_update = last_update = datetime.datetime.utcnow()
+            new_state.last_update = last_update = datetime.datetime.now(
+                datetime.timezone.utc
+            )
 
         next_update = last_update + datetime.timedelta(
             seconds=common.parse_interval(source.interval)
@@ -243,7 +246,7 @@ class FetchWorker(threading.Thread):
             _ENTRIES_LOADED.inc(len(entries))
 
         # update source state properties
-        new_state.last_check = datetime.datetime.utcnow()
+        new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
         new_state.set_prop(
             "last_update_duration", f"{time.time() - start:0.2f}"
         )
@@ -383,9 +386,9 @@ def _delete_old_entries(db: database.DB) -> None:
             )
             if not keep_days:
                 continue
-            max_datetime = datetime.datetime.utcnow() - datetime.timedelta(
-                days=keep_days
-            )
+            max_datetime = datetime.datetime.now(
+                datetime.timezone.utc
+            ) - datetime.timedelta(days=keep_days)
             deleted_entries, deleted_oids = database.entries.delete_old(
                 db, user.id, max_datetime
             )
@@ -457,9 +460,9 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     delta1 = 3600 + pow(2, error_counter) * 3600
     delta2 = common.parse_interval(source.interval or "1d")
     next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
-    next_check = datetime.datetime.utcnow() + datetime.timedelta(
-        seconds=next_check_delta
-    )
+    next_check = datetime.datetime.now(
+        datetime.timezone.utc
+    ) + datetime.timedelta(seconds=next_check_delta)
     _LOG.debug(
         "calculated next interval for %s: +%s = %s",
         source.id,
@@ -484,6 +487,5 @@ def _save_state_error(
 
     new_state = state if state else source.state.new_error(str(err))
     new_state.next_update = _calc_next_check_on_error(source)
-    new_state.last_check = datetime.datetime.utcnow()
-
+    new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
     database.sources.save_state(db, new_state, source.user_id)

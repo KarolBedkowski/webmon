@@ -18,7 +18,7 @@ import json
 import logging
 import typing as ty
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
 
 from psycopg2 import extensions
@@ -281,7 +281,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         source = SourceState()
         source.source_id = source_id
-        source.next_update = datetime.utcnow() + timedelta(minutes=15)
+        source.next_update = datetime.now(timezone.utc) + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
         return source
@@ -320,7 +320,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = self.create_new(status=SourceStateStatus.ERROR, **props)
         state.error = error
         state.error_counter += 1
-        state.last_error = datetime.utcnow()
+        state.last_error = datetime.now(timezone.utc)
         return state
 
     def new_not_modified(self, **props: ty.Any) -> SourceState:
@@ -397,7 +397,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         Change next update time to last_check/last_update/now + interval.
         """
-        last = datetime.utcnow()
+        last = datetime.now(timezone.utc)
         if self.last_check:
             last = max(self.last_check, last)
         elif self.last_update:
