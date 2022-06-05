@@ -83,7 +83,8 @@ class AbstractGitLabSource(AbstractSource):
 
         last_activity = datetime.strptime(
             project.last_activity_at, "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
+        ).replace(tzinfo=timezone.utc)
+
         if last_activity <= last_updated.replace():
             return None
 
