@@ -144,7 +144,7 @@
 				let articlesId = getArticleIds().join(",");
 				let formData = new FormData();
 				formData.append("ids", articlesId);
-				executeEntryAction(element.attributes.href.value, formData, (data) => {
+				executeEntryAction(element.dataset.url, formData, (data) => {
 					if (data.url) {
 						window.location.href = data.url;
 					} else {

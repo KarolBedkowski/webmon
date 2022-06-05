@@ -29,7 +29,7 @@
 	</h1>
 	<div class="actions">
 		{% if max_id %}
-		<a href="{{ url_for('entries.entries_mark_read', mode=showed, max_id=max_id, min_id=min_id) }}" data-action="mark-all-read">✔︎ Mark visible read</a>
+		<a href="#" data-url="{{ url_for('entries.entries_mark_read', mode=showed, max_id=max_id, min_id=min_id) }}" data-action="mark-all-read">✔︎ Mark visible read</a>
 		{% endif %}
 		{% if showed == 'all' %}
 		<a href="{{ url_for('entries.entries', mode='unread') }}">⊙ Show unread only</a>
@@ -54,7 +54,7 @@
 	{{ nav_bar() }}
 	{% if max_id %}
 	<div class="actions">
-		<a href="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id, mode=showed) }}" data-action="mark-all-read" class="right">✔︎ Mark visible read</a>
+		<a href="#" data-url="{{ url_for('entries.entries_mark_read', max_id=max_id, min_id=min_id, mode=showed) }}" data-action="mark-all-read" class="right">✔︎ Mark visible read</a>
 	</div>
 	{% endif %}
 {% endblock footer %}
