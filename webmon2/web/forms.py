@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import typing as ty
+import zoneinfo
 from dataclasses import dataclass
 
 from webmon2 import common, model, sources
@@ -87,12 +88,18 @@ class Field:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def from_setting(setting: model.Setting, prefix: str) -> Field:
         field_type_class: ty.Any
+        options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
+
         if setting.value_type == "int":
             field_type = "number"
             field_type_class = int
         elif setting.value_type == "bool":
             field_type = "checkbox"
             field_type_class = bool
+        elif setting.value_type == "tz":
+            field_type = "select"
+            field_type_class = str
+            options = sorted((i, i) for i in zoneinfo.available_timezones())
         else:
             field_type = "str"
             field_type_class = str
@@ -105,6 +112,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             default_value="",
             type=field_type,
             type_class=field_type_class,
+            options=options,
         )
         return field
 
