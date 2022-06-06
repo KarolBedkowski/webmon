@@ -57,7 +57,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         db,
         user.id,
         "mail_last_send",
-        conv=lambda x: datetime.fromtimestamp(float(x), tz=timezone.utc),
+        conv=lambda x: datetime.fromtimestamp(float(x or 0), tz=timezone.utc),
     )
     if last_send:
         interval = timedelta(
