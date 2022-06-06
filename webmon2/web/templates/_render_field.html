@@ -21,7 +21,7 @@
 		<select name="{{ field.fieldname}}" value="{{ field.value }}"
 			{% if field.required %}required="required"{% endif %} >
 			{% for value, description in field.options %}
-			<option value="{{ value }}">{{ description }}</option>
+			<option value="{{ value }}" {% if value == field.value %} selected="selected"{% endif %}>{{ description }}</option>
 			{% endfor %}
 		</select>
 	{% endif %}
