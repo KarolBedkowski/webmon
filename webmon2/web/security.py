@@ -22,7 +22,7 @@ from flask import (
     url_for,
 )
 
-from webmon2 import database, security
+from webmon2 import database, model, security
 
 from . import _commons as c
 
@@ -55,21 +55,17 @@ def login() -> ty.Any:
 
         assert user.password is not None
         if user.active and security.verify_password(user.password, fpassword):
+            session["_user_tz"] = request.form["_user_tz"]
             if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
                 session.permanent = False
                 return redirect(url_for("sec.login_totp"))
 
-            session["user"] = user.id
-            session["user_admin"] = bool(user.admin)
-            session["_user_tz"] = request.form["_user_tz"]
-
             back = session.get("_back_url")
             if back:
                 del session["_back_url"]
 
-            session.permanent = True
-
+            _after_login(user)
             return redirect(back or url_for("root.index"))
 
         flash("Invalid user and/or password")
@@ -96,11 +92,8 @@ def login_totp() -> ty.Any:
             if back:
                 del session["_back_url"]
 
-            session["user"] = user.id
-            session["user_admin"] = bool(user.admin)
             del session["temp_user_id"]
-            session.permanent = True
-            session.modified = True
+            _after_login(user)
             return redirect(back or url_for("root.index"))
 
         flash("Invalid TOTP answer")
@@ -113,3 +106,20 @@ def logout() -> ty.Any:
     session.clear()
     session.modified = True
     return redirect(url_for("root.index"))
+
+
+def _after_login(user: model.User) -> None:
+    session["user"] = user.id
+    session["user_admin"] = bool(user.admin)
+
+    db = c.get_db()
+    user_id: int = session["user"]
+    if user_tz := database.settings.get_value(db, "timezone", user_id):
+        session["_user_tz"] = user_tz
+    else:
+        user_tz = session["_user_tz"]
+        database.settings.set_value(db, user_id, "timezone", user_tz)
+        db.commit()
+
+    session.permanent = True
+    session.modified = True

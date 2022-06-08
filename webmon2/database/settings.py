@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2021
+# Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -120,3 +120,16 @@ def get_global(db: DB) -> ty.List[model.Setting]:
     with db.cursor() as cur:
         cur.execute(_GET_GLOBAL_SQL)
         return [model.Setting.from_row(row) for row in cur]
+
+
+def set_value(db: DB, user_id: int, key: str, value: Value) -> None:
+    """Update one user setting."""
+
+    sett = model.Setting(key, value, "", "", user_id)
+
+    with db.cursor() as cur:
+        cur.execute(
+            "DELETE FROM user_settings WHERE key=%s AND user_id=%s",
+            (key, user_id),
+        )
+        cur.execute(_INSERT_SQL, sett.to_row())
