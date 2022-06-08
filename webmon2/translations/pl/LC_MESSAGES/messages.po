@@ -1,0 +1,138 @@
+# Polish translations for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-06-08 20:51+0200\n"
+"PO-Revision-Date: 2022-06-08 20:53+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: pl\n"
+"Language-Team: pl <LL@li.org>\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: webmon2/web/security.py:54 webmon2/web/security.py:72
+msgid "Invalid user and/or password"
+msgstr "Niewłaściwy użytkownik i/lub hasło"
+
+#: webmon2/web/security.py:100
+msgid "Invalid TOTP answer"
+msgstr "Niewłaściwa odpowiedź TOTP"
+
+#: webmon2/web/templates/_render_entry.html:31
+msgid "Original content"
+msgstr "Oryginalna zawartość"
+
+#: webmon2/web/templates/_render_entry.html:35
+msgid "Website"
+msgstr "Strona"
+
+#: webmon2/web/templates/_render_entry.html:44
+msgid "Read more…"
+msgstr "Czytaj dalej…"
+
+#: webmon2/web/templates/_render_nav.html:5
+msgid "First page"
+msgstr "Pierwsza strona"
+
+#: webmon2/web/templates/_render_nav.html:8
+msgid "Prev page"
+msgstr "Poprzednia strona"
+
+#: webmon2/web/templates/_render_nav.html:11
+msgid "Page"
+msgstr "Strona"
+
+#: webmon2/web/templates/_render_nav.html:14
+msgid "Next page"
+msgstr "Następna strona"
+
+#: webmon2/web/templates/_render_nav.html:17
+msgid "Last page"
+msgstr "Ostatnia strona"
+
+#: webmon2/web/templates/base.html:28 webmon2/web/templates/entries.html:23
+msgid "Entries"
+msgstr "Wpisy"
+
+#: webmon2/web/templates/base.html:29
+msgid "Starred"
+msgstr "Zaznaczone"
+
+#: webmon2/web/templates/base.html:30
+msgid "History"
+msgstr "Historie"
+
+#: webmon2/web/templates/base.html:31
+msgid "Sources"
+msgstr "Źródła"
+
+#: webmon2/web/templates/base.html:32
+msgid "Groups"
+msgstr "Grupy"
+
+#: webmon2/web/templates/base.html:33
+msgid "Settings"
+msgstr "Ustawienia"
+
+#: webmon2/web/templates/base.html:34
+msgid "Logout"
+msgstr "Wyloguj"
+
+#: webmon2/web/templates/entries.html:32 webmon2/web/templates/entries.html:57
+#: webmon2/web/templates/group_entries.html:58
+msgid "Mark visible read"
+msgstr "Widoczne jako przeczytane"
+
+#: webmon2/web/templates/entries.html:35
+#: webmon2/web/templates/group_entries.html:35
+msgid "Show unread only"
+msgstr "Pokaż nieprzeczytane"
+
+#: webmon2/web/templates/entries.html:37
+#: webmon2/web/templates/group_entries.html:37
+msgid "Show all"
+msgstr "Pokaż wszystkie"
+
+#: webmon2/web/templates/entries.html:39
+#: webmon2/web/templates/group_entries.html:39
+msgid "Search"
+msgstr "Szukaj"
+
+#: webmon2/web/templates/entries.html:46
+#: webmon2/web/templates/group_entries.html:46
+msgid "No entries..."
+msgstr "Brak wpisów..."
+
+#: webmon2/web/templates/group_entries.html:31
+msgid "Mark read"
+msgstr "Zaznacz przeczytane"
+
+#: webmon2/web/templates/group_entries.html:33
+msgid "Refresh"
+msgstr "Odśwież"
+
+#: webmon2/web/templates/group_entries.html:47
+msgid "Go to next unread group"
+msgstr "Idź do następnej nieprzeczytanej grupy"
+
+#: webmon2/web/templates/group_entries.html:59
+msgid "Mark all read and go to next group"
+msgstr "Wszystkie przeczytane i idź do następnej grupy"
+
+#: webmon2/web/templates/login.html:34 webmon2/web/templates/login.html:42
+msgid "Login"
+msgstr "Login"
+
+#: webmon2/web/templates/login.html:38
+msgid "Password"
+msgstr "Hasło"
+
