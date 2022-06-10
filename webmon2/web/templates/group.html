@@ -5,13 +5,13 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Group{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Group") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
 	{% if errors %}
 		<p class="error">
-			<b>Validation errors:</b>
+			<b>{{ _("Validation errors:") }}</b>
 			{% for field, err in errors.items() %}
 			<br/>{{ err }}
 			{% endfor %}
@@ -22,26 +22,26 @@
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
-				<label for="group-name">Name</label>
+				<label for="group-name">{{ _("Name") }}</label>
 				<input type="text" name="name" id="group-name" required="required" value="{{ group.name or '' }}" />
-				<label for="group-feed">Feed enabled</label>
+				<label for="group-feed">{{ _("Feed enabled") }}</label>
 				<input type="checkbox" name="feed_enabled" id="group-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
-				<label for="group-mail-report">Send mail reports</label>
-				{{ rf.render_select("mail_report", "group-mail-report", [(0, 'no'), (1, 'as configured in source'), (2, 'yes')], group.mail_report) }}
+				<label for="group-mail-report">{{ _("Send mail reports") }}</label>
+				{{ rf.render_select("mail_report", "group-mail-report", [(0, '{{ _("no") }}'), (1, '{{ _("as configured in source") }}'), (2, '{{ _("yes") }}')], group.mail_report) }}
 			</div>
 			<div class="row2">
 				<span class="left">
 				{% if group.id %}
-					<a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="Really delete group?">⚠ Delete</a>
+					<a href="{{ url_for('group.group_delete', group_id=group_id, delete_self=1) }}" data-req-confirm="yes" data-question="{{ _("Really delete group?") }}">⚠ {{ _("Delete") }}</a>
 				{% endif %}
 				</span>
 				<span class="right">
 					{% if request.args.get('back') %}
-						<a href="{{ request.args['back'] }}" >Back</a>
+						<a href="{{ request.args['back'] }}" >{{ _("Back") }}</a>
 					{% else %}
-						<a href="#" data-action="hist-back">Back</a>
+						<a href="#" data-action="hist-back">{{ _("Back") }}</a>
 					{% endif %}
-					<button type="submit">Save</button>
+					<button type="submit">{{ _("Save") }}</button>
 				</span>
 			</div>
 		</form>

@@ -16,40 +16,40 @@
 				{% if source.state.last_update %}
 					&#9716; <time>{{ source.state.last_update|age }}</time>
 				{% else %}
-					<b>not updated</b>
+					<b>{{ _("not updated") }}</b>
 				{% endif %}
-				| <a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
-				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ Mark read</a>
-				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ Edit</a>
-				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="Really delete source?">✘ Delete</a></span>
+				| <a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ {{ _("Refresh") }}</a>
+				| <a href="{{ url_for('source.source_mark_read', source_id=source.id) }}">✔︎ {{ _("Mark read") }}</a>
+				| <a href="{{ url_for('source.source_edit', source_id=source.id) }}">✎ {{ _("Edit") }}</a>
+				| <span><a href="{{ url_for('source.source_delete', source_id=source.id, back=request.url) }}" data-req-confirm="yes" data-question="{{ _("Really delete source?") }}">✘ {{ _("Delete") }}</a></span>
 			</div>
 			{% if source.status == webmon2.model.SourceStatus.NOT_ACTIVATED %}
-				<p class="error-inl">Need configure &amp; activate.</p>
+				<p class="error-inl">{{ _("Need configure &amp; activate.") }}</p>
 			{% elif source.status == webmon2.model.SourceStatus.DISABLED %}
-				<p class="warn-inl">💤 Disabled</p>
+				<p class="warn-inl">💤 {{ _("Disabled") }}</p>
 			{% else %}
 				{% if source.state.status == webmon2.model.SourceStateStatus.ERROR %}
-				<p><span class="error-inl">Error:</span><br/>
+				<p><span class="error-inl">{{ _("Error:") }}</span><br/>
 					<i>{{ source.state.error | summary('plain') }}</br>
-					at {{ source.state.last_update | format_date }}</i><br/>
-					Times: {{ source.state.error_counter}}</p>
+					{{ _("at") }} {{ source.state.last_update | format_date }}</i><br/>
+					{{ _("Times:") }} {{ source.state.error_counter}}</p>
 				{% endif %}
 			{% endif %}
 			{% set url = source.get_setting('web_url') or source.get_setting('url') %}
 			{% if url %}
-				<p>Page URL: <a href="{{ url | safe }}">{{ url }}</a></p>
+			<p>{{ _("Page URL:") }} <a href="{{ url | safe }}">{{ url }}</a></p>
 			{% endif %}
 			{% if source.state.get_prop('info') %}
 				<p>{{ source.state.props['info'] }}</p>
 			{% endif %}
 			{% if source.state.get_prop('last entry date') %}
-				<p>Last entry: {{ source.state.props['last entry date'] }}</p>
+				<p>{{ _("Last entry:") }} {{ source.state.props['last entry date'] }}</p>
 			{% endif %}
 			<p>
-				Last update: {{ source.state.last_update | format_date }}
+				{{ _("Last update:") }} {{ source.state.last_update | format_date }}
 				&nbsp;&nbsp;
-				Next: {{ source.state.next_update | format_date }}<br/>
-				Successful updates: {{ source.state.success_counter }}
+				{{ _("Next:") }} {{ source.state.next_update | format_date }}<br/>
+				{{ _("Successful updates:") }} {{ source.state.success_counter }}
 			</p>
 		</header>
 	</article>

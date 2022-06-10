@@ -8,14 +8,14 @@
 	<nav class="row2">
 		<span class="left">
 		{% if prev_entry %}
-			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
+			<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=prev_entry) }}">← {{ _("Prev") }}</a>
 		{% endif %}
 		</span>
 		<span class="right">
 			{% if next_entry %}
-				<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">Next →</a>
+				<a href="{{ url_for("group.group_entry", group_id=group_id, mode=mode, entry_id=next_entry) }}">{{ _("Next") }} →</a>
 			{% else %}
-				<a href="{{ url_for('group.group_next_unread', group_id=group_id) }}">→ Go to next unread group</a>
+				<a href="{{ url_for('group.group_next_unread', group_id=group_id) }}">→ {{ _("Go to next unread group") }}</a>
 			{% endif %}
 		</span>
 	</nav>

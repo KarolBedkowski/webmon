@@ -14,24 +14,24 @@
 {% endblock %}
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
   {{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>System users</h2>
+	<h2>{{ _("System users") }}</h2>
 
-	<p><a href="{{ url_for("system.sett_sys_user") }}">➕ New user</a></p>
+	<p><a href="{{ url_for("system.sett_sys_user") }}">➕ {{ _("New user") }}</a></p>
 
 	<table style="width: 100%">
 		<thead>
 			<tr>
-				<th>ID</th>
-				<th>Login</th>
-				<th>Email</th>
-				<th>Active</th>
-				<th>Admin</th>
-				<th>Action</th>
+				<th>{{ _("ID") }}</th>
+				<th>{{ _("Login") }}</th>
+				<th>{{ _("Email") }}</th>
+				<th>{{ _("Active") }}</th>
+				<th>{{ _("Admin") }}</th>
+				<th>{{ _("Action") }}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -42,7 +42,7 @@
 				<td>{{ user.email }}</td>
 				<td>{% if user.active %}✔︎{% else %}✘{% endif %}</td>
 				<td>{% if user.admin %}✔︎{% else %}✘{% endif %}</td>
-				<td><a href="{{ url_for("system.sett_sys_user", user_id=user.id) }}">Edit</a></td>
+				<td><a href="{{ url_for("system.sett_sys_user", user_id=user.id) }}">{{ _("Edit") }}</a></td>
 			</tr>
 			{% endfor %}
 		</tbody>

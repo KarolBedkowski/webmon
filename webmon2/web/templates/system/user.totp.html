@@ -6,31 +6,31 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
-  {{ sn.render_header() }}
+	<h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
+	{{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>User TOTP</h2>
+	<h2>{{ _("TOTP Configuration") }}</h2>
 
-	<h3>Secret</h3>
-	<p>Secret: <code>{{ totp }}</code></p>
+	<h3>{{ _("Secret") }}</h3>
+	<p>{{ _("Secret:") }} <code>{{ totp }}</code></p>
 	{% if qrcode_available %}
 	<p><img id="qrcode" src="{{ url_for('system.sys_qrcode', url=otp_url) }}"></p>
 	{% else %}
 	<p><code>{{ url_for('system.sys_qrcode', url=otp_url) }}</code></p>
 	{% endif %}
 
-	<h3>Confirmation</h3>
+	<h3>{{ _("Confirmation") }}</h3>
 	<form method="POST" autocomplete="new-password">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<div class="form-wrapper">
-			<label>Code:</label>
+			<label>{{ _("Code:") }}</label>
 			<input type="number" name="totp" required="required" maxlength="6" max="999999"/>
 		</div>
 		<div class="row2">
 			&nbsp;
-			<button class="right" type="submit">Setup TOTP</button>
+			<button class="right" type="submit">{{ _("Setup TOTP") }}</button>
 		</div>
 	</form>
 

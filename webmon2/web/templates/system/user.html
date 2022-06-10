@@ -6,40 +6,40 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
+<h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
   {{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>User</h2>
+	<h2>{{ _("User") }}</h2>
 
-	<h3>Change password</h3>
+	<h3>{{ _("Change password") }}</h3>
 	<form method="POST" autocomplete="new-password">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 		<div class="form-wrapper">
-			<label>Current password:</label>
+			<label>{{ _("Current password:") }}</label>
 			<input type="password" name="curr_password" required="required" />
-			<label>New password:</label>
+			<label>{{ _("New password:") }}</label>
 			<input type="password" name="new_password1" required="required" />
-			<label>New password again:</label>
+			<label>{{ _("New password again:") }}</label>
 			<input type="password" name="new_password2" required="required" />
 			<span></span>
 		</div>
 		<div class="row2">
 			&nbsp;
-			<button class="right" type="submit">Change password</button>
+			<button class="right" type="submit">{{ _("Change password") }}</button>
 		</div>
 	</form>
 
 	{% if otp_available %}
-		<h3>Two-Factor Authentication (2FA)</h3>
+		<h3>{{ _("Two-Factor Authentication (2FA)") }}</h3>
 		{% if totp_enabled %}
-			<p>TOTP enabled</p>
+			<p>{{ _("TOTP enabled") }}</p>
 			<span><a href="{{ url_for("system.sett_user_totp_del") }}"
-					data-req-confirm="yes" data-question="Really disable TOTP?">✘ Disable TOTP</a></span>
+					data-req-confirm="yes" data-question="{{ _("Really disable TOTP?") }}">✘ {{ _("Disable TOTP") }}</a></span>
 		{% else %}
-			<p><a href="{{ url_for("system.sett_user_totp_get")}}">Setup TOTP</a></p>
+			<p><a href="{{ url_for("system.sett_user_totp_get")}}">{{ _("Setup TOTP") }}</a></p>
 		{% endif %}
 	{% endif %}
 

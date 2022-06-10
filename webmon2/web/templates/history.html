@@ -19,22 +19,22 @@
 {% endmacro %}
 
 {% block header %}
-	<h1>{% block title %}History{% endblock %} ({{ total_entries }})</h1>
+	<h1>{% block title %}{{ _("History") }}{% endblock %} ({{ total_entries }})</h1>
 	<div class="actions">
-		<a href="{{ url_for("entries.entries_search") }}">🔍 Search</a>
+		<a href="{{ url_for("entries.entries_search") }}">🔍 {{ _("Search") }}</a>
 	</div>
 	<p>
 		<form id="form">
-			<label for="form-group">Show group:</label>
+			<label for="form-group">{{ _("Show group:") }}</label>
 			<select id="form-group" name="group" value="{{ group_id }}">
-				{{ rf.render_option(0, "ALL", status) }}
+				{{ rf.render_option(0, _("ALL"), status) }}
 				{% for grp, name in groups %}
 					{{ rf.render_option(grp, name, group_id) }}
 				{% endfor %}
 			</select>
-			<label for="form-source">Source:</label>
+			<label for="form-source">{{ _("Source:") }}</label>
 			<select id="form-source" name="source" value="{{ source_id }}">
-				{{ rf.render_option(0, "ALL", source_id) }}
+				{{ rf.render_option(0, _("ALL"), source_id) }}
 				{% for src, name in sources %}
 					{{ rf.render_option(src, name, source_id) }}
 				{% endfor %}

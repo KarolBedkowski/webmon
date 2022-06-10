@@ -5,27 +5,27 @@
   <body>
 
 {% block header %}
-	<h1>{% block title %}Source {{ source.name }} filters{% endblock %}</h1>
+	<h1>{% block title %}{{ _("Source") }} {{ source.name }} {{ _("filters") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-	<h1>Filters</h1>
+	<h1>{{ _("Filters") }}</h1>
 	<p>
 		<ul>
 			{% for filter in filters %}
 			<li>{{ filter.name }} <br/>
-				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="up") }}">Move up</a> |
-				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="down") }}">Move down</a> |
-				<a href="{{ url_for("source.source_filter_edit", source_id=source.id, idx=loop.index0) }}">Edit</a> |
-				<a href="{{ url_for("source.source_filter_delete", source_id=source.id, idx=loop.index0) }}">Delete</a>
+				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="up") }}">{{ _("Move up") }}</a> |
+				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="down") }}">{{ _("Move") }} down</a> |
+				<a href="{{ url_for("source.source_filter_edit", source_id=source.id, idx=loop.index0) }}">{{ _("Edit") }}</a> |
+				<a href="{{ url_for("source.source_filter_delete", source_id=source.id, idx=loop.index0) }}">{{ _("Delete") }}</a>
 			</li>
 			{% endfor %}
 		</ul>
 	</p>
 	<footer>
 		<div class="actions">
-			<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
-			<a href="{{ url_for("source.source_filter_add", source_id=source.id) }}">Add filter</a>
+			<a href="{{ url_for("source.source_edit", source_id=source.id) }}">{{ _("Back to source") }}</a>
+			<a href="{{ url_for("source.source_filter_add", source_id=source.id) }}">{{ _("Add filter") }}</a>
 		</div>
 	</footer>
 {% endblock %}

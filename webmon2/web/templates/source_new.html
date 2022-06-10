@@ -4,19 +4,19 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}New source{% endblock %}</h1>
+  <h1>{% block title %}{{ _("New source") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
 	<p>
-		<h4>Source type</h4>
+		<h4>{{ _("Source type") }}</h4>
 		<ul class="choice">
 		{% for name, short_info, long_info in sources %}
 		<li><a href="{{ url_for("source.source_edit", kind=name) }}">{{ short_info }}</a><br/>
 				{{ long_info }}</li>
 		{% endfor %}
 		</ul>
-		<a href="#" data-action="hist-back">Back</a>
+		<a href="#" data-action="hist-back">{{ _("Back") }}</a>
 	</form>
 {% endblock %}
 

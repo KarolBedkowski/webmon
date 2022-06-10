@@ -5,10 +5,10 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Groups{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Groups") }}{% endblock %}</h1>
   <div class="actions">
-	  <a href="{{ url_for("root.sources_refresh")}}">↺ Refresh all</a>
-	  <a href="{{ url_for('group.group_edit') }}">➕ New</a>
+	  <a href="{{ url_for("root.sources_refresh")}}">↺ {{ _("Refresh all") }}</a>
+	  <a href="{{ url_for('group.group_edit') }}">➕ {{ _("New") }}</a>
   </div>
 {% endblock %}
 
@@ -20,10 +20,10 @@
 					{% if group.unread %}({{ group.unread }}){% endif %}
 				</h4>
 				<div class="actions">
-					<a href="{{ url_for('group.refresh_group', group_id=group.id, back=request.url )}}">↺ Refresh</a>
-					| <a href="{{ url_for('group.group_mark_read', group_id=group.id, back=request.url )}}">✔︎ Mark read</a>
-					| <a href="{{ url_for('group.group_sources', group_id=group.id, back=request.url )}}">Sources ({{ group.sources_count }})</a>
-					| <a href="{{ url_for('group.group_edit', group_id=group.id, back=request.url )}}">✎ Edit</a>
+					<a href="{{ url_for('group.refresh_group', group_id=group.id, back=request.url )}}">↺ {{ _("Refrsh") }}</a>
+					| <a href="{{ url_for('group.group_mark_read', group_id=group.id, back=request.url )}}">✔︎ {{ _("Mark read") }}</a>
+					| <a href="{{ url_for('group.group_sources', group_id=group.id, back=request.url )}}">{{ _("Sources") }} ({{ group.sources_count }})</a>
+					| <a href="{{ url_for('group.group_edit', group_id=group.id, back=request.url )}}">✎ {{ _("Edit") }}</a>
 				</div>
 				{% if group.feed and group.feed != 'off' %}
 				<p>Feed: <a href="{{ url_for("atom.group", key=group.feed) | absolute_url }}">

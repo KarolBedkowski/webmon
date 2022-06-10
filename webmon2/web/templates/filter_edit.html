@@ -5,20 +5,20 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Filter edit{% endblock %}</h1>
+	<h1>{% block title %}{{ _("Filter edit") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
 	{% if errors %}
 		<p class="error">
-			<b>Validation errors:</b>
+			<b>{{ _("Validation errors:") }}</b>
 			{% for field, err in errors.items() %}
 			<br/>{{ err }}
 			{% endfor %}
 		<p>
 	{% endif %}
 	<p><b>{{ filter.name }}</b>: {{ fltr.long_info }}</p>
-	<h4>Settings</h4>
+	<h4>{{ _("Settings") }}</h4>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
@@ -30,8 +30,8 @@
 		<div class="row2">
 			<span></span>
 			<span class="right">
-				<a href="{{ url_for("source.source_edit", source_id=source.id) }}">Back to source</a>
-				<button type="submit">Save</button>
+				<a href="{{ url_for("source.source_edit", source_id=source.id) }}">{{ _("Back to source") }}</a>
+				<button type="submit">{{ _("Save") }}</button>
 			</span>
 		</div>
 	</form>
