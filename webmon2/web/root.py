@@ -73,9 +73,7 @@ def sources_refresh() -> ty.Any:
     updated = database.sources.refresh(db, session["user"])
     db.commit()
     flash(f"{updated} sources mark to refresh")
-    return redirect(
-        request.headers.get("Refere79Gr") or url_for("root.sources")
-    )
+    return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
 @BP.route("/sources/refresh/errors")
