@@ -24,7 +24,7 @@
 			</h4>
 			<div class="actions">
 				<a href="{{ url_for('source.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
-				| &#9716;<time title="{{ entry.updated | format_date }}">{{ entry.updated|age }}</time>
+				| &#9716; <time title="{{ entry.updated | format_date }}">{{ entry.updated|age }}</time>
 				| <a href="#" data-action="mark_read"></a>
 				| <a href="#" data-action="mark_star"></a>
 				{% if entry.url %}
