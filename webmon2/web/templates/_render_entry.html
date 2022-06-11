@@ -1,4 +1,4 @@
-{% macro render_entry(entry, mode, onlist, openlink=None) -%}
+{% macro render_entry(entry, mode, onlist, webmon2, openlink=None) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<!-- {{ entry.score }} -->
@@ -25,8 +25,8 @@
 			<div class="actions">
 				<a href="{{ url_for('source.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
 				| &#9716; <time title="{{ entry.updated | format_date }}">{{ entry.updated|age }}</time>
-				| <a href="#" data-action="mark_read"></a>
-				| <a href="#" data-action="mark_star"></a>
+				| <a href="#" data-action="mark_read">{% if entry.read_mark == webmon2.model.EntryReadMark.READ %}{{ _("Unread") }}{% else %}{{ _("Read") }}{% endif %}</a>
+				| <a href="#" data-action="mark_star">{% if entry.star_mark %}{{ _("Unstar") }}{% else %}{{ _("Star") }}{% endif %}</a>
 				{% if entry.url %}
 					| <a href="{{ entry.url }}">{{ _("Original content") }}</a>
 				{% endif %}

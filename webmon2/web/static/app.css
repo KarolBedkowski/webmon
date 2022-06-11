@@ -47,12 +47,12 @@ span.confirm{color: red; font-weight: bold;}
 
 article[data-state=read] h4>a {color: #335}
 article[data-state=read] {border-style: dashed}
-article[data-state=read] a[data-action=mark_read]:before{content: "✘ Unread";}
+article[data-state=read] a[data-action=mark_read]:before{content: "✘ ";}
 article[data-state=unread] h4>a {color: #33c}
-article[data-state=unread] a[data-action=mark_read]:before{content: "✔︎ Read";}
+article[data-state=unread] a[data-action=mark_read]:before{content: "✔︎ ";}
 article[data-starred=star] {border-color: red; border-width: 2px;}
-article[data-starred=star] a[data-action=mark_star]:before{content: "★ Starred"; font-weight: bold}
-article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ Star";}
+article[data-starred=star] a[data-action=mark_star]:before{content: "★ "; font-weight: bold}
+article[data-starred=unstar] a[data-action=mark_star]:before{content: "☆ ";}
 
 
 #main-header nav input#toggle-menu { display: none; }

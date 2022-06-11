@@ -30,7 +30,7 @@
 			<p>{{ _("No entries...") }}</p>
 		{% endif %}
 		{% for entry in entries %}
-			{{ re.render_entry(entry, 'summary', True) }}
+			{{ re.render_entry(entry, 'summary', True, webmon2) }}
 		{% endfor %}
 	{% endif %}
 {% endblock %}

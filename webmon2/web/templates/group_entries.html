@@ -19,7 +19,7 @@
 {% endmacro %}
 
 {% block header %}
-	<h1>{% block title %}{{ _("Entries in") }} {{ group.name}}{% endblock %}
+	<h1>{% block title %}Entries in {{ group.name}}{% endblock %}
 		{% if showed == 'all' %}
 			({{ total_entries }})
 		{% else %}
@@ -47,7 +47,7 @@
 		<p><a href="{{ url_for('group.group_next_unread', group_id=group.id) }}" class="right">→ {{ _("Go to next unread group") }}</a></p>
 	{% endif %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary', True, url_for("group.group_entry", group_id=group.id, entry_id=entry.id, mode=(showed or 'unread'))) }}
+		{{ re.render_entry(entry, 'summary', True, webmon2, url_for("group.group_entry", group_id=group.id, entry_id=entry.id, mode=(showed or 'unread'))) }}
 	{% endfor %}
 {% endblock %}
 

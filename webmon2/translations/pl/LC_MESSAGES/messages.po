@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-11 09:28+0200\n"
-"PO-Revision-Date: 2022-06-11 09:33+0200\n"
+"POT-Creation-Date: 2022-06-11 21:15+0200\n"
+"PO-Revision-Date: 2022-06-11 21:17+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -19,37 +19,57 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
-#: webmon2/web/forms.py:164
+#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+msgid "Read"
+msgstr "Przeczytane"
+
+#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+msgid "Unread"
+msgstr "Nieprzeczytane"
+
+#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+msgid "Star"
+msgstr "Zaznacz"
+
+#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+msgid "Unstar"
+msgstr "Odznacz"
+
+#: webmon2/web/forms.py:169
 msgid "Missing group"
 msgstr "Brak grupy"
 
-#: webmon2/web/forms.py:167 webmon2/web/forms.py:267
+#: webmon2/web/forms.py:172 webmon2/web/forms.py:272
 msgid "Missing name"
 msgstr "Brak nazwy"
 
-#: webmon2/web/forms.py:170
+#: webmon2/web/forms.py:175
 msgid "Missing source kind"
 msgstr "Brak rodzaju źródła"
 
-#: webmon2/web/forms.py:173
+#: webmon2/web/forms.py:178
 msgid "Unknown kind"
 msgstr "Nieznany rodzaj"
 
-#: webmon2/web/forms.py:179
+#: webmon2/web/forms.py:184
 msgid "Invalid interval"
 msgstr "Niewłaściwy interwał"
 
-#: webmon2/web/forms.py:318
+#: webmon2/web/forms.py:323
 msgid "Passwords not match"
 msgstr "Hasła nie pasują do siebie"
 
-#: webmon2/web/forms.py:321
+#: webmon2/web/forms.py:326
 msgid "Missing login"
 msgstr "Brak loginu"
 
-#: webmon2/web/forms.py:324
+#: webmon2/web/forms.py:329
 msgid "Password is required for new user"
 msgstr "Hasło jest wymagane dla nowego użytkownika"
+
+#: webmon2/web/group.py:77
+msgid "Group saved"
+msgstr "Zapisano grupę"
 
 #: webmon2/web/group.py:82
 msgid "Group changed somewhere else; reloading..."
@@ -419,6 +439,18 @@ msgstr "Feed aktywny"
 msgid "Send mail reports"
 msgstr "Wysyłaj raporty mailem"
 
+#: webmon2/web/templates/group.html:30 webmon2/web/templates/source.html:47
+msgid "no"
+msgstr "nie"
+
+#: webmon2/web/templates/group.html:30
+msgid "as configured in source"
+msgstr "jak skonfigurowano źródło"
+
+#: webmon2/web/templates/group.html:30 webmon2/web/templates/source.html:47
+msgid "yes"
+msgstr "tak"
+
 #: webmon2/web/templates/group.html:35
 msgid "Really delete group?"
 msgstr "Na pewno usunąć grupę?"
@@ -429,10 +461,6 @@ msgstr "Na pewno usunąć grupę?"
 #: webmon2/web/templates/system/sys_user.html:70
 msgid "Back"
 msgstr "Powrót"
-
-#: webmon2/web/templates/group_entries.html:22
-msgid "Entries in"
-msgstr "Wpisy w"
 
 #: webmon2/web/templates/group_entries.html:47
 #: webmon2/web/templates/group_entry.html:18
@@ -542,14 +570,6 @@ msgstr "Interwał"
 #: webmon2/web/templates/source.html:47
 msgid "as configured in group"
 msgstr "jak skonfigurowano grupę"
-
-#: webmon2/web/templates/source.html:47
-msgid "no"
-msgstr "nie"
-
-#: webmon2/web/templates/source.html:47
-msgid "yes"
-msgstr "tak"
 
 #: webmon2/web/templates/source.html:48
 msgid "Default score for entries"
@@ -852,5 +872,6 @@ msgstr "Potwierdzenie"
 msgid "Code:"
 msgstr "Kod:"
 
+#~ msgid "Entries in"
+#~ msgstr "Wpisy w"
 
-# vim: spell spelllang=pl

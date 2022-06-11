@@ -88,6 +88,7 @@
 				executeEntryAction(mark_read_url, formData, (data) => {
 					if (data.result == "read" || data.result == "unread") {
 						article.dataset["state"] = data.result;
+						article.querySelector('a[data-action="mark_read"]').innerText = data.title;
 					}
 					let num_count = data.unread;
 					let val = (num_count > 0) ? "(" + num_count + ")" : "";
@@ -116,6 +117,7 @@
 				executeEntryAction(mark_star_url, formData, (data) => {
 					if (data.result == "star" || data.result == "unstar") {
 						article.dataset["starred"] = data.result;
+						article.querySelector('a[data-action="mark_star"]').innerText = data.title;
 					}
 				}, () => {
 					element.attributes.processing = false;

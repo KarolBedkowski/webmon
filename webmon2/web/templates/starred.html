@@ -13,7 +13,7 @@
 
 {% block content %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary', True) }}
+		{{ re.render_entry(entry, 'summary', True, webmon2) }}
 	{% endfor %}
 {% endblock %}
   </body>
