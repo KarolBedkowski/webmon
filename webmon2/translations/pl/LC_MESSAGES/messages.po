@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-10 17:48+0200\n"
-"PO-Revision-Date: 2022-06-10 17:51+0200\n"
+"POT-Creation-Date: 2022-06-11 09:28+0200\n"
+"PO-Revision-Date: 2022-06-11 09:33+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -19,6 +19,55 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
 
+#: webmon2/web/forms.py:164
+msgid "Missing group"
+msgstr "Brak grupy"
+
+#: webmon2/web/forms.py:167 webmon2/web/forms.py:267
+msgid "Missing name"
+msgstr "Brak nazwy"
+
+#: webmon2/web/forms.py:170
+msgid "Missing source kind"
+msgstr "Brak rodzaju źródła"
+
+#: webmon2/web/forms.py:173
+msgid "Unknown kind"
+msgstr "Nieznany rodzaj"
+
+#: webmon2/web/forms.py:179
+msgid "Invalid interval"
+msgstr "Niewłaściwy interwał"
+
+#: webmon2/web/forms.py:318
+msgid "Passwords not match"
+msgstr "Hasła nie pasują do siebie"
+
+#: webmon2/web/forms.py:321
+msgid "Missing login"
+msgstr "Brak loginu"
+
+#: webmon2/web/forms.py:324
+msgid "Password is required for new user"
+msgstr "Hasło jest wymagane dla nowego użytkownika"
+
+#: webmon2/web/group.py:82
+msgid "Group changed somewhere else; reloading..."
+msgstr "Grupa zmieniona w tle; przeładowywanie..."
+
+#: webmon2/web/group.py:177 webmon2/web/group.py:199 webmon2/web/root.py:51
+msgid "No more unread groups..."
+msgstr "Brak nieprzeczytanych grup..."
+
+#: webmon2/web/group.py:212
+msgid "Group deleted"
+msgstr "Grupa usunięta"
+
+#: webmon2/web/group.py:217
+#, python-format
+msgid "Can't delete group: %(err)s"
+msgstr "Nie można usunąć grupy: %(err)s"
+
 #: webmon2/web/security.py:54 webmon2/web/security.py:72
 msgid "Invalid user and/or password"
 msgstr "Niewłaściwy użytkownik i/lub hasło"
@@ -26,6 +75,79 @@ msgstr "Niewłaściwy użytkownik i/lub hasło"
 #: webmon2/web/security.py:100
 msgid "Invalid TOTP answer"
 msgstr "Niewłaściwa odpowiedź TOTP"
+
+#: webmon2/web/source.py:44
+msgid "Source mark to refresh"
+msgstr "Źródło zaznaczone do odświeżenia"
+
+#: webmon2/web/source.py:60
+msgid "Source deleted"
+msgstr "Źródło usunięte"
+
+#: webmon2/web/source.py:140
+msgid "Source changed somewhere else; reloading..."
+msgstr "Źródło zmienione w tle, przeładowywanie..."
+
+#: webmon2/web/source.py:417
+msgid "No more unread sources..."
+msgstr "Brak nieprzeczytanych źródeł..."
+
+#: webmon2/web/system.py:72 webmon2/web/system.py:352
+msgid "There are errors in form"
+msgstr "W formie występują błędy"
+
+#: webmon2/web/system.py:88 webmon2/web/system.py:354
+msgid "User changed somewhere else; reloading..."
+msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
+
+#: webmon2/web/system.py:90
+msgid "New passwords not match"
+msgstr "Nowe hasła nie pasują"
+
+#: webmon2/web/system.py:92
+msgid "Missing new password"
+msgstr "Brak nowego hasła"
+
+#: webmon2/web/system.py:94
+msgid "Missing current password"
+msgstr "Brak obecnego hasła"
+
+#: webmon2/web/system.py:105
+msgid "Password changed"
+msgstr "Hasło zmienione"
+
+#: webmon2/web/system.py:107
+msgid "Wrong current password"
+msgstr "Niewłaściwe aktualne hasło"
+
+#: webmon2/web/system.py:169
+msgid "TOTP saved"
+msgstr "Zapisano TOTP"
+
+#: webmon2/web/system.py:176
+msgid "Wrong TOTP response"
+msgstr "Błędna odpowiedź TOTP"
+
+#: webmon2/web/system.py:212 webmon2/web/system.py:230
+#: webmon2/web/system.py:236
+msgid "No file to import"
+msgstr "Brak pliku do importu"
+
+#: webmon2/web/system.py:220 webmon2/web/system.py:244
+msgid "Import completed"
+msgstr "Import zakończony"
+
+#: webmon2/web/system.py:292
+msgid "Saved"
+msgstr "Zapisano"
+
+#: webmon2/web/system.py:320 webmon2/web/system.py:379
+msgid "User not found"
+msgstr "Użytkownik nie znaleziony"
+
+#: webmon2/web/system.py:385
+msgid "User deleted"
+msgstr "Użytkownik usunięty"
 
 #: webmon2/web/templates/_render_entry.html:31
 msgid "Original content"
@@ -730,3 +852,5 @@ msgstr "Potwierdzenie"
 msgid "Code:"
 msgstr "Kod:"
 
+
+# vim: spell spelllang=pl

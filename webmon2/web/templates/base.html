@@ -50,6 +50,7 @@
 			</footer>
 		</section>
 	</body>
+		<script type="text/javascript" src="{{ url_for('static', filename="t_" + g.locale + '.js') }}"></script>
 		<script type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </html>

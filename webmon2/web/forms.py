@@ -18,6 +18,8 @@ import typing as ty
 import zoneinfo
 from dataclasses import dataclass
 
+from flask_babel import gettext
+
 from webmon2 import common, model, sources
 
 _ = ty
@@ -160,22 +162,22 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
     def validate(self) -> ty.Dict[str, str]:
         result = {}
         if not self.group_id:
-            result["group_id"] = "Missing group"
+            result["group_id"] = gettext("Missing group")
 
         if not self.name:
-            result["name"] = "Missing name"
+            result["name"] = gettext("Missing name")
 
         if not self.kind:
-            result["kind"] = "Missing source kind"
+            result["kind"] = gettext("Missing source kind")
         else:
             if self.kind not in sources.sources_name():
-                result["kind"] = "Unknown kind"
+                result["kind"] = gettext("Unknown kind")
 
         if self.interval:
             try:
                 common.parse_interval(self.interval)
             except ValueError:
-                result["interval"] = "invalid interval"
+                result["interval"] = gettext("Invalid interval")
 
         return result
 
@@ -263,7 +265,7 @@ class GroupForm:
     def validate(self) -> ty.Dict[str, str]:
         result = {}
         if not self.name:
-            result["name"] = "Missing name"
+            result["name"] = gettext("Missing name")
 
         return result
 
@@ -314,13 +316,13 @@ class UserForm:
     def validate(self) -> ty.Dict[str, str]:
         result = {}
         if self.password1 and self.password1 != self.password2:
-            result["password1"] = "Passwords not match"
+            result["password1"] = gettext("Passwords not match")
 
         if not self.login:
-            result["login"] = "Missing login"
+            result["login"] = gettext("Missing login")
 
         if not self.id and not self.password1:
-            result["password1"] = "Password is required for new user"
+            result["password1"] = gettext("Password is required for new user")
 
         return result
 

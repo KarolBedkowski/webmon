@@ -21,7 +21,7 @@ from flask import (
     session,
     url_for,
 )
-from flask_babel import _
+from flask_babel import gettext
 
 from webmon2 import database, model, security
 
@@ -51,7 +51,7 @@ def login() -> ty.Any:
         try:
             user = database.users.get(db, login=flogin)
         except database.NotFound:
-            flash(_("Invalid user and/or password"))
+            flash(gettext("Invalid user and/or password"))
             return render_template("login.html")
 
         assert user.password is not None
@@ -69,7 +69,7 @@ def login() -> ty.Any:
             _after_login(user)
             return redirect(back or url_for("root.index"))
 
-        flash(_("Invalid user and/or password"))
+        flash(gettext("Invalid user and/or password"))
 
     return render_template("login.html")
 
@@ -97,7 +97,7 @@ def login_totp() -> ty.Any:
             _after_login(user)
             return redirect(back or url_for("root.index"))
 
-        flash(_("Invalid TOTP answer"))
+        flash(gettext("Invalid TOTP answer"))
 
     return render_template("login.totp.html")
 

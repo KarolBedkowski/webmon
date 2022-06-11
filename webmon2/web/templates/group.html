@@ -27,7 +27,7 @@
 				<label for="group-feed">{{ _("Feed enabled") }}</label>
 				<input type="checkbox" name="feed_enabled" id="group-feed" {% if group.feed_enabled %}checked="checked"{% endif %} />
 				<label for="group-mail-report">{{ _("Send mail reports") }}</label>
-				{{ rf.render_select("mail_report", "group-mail-report", [(0, '{{ _("no") }}'), (1, '{{ _("as configured in source") }}'), (2, '{{ _("yes") }}')], group.mail_report) }}
+				{{ rf.render_select("mail_report", "group-mail-report", [(0, _("no")), (1, _("as configured in source")), (2, _("yes"))], group.mail_report) }}
 			</div>
 			<div class="row2">
 				<span class="left">

@@ -17,6 +17,7 @@ import typing as ty
 from argparse import Namespace
 from configparser import ConfigParser
 
+import flask_babel
 from flask import (
     Flask,
     Response,
@@ -27,7 +28,6 @@ from flask import (
     session,
     url_for,
 )
-from flask_babel import Babel
 from gevent.pool import Pool
 from gevent.pywsgi import LoggingLogAdapter, WSGIServer
 from prometheus_client import Counter, Histogram
@@ -121,7 +121,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    babel = Babel(app)
+    babel = flask_babel.Babel(app)
 
     _register_blueprints(app)
 
@@ -154,6 +154,8 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
             if request.method == "GET":
                 _count_unread(user_id)
+
+            g.locale = str(flask_babel.get_locale())
 
             return None
 

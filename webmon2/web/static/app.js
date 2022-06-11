@@ -7,6 +7,11 @@
 (function() {
 	'use strict';
 
+	function t(text) {
+		var t = APP_TRANSLATE || {};
+		return t[text] || text;
+	}
+
 	function _create_question_link(label, callback) {
 		let element = document.createElement("a");
 		element.href = "#";
@@ -26,11 +31,11 @@
 
 		eventTarget.style.display = "none";
 
-		let yesElement = _create_question_link("yes", (event) => {
+		let yesElement = _create_question_link(t("yes"), (event) => {
 			document.location.href = eventTarget.href;
 		});
 
-		let noElement = _create_question_link("no", (event) => {
+		let noElement = _create_question_link(t("no"), (event) => {
 			eventTarget.style.display = "";
 			questionElement.remove();
 		});

@@ -27,6 +27,7 @@ from flask import (
     session,
     url_for,
 )
+from flask_babel import gettext, ngettext
 
 from webmon2 import common, database
 
@@ -47,7 +48,7 @@ def index() -> ty.Any:
         group_id = database.groups.get_next_unread_group(db, user_id)
         if group_id:
             return redirect(url_for("group.group_entries", group_id=group_id))
-        flash("No more unread groups...")
+        flash(gettext("No more unread groups..."))
     return redirect(url_for("entries.entries", mode="unread"))
 
 
@@ -72,7 +73,7 @@ def sources_refresh() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
-    flash(f"{updated} sources mark to refresh")
+    flash(ngettext("%(updated)s sources mark to refresh", updated=updated))
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
@@ -81,7 +82,7 @@ def sources_refresh_err() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
-    flash(f"{updated} sources with errors mark to refresh")
+    flash(ngettext("%(updated)s sources mark to refresh", updated=updated))
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 

@@ -23,6 +23,7 @@ from flask import (
     session,
     url_for,
 )
+from flask_babel import gettext, ngettext
 
 from webmon2 import common, database, model
 
@@ -40,7 +41,11 @@ def refresh_group(group_id: int) -> ty.Any:
     user_id = session["user"]
     marked = database.sources.refresh(db, user_id, group_id=group_id)
     db.commit()
-    flash(f"{marked} sources in group marked to refresh")
+    flash(
+        ngettext(
+            "%(marked)s sources in group marked to refresh", marked=marked
+        )
+    )
     return redirect(request.headers.get("Referer") or url_for("root.groups"))
 
 
@@ -69,12 +74,12 @@ def group_edit(group_id: int = 0) -> ty.Any:
                 usgroup = form.update_model(sgroup)
                 database.groups.save(db, usgroup)
                 db.commit()
-                flash("Group saved")
+                flash(gettext("Group saved"))
                 return redirect(
                     request.args.get("back") or url_for("root.groups")
                 )
         else:
-            flash("Group changed somewhere else; reloading...")
+            flash(gettext("Group changed somewhere else; reloading..."))
 
     return render_template(
         "group.html",
@@ -169,7 +174,7 @@ def group_mark_read(group_id: int) -> ty.Any:
                 url_for("group.group_entries", group_id=next_group_id)
             )
 
-        flash("No more unread groups...")
+        flash(gettext("No more unread groups..."))
         dst = url_for("root.groups")
     else:
         dst = request.args.get("back") or url_for(
@@ -191,7 +196,7 @@ def group_next_unread(group_id: int) -> ty.Any:
     if next_group_id:
         return redirect(url_for("group.group_entries", group_id=next_group_id))
 
-    flash("No more unread groups...")
+    flash(gettext("No more unread groups..."))
     return redirect(url_for("root.groups"))
 
 
@@ -204,12 +209,12 @@ def group_delete(group_id: int) -> ty.Any:
         database.groups.get(db, group_id, user_id)
         database.groups.delete(db, user_id, group_id)
         db.commit()
-        flash("Group deleted")
+        flash(gettext("Group deleted"))
 
     except database.NotFound:
         return abort(404)
     except common.OperationError as err:
-        flash("Can't delete group: " + str(err), "error")
+        flash(gettext("Can't delete group: %(err)s", err=str(err)), "error")
 
     if request.args.get("delete_self"):
         return redirect(url_for("root.groups"))
