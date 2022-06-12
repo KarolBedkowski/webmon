@@ -102,6 +102,10 @@ class Field:  # pylint: disable=too-many-instance-attributes
             field_type = "select"
             field_type_class = str
             options = sorted((i, i) for i in zoneinfo.available_timezones())
+        elif setting.value_type == "locale":
+            field_type = "select"
+            field_type_class = str
+            options = [(i, i) for i in ("en", "pl")]
         else:
             field_type = "str"
             field_type_class = str
