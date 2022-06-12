@@ -73,7 +73,14 @@ def sources_refresh() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
-    flash(ngettext("%(updated)s sources mark to refresh", updated=updated))
+    flash(
+        ngettext(
+            "One source mark to refresh",
+            "%(updated)s sources mark to refresh",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
@@ -82,7 +89,14 @@ def sources_refresh_err() -> ty.Any:
     db = c.get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
-    flash(ngettext("%(updated)s sources mark to refresh", updated=updated))
+    flash(
+        ngettext(
+            "One source mark to refresh",
+            "%(updated)s sources mark to refresh",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 

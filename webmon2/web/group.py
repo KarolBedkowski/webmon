@@ -43,7 +43,10 @@ def refresh_group(group_id: int) -> ty.Any:
     db.commit()
     flash(
         ngettext(
-            "%(marked)s sources in group marked to refresh", marked=marked
+            "One sources in group marked to refresh",
+            "%(marked)s sources in group marked to refresh",
+            marked,
+            marked=marked,
         )
     )
     return redirect(request.headers.get("Referer") or url_for("root.groups"))

@@ -254,7 +254,14 @@ def sett_data_mark_all_read() -> ty.Any:
     db = c.get_db()
     updated = database.entries.mark_all_read(db, user_id)
     db.commit()
-    flash(ngettext("%(updated)s entries mark read", updated=updated))
+    flash(
+        ngettext(
+            "One entry mark read",
+            "%(updated)s entries mark read",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(url_for("system.sett_data"))
 
 
@@ -265,7 +272,14 @@ def sett_data_mark_all_old_read() -> ty.Any:
     max_date = datetime.date.today() - datetime.timedelta(days=1)
     updated = database.entries.mark_all_read(db, user_id, max_date)
     db.commit()
-    flash(ngettext("%(updated)s entries mark read", updated=updated))
+    flash(
+        ngettext(
+            "One entry mark read",
+            "%(updated)s entries mark read",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(url_for("system.sett_data"))
 
 

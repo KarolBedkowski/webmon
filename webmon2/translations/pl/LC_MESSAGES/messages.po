@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-11 21:15+0200\n"
-"PO-Revision-Date: 2022-06-11 21:17+0200\n"
+"POT-Creation-Date: 2022-06-12 11:14+0200\n"
+"PO-Revision-Date: 2022-06-12 11:26+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -67,26 +67,42 @@ msgstr "Brak loginu"
 msgid "Password is required for new user"
 msgstr "Hasło jest wymagane dla nowego użytkownika"
 
-#: webmon2/web/group.py:77
+#: webmon2/web/group.py:45
+#, python-format
+msgid "One sources in group marked to refresh"
+msgid_plural "%(marked)s sources in group marked to refresh"
+msgstr[0] "Jedno źródło w grupie zaznaczone do odświeżenia"
+msgstr[1] "%(marked)s źródła w grupie zaznaczono do odświeżenia"
+msgstr[2] "%(marked)s źródeł w grupie zaznaczono do odświeżenia"
+
+#: webmon2/web/group.py:80
 msgid "Group saved"
 msgstr "Zapisano grupę"
 
-#: webmon2/web/group.py:82
+#: webmon2/web/group.py:85
 msgid "Group changed somewhere else; reloading..."
 msgstr "Grupa zmieniona w tle; przeładowywanie..."
 
-#: webmon2/web/group.py:177 webmon2/web/group.py:199 webmon2/web/root.py:51
+#: webmon2/web/group.py:180 webmon2/web/group.py:202 webmon2/web/root.py:51
 msgid "No more unread groups..."
 msgstr "Brak nieprzeczytanych grup..."
 
-#: webmon2/web/group.py:212
+#: webmon2/web/group.py:215
 msgid "Group deleted"
 msgstr "Grupa usunięta"
 
-#: webmon2/web/group.py:217
+#: webmon2/web/group.py:220
 #, python-format
 msgid "Can't delete group: %(err)s"
 msgstr "Nie można usunąć grupy: %(err)s"
+
+#: webmon2/web/root.py:77 webmon2/web/root.py:93
+#, python-format
+msgid "One source mark to refresh"
+msgid_plural "%(updated)s sources mark to refresh"
+msgstr[0] "Jedno źródło zaznaczone do odświeżenia"
+msgstr[1] "%(updated)s źródła zaznaczono do odświeżenia"
+msgstr[2] "%(updated)s źródeł zaznaczono do odświeżenia"
 
 #: webmon2/web/security.py:54 webmon2/web/security.py:72
 msgid "Invalid user and/or password"
@@ -112,11 +128,11 @@ msgstr "Źródło zmienione w tle, przeładowywanie..."
 msgid "No more unread sources..."
 msgstr "Brak nieprzeczytanych źródeł..."
 
-#: webmon2/web/system.py:72 webmon2/web/system.py:352
+#: webmon2/web/system.py:72 webmon2/web/system.py:362
 msgid "There are errors in form"
 msgstr "W formie występują błędy"
 
-#: webmon2/web/system.py:88 webmon2/web/system.py:354
+#: webmon2/web/system.py:88 webmon2/web/system.py:364
 msgid "User changed somewhere else; reloading..."
 msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
 
@@ -157,15 +173,23 @@ msgstr "Brak pliku do importu"
 msgid "Import completed"
 msgstr "Import zakończony"
 
-#: webmon2/web/system.py:292
+#: webmon2/web/system.py:258 webmon2/web/system.py:274
+#, python-format
+msgid "One entry mark read"
+msgid_plural "%(updated)s entries mark read"
+msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
+msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
+msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
+
+#: webmon2/web/system.py:302
 msgid "Saved"
 msgstr "Zapisano"
 
-#: webmon2/web/system.py:320 webmon2/web/system.py:379
+#: webmon2/web/system.py:330 webmon2/web/system.py:389
 msgid "User not found"
 msgstr "Użytkownik nie znaleziony"
 
-#: webmon2/web/system.py:385
+#: webmon2/web/system.py:395
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
 
@@ -874,4 +898,10 @@ msgstr "Kod:"
 
 #~ msgid "Entries in"
 #~ msgstr "Wpisy w"
+
+#~ msgid "One entry mark to refresh"
+#~ msgid_plural "%(updated)s entries mark to refresh"
+#~ msgstr[0] ""
+#~ msgstr[1] ""
+#~ msgstr[2] ""
 
