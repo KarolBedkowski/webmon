@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-12 11:14+0200\n"
-"PO-Revision-Date: 2022-06-12 11:26+0200\n"
+"POT-Creation-Date: 2022-06-14 20:46+0200\n"
+"PO-Revision-Date: 2022-06-14 20:46+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -18,6 +18,217 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
+
+#: webmon2/sources/dummy.py:31
+msgid "Dummy source for development"
+msgstr "Sztuczne źródło na potrzeby dewelopmentu"
+
+#: webmon2/sources/file_input.py:30
+msgid "Data from local file"
+msgstr "Dane z lokalnego pliku"
+
+#: webmon2/sources/file_input.py:31
+msgid "Source check local, text file defined by \"Full file patch\" setting"
+msgstr ""
+"Źródło sprawdza lokalny plik tekstowy okreslony przez \"Pełną ścieżka do "
+"pliku\""
+
+#: webmon2/sources/file_input.py:36
+msgid "Full file patch"
+msgstr "Pałna ścieżka do pliku"
+
+#: webmon2/sources/github.py:116
+msgid "Commit history from Github repository"
+msgstr "Historia zmian z reportorium Github"
+
+#: webmon2/sources/github.py:117
+msgid ""
+"Source load commits history from configured repository. For work required"
+" configured Github account with token."
+msgstr ""
+"Źródło wczytuje historię zmian z podanego repozytorium. Do działania "
+"wymaga skonfigurowanego konta Github z tokenem."
+
+#: webmon2/sources/github.py:123 webmon2/sources/github.py:257
+#: webmon2/sources/github.py:396
+msgid "Repository owner"
+msgstr "Właściciel repozytorium"
+
+#: webmon2/sources/github.py:126 webmon2/sources/github.py:260
+#: webmon2/sources/github.py:399
+msgid "Repository name"
+msgstr "Nazwa repozytorium"
+
+#: webmon2/sources/github.py:130 webmon2/sources/github.py:264
+#: webmon2/sources/github.py:403
+msgid "User login"
+msgstr "Login użytkownika"
+
+#: webmon2/sources/github.py:136 webmon2/sources/github.py:270
+#: webmon2/sources/github.py:409 webmon2/sources/gitlab.py:59
+msgid "User personal token"
+msgstr "Prywatny login użytkownika"
+
+#: webmon2/sources/github.py:142 webmon2/sources/gitlab.py:181
+msgid "Show commits as short list"
+msgstr "Wyświel zmiany jako krótką listę"
+
+#: webmon2/sources/github.py:147 webmon2/sources/gitlab.py:186
+msgid "Show commits whole commit body"
+msgstr "Wyświetl zmiany z treścią"
+
+#: webmon2/sources/github.py:250
+msgid "Tags from Github repository"
+msgstr "Tagi z repozytorium Github"
+
+#: webmon2/sources/github.py:251
+msgid ""
+"Source load tags from configured repository. For work required configured"
+" Github account with token."
+msgstr ""
+"Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta Github z tokenem."
+
+#: webmon2/sources/github.py:276 webmon2/sources/github.py:415
+#: webmon2/sources/gitlab.py:303 webmon2/sources/gitlab.py:404
+msgid "Maximal number of tags to load"
+msgstr "Maksymalna ilość tagów do wczytania"
+
+#: webmon2/sources/github.py:389
+msgid "Releases from Github repository"
+msgstr "Wydania z repozytorium Github"
+
+#: webmon2/sources/github.py:390
+msgid ""
+"Source load releases history from configured repository. For work "
+"required configured Github account with token."
+msgstr ""
+"Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta Github z tokenem."
+
+#: webmon2/sources/gitlab.py:49
+msgid "Project ID; i.e. user/project"
+msgstr "ID projektu; na przykład użytkownik/projekt"
+
+#: webmon2/sources/gitlab.py:54
+msgid "GitLab URL"
+msgstr "URL instancji GitLab"
+
+#: webmon2/sources/gitlab.py:173
+msgid "Commit history from GitLab repository"
+msgstr "Historia zmian z repozytorium GitLab"
+
+#: webmon2/sources/gitlab.py:174
+msgid ""
+"Source load commits history from configured repository. For work required"
+" configured GitLab account with token."
+msgstr ""
+"Źródło wczytuje historię znian z podanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta GotLab z tokenem."
+
+#: webmon2/sources/gitlab.py:295
+msgid "Tags from GitLab repository"
+msgstr "Tagi z repozytorium GitLab"
+
+#: webmon2/sources/gitlab.py:296
+msgid ""
+"Source load tags from configured repository. For work required configured"
+" GitLab account with token."
+msgstr ""
+"Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta GitLab z tokenem."
+
+#: webmon2/sources/gitlab.py:396
+msgid "Releases from GitLab repository"
+msgstr "Wydania z repozytorium GitLab"
+
+#: webmon2/sources/gitlab.py:397
+msgid ""
+"Source load releases history from configured repository. For work "
+"required configured GitLab account with token."
+msgstr ""
+"Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta GitLab z tokenem."
+
+#: webmon2/sources/jamendo.py:176
+msgid "Jamendo albums"
+msgstr "Albumy Jamendo"
+
+#: webmon2/sources/jamendo.py:177
+msgid ""
+"Check for new albums for given artist in Jamendo. Either artist ID or "
+"name must be configured; also source require configured 'Jamendo client "
+"ID'"
+msgstr ""
+"Sprawdza nowe albumy dla danego artysty w Jamendo. ID artysty lub jego "
+"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
+"Jamendo'"
+
+#: webmon2/sources/jamendo.py:183 webmon2/sources/jamendo.py:284
+msgid "Artist ID"
+msgstr "ID artysty"
+
+#: webmon2/sources/jamendo.py:184 webmon2/sources/jamendo.py:285
+msgid "Artist name"
+msgstr "Nazwa artysty"
+
+#: webmon2/sources/jamendo.py:187 webmon2/sources/jamendo.py:288
+msgid "Jamendo client ID"
+msgstr "ID klienta Jamendo"
+
+#: webmon2/sources/jamendo.py:277
+msgid "Jamendo tracks"
+msgstr "Utwory Jamendo"
+
+#: webmon2/sources/jamendo.py:278
+msgid ""
+"Check for new tracks for given artist in Jamendo. Either artist ID or "
+"name must be configured; also source require configured 'Jamendo client "
+"ID'"
+msgstr ""
+"Sprawdza nowe utwory dla danego artysty w Jamendo. ID artysty lub jego "
+"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
+"Jamendo'"
+
+#: webmon2/sources/rss.py:39
+msgid "RSS/Atom channel"
+msgstr "Kanał RSS/Atom"
+
+#: webmon2/sources/rss.py:40
+msgid "Load data form RSS/Atom channel. Require define URL."
+msgstr ""
+
+#: webmon2/sources/rss.py:44
+msgid "RSS XML URL"
+msgstr "URL do RSS XML"
+
+#: webmon2/sources/rss.py:47
+msgid "Maximal number of articles to load"
+msgstr "Maksymalna ilość artykułów do wczytania"
+
+#: webmon2/sources/rss.py:52
+msgid "Load content of entries"
+msgstr "Wczytuj zawartość wpisów"
+
+#: webmon2/sources/rss.py:56
+msgid "Load article"
+msgstr "Wczytuj artykuły"
+
+#: webmon2/sources/web.py:33
+msgid "Web page"
+msgstr "Strona Web"
+
+#: webmon2/sources/web.py:34
+msgid "Load data form web page pointed by URL."
+msgstr "Wczytuje dane ze strony web wskazanej przez URL."
+
+#: webmon2/sources/web.py:36
+msgid "Web page URL"
+msgstr "URL strony"
+
+#: webmon2/sources/web.py:38
+msgid "Loading timeout"
+msgstr "Maksymalny czas wszytywania"
 
 #: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
 msgid "Read"
@@ -35,35 +246,35 @@ msgstr "Zaznacz"
 msgid "Unstar"
 msgstr "Odznacz"
 
-#: webmon2/web/forms.py:169
+#: webmon2/web/forms.py:165
 msgid "Missing group"
 msgstr "Brak grupy"
 
-#: webmon2/web/forms.py:172 webmon2/web/forms.py:272
+#: webmon2/web/forms.py:168 webmon2/web/forms.py:268
 msgid "Missing name"
 msgstr "Brak nazwy"
 
-#: webmon2/web/forms.py:175
+#: webmon2/web/forms.py:171
 msgid "Missing source kind"
 msgstr "Brak rodzaju źródła"
 
-#: webmon2/web/forms.py:178
+#: webmon2/web/forms.py:174
 msgid "Unknown kind"
 msgstr "Nieznany rodzaj"
 
-#: webmon2/web/forms.py:184
+#: webmon2/web/forms.py:180
 msgid "Invalid interval"
 msgstr "Niewłaściwy interwał"
 
-#: webmon2/web/forms.py:323
+#: webmon2/web/forms.py:319
 msgid "Passwords not match"
 msgstr "Hasła nie pasują do siebie"
 
-#: webmon2/web/forms.py:326
+#: webmon2/web/forms.py:322
 msgid "Missing login"
 msgstr "Brak loginu"
 
-#: webmon2/web/forms.py:329
+#: webmon2/web/forms.py:325
 msgid "Password is required for new user"
 msgstr "Hasło jest wymagane dla nowego użytkownika"
 
@@ -128,11 +339,11 @@ msgstr "Źródło zmienione w tle, przeładowywanie..."
 msgid "No more unread sources..."
 msgstr "Brak nieprzeczytanych źródeł..."
 
-#: webmon2/web/system.py:72 webmon2/web/system.py:362
+#: webmon2/web/system.py:72 webmon2/web/system.py:366
 msgid "There are errors in form"
 msgstr "W formie występują błędy"
 
-#: webmon2/web/system.py:88 webmon2/web/system.py:364
+#: webmon2/web/system.py:88 webmon2/web/system.py:368
 msgid "User changed somewhere else; reloading..."
 msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
 
@@ -173,7 +384,7 @@ msgstr "Brak pliku do importu"
 msgid "Import completed"
 msgstr "Import zakończony"
 
-#: webmon2/web/system.py:258 webmon2/web/system.py:274
+#: webmon2/web/system.py:258 webmon2/web/system.py:276
 #, python-format
 msgid "One entry mark read"
 msgid_plural "%(updated)s entries mark read"
@@ -181,15 +392,15 @@ msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
 msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
 msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
 
-#: webmon2/web/system.py:302
+#: webmon2/web/system.py:306
 msgid "Saved"
 msgstr "Zapisano"
 
-#: webmon2/web/system.py:330 webmon2/web/system.py:389
+#: webmon2/web/system.py:334 webmon2/web/system.py:393
 msgid "User not found"
 msgstr "Użytkownik nie znaleziony"
 
-#: webmon2/web/system.py:395
+#: webmon2/web/system.py:399
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
 
@@ -904,4 +1115,38 @@ msgstr "Kod:"
 #~ msgstr[0] ""
 #~ msgstr[1] ""
 #~ msgstr[2] ""
+
+#~ msgid ""
+#~ "Check for new albums for given "
+#~ "artist in Jamendo. Either artist ID "
+#~ "or name must be configured; also "
+#~ "source require configured \"jamendo client "
+#~ "id\""
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Check for new tracks for given "
+#~ "artist in Jamendo. Either artist is "
+#~ "or name must be configured; also "
+#~ "source require configured \"jamendo client "
+#~ "id\""
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Check for new albums for given "
+#~ "artist in Jamendo. Either artist ID "
+#~ "or name must be configured; also "
+#~ "source Jamendo client ID"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Check for new tracks for given "
+#~ "artist in Jamendo. Either artist ID "
+#~ "or name must be configured; also "
+#~ "source require configured \"jamendo client "
+#~ "ID\""
+#~ msgstr ""
+
+#~ msgid "Load data form RSS/Atom channel. Require define url."
+#~ msgstr "Wczytuje dane z kanału RSS/Atom. Wymaga określenia URL."
 
