@@ -215,6 +215,10 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def get_locale():
         return request.accept_languages.best_match(app.config["LANGUAGES"])
 
+    @babel.timezoneselector
+    def get_timezone():
+        return session.get("_user_tz")
+
     return app
 
 
