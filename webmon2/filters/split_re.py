@@ -14,6 +14,8 @@ import logging
 import re
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
@@ -26,14 +28,16 @@ class SelectByRE(AbstractFilter):
     """Extract elements from html/xml by re expression"""
 
     name = "get-elements-by-re"
-    short_info = "Extract elements by regular expression"
-    long_info = (
+    short_info = lazy_gettext("Extract elements by regular expression")
+    long_info = lazy_gettext(
         "Search and extract element from content by given regular "
         "expression. Expression must contain at least one group; can also "
         "contain groups 'title' and 'content'."
     )
     params = [
-        common.SettingDef("re", "selector", required=True, multiline=True),
+        common.SettingDef(
+            "re", lazy_gettext("Selector"), required=True, multiline=True
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, conf: model.ConfDict):

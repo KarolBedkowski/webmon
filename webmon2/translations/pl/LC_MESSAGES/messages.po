@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-14 20:46+0200\n"
-"PO-Revision-Date: 2022-06-14 20:46+0200\n"
+"POT-Creation-Date: 2022-06-15 09:04+0200\n"
+"PO-Revision-Date: 2022-06-15 09:05+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -18,6 +18,187 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.8.0\n"
+
+#: webmon2/filters/diff.py:30
+msgid "Diff with previous content"
+msgstr "Porównanie z poprzednią treścią"
+
+#: webmon2/filters/diff.py:31
+msgid "Compare current and previous content; show changed elements"
+msgstr "Porównuje obecną i poprzednią treść; pokazuje zmienione elementy"
+
+#: webmon2/filters/diff.py:37
+msgid "Skip elements when changes percent is below this level"
+msgstr "Pomiń elementy w których zmiana jest poniżej tego poziomu"
+
+#: webmon2/filters/diff.py:44
+msgid "Skip elements when changes lines is below this level"
+msgstr "Pomiń elementy gdy liczba zmienionych linii jest poniżej tego poziomu"
+
+#: webmon2/filters/grep.py:27
+msgid "Filter elements by regular expression"
+msgstr "Filtrowanie elementów przez wyrażenie regularne"
+
+#: webmon2/filters/grep.py:28
+msgid "Select elements matching or not matching to given pattern."
+msgstr "Wybiera elementy pasujące lub nie pasujące do podanego wzorca."
+
+#: webmon2/filters/grep.py:34
+msgid "Regular expression"
+msgstr "Wyrażenie regularne"
+
+#: webmon2/filters/grep.py:39
+msgid "Accept items not matching"
+msgstr "Akceptuj elementy nie pasujące"
+
+#: webmon2/filters/history.py:27
+msgid "Remove old elements"
+msgstr "Usuwanie starych elementów"
+
+#: webmon2/filters/history.py:28
+msgid "Remove elements already loaded in past by given source"
+msgstr "Usuwa elementy wcześniej wczytane przez dane źródło"
+
+#: webmon2/filters/html2text.py:31
+msgid "Convert html to text"
+msgstr "Konwersja html do tekst"
+
+#: webmon2/filters/html2text.py:32
+msgid "Try convert html content do plain text; remove all formatting, images etc."
+msgstr ""
+"Próbuje skonwertować treść html do czystego tekstu; usuwa całe "
+"formatowanie, obrazy itd"
+
+#: webmon2/filters/html2text.py:38 webmon2/filters/wrap.py:33
+msgid "Max line width"
+msgstr "Maksymalna długość lini"
+
+#: webmon2/filters/join.py:57
+msgid "Join elements"
+msgstr "Łączenie elementów"
+
+#: webmon2/filters/join.py:58
+msgid "Join content from all elements loaded by source to one element"
+msgstr ""
+"Łączy treść wszystkich elementów wczytanych przez źródło do jednego "
+"elementu"
+
+#: webmon2/filters/score.py:29
+msgid "Change score of elements by defined regular expression"
+msgstr "Zmiana punktów elementów na podstawie zdefiniowane wyrażenia regularnego"
+
+#: webmon2/filters/score.py:32
+msgid "Change element score according to matched patterns."
+msgstr "Zmienia punty dla elementu na podstawie pasujących wzorców."
+
+#: webmon2/filters/score.py:38
+msgid "Regular expressions separated by ';'"
+msgstr "Wyrażenia regularne rozdzielone przez ';'"
+
+#: webmon2/filters/score.py:44
+msgid "Value added do score when match"
+msgstr "Wartość dodawana do punków przy dopasowaniu"
+
+#: webmon2/filters/score.py:50
+msgid "Change score on match every pattern"
+msgstr "Zmiana punktów dla każdego pasującego wzorca"
+
+#: webmon2/filters/sort.py:26
+msgid "Sort elements"
+msgstr "Sortowanie elementów"
+
+#: webmon2/filters/sort.py:27
+msgid "Sort elements by title and content"
+msgstr "Sortuje elementy na podstawie tytułu i zawartości"
+
+#: webmon2/filters/split_re.py:30
+msgid "Extract elements by regular expression"
+msgstr "Wydobywanie elementów na podstawie wyrażenia regularnego"
+
+#: webmon2/filters/split_re.py:31
+msgid ""
+"Search and extract element from content by given regular expression. "
+"Expression must contain at least one group; can also contain groups "
+"'title' and 'content'."
+msgstr ""
+"Szuka i wydobywa elementy z zawartości na podstawie wyrażenia "
+"regularnego. Wyrażenie musi zawierać co najmniej jedną grupę; może także "
+"zawierać grupy 'title' i 'content'."
+
+#: webmon2/filters/split_re.py:38 webmon2/filters/split_text.py:61
+#: webmon2/filters/split_text.py:91 webmon2/filters/split_text.py:110
+msgid "Selector"
+msgstr "Wyrażenie"
+
+#: webmon2/filters/split_text.py:55
+msgid "Extract elements by CSS query"
+msgstr "Wydobywanie elementów na podstawie wyrażenia CSS"
+
+#: webmon2/filters/split_text.py:56
+msgid "Search and extract element from content by given CSS query"
+msgstr "Szuka i wydobywa elementy z zawartości na podstawie podanego wyrażenia CSS"
+
+#: webmon2/filters/split_text.py:85
+msgid "Extract elements by xpath"
+msgstr "Wydobywanie elementów na podstawie xpath "
+
+#: webmon2/filters/split_text.py:86
+msgid "Search and extract elements from html/xml content by given xpath"
+msgstr ""
+"Szuka i wydobywa elementy z treści html/xml na podstawie danego wyrażenia"
+" xpath"
+
+#: webmon2/filters/split_text.py:104
+msgid "Extract elements by given ID"
+msgstr "Wydobywanie elementów na podstawie ID"
+
+#: webmon2/filters/split_text.py:105
+msgid "Search and extract element from html content by given ID"
+msgstr "Szuka i wydobywa elementy z treści html przez podane ID"
+
+#: webmon2/filters/strip.py:27
+msgid "Remove white characters"
+msgstr "Usuwanie białych znaków"
+
+#: webmon2/filters/strip.py:28
+msgid "Remove white characters from beginning and end of content"
+msgstr "Usuwa białe znaki z początku i końca treści"
+
+#: webmon2/filters/strip.py:44
+msgid "Remove duplicated empty lines"
+msgstr "Usuwanie zdublowanych pustych linii"
+
+#: webmon2/filters/strip.py:45
+msgid "Remove duplicated empty lines from content"
+msgstr "Usuwa zdublowane puste linie z zawartości"
+
+#: webmon2/filters/strip.py:60
+msgid "Get only first lines"
+msgstr "Wybranie tylko pierwszych linii"
+
+#: webmon2/filters/strip.py:61
+msgid "Get defined number top lines from content"
+msgstr "Wybiera zdefiniowaną liczbę pierwszych linii z treści"
+
+#: webmon2/filters/strip.py:65
+msgid "Maximum number of lines"
+msgstr "Maksymalna ilość linii"
+
+#: webmon2/filters/wrap.py:27
+msgid "Wrap long lines"
+msgstr "Zawijanie długich linii"
+
+#: webmon2/filters/wrap.py:28
+msgid ""
+"Wrap long content lines to given width; also allow limit total number of "
+"lines"
+msgstr ""
+"Zawiń długie linie do podanej długości; powala ograniczyć także całkowitą"
+" liczbę linii"
+
+#: webmon2/filters/wrap.py:35
+msgid "Max number of lines"
+msgstr "Maksymalna ilość linii"
 
 #: webmon2/sources/dummy.py:31
 msgid "Dummy source for development"
@@ -196,7 +377,7 @@ msgstr "Kanał RSS/Atom"
 
 #: webmon2/sources/rss.py:40
 msgid "Load data form RSS/Atom channel. Require define URL."
-msgstr ""
+msgstr "Wczytanie danych z kanału RSS/Atom. Wymaga podania URL."
 
 #: webmon2/sources/rss.py:44
 msgid "RSS XML URL"
@@ -1149,4 +1330,7 @@ msgstr "Kod:"
 
 #~ msgid "Load data form RSS/Atom channel. Require define url."
 #~ msgstr "Wczytuje dane z kanału RSS/Atom. Wymaga określenia URL."
+
+#~ msgid "Select element matching or not matching to given pattern."
+#~ msgstr "Wybiera elementy pasujące lub nie pasującego do podanego wzorca."
 
