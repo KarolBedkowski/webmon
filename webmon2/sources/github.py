@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 import github3
 from dateutil import tz
+from flask_babel import lazy_gettext
 from github3.repos.commit import RepoCommit
 from github3.repos.release import Release
 from github3.repos.repo import Repository
@@ -112,28 +113,39 @@ class GithubInput(GitHubAbstractSource):
     """Load last commits from github."""
 
     name = "github_commits"
-    short_info = "Commit history from Github repository"
-    long_info = (
+    short_info = lazy_gettext("Commit history from Github repository")
+    long_info = lazy_gettext(
         "Source load commits history from configured repository."
         " For work required configured Github account with token."
     )
     params = AbstractSource.params + [
-        common.SettingDef("owner", "repository owner", required=True),
-        common.SettingDef("repository", "repository name", required=True),
         common.SettingDef(
-            "github_user", "user login", required=True, global_param=True
+            "owner", lazy_gettext("Repository owner"), required=True
         ),
         common.SettingDef(
-            "github_token",
-            "user personal token",
+            "repository", lazy_gettext("Repository name"), required=True
+        ),
+        common.SettingDef(
+            "github_user",
+            lazy_gettext("User login"),
             required=True,
             global_param=True,
         ),
         common.SettingDef(
-            "short_list", "show commits as short list", default=True
+            "github_token",
+            lazy_gettext("User personal token"),
+            required=True,
+            global_param=True,
         ),
         common.SettingDef(
-            "full_message", "show commits whole commit body", default=False
+            "short_list",
+            lazy_gettext("Show commits as short list"),
+            default=True,
+        ),
+        common.SettingDef(
+            "full_message",
+            lazy_gettext("Show commits whole commit body"),
+            default=False,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -235,25 +247,34 @@ class GithubTagsSource(GitHubAbstractSource):
     """Load last tags from github."""
 
     name = "github_tags"
-    short_info = "Tags from Github repository"
-    long_info = (
+    short_info = lazy_gettext("Tags from Github repository")
+    long_info = lazy_gettext(
         "Source load tags from configured repository."
         " For work required configured Github account with token."
     )
     params = AbstractSource.params + [
-        common.SettingDef("owner", "repository owner", required=True),
-        common.SettingDef("repository", "repository name", required=True),
         common.SettingDef(
-            "github_user", "user login", required=True, global_param=True
+            "owner", lazy_gettext("Repository owner"), required=True
         ),
         common.SettingDef(
-            "github_token",
-            "user personal token",
+            "repository", lazy_gettext("Repository name"), required=True
+        ),
+        common.SettingDef(
+            "github_user",
+            lazy_gettext("User login"),
             required=True,
             global_param=True,
         ),
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", default=5
+            "github_token",
+            lazy_gettext("User personal token"),
+            required=True,
+            global_param=True,
+        ),
+        common.SettingDef(
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            default=5,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -365,25 +386,34 @@ class GithubReleasesSource(GitHubAbstractSource):
     """Load last releases from github."""
 
     name = "github_releases"
-    short_info = "Releases from Github repository"
-    long_info = (
+    short_info = lazy_gettext("Releases from Github repository")
+    long_info = lazy_gettext(
         "Source load releases history from configured repository."
         " For work required configured Github account with token."
     )
     params = AbstractSource.params + [
-        common.SettingDef("owner", "repository owner", required=True),
-        common.SettingDef("repository", "repository name", required=True),
         common.SettingDef(
-            "github_user", "user login", required=True, global_param=True
+            "owner", lazy_gettext("Repository owner"), required=True
         ),
         common.SettingDef(
-            "github_token",
-            "user personal token",
+            "repository", lazy_gettext("Repository name"), required=True
+        ),
+        common.SettingDef(
+            "github_user",
+            lazy_gettext("User login"),
             required=True,
             global_param=True,
         ),
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", value_type=int
+            "github_token",
+            lazy_gettext("User personal token"),
+            required=True,
+            global_param=True,
+        ),
+        common.SettingDef(
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            value_type=int,
         ),
     ]  # type: ty.List[common.SettingDef]
 

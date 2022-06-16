@@ -12,6 +12,8 @@ Filters that remove white spaces, empty lines etc
 
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
@@ -23,8 +25,10 @@ class Strip(AbstractFilter):
     """Strip characters from input"""
 
     name = "strip"
-    short_info = "Remove white characters"
-    long_info = "Remove white characters from begging and end of content"
+    short_info = lazy_gettext("Remove white characters")
+    long_info = lazy_gettext(
+        "Remove white characters from beginning and end of content"
+    )
     params = []  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -38,8 +42,8 @@ class Compact(AbstractFilter):
     """Remove empty multiple lines characters from input"""
 
     name = "compact"
-    short_info = "Remove duplicated empty lines"
-    long_info = "Remove duplicated empty lines from content"
+    short_info = lazy_gettext("Remove duplicated empty lines")
+    long_info = lazy_gettext("Remove duplicated empty lines from content")
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -54,11 +58,13 @@ class Head(AbstractFilter):
     """Get given top lines from input"""
 
     name = "head"
-    short_info = "Get only first lines"
-    long_info = "Get defined number top lines from content"
+    short_info = lazy_gettext("Get only first lines")
+    long_info = lazy_gettext("Get defined number top lines from content")
     params = [
         common.SettingDef(
-            "count", "Maximum number of last lines to get", default=20
+            "count",
+            lazy_gettext("Maximum number of lines"),
+            default=20,
         ),
     ]  # type: ty.List[common.SettingDef]
 

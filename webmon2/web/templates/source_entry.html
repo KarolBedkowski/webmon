@@ -8,14 +8,14 @@
 	<nav class="row2">
 		<span class="left">
 		{% if prev_entry %}
-			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=prev_entry) }}">← Prev</a>
+			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=prev_entry) }}">← {{ _("Prev") }}</a>
 		{% endif %}
 		</span>
 		<span class="right">
 		{% if next_entry %}
-			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=next_entry) }}">Next →</a>
+			<a href="{{ url_for("source.source_entry", source_id=source_id, mode=mode, entry_id=next_entry) }}">{{ _("Next") }} →</a>
 		{% else %}
-			<a href="{{ url_for('source.source_next_unread', source_id=source_id) }}">→ Go to next unread source</a>
+			<a href="{{ url_for('source.source_next_unread', source_id=source_id) }}">→ {{ _("Go to next unread source") }}</a>
 		{% endif %}
 		</span>
 	</nav>
@@ -27,7 +27,7 @@
 {% endblock %}
 
 {% block content %}
-	{{ re.render_entry(entry, 'content', False) }}
+	{{ re.render_entry(entry, 'content', False, webmon2) }}
 {% endblock %}
 
 {% block footer %}

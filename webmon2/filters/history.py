@@ -12,6 +12,8 @@ Filter that remove already visited items.
 
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import database, model
 
 from ._abstract import AbstractFilter
@@ -23,8 +25,10 @@ class History(AbstractFilter):
     """Remove historical visited entries"""
 
     name = "remove_visited"
-    short_info = "Remove element old elements"
-    long_info = "Remove elements already loaded in past by given source"
+    short_info = lazy_gettext("Remove old elements")
+    long_info = lazy_gettext(
+        "Remove elements already loaded in past by given source"
+    )
 
     def filter(
         self,

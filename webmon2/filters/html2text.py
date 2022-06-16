@@ -14,6 +14,7 @@ import re
 import typing as ty
 
 import html2text as h2t
+from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
@@ -27,13 +28,15 @@ class Html2Text(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "html2text"
-    short_info = "Convert html to text"
-    long_info = (
+    short_info = lazy_gettext("Convert html to text")
+    long_info = lazy_gettext(
         "Try convert html content do plain text; remove all "
         "formatting, images etc."
     )
     params = [
-        common.SettingDef("width", "Max line width", default=999999),
+        common.SettingDef(
+            "width", lazy_gettext("Max line width"), default=999999
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def validate(self) -> None:

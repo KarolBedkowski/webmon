@@ -18,6 +18,7 @@ import typing as ty
 import urllib.parse
 
 import requests
+from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
@@ -172,18 +173,18 @@ class JamendoAlbumsSource(JamendoAbstractSource):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
-    short_info = "Jamendo albums"
-    long_info = (
+    short_info = lazy_gettext("Jamendo albums")
+    long_info = lazy_gettext(
         "Check for new albums for given artist in Jamendo. "
-        "Either artist is or name must be configured; also source "
-        'require configured "jamendo client id"'
+        "Either artist ID or name must be configured; also source "
+        "require configured 'Jamendo client ID'"
     )
     params = AbstractSource.params + [
-        common.SettingDef("artist_id", "artist id"),
-        common.SettingDef("artist", "artist name"),
+        common.SettingDef("artist_id", lazy_gettext("Artist ID")),
+        common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
             "jamendo_client_id",
-            "jamendo client id",
+            lazy_gettext("Jamendo client ID"),
             required=True,
             global_param=True,
         ),
@@ -273,18 +274,18 @@ class JamendoTracksSource(JamendoAbstractSource):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"
-    short_info = "Jamendo tracks"
-    long_info = (
+    short_info = lazy_gettext("Jamendo tracks")
+    long_info = lazy_gettext(
         "Check for new tracks for given artist in Jamendo. "
-        "Either artist is or name must be configured; also source "
-        'require configured "jamendo client id"'
+        "Either artist ID or name must be configured; also source "
+        "require configured 'Jamendo client ID'"
     )
     params = AbstractSource.params + [
-        common.SettingDef("artist_id", "artist id"),
-        common.SettingDef("artist", "artist name"),
+        common.SettingDef("artist_id", lazy_gettext("Artist ID")),
+        common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
             "jamendo_client_id",
-            "jamendo client id",
+            lazy_gettext("Jamendo client ID"),
             required=True,
             global_param=True,
         ),

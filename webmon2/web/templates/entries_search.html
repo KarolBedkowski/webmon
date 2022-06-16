@@ -6,15 +6,15 @@
 
 
 {% block header %}
-	<h1>{% block title %}Entries search{% endblock %} {{ search_ctx }}</h1>
+	<h1>{% block title %}{{ _("Entries search") }}{% endblock %} {{ search_ctx }}</h1>
 	<div class="actions">
 		<form>
 			<fieldset>
-				<label>Query: </label>
+				<label>{{ _("Query:") }} </label>
 				<input name="query" value="{{ query }}" required />
-				<label>Title only: </label>
+				<label>{{ _("Title only:") }} </label>
 				<input type="checkbox" name="title-only" {% if title_only %} checked="checked" {% endif %} />
-				<button type="submit">Search</button>
+				<button type="submit">{{ _("Search") }}</button>
 				<input type="hidden" name="group_id" value="{{ group_id }}" />
 				<input type="hidden" name="source_id" value="{{ source_id }}" />
 			</fieldset>
@@ -25,12 +25,12 @@
 {% block content %}
 	{% if query %}
 		{% if error %}
-			<p>Error: {{ error }}</p>
+			<p>{{ _("Error:") }} {{ error }}</p>
 		{% elif not entries %}
-			<p>No entries...</p>
+			<p>{{ _("No entries...") }}</p>
 		{% endif %}
 		{% for entry in entries %}
-			{{ re.render_entry(entry, 'summary', True) }}
+			{{ re.render_entry(entry, 'summary', True, webmon2) }}
 		{% endfor %}
 	{% endif %}
 {% endblock %}

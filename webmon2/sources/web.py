@@ -16,6 +16,7 @@ import typing as ty
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
+from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
@@ -29,11 +30,13 @@ class WebSource(AbstractSource):
     """Load data from web (http/https)"""
 
     name = "url"
-    short_info = "Web page"
-    long_info = "Load data form web page pointed by url."
+    short_info = lazy_gettext("Web page")
+    long_info = lazy_gettext("Load data form web page pointed by URL.")
     params = AbstractSource.params + [
-        common.SettingDef("url", "Web page url", required=True),
-        common.SettingDef("timeout", "loading timeout", default=30),
+        common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
+        common.SettingDef(
+            "timeout", lazy_gettext("Loading timeout"), default=30
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def load(

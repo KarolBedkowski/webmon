@@ -11,6 +11,8 @@ Select entries by matching text.
 """
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import model
 
 from ._abstract import AbstractFilter
@@ -22,8 +24,8 @@ class Sort(AbstractFilter):
     """Sort entries"""
 
     name = "sort"
-    short_info = "Sort elements"
-    long_info = "Sort elements by title and content"
+    short_info = lazy_gettext("Sort elements")
+    long_info = lazy_gettext("Sort elements by title and content")
 
     def filter(
         self,

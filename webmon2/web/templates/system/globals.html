@@ -6,12 +6,12 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
-  {{ sn.render_header() }}
+	<h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
+	{{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>Default and global settings</h2>
+	<h2>{{ _("Default and global settings") }}</h2>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<div class="form-wrapper">
@@ -21,7 +21,7 @@
 		</div>
 		<div class="row2">
 			&nbsp;
-			<button class="right" type="submit">Save</button>
+			<button class="right" type="submit">{{ _("Save") }}</button>
 		</div>
 	</form>
 {% endblock %}

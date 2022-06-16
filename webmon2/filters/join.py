@@ -14,6 +14,8 @@ import logging
 import typing as ty
 from functools import reduce
 
+from flask_babel import lazy_gettext
+
 from webmon2 import model
 
 from ._abstract import AbstractFilter
@@ -53,8 +55,8 @@ class Join(AbstractFilter):
     """Join all entries into one conten"""
 
     name = "join"
-    short_info = "Join elements"
-    long_info = (
+    short_info = lazy_gettext("Join elements")
+    long_info = lazy_gettext(
         "Join content from all elements loaded by source to one element"
     )
 

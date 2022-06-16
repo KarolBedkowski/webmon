@@ -6,22 +6,22 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
   {{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>System users</h2>
+	<h2>{{ _("System users") }}</h2>
 
 	{% if form.id %}
-		<h3>User {{form.login }}</h3>
+		<h3>{{ _("User") }} {{form.login }}</h3>
 	{% else %}
-		<h3>New user</h3>
+		<h3>{{ _("New user") }}</h3>
 	{% endif %}
 
 	{% if errors %}
 		<p class="error">
-			<b>Validation errors:</b>
+			<b>{{ _("Validation errors:") }}</b>
 			{% for field, err in errors.items() %}
 			<br/>{{ err }}
 			{% endfor %}
@@ -32,43 +32,43 @@
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
-				<label for="user-login" class="field-required">Login</label>
+				<label for="user-login" class="field-required">{{ _("Login") }}</label>
 				<input type="text" name="login" id="user-login" value="{{ form.login }}" required="required"
 					{% if form.id %}readonly="readonly"{% endif %} />
 
-				<label for="user-email">Email</label>
+				<label for="user-email">{{ _("Email") }}</label>
 				<input type="email" name="email" id="user-email" value="{{ form.email }}" autocomplete="off" />
 
-				<label for="user-active">Active</label>
+				<label for="user-active">{{ _("Active") }}</label>
 				<input type="checkbox" name="active" id="user-active" {% if form.active %}checked="checked"{% endif %} />
 
-				<label for="user-admin">Admin</label>
+				<label for="user-admin">{{ _("Admin") }}</label>
 				<input type="checkbox" name="admin" id="user-admin" {% if form.admin %}checked="checked"{% endif %} />
 			</div>
-			<h4>Authentication</h4>
+			<h4>{{ _("Authentication") }}</h4>
 			<div class="form-wrapper">
-				<label for="user-password1" {% if not form.id %}class="field-required"{% endif %}>Password</label>
+				<label for="user-password1" {% if not form.id %}class="field-required"{% endif %}>{{ _("Password") }}</label>
 				<input type="password" name="password1" id="user-password1" value="" autocomplete="off"
 						{% if not form.id %}required="required"{% endif %} />
 
-				<label for="user-password2">Confirm</label>
+				<label for="user-password2">{{ _("Confirm") }}</label>
 				<input type="password" name="password2" id="user-password2" value="" autocomplete="off"
 						{% if not form.id %}required="required"{% endif %} />
 
 				{% if form.has_totp %}
-				<label for="user-totp">Disable TOTP</label>
+				<label for="user-totp">{{ _("Disable TOTP") }}</label>
 				<input type="checkbox" name="disable_totp" id="user-totp" />
 				{% endif %}
 			</div>
 			<p class="row2">
 				<span class="left">
 					{% if form.id and session["user"] != form.id %}
-					<a href="{{ url_for('system.sett_sys_user_delete', user_id=form.id) }}" data-req-confirm="yes" data-question="Really delete user?">⚠ Delete</a></span>
+					<a href="{{ url_for('system.sett_sys_user_delete', user_id=form.id) }}" data-req-confirm="yes" data-question="{{ _("Really delete user?") }}">⚠ {{ _("Delete") }}</a></span>
 					{% endif %}
 				</span>
 				<span class="right">
-					<a href="{{ url_for('system.sett_sys_users') }}">Back</a>
-					<button type="submit">Save</button>
+					<a href="{{ url_for('system.sett_sys_users') }}">{{ _("Back") }}</a>
+					<button type="submit">{{ _("Save") }}</button>
 				</span>
 			</p>
 		</form>

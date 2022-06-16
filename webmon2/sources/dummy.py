@@ -14,6 +14,8 @@ import logging
 import random
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from .abstract import AbstractSource
@@ -26,7 +28,7 @@ class DymmySource(AbstractSource):
 
     name = "dummy"
     params = AbstractSource.params + []
-    short_info = "Dummy source for development"
+    short_info = lazy_gettext("Dummy source for development")
     long_info = ""
 
     def load(

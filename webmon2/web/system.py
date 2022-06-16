@@ -35,6 +35,7 @@ from flask import (
     session,
     url_for,
 )
+from flask_babel import gettext, ngettext
 
 from webmon2 import VERSION, common, database, imp_exp, model, opml, security
 
@@ -68,7 +69,7 @@ def sett_globals() -> ty.Any:
             db.commit()
             flash("Settings saved")
             return redirect(url_for("system.sett_globals"))
-        flash("There are errors in form", "error")
+        flash(gettext("There are errors in form"), "error")
 
     return render_template("system/globals.html", form=form)
 
@@ -84,13 +85,13 @@ def sett_user() -> ty.Any:
 
     if request.method == "POST":
         if entity_hash != request.form["_entity_hash"]:
-            flash("User changed somewhere else; reloading...")
+            flash(gettext("User changed somewhere else; reloading..."))
         elif request.form["new_password1"] != request.form["new_password2"]:
-            flash("New passwords not match", "error")
+            flash(gettext("New passwords not match"), "error")
         elif not request.form["new_password1"]:
-            flash("Missing new password", "error")
+            flash(gettext("Missing new password"), "error")
         elif not request.form["curr_password"]:
-            flash("Missing current password", "error")
+            flash(gettext("Missing current password"), "error")
         else:
             assert user.password is not None
             if security.verify_password(
@@ -101,9 +102,9 @@ def sett_user() -> ty.Any:
                 )
                 database.users.save(db, user)
                 db.commit()
-                flash("Password changed")
+                flash(gettext("Password changed"))
             else:
-                flash("Wrong current password", "error")
+                flash(gettext("Wrong current password"), "error")
 
     otp_available = security.otp_available()
     totp_enabled = bool(user.totp)
@@ -165,14 +166,14 @@ def sett_user_totp_post() -> ty.Any:
         user.totp = secret
         database.users.save(db, user)
         db.commit()
-        flash("TOTP saved")
+        flash(gettext("TOTP saved"))
 
         del session["temp_totp"]
         session.modified = True
 
         return redirect(url_for("system.sett_user"))
 
-    flash("Wrong TOTP response")
+    flash(gettext("Wrong TOTP response"))
     return redirect(url_for("system.sett_user_totp_get"))
 
 
@@ -208,7 +209,7 @@ def sett_data_import() -> ty.Any:
     file = request.files["file"]
     data = file.read()
     if not data:
-        flash("No file to import", "error")
+        flash(gettext("No file to import"), "error")
         return redirect(url_for("system.sett_data"))
 
     db = c.get_db()
@@ -216,7 +217,7 @@ def sett_data_import() -> ty.Any:
     try:
         imp_exp.dump_import(db, user_id, data)
         db.commit()
-        flash("Import completed")
+        flash(gettext("Import completed"))
     except Exception as err:  # pylint: disable=broad-except
         flash("Error importing file: " + str(err), "error")
         _LOG.exception("import file error")
@@ -226,13 +227,13 @@ def sett_data_import() -> ty.Any:
 @BP.route("/settings/data/import/opml", methods=["POST"])
 def sett_data_import_opml() -> ty.Any:
     if "file" not in request.files:
-        flash("No file to import")
+        flash(gettext("No file to import"))
         return redirect(url_for("system.sett_data"))
 
     file = request.files["file"]
     data = file.read()
     if not data:
-        flash("No file to import", "error")
+        flash(gettext("No file to import"), "error")
         return redirect(url_for("system.sett_data"))
 
     db = c.get_db()
@@ -240,7 +241,7 @@ def sett_data_import_opml() -> ty.Any:
     try:
         opml.load_data(db, data, user_id)
         db.commit()
-        flash("Import completed")
+        flash(gettext("Import completed"))
     except Exception as err:  # pylint: disable=broad-except
         flash("Error importing file: " + str(err), "error")
         _LOG.exception("import file error")
@@ -253,7 +254,14 @@ def sett_data_mark_all_read() -> ty.Any:
     db = c.get_db()
     updated = database.entries.mark_all_read(db, user_id)
     db.commit()
-    flash(f"{updated} entries mark read")
+    flash(
+        ngettext(
+            "One entry mark read",
+            "%(updated)s entries mark read",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(url_for("system.sett_data"))
 
 
@@ -264,7 +272,14 @@ def sett_data_mark_all_old_read() -> ty.Any:
     max_date = datetime.date.today() - datetime.timedelta(days=1)
     updated = database.entries.mark_all_read(db, user_id, max_date)
     db.commit()
-    flash(f"{updated} entries mark read")
+    flash(
+        ngettext(
+            "One entry mark read",
+            "%(updated)s entries mark read",
+            updated,
+            updated=updated,
+        )
+    )
     return redirect(url_for("system.sett_data"))
 
 
@@ -288,7 +303,7 @@ def sett_scoring() -> ty.Any:
         )
         database.scoring.save(db, user_id, scs)
         db.commit()
-        flash("Saved")
+        flash(gettext("Saved"))
         return redirect(url_for("system.sett_scoring"))
 
     rules = database.scoring.get(db, user_id)
@@ -316,7 +331,7 @@ def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
         try:
             user = database.users.get(db, user_id)
         except database.NotFound:
-            flash("User not found")
+            flash(gettext("User not found"))
             return redirect(url_for("system.sett_sys_users"))
     else:
         user = model.User(active=True)
@@ -348,9 +363,9 @@ def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
                     flash("User saved")
                     return redirect(url_for("system.sett_sys_users"))
 
-            flash("There are errors in form", "error")
+            flash(gettext("There are errors in form"), "error")
         else:
-            flash("User changed somewhere else; reloading...")
+            flash(gettext("User changed somewhere else; reloading..."))
 
     return render_template(
         "system/sys_user.html",
@@ -375,13 +390,13 @@ def sett_sys_user_delete(user_id: int) -> ty.Any:
     try:
         user = database.users.get(db, user_id)
     except database.NotFound:
-        flash("User not found")
+        flash(gettext("User not found"))
         return redirect(url_for("system.sett_sys_users"))
 
     _LOG.info("delete user: %r", user)
     database.users.delete(db, user_id)
     db.commit()
-    flash("User deleted")
+    flash(gettext("User deleted"))
     return redirect(url_for("system.sett_sys_users"))
 
 

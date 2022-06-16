@@ -31,15 +31,15 @@
 					<form method="POST">
 						<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 						<p>
-							<label>Login</label></br>
+						<label>{{ _("Login") }}</label></br>
 							<input type="text" name="login" required="required" />
 						</p>
 						<p>
-							<label>Password</label></br>
+						<label>{{ _("Password") }}</label></br>
 							<input type="password" name="password" required="required" />
 						</p>
 						<input type="hidden" name="_user_tz" id="user_tz"/>
-						<p><button type="submit">Login</button><p>
+						<p><button type="submit">{{ _("Login") }}</button><p>
 					</form>
 				</div>
 			</div>

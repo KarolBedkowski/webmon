@@ -17,6 +17,7 @@ from urllib.parse import urljoin
 
 import feedparser
 import requests
+from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
@@ -35,17 +36,25 @@ class RssSource(AbstractSource):
     """Load data from rss"""
 
     name = "rss"
-    short_info = "RSS/Atom channel"
-    long_info = "Load data form RSS/Atom channel. Require define url."
+    short_info = lazy_gettext("RSS/Atom channel")
+    long_info = lazy_gettext(
+        "Load data form RSS/Atom channel. Require define URL."
+    )
     params = AbstractSource.params + [
-        common.SettingDef("url", "RSS xml url", required=True),
+        common.SettingDef("url", lazy_gettext("RSS XML URL"), required=True),
         common.SettingDef(
-            "max_items", "Maximal number of articles to load", value_type=int
+            "max_items",
+            lazy_gettext("Maximal number of articles to load"),
+            value_type=int,
         ),
         common.SettingDef(
-            "load_content", "Load content of entries", default=False
+            "load_content",
+            lazy_gettext("Load content of entries"),
+            default=False,
         ),
-        common.SettingDef("load_article", "Load article", default=False),
+        common.SettingDef(
+            "load_article", lazy_gettext("Load article"), default=False
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def load(

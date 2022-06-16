@@ -5,12 +5,12 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Source - add filter{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Source - add filter") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
-	<h1>New filter</h1>
-	<p>Available filters:</p>
+	<h1>{{ _("New filter") }}</h1>
+	<p>{{ _("Available filters:") }}</p>
 	<p>
 		<ul class="choice">
 			{% for name, short_info, long_info in filters_info %}
@@ -21,7 +21,7 @@
 		</ul>
 	</p>
 	<p>
-		<a href="{{ url_for("source.source_edit", source_id=source_id) }}">Back to source</a>
+		<a href="{{ url_for("source.source_edit", source_id=source_id) }}">{{ _("Back to source") }}</a>
 	</p>
 {% endblock %}
 

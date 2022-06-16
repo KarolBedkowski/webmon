@@ -16,6 +16,7 @@ import urllib
 from zoneinfo import ZoneInfo
 
 from flask import Flask, request, session
+from flask_babel import format_datetime
 
 from webmon2 import formatters
 
@@ -46,7 +47,7 @@ def _format_date(date: ty.Any) -> str:
         if user_tz := session.get("_user_tz"):
             date = date.astimezone(ZoneInfo(user_tz))
 
-        return date.strftime("%x %X")
+        return format_datetime(date)
 
     return str(date)
 

@@ -23,6 +23,7 @@ from flask import (
     session,
     url_for,
 )
+from flask_babel import gettext
 
 from webmon2 import common, database, filters, model, sources
 
@@ -40,7 +41,7 @@ def source_refresh(source_id: int) -> ty.Any:
     user_id = session["user"]
     database.sources.refresh(db, user_id, source_id=source_id)
     db.commit()
-    flash("Source mark to refresh")
+    flash(gettext("Source mark to refresh"))
     return redirect(request.args.get("back") or url_for("root.sources"))
 
 
@@ -56,7 +57,7 @@ def source_delete(source_id: int) -> ty.Any:
 
     database.sources.delete(db, source_id)
     db.commit()
-    flash("Source deleted")
+    flash(gettext("Source deleted"))
     return redirect(request.args.get("back") or url_for("root.sources"))
 
 
@@ -136,7 +137,7 @@ def source_edit(
 
                 return redirect(url_for("root.sources"))
         else:
-            flash("Source changed somewhere else; reloading...")
+            flash(gettext("Source changed somewhere else; reloading..."))
 
     return render_template(
         "source.html",
@@ -413,5 +414,5 @@ def source_next_unread(
             url_for("source.source_entries", source_id=n_source_id)
         )
 
-    flash("No more unread sources...")
+    flash(gettext("No more unread sources..."))
     return redirect(url_for("root.sources"))

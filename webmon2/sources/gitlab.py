@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 import gitlab
 import gitlab.v4.objects as gobj
+from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
@@ -44,14 +45,18 @@ class AbstractGitLabSource(AbstractSource):
     # pylint: disable=too-few-public-methods
     params = AbstractSource.params + [
         common.SettingDef(
-            "project", "project id; i.e. user/project", required=True
+            "project",
+            lazy_gettext("Project ID; i.e. user/project"),
+            required=True,
         ),
         common.SettingDef(
-            "gitlab_url", "GitLab url", default=_GITLAB_DEFAULT_URL
+            "gitlab_url",
+            lazy_gettext("GitLab URL"),
+            default=_GITLAB_DEFAULT_URL,
         ),
         common.SettingDef(
             "gitlab_token",
-            "user personal token",
+            lazy_gettext("User personal token"),
             required=True,
             global_param=True,
         ),
@@ -165,17 +170,21 @@ class GitLabCommits(AbstractGitLabSource):
     """Load last commits from gitlab."""
 
     name = "gitlab_commits"
-    short_info = "Commit history from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Commit history from GitLab repository")
+    long_info = lazy_gettext(
         "Source load commits history from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "short_list", "show commits as short list", default=True
+            "short_list",
+            lazy_gettext("Show commits as short list"),
+            default=True,
         ),
         common.SettingDef(
-            "full_message", "show commits whole commit body", default=False
+            "full_message",
+            lazy_gettext("Show commits whole commit body"),
+            default=False,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -283,14 +292,16 @@ class GitLabTagsSource(AbstractGitLabSource):
     """Load last tags from gitlab."""
 
     name = "gitlab_tags"
-    short_info = "Tags from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Tags from GitLab repository")
+    long_info = lazy_gettext(
         "Source load tags from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", default=5
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            default=5,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -382,14 +393,16 @@ class GitLabReleasesSource(AbstractGitLabSource):
     """Load last releases from gitlab."""
 
     name = "gitlab_releases"
-    short_info = "Releases from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Releases from GitLab repository")
+    long_info = lazy_gettext(
         "Source load releases history from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", value_type=int
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            value_type=int,
         ),
     ]  # type: ty.List[common.SettingDef]
 

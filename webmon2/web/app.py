@@ -17,6 +17,7 @@ import typing as ty
 from argparse import Namespace
 from configparser import ConfigParser
 
+import flask_babel
 from flask import (
     Flask,
     Response,
@@ -114,9 +115,13 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         SESSION_COOKIE_SAMESITE="Strict",
         APPLICATION_ROOT=web_root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
+        LANGUAGES=["en", "pl"],
+        BABEL_TRANSLATION_DIRECTORIES="../translations",
     )
     app.config["app_conf"] = conf
     app.app_context().push()
+
+    babel = flask_babel.Babel(app)
 
     _register_blueprints(app)
 
@@ -149,6 +154,8 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
             if request.method == "GET":
                 _count_unread(user_id)
+
+            g.locale = str(flask_babel.get_locale())
 
             return None
 
@@ -203,6 +210,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def handle_context() -> ty.Dict[str, ty.Any]:
         """Inject object into jinja2 templates."""
         return {"webmon2": webmon2}
+
+    @babel.localeselector
+    def get_locale():
+        return request.accept_languages.best_match(app.config["LANGUAGES"])
+
+    @babel.timezoneselector
+    def get_timezone():
+        return session.get("_user_tz")
 
     return app
 

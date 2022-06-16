@@ -4,12 +4,12 @@
 		{% if field.get_parameter("multiline") %}
 			<textarea name="{{ field.fieldname}}"
 				{% if field.required %}required="required"{% endif %}
-				{% if field.default_value %}placeholder="Default: {{ field.default_value }}"{% endif %}
+				{% if field.default_value %}placeholder="{{ _("Default:") }} {{ field.default_value }}"{% endif %}
 			 >{{ field.value or '' }}</textarea>
 		{% else %}
 			<input type="text" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
 				{% if field.required %}required="required"{% endif %}
-				{% if field.default_value %}placeholder="Default: {{ field.default_value }}"{% endif %}
+				{% if field.default_value %}placeholder="{{ _("Default:") }} {{ field.default_value }}"{% endif %}
 			/>
 		{% endif %}
 	{% elif field.type == 'number' %}

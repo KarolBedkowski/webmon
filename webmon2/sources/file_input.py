@@ -14,6 +14,8 @@ import logging
 import os
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from .abstract import AbstractSource
@@ -25,12 +27,14 @@ class FileSource(AbstractSource):
     """Load data from local file"""
 
     name = "file"
-    short_info = "Data from local file"
-    long_info = (
+    short_info = lazy_gettext("Data from local file")
+    long_info = lazy_gettext(
         'Source check local, text file defined by "Full file patch" setting'
     )
     params = AbstractSource.params + [
-        common.SettingDef("filename", "Full file patch", required=True),
+        common.SettingDef(
+            "filename", lazy_gettext("Full file patch"), required=True
+        ),
     ]
 
     def load(

@@ -2,19 +2,19 @@
 	<nav class="row3">
 		<span class="left">
 			{% if last_page > 0 and page > 0 %}
-				<a href="{{ url_first }}">⇤ First page</a>
+				<a href="{{ url_first }}">⇤ {{ _("First page") }}</a>
 			{% endif %}
 			{% if page > 1 %}
-				<a href="{{ url_prev }}">← Prev page</a>
+				<a href="{{ url_prev }}">← {{ _("Prev page") }}</a>
 			{% endif %}
 		</span>
-		<span>Page {{ page + 1 }} / {{ last_page + 1}}</span>
+		<span>{{ _("Page") }} {{ page + 1 }} / {{ last_page + 1}}</span>
 		<span class="right">
 			{% if page < last_page - 1 %}
-				<a href="{{ url_next }}">Next page →</a>
+				<a href="{{ url_next }}">{{ _("Next page") }} →</a>
 			{% endif %}
 			{% if last_page > 0 and page < last_page %}
-				<a href="{{ url_last }}">Last page ⇥</a>
+				<a href="{{ url_last }}">{{ _("Last page") }} ⇥</a>
 			{% endif %}
 		</span>
 	</nav>
