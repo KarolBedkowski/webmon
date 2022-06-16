@@ -458,7 +458,7 @@ SELECT s.id
 FROM source_state ss
 JOIN sources s ON s.id = ss.source_id
 JOIN users u ON s.user_id = u.id
-WHERE ss.next_update <= now() at time zone 'utc'
+WHERE ss.next_update <= now()
     AND s.status = {model.SourceStatus.ACTIVE}
     AND u.active
 """
@@ -473,9 +473,9 @@ def get_sources_to_fetch(db: DB) -> ty.List[int]:
 
 _REFRESH_SQL = """
 UPDATE source_state
-SET next_update=now() at time zone 'utc'
+SET next_update=now()
 WHERE (last_update IS NULL
-        OR last_update < now() at time zone 'utc' - '-1 minutes'::interval
+        OR last_update < now() - '-1 minutes'::interval
     )
     AND source_id IN (
         SELECT id FROM sources
@@ -521,7 +521,7 @@ def refresh(
 
 _REFRESH_ERRORS_SQL = """
 UPDATE source_state
-SET next_update=now() at time zone 'utc'
+SET next_update=now()
 WHERE status='error'
     AND source_id IN (
         SELECT id FROM sources WHERE user_id=%s AND status=%s
