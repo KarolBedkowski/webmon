@@ -1,19 +1,17 @@
-# Polish translations for PROJECT.
+# Translations template for PROJECT.
 # Copyright (C) 2022 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
+#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
 "POT-Creation-Date: 2022-06-16 12:35+0200\n"
-"PO-Revision-Date: 2022-06-15 09:05+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: pl\n"
-"Language-Team: pl <LL@li.org>\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
-"(n%100<10 || n%100>=20) ? 1 : 2)\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -21,99 +19,95 @@ msgstr ""
 
 #: webmon2/filters/diff.py:31
 msgid "Diff with previous content"
-msgstr "Porównanie z poprzednią treścią"
+msgstr ""
 
 #: webmon2/filters/diff.py:32
 msgid "Compare current and previous content; show changed elements"
-msgstr "Porównuje obecną i poprzednią treść; pokazuje zmienione elementy"
+msgstr ""
 
 #: webmon2/filters/diff.py:38
 msgid "Skip elements when changes percent is below this level"
-msgstr "Pomiń elementy w których zmiana jest poniżej tego poziomu"
+msgstr ""
 
 #: webmon2/filters/diff.py:45
 msgid "Skip elements when changes lines is below this level"
-msgstr "Pomiń elementy gdy liczba zmienionych linii jest poniżej tego poziomu"
+msgstr ""
 
 #: webmon2/filters/grep.py:28
 msgid "Filter elements by regular expression"
-msgstr "Filtrowanie elementów przez wyrażenie regularne"
+msgstr ""
 
 #: webmon2/filters/grep.py:29
 msgid "Select elements matching or not matching to given pattern."
-msgstr "Wybiera elementy pasujące lub nie pasujące do podanego wzorca."
+msgstr ""
 
 #: webmon2/filters/grep.py:35
 msgid "Regular expression"
-msgstr "Wyrażenie regularne"
+msgstr ""
 
 #: webmon2/filters/grep.py:40
 msgid "Accept items not matching"
-msgstr "Akceptuj elementy nie pasujące"
+msgstr ""
 
 #: webmon2/filters/history.py:28
 msgid "Remove old elements"
-msgstr "Usuwanie starych elementów"
+msgstr ""
 
 #: webmon2/filters/history.py:29
 msgid "Remove elements already loaded in past by given source"
-msgstr "Usuwa elementy wcześniej wczytane przez dane źródło"
+msgstr ""
 
 #: webmon2/filters/html2text.py:31
 msgid "Convert html to text"
-msgstr "Konwersja html do tekst"
+msgstr ""
 
 #: webmon2/filters/html2text.py:32
 msgid "Try convert html content do plain text; remove all formatting, images etc."
 msgstr ""
-"Próbuje skonwertować treść html do czystego tekstu; usuwa całe "
-"formatowanie, obrazy itd"
 
 #: webmon2/filters/html2text.py:38 webmon2/filters/wrap.py:34
 msgid "Max line width"
-msgstr "Maksymalna długość lini"
+msgstr ""
 
 #: webmon2/filters/join.py:58
 msgid "Join elements"
-msgstr "Łączenie elementów"
+msgstr ""
 
 #: webmon2/filters/join.py:59
 msgid "Join content from all elements loaded by source to one element"
 msgstr ""
-"Łączy treść wszystkich elementów wczytanych przez źródło do jednego "
-"elementu"
 
 #: webmon2/filters/score.py:30
 msgid "Change score of elements by defined regular expression"
-msgstr "Zmiana punktów elementów na podstawie zdefiniowane wyrażenia regularnego"
+msgstr ""
 
 #: webmon2/filters/score.py:33
 msgid "Change element score according to matched patterns."
-msgstr "Zmienia punty dla elementu na podstawie pasujących wzorców."
+msgstr ""
 
 #: webmon2/filters/score.py:39
 msgid "Regular expressions separated by ';'"
-msgstr "Wyrażenia regularne rozdzielone przez ';'"
+msgstr ""
 
 #: webmon2/filters/score.py:45
 msgid "Value added do score when match"
-msgstr "Wartość dodawana do punków przy dopasowaniu"
+msgstr ""
 
 #: webmon2/filters/score.py:51
 msgid "Change score on match every pattern"
-msgstr "Zmiana punktów dla każdego pasującego wzorca"
+msgstr ""
 
 #: webmon2/filters/sort.py:27
 msgid "Sort elements"
-msgstr "Sortowanie elementów"
+msgstr ""
 
 #: webmon2/filters/sort.py:28
 msgid "Sort elements by title and content"
-msgstr "Sortuje elementy na podstawie tytułu i zawartości"
+msgstr ""
 
 #: webmon2/filters/split_re.py:31
 msgid "Extract elements by regular expression"
-msgstr "Wydobywanie elementów na podstawie wyrażenia regularnego"
+msgstr ""
 
 #: webmon2/filters/split_re.py:32
 msgid ""
@@ -121,219 +115,198 @@ msgid ""
 "Expression must contain at least one group; can also contain groups "
 "'title' and 'content'."
 msgstr ""
-"Szuka i wydobywa elementy z zawartości na podstawie wyrażenia "
-"regularnego. Wyrażenie musi zawierać co najmniej jedną grupę; może także "
-"zawierać grupy 'title' i 'content'."
 
 #: webmon2/filters/split_re.py:39 webmon2/filters/split_text.py:61
 #: webmon2/filters/split_text.py:91 webmon2/filters/split_text.py:110
 msgid "Selector"
-msgstr "Wyrażenie"
+msgstr ""
 
 #: webmon2/filters/split_text.py:55
 msgid "Extract elements by CSS query"
-msgstr "Wydobywanie elementów na podstawie wyrażenia CSS"
+msgstr ""
 
 #: webmon2/filters/split_text.py:56
 msgid "Search and extract element from content by given CSS query"
-msgstr "Szuka i wydobywa elementy z zawartości na podstawie podanego wyrażenia CSS"
+msgstr ""
 
 #: webmon2/filters/split_text.py:85
 msgid "Extract elements by xpath"
-msgstr "Wydobywanie elementów na podstawie xpath "
+msgstr ""
 
 #: webmon2/filters/split_text.py:86
 msgid "Search and extract elements from html/xml content by given xpath"
 msgstr ""
-"Szuka i wydobywa elementy z treści html/xml na podstawie danego wyrażenia"
-" xpath"
 
 #: webmon2/filters/split_text.py:104
 msgid "Extract elements by given ID"
-msgstr "Wydobywanie elementów na podstawie ID"
+msgstr ""
 
 #: webmon2/filters/split_text.py:105
 msgid "Search and extract element from html content by given ID"
-msgstr "Szuka i wydobywa elementy z treści html przez podane ID"
+msgstr ""
 
 #: webmon2/filters/strip.py:28
 msgid "Remove white characters"
-msgstr "Usuwanie białych znaków"
+msgstr ""
 
 #: webmon2/filters/strip.py:29
 msgid "Remove white characters from beginning and end of content"
-msgstr "Usuwa białe znaki z początku i końca treści"
+msgstr ""
 
 #: webmon2/filters/strip.py:45
 msgid "Remove duplicated empty lines"
-msgstr "Usuwanie zdublowanych pustych linii"
+msgstr ""
 
 #: webmon2/filters/strip.py:46
 msgid "Remove duplicated empty lines from content"
-msgstr "Usuwa zdublowane puste linie z zawartości"
+msgstr ""
 
 #: webmon2/filters/strip.py:61
 msgid "Get only first lines"
-msgstr "Wybranie tylko pierwszych linii"
+msgstr ""
 
 #: webmon2/filters/strip.py:62
 msgid "Get defined number top lines from content"
-msgstr "Wybiera zdefiniowaną liczbę pierwszych linii z treści"
+msgstr ""
 
 #: webmon2/filters/strip.py:66
 msgid "Maximum number of lines"
-msgstr "Maksymalna ilość linii"
+msgstr ""
 
 #: webmon2/filters/wrap.py:28
 msgid "Wrap long lines"
-msgstr "Zawijanie długich linii"
+msgstr ""
 
 #: webmon2/filters/wrap.py:29
 msgid ""
 "Wrap long content lines to given width; also allow limit total number of "
 "lines"
 msgstr ""
-"Zawiń długie linie do podanej długości; powala ograniczyć także całkowitą"
-" liczbę linii"
 
 #: webmon2/filters/wrap.py:36
 msgid "Max number of lines"
-msgstr "Maksymalna ilość linii"
+msgstr ""
 
 #: webmon2/sources/dummy.py:31
 msgid "Dummy source for development"
-msgstr "Sztuczne źródło na potrzeby dewelopmentu"
+msgstr ""
 
 #: webmon2/sources/file_input.py:30
 msgid "Data from local file"
-msgstr "Dane z lokalnego pliku"
+msgstr ""
 
 #: webmon2/sources/file_input.py:31
 msgid "Source check local, text file defined by \"Full file patch\" setting"
 msgstr ""
-"Źródło sprawdza lokalny plik tekstowy okreslony przez \"Pełną ścieżka do "
-"pliku\""
 
 #: webmon2/sources/file_input.py:36
 msgid "Full file patch"
-msgstr "Pałna ścieżka do pliku"
+msgstr ""
 
 #: webmon2/sources/github.py:116
 msgid "Commit history from Github repository"
-msgstr "Historia zmian z reportorium Github"
+msgstr ""
 
 #: webmon2/sources/github.py:117
 msgid ""
 "Source load commits history from configured repository. For work required"
 " configured Github account with token."
 msgstr ""
-"Źródło wczytuje historię zmian z podanego repozytorium. Do działania "
-"wymaga skonfigurowanego konta Github z tokenem."
 
 #: webmon2/sources/github.py:123 webmon2/sources/github.py:257
 #: webmon2/sources/github.py:396
 msgid "Repository owner"
-msgstr "Właściciel repozytorium"
+msgstr ""
 
 #: webmon2/sources/github.py:126 webmon2/sources/github.py:260
 #: webmon2/sources/github.py:399
 msgid "Repository name"
-msgstr "Nazwa repozytorium"
+msgstr ""
 
 #: webmon2/sources/github.py:130 webmon2/sources/github.py:264
 #: webmon2/sources/github.py:403
 msgid "User login"
-msgstr "Login użytkownika"
+msgstr ""
 
 #: webmon2/sources/github.py:136 webmon2/sources/github.py:270
 #: webmon2/sources/github.py:409 webmon2/sources/gitlab.py:59
 msgid "User personal token"
-msgstr "Prywatny login użytkownika"
+msgstr ""
 
 #: webmon2/sources/github.py:142 webmon2/sources/gitlab.py:181
 msgid "Show commits as short list"
-msgstr "Wyświel zmiany jako krótką listę"
+msgstr ""
 
 #: webmon2/sources/github.py:147 webmon2/sources/gitlab.py:186
 msgid "Show commits whole commit body"
-msgstr "Wyświetl zmiany z treścią"
+msgstr ""
 
 #: webmon2/sources/github.py:250
 msgid "Tags from Github repository"
-msgstr "Tagi z repozytorium Github"
+msgstr ""
 
 #: webmon2/sources/github.py:251
 msgid ""
 "Source load tags from configured repository. For work required configured"
 " Github account with token."
 msgstr ""
-"Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta Github z tokenem."
 
 #: webmon2/sources/github.py:276 webmon2/sources/github.py:415
 #: webmon2/sources/gitlab.py:303 webmon2/sources/gitlab.py:404
 msgid "Maximal number of tags to load"
-msgstr "Maksymalna ilość tagów do wczytania"
+msgstr ""
 
 #: webmon2/sources/github.py:389
 msgid "Releases from Github repository"
-msgstr "Wydania z repozytorium Github"
+msgstr ""
 
 #: webmon2/sources/github.py:390
 msgid ""
 "Source load releases history from configured repository. For work "
 "required configured Github account with token."
 msgstr ""
-"Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta Github z tokenem."
 
 #: webmon2/sources/gitlab.py:49
 msgid "Project ID; i.e. user/project"
-msgstr "ID projektu; na przykład użytkownik/projekt"
+msgstr ""
 
 #: webmon2/sources/gitlab.py:54
 msgid "GitLab URL"
-msgstr "URL instancji GitLab"
+msgstr ""
 
 #: webmon2/sources/gitlab.py:173
 msgid "Commit history from GitLab repository"
-msgstr "Historia zmian z repozytorium GitLab"
+msgstr ""
 
 #: webmon2/sources/gitlab.py:174
 msgid ""
 "Source load commits history from configured repository. For work required"
 " configured GitLab account with token."
 msgstr ""
-"Źródło wczytuje historię znian z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta GotLab z tokenem."
 
 #: webmon2/sources/gitlab.py:295
 msgid "Tags from GitLab repository"
-msgstr "Tagi z repozytorium GitLab"
+msgstr ""
 
 #: webmon2/sources/gitlab.py:296
 msgid ""
 "Source load tags from configured repository. For work required configured"
 " GitLab account with token."
 msgstr ""
-"Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta GitLab z tokenem."
 
 #: webmon2/sources/gitlab.py:396
 msgid "Releases from GitLab repository"
-msgstr "Wydania z repozytorium GitLab"
+msgstr ""
 
 #: webmon2/sources/gitlab.py:397
 msgid ""
 "Source load releases history from configured repository. For work "
 "required configured GitLab account with token."
 msgstr ""
-"Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta GitLab z tokenem."
 
 #: webmon2/sources/jamendo.py:176
 msgid "Jamendo albums"
-msgstr "Albumy Jamendo"
+msgstr ""
 
 #: webmon2/sources/jamendo.py:177
 msgid ""
@@ -341,25 +314,22 @@ msgid ""
 "name must be configured; also source require configured 'Jamendo client "
 "ID'"
 msgstr ""
-"Sprawdza nowe albumy dla danego artysty w Jamendo. ID artysty lub jego "
-"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
-"Jamendo'"
 
 #: webmon2/sources/jamendo.py:183 webmon2/sources/jamendo.py:284
 msgid "Artist ID"
-msgstr "ID artysty"
+msgstr ""
 
 #: webmon2/sources/jamendo.py:184 webmon2/sources/jamendo.py:285
 msgid "Artist name"
-msgstr "Nazwa artysty"
+msgstr ""
 
 #: webmon2/sources/jamendo.py:187 webmon2/sources/jamendo.py:288
 msgid "Jamendo client ID"
-msgstr "ID klienta Jamendo"
+msgstr ""
 
 #: webmon2/sources/jamendo.py:277
 msgid "Jamendo tracks"
-msgstr "Utwory Jamendo"
+msgstr ""
 
 #: webmon2/sources/jamendo.py:278
 msgid ""
@@ -367,271 +337,265 @@ msgid ""
 "name must be configured; also source require configured 'Jamendo client "
 "ID'"
 msgstr ""
-"Sprawdza nowe utwory dla danego artysty w Jamendo. ID artysty lub jego "
-"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
-"Jamendo'"
 
 #: webmon2/sources/rss.py:39
 msgid "RSS/Atom channel"
-msgstr "Kanał RSS/Atom"
+msgstr ""
 
 #: webmon2/sources/rss.py:40
 msgid "Load data form RSS/Atom channel. Require define URL."
-msgstr "Wczytanie danych z kanału RSS/Atom. Wymaga podania URL."
+msgstr ""
 
 #: webmon2/sources/rss.py:44
 msgid "RSS XML URL"
-msgstr "URL do RSS XML"
+msgstr ""
 
 #: webmon2/sources/rss.py:47
 msgid "Maximal number of articles to load"
-msgstr "Maksymalna ilość artykułów do wczytania"
+msgstr ""
 
 #: webmon2/sources/rss.py:52
 msgid "Load content of entries"
-msgstr "Wczytuj zawartość wpisów"
+msgstr ""
 
 #: webmon2/sources/rss.py:56
 msgid "Load article"
-msgstr "Wczytuj artykuły"
+msgstr ""
 
 #: webmon2/sources/web.py:33
 msgid "Web page"
-msgstr "Strona Web"
+msgstr ""
 
 #: webmon2/sources/web.py:34
 msgid "Load data form web page pointed by URL."
-msgstr "Wczytuje dane ze strony web wskazanej przez URL."
+msgstr ""
 
 #: webmon2/sources/web.py:36
 msgid "Web page URL"
-msgstr "URL strony"
+msgstr ""
 
 #: webmon2/sources/web.py:38
 msgid "Loading timeout"
-msgstr "Maksymalny czas wszytywania"
+msgstr ""
 
 #: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
 msgid "Read"
-msgstr "Przeczytane"
+msgstr ""
 
 #: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
 msgid "Unread"
-msgstr "Nieprzeczytane"
+msgstr ""
 
 #: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
 msgid "Star"
-msgstr "Zaznacz"
+msgstr ""
 
 #: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
 msgid "Unstar"
-msgstr "Odznacz"
+msgstr ""
 
 #: webmon2/web/forms.py:165
 msgid "Missing group"
-msgstr "Brak grupy"
+msgstr ""
 
 #: webmon2/web/forms.py:168 webmon2/web/forms.py:268
 msgid "Missing name"
-msgstr "Brak nazwy"
+msgstr ""
 
 #: webmon2/web/forms.py:171
 msgid "Missing source kind"
-msgstr "Brak rodzaju źródła"
+msgstr ""
 
 #: webmon2/web/forms.py:174
 msgid "Unknown kind"
-msgstr "Nieznany rodzaj"
+msgstr ""
 
 #: webmon2/web/forms.py:180
 msgid "Invalid interval"
-msgstr "Niewłaściwy interwał"
+msgstr ""
 
 #: webmon2/web/forms.py:319
 msgid "Passwords not match"
-msgstr "Hasła nie pasują do siebie"
+msgstr ""
 
 #: webmon2/web/forms.py:322
 msgid "Missing login"
-msgstr "Brak loginu"
+msgstr ""
 
 #: webmon2/web/forms.py:325
 msgid "Password is required for new user"
-msgstr "Hasło jest wymagane dla nowego użytkownika"
+msgstr ""
 
 #: webmon2/web/group.py:45
 #, python-format
 msgid "One sources in group marked to refresh"
 msgid_plural "%(marked)s sources in group marked to refresh"
-msgstr[0] "Jedno źródło w grupie zaznaczone do odświeżenia"
-msgstr[1] "%(marked)s źródła w grupie zaznaczono do odświeżenia"
-msgstr[2] "%(marked)s źródeł w grupie zaznaczono do odświeżenia"
+msgstr[0] ""
+msgstr[1] ""
 
 #: webmon2/web/group.py:80
 msgid "Group saved"
-msgstr "Zapisano grupę"
+msgstr ""
 
 #: webmon2/web/group.py:85
 msgid "Group changed somewhere else; reloading..."
-msgstr "Grupa zmieniona w tle; przeładowywanie..."
+msgstr ""
 
 #: webmon2/web/group.py:180 webmon2/web/group.py:202 webmon2/web/root.py:51
 msgid "No more unread groups..."
-msgstr "Brak nieprzeczytanych grup..."
+msgstr ""
 
 #: webmon2/web/group.py:215
 msgid "Group deleted"
-msgstr "Grupa usunięta"
+msgstr ""
 
 #: webmon2/web/group.py:220
 #, python-format
 msgid "Can't delete group: %(err)s"
-msgstr "Nie można usunąć grupy: %(err)s"
+msgstr ""
 
 #: webmon2/web/root.py:77 webmon2/web/root.py:93
 #, python-format
 msgid "One source mark to refresh"
 msgid_plural "%(updated)s sources mark to refresh"
-msgstr[0] "Jedno źródło zaznaczone do odświeżenia"
-msgstr[1] "%(updated)s źródła zaznaczono do odświeżenia"
-msgstr[2] "%(updated)s źródeł zaznaczono do odświeżenia"
+msgstr[0] ""
+msgstr[1] ""
 
 #: webmon2/web/security.py:54 webmon2/web/security.py:72
 msgid "Invalid user and/or password"
-msgstr "Niewłaściwy użytkownik i/lub hasło"
+msgstr ""
 
 #: webmon2/web/security.py:100
 msgid "Invalid TOTP answer"
-msgstr "Niewłaściwa odpowiedź TOTP"
+msgstr ""
 
 #: webmon2/web/source.py:44
 msgid "Source mark to refresh"
-msgstr "Źródło zaznaczone do odświeżenia"
+msgstr ""
 
 #: webmon2/web/source.py:60
 msgid "Source deleted"
-msgstr "Źródło usunięte"
+msgstr ""
 
 #: webmon2/web/source.py:140
 msgid "Source changed somewhere else; reloading..."
-msgstr "Źródło zmienione w tle, przeładowywanie..."
+msgstr ""
 
 #: webmon2/web/source.py:417
 msgid "No more unread sources..."
-msgstr "Brak nieprzeczytanych źródeł..."
+msgstr ""
 
 #: webmon2/web/system.py:72 webmon2/web/system.py:366
 msgid "There are errors in form"
-msgstr "W formie występują błędy"
+msgstr ""
 
 #: webmon2/web/system.py:88 webmon2/web/system.py:368
 msgid "User changed somewhere else; reloading..."
-msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
+msgstr ""
 
 #: webmon2/web/system.py:90
 msgid "New passwords not match"
-msgstr "Nowe hasła nie pasują"
+msgstr ""
 
 #: webmon2/web/system.py:92
 msgid "Missing new password"
-msgstr "Brak nowego hasła"
+msgstr ""
 
 #: webmon2/web/system.py:94
 msgid "Missing current password"
-msgstr "Brak obecnego hasła"
+msgstr ""
 
 #: webmon2/web/system.py:105
 msgid "Password changed"
-msgstr "Hasło zmienione"
+msgstr ""
 
 #: webmon2/web/system.py:107
 msgid "Wrong current password"
-msgstr "Niewłaściwe aktualne hasło"
+msgstr ""
 
 #: webmon2/web/system.py:169
 msgid "TOTP saved"
-msgstr "Zapisano TOTP"
+msgstr ""
 
 #: webmon2/web/system.py:176
 msgid "Wrong TOTP response"
-msgstr "Błędna odpowiedź TOTP"
+msgstr ""
 
 #: webmon2/web/system.py:212 webmon2/web/system.py:230
 #: webmon2/web/system.py:236
 msgid "No file to import"
-msgstr "Brak pliku do importu"
+msgstr ""
 
 #: webmon2/web/system.py:220 webmon2/web/system.py:244
 msgid "Import completed"
-msgstr "Import zakończony"
+msgstr ""
 
 #: webmon2/web/system.py:258 webmon2/web/system.py:276
 #, python-format
 msgid "One entry mark read"
 msgid_plural "%(updated)s entries mark read"
-msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
-msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
-msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
+msgstr[0] ""
+msgstr[1] ""
 
 #: webmon2/web/system.py:306
 msgid "Saved"
-msgstr "Zapisano"
+msgstr ""
 
 #: webmon2/web/system.py:334 webmon2/web/system.py:393
 msgid "User not found"
-msgstr "Użytkownik nie znaleziony"
+msgstr ""
 
 #: webmon2/web/system.py:399
 msgid "User deleted"
-msgstr "Użytkownik usunięty"
+msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:31
 msgid "Original content"
-msgstr "Oryginalna zawartość"
+msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:35
 #: webmon2/web/templates/source_entries.html:41
 msgid "Website"
-msgstr "Strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:44
 msgid "Read more…"
-msgstr "Czytaj dalej…"
+msgstr ""
 
 #: webmon2/web/templates/_render_field.html:7
 #: webmon2/web/templates/_render_field.html:12
 msgid "Default:"
-msgstr "Domyślne:"
+msgstr ""
 
 #: webmon2/web/templates/_render_nav.html:5
 msgid "First page"
-msgstr "Pierwsza strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_nav.html:8
 msgid "Prev page"
-msgstr "Poprzednia strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_nav.html:11
 msgid "Page"
-msgstr "Strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_nav.html:14
 msgid "Next page"
-msgstr "Następna strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_nav.html:17
 msgid "Last page"
-msgstr "Ostatnia strona"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:19
 msgid "not updated"
-msgstr "nie zaktualizowany"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:21
 #: webmon2/web/templates/group_entries.html:33
 #: webmon2/web/templates/source_entries.html:31
 msgid "Refresh"
-msgstr "Odśwież"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:22
 #: webmon2/web/templates/group_entries.html:31
@@ -639,7 +603,7 @@ msgstr "Odśwież"
 #: webmon2/web/templates/source_entries.html:29
 #: webmon2/web/templates/source_entries.html:61
 msgid "Mark read"
-msgstr "Zaznacz przeczytane"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:23
 #: webmon2/web/templates/groups.html:26
@@ -647,11 +611,11 @@ msgstr "Zaznacz przeczytane"
 #: webmon2/web/templates/source_filters.html:19
 #: webmon2/web/templates/system/sys_users.html:45
 msgid "Edit"
-msgstr "Edytuj"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:24
 msgid "Really delete source?"
-msgstr "Na pewno usunąć źródło?"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:24
 #: webmon2/web/templates/group.html:35 webmon2/web/templates/source.html:62
@@ -659,72 +623,72 @@ msgstr "Na pewno usunąć źródło?"
 #: webmon2/web/templates/system/scoring.html:32
 #: webmon2/web/templates/system/sys_user.html:66
 msgid "Delete"
-msgstr "Usuń"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:27
 msgid "Need configure &amp; activate."
-msgstr "Wymagana konfiguracja i aktywacja."
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:29
 #: webmon2/web/templates/group_sources.html:23
 #: webmon2/web/templates/source.html:32 webmon2/web/templates/sources.html:24
 msgid "Disabled"
-msgstr "Wyłączone"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:32
 #: webmon2/web/templates/entries_search.html:28
 msgid "Error:"
-msgstr "Błąd:"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:34
 msgid "at"
-msgstr "o"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:35
 msgid "Times:"
-msgstr "Razy:"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:40
 msgid "Page URL:"
-msgstr "URL strony:"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:46
 msgid "Last entry:"
-msgstr "Ostatni wpis:"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:49
 #: webmon2/web/templates/source.html:85
 msgid "Last update:"
-msgstr "Ostatnia aktualizacja:"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:51
 msgid "Next:"
-msgstr "Następne"
+msgstr ""
 
 #: webmon2/web/templates/_render_source.html:52
 msgid "Successful updates:"
-msgstr "Aktualizacje z sukcesem:"
+msgstr ""
 
 #: webmon2/web/templates/base.html:28 webmon2/web/templates/entries.html:23
 msgid "Entries"
-msgstr "Wpisy"
+msgstr ""
 
 #: webmon2/web/templates/base.html:29 webmon2/web/templates/starred.html:8
 msgid "Starred"
-msgstr "Zaznaczone"
+msgstr ""
 
 #: webmon2/web/templates/base.html:30 webmon2/web/templates/history.html:22
 msgid "History"
-msgstr "Historia"
+msgstr ""
 
 #: webmon2/web/templates/base.html:31 webmon2/web/templates/groups.html:25
 #: webmon2/web/templates/sources.html:9
 msgid "Sources"
-msgstr "Źródła"
+msgstr ""
 
 #: webmon2/web/templates/base.html:32 webmon2/web/templates/groups.html:8
 msgid "Groups"
-msgstr "Grupy"
+msgstr ""
 
 #: webmon2/web/templates/base.html:33 webmon2/web/templates/filter_edit.html:21
 #: webmon2/web/templates/system/data.html:9
@@ -735,28 +699,28 @@ msgstr "Grupy"
 #: webmon2/web/templates/system/user.html:9
 #: webmon2/web/templates/system/user.totp.html:9
 msgid "Settings"
-msgstr "Ustawienia"
+msgstr ""
 
 #: webmon2/web/templates/base.html:34
 msgid "Logout"
-msgstr "Wyloguj"
+msgstr ""
 
 #: webmon2/web/templates/entries.html:32 webmon2/web/templates/entries.html:57
 #: webmon2/web/templates/group_entries.html:58
 msgid "Mark visible read"
-msgstr "Widoczne jako przeczytane"
+msgstr ""
 
 #: webmon2/web/templates/entries.html:35
 #: webmon2/web/templates/group_entries.html:35
 #: webmon2/web/templates/source_entries.html:34
 msgid "Show unread only"
-msgstr "Pokaż nieprzeczytane"
+msgstr ""
 
 #: webmon2/web/templates/entries.html:37
 #: webmon2/web/templates/group_entries.html:37
 #: webmon2/web/templates/source_entries.html:36
 msgid "Show all"
-msgstr "Pokaż wszystkie"
+msgstr ""
 
 #: webmon2/web/templates/entries.html:39
 #: webmon2/web/templates/entries_search.html:17
@@ -765,58 +729,58 @@ msgstr "Pokaż wszystkie"
 #: webmon2/web/templates/source_entries.html:38
 #: webmon2/web/templates/starred.html:10
 msgid "Search"
-msgstr "Szukaj"
+msgstr ""
 
 #: webmon2/web/templates/entries.html:46
 #: webmon2/web/templates/entries_search.html:30
 #: webmon2/web/templates/group_entries.html:46
 #: webmon2/web/templates/source_entries.html:49
 msgid "No entries..."
-msgstr "Brak wpisów..."
+msgstr ""
 
 #: webmon2/web/templates/entries_search.html:9
 msgid "Entries search"
-msgstr "Wyszukiwanie wpisów"
+msgstr ""
 
 #: webmon2/web/templates/entries_search.html:13
 msgid "Query:"
-msgstr "Zapytanie:"
+msgstr ""
 
 #: webmon2/web/templates/entries_search.html:15
 msgid "Title only:"
-msgstr "Tylko tytuły:"
+msgstr ""
 
 #: webmon2/web/templates/entry.html:11
 #: webmon2/web/templates/group_entry.html:11
 #: webmon2/web/templates/source_entry.html:11
 msgid "Prev"
-msgstr "Poprzedni"
+msgstr ""
 
 #: webmon2/web/templates/entry.html:16
 #: webmon2/web/templates/group_entry.html:16
 #: webmon2/web/templates/source_entry.html:16
 msgid "Next"
-msgstr "Następny"
+msgstr ""
 
 #: webmon2/web/templates/entry.html:23
 msgid "Entry"
-msgstr "Wpis"
+msgstr ""
 
 #: webmon2/web/templates/filter_edit.html:8
 msgid "Filter edit"
-msgstr "Edycja filtrów"
+msgstr ""
 
 #: webmon2/web/templates/filter_edit.html:14
 #: webmon2/web/templates/group.html:14 webmon2/web/templates/source.html:14
 #: webmon2/web/templates/system/sys_user.html:24
 msgid "Validation errors:"
-msgstr "Błędy walidacji:"
+msgstr ""
 
 #: webmon2/web/templates/filter_edit.html:33
 #: webmon2/web/templates/filter_new.html:24
 #: webmon2/web/templates/source_filters.html:27
 msgid "Back to source"
-msgstr "Powrót do źródła"
+msgstr ""
 
 #: webmon2/web/templates/filter_edit.html:34
 #: webmon2/web/templates/group.html:44 webmon2/web/templates/source.html:74
@@ -824,93 +788,93 @@ msgstr "Powrót do źródła"
 #: webmon2/web/templates/system/scoring.html:39
 #: webmon2/web/templates/system/sys_user.html:71
 msgid "Save"
-msgstr "Zapisz"
+msgstr ""
 
 #: webmon2/web/templates/filter_new.html:8
 msgid "Source - add filter"
-msgstr "Źródło - dodanie filtra"
+msgstr ""
 
 #: webmon2/web/templates/filter_new.html:12
 msgid "New filter"
-msgstr "Nowy filtr"
+msgstr ""
 
 #: webmon2/web/templates/filter_new.html:13
 msgid "Available filters:"
-msgstr "Dostępne filtry:"
+msgstr ""
 
 #: webmon2/web/templates/group.html:8 webmon2/web/templates/source.html:35
 msgid "Group"
-msgstr "Grupa"
+msgstr ""
 
 #: webmon2/web/templates/group.html:25 webmon2/web/templates/source.html:26
 #: webmon2/web/templates/sources.html:31 webmon2/web/templates/sources.html:32
 msgid "Name"
-msgstr "Nazwa"
+msgstr ""
 
 #: webmon2/web/templates/group.html:27
 msgid "Feed enabled"
-msgstr "Feed aktywny"
+msgstr ""
 
 #: webmon2/web/templates/group.html:29 webmon2/web/templates/source.html:46
 msgid "Send mail reports"
-msgstr "Wysyłaj raporty mailem"
+msgstr ""
 
 #: webmon2/web/templates/group.html:30 webmon2/web/templates/source.html:47
 msgid "no"
-msgstr "nie"
+msgstr ""
 
 #: webmon2/web/templates/group.html:30
 msgid "as configured in source"
-msgstr "jak skonfigurowano źródło"
+msgstr ""
 
 #: webmon2/web/templates/group.html:30 webmon2/web/templates/source.html:47
 msgid "yes"
-msgstr "tak"
+msgstr ""
 
 #: webmon2/web/templates/group.html:35
 msgid "Really delete group?"
-msgstr "Na pewno usunąć grupę?"
+msgstr ""
 
 #: webmon2/web/templates/group.html:40 webmon2/web/templates/group.html:42
 #: webmon2/web/templates/source.html:67 webmon2/web/templates/source.html:69
 #: webmon2/web/templates/source_new.html:19
 #: webmon2/web/templates/system/sys_user.html:70
 msgid "Back"
-msgstr "Powrót"
+msgstr ""
 
 #: webmon2/web/templates/group_entries.html:47
 #: webmon2/web/templates/group_entry.html:18
 msgid "Go to next unread group"
-msgstr "Idź do następnej nieprzeczytanej grupy"
+msgstr ""
 
 #: webmon2/web/templates/group_entries.html:59
 #: webmon2/web/templates/source_entries.html:62
 msgid "Mark all read and go to next group"
-msgstr "Wszystkie przeczytane i idź do następnej grupy"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:9
 msgid "Sources in group"
-msgstr "Źródła w grupie"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:11
 msgid "Refresh group"
-msgstr "Odśwież grupę"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:12
 #: webmon2/web/templates/source_new.html:7
 #: webmon2/web/templates/sources.html:13
 msgid "New source"
-msgstr "Nowe źródło"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:19
 #: webmon2/web/templates/sources.html:20
 msgid "Show"
-msgstr "Wyświetl"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:21
 #: webmon2/web/templates/sources.html:22
 msgid "All"
-msgstr "Wszystkie"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:22
 #: webmon2/web/templates/source.html:31 webmon2/web/templates/sources.html:23
@@ -918,419 +882,373 @@ msgstr "Wszystkie"
 #: webmon2/web/templates/system/sys_user.html:42
 #: webmon2/web/templates/system/sys_users.html:32
 msgid "Active"
-msgstr "Aktywny"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:24
 #: webmon2/web/templates/sources.html:25
 msgid "Not configured"
-msgstr "Nie skonfigurowane"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:25
 #: webmon2/web/templates/sources.html:26
 msgid "With errors"
-msgstr "Z błędami"
+msgstr ""
 
 #: webmon2/web/templates/group_sources.html:26
 #: webmon2/web/templates/sources.html:27
 msgid "Not updated"
-msgstr "Nie zaktualizowane"
+msgstr ""
 
 #: webmon2/web/templates/groups.html:10 webmon2/web/templates/sources.html:11
 msgid "Refresh all"
-msgstr "Odśwież wszystko"
+msgstr ""
 
 #: webmon2/web/templates/groups.html:11
 msgid "New"
-msgstr "Nowa"
+msgstr ""
 
 #: webmon2/web/templates/groups.html:23
 msgid "Refrsh"
-msgstr "Odśwież"
+msgstr ""
 
 #: webmon2/web/templates/history.html:28
 msgid "Show group:"
-msgstr "Wyświetl grupy:"
+msgstr ""
 
 #: webmon2/web/templates/history.html:30 webmon2/web/templates/history.html:37
 msgid "ALL"
-msgstr "Wszystkie"
+msgstr ""
 
 #: webmon2/web/templates/history.html:35
 msgid "Source:"
-msgstr "Źródło:"
+msgstr ""
 
 #: webmon2/web/templates/login.html:34 webmon2/web/templates/login.html:42
 #: webmon2/web/templates/system/sys_user.html:35
 #: webmon2/web/templates/system/sys_users.html:30
 msgid "Login"
-msgstr "Login"
+msgstr ""
 
 #: webmon2/web/templates/login.html:38
 #: webmon2/web/templates/system/sys_user.html:50
 msgid "Password"
-msgstr "Hasło"
+msgstr ""
 
 #: webmon2/web/templates/source.html:8
 #: webmon2/web/templates/source_filters.html:8
 msgid "Source"
-msgstr "Źródło"
+msgstr ""
 
 #: webmon2/web/templates/source.html:29
 msgid "Status"
-msgstr "Status"
+msgstr ""
 
 #: webmon2/web/templates/source.html:44
 msgid "Interval"
-msgstr "Interwał"
+msgstr ""
 
 #: webmon2/web/templates/source.html:47
 msgid "as configured in group"
-msgstr "jak skonfigurowano grupę"
+msgstr ""
 
 #: webmon2/web/templates/source.html:48
 msgid "Default score for entries"
-msgstr "Domyślne punkty dla wpisów"
+msgstr ""
 
 #: webmon2/web/templates/source.html:52
 msgid "Source settings"
-msgstr "Ustawienia źródła"
+msgstr ""
 
 #: webmon2/web/templates/source.html:72
 msgid "Save &amp; activate"
-msgstr "Zapisz i aktywuj"
+msgstr ""
 
 #: webmon2/web/templates/source.html:76
 msgid "Save and edit filters"
-msgstr "Zapisz i edytuj filtry"
+msgstr ""
 
 #: webmon2/web/templates/source.html:83
 msgid "State"
-msgstr "Stan"
+msgstr ""
 
 #: webmon2/web/templates/source.html:84
 msgid "Next update:"
-msgstr "Kolejna aktualizacja:"
+msgstr ""
 
 #: webmon2/web/templates/source.html:86
 msgid "Last check:"
-msgstr "Ostatnie sprawdzenie:"
+msgstr ""
 
 #: webmon2/web/templates/source.html:87
 msgid "Updates:"
-msgstr "Aktualizacje:"
+msgstr ""
 
 #: webmon2/web/templates/source.html:88
 msgid "Errors:"
-msgstr "Błędy"
+msgstr ""
 
 #: webmon2/web/templates/source.html:89
 msgid "Last error at:"
-msgstr "Ostatni błąd:"
+msgstr ""
 
 #: webmon2/web/templates/source.html:90
 msgid "Last error message:"
-msgstr "Ostatni komunikat błędu:"
+msgstr ""
 
 #: webmon2/web/templates/source.html:91
 msgid "Additional"
-msgstr "Dodatki"
+msgstr ""
 
 #: webmon2/web/templates/source_entries.html:50
 #: webmon2/web/templates/source_entry.html:18
 msgid "Go to next unread source"
-msgstr "Idź do następnego nieprzeczytanego źródła"
+msgstr ""
 
 #: webmon2/web/templates/source_filters.html:8
 msgid "filters"
-msgstr "filtry"
+msgstr ""
 
 #: webmon2/web/templates/source_filters.html:12
 msgid "Filters"
-msgstr "Filtry"
+msgstr ""
 
 #: webmon2/web/templates/source_filters.html:17
 msgid "Move up"
-msgstr "Przenieś w górę"
+msgstr ""
 
 #: webmon2/web/templates/source_filters.html:18
 msgid "Move"
-msgstr "Przenieś"
+msgstr ""
 
 #: webmon2/web/templates/source_filters.html:28
 msgid "Add filter"
-msgstr "Dodaj filtr"
+msgstr ""
 
 #: webmon2/web/templates/source_new.html:12
 msgid "Source type"
-msgstr "Typ źródła"
+msgstr ""
 
 #: webmon2/web/templates/sources.html:12
 msgid "Refresh sources with errors"
-msgstr "Odśwież źródła z błędami"
+msgstr ""
 
 #: webmon2/web/templates/sources.html:29
 msgid "Order by:"
-msgstr "Sortuj wg:"
+msgstr ""
 
 #: webmon2/web/templates/sources.html:33 webmon2/web/templates/sources.html:34
 msgid "Last update"
-msgstr "Ostatnia aktualizacja"
+msgstr ""
 
 #: webmon2/web/templates/sources.html:35 webmon2/web/templates/sources.html:36
 msgid "Next update"
-msgstr "Kolejna aktualizacja"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:3
 #: webmon2/web/templates/system/sys_user.html:17
 #: webmon2/web/templates/system/user.html:14
 msgid "User"
-msgstr "Użytkownik"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:4
 msgid "Global parameters"
-msgstr "Ustawienia globalne"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:5
 msgid "Data"
-msgstr "Data"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:6
 #: webmon2/web/templates/system/scoring.html:9
 msgid "Scoring"
-msgstr "Punktowanie"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:8
 msgid "Sys users"
-msgstr "Użytkownicy"
+msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:9
 msgid "Sys info"
-msgstr "Info syst."
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:14
 msgid "Export data"
-msgstr "Eksport danych"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:15
 msgid "Download sources and groups"
-msgstr "Pobierz źródła i grupy"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:16
 msgid "Download OPML file"
-msgstr "Pobierz plik OPML"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:18
 msgid "Import data"
-msgstr "Import danych"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:19
 msgid "Import Webmon2 dump"
-msgstr "Importuj zrzut Webmon2"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:23
 #: webmon2/web/templates/system/data.html:33
 msgid "File:"
-msgstr "Plik:"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:25
 #: webmon2/web/templates/system/data.html:35
 msgid "Import"
-msgstr "Import"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:29
 msgid "Import OPML"
-msgstr "Import OPML"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:39
 msgid "Data manipulation"
-msgstr "Manipulacja danymi"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:41
 msgid "Mark read all entries"
-msgstr "Zaznasz wszystko jako przeczytane"
+msgstr ""
 
 #: webmon2/web/templates/system/data.html:42
 msgid "Mark read all entries fetched before today"
-msgstr "Zaznacz wszystko starsze niż dzień jako przeczytane"
+msgstr ""
 
 #: webmon2/web/templates/system/globals.html:14
 msgid "Default and global settings"
-msgstr "Domyślne i globalne ustawienia"
+msgstr ""
 
 #: webmon2/web/templates/system/scoring.html:14
 msgid "Global scoring rules"
-msgstr "Globalne reguły punktowania"
+msgstr ""
 
 #: webmon2/web/templates/system/scoring.html:20
 msgid "Pattern"
-msgstr "Wzór"
+msgstr ""
 
 #: webmon2/web/templates/system/scoring.html:22
 msgid "Score"
-msgstr "Punkty"
+msgstr ""
 
 #: webmon2/web/templates/system/scoring.html:38
 msgid "Add new rule"
-msgstr "Dodaj nową regułę"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_info.html:22
 msgid "System informations"
-msgstr "Informacje systemowe"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_info.html:30
 msgid "Global settings"
-msgstr "Globalne ustawienia"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_info.html:38
 msgid "Effective config"
-msgstr "Efektywna konfiguracja"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_info.html:48
 msgid "DB tables size"
-msgstr "Rozmiary tabel BD"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:14
 #: webmon2/web/templates/system/sys_users.html:22
 msgid "System users"
-msgstr "Użytkownicy systemu"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:19
 #: webmon2/web/templates/system/sys_users.html:24
 msgid "New user"
-msgstr "Nowy użytkownik"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:39
 #: webmon2/web/templates/system/sys_users.html:31
 msgid "Email"
-msgstr "Email"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:45
 #: webmon2/web/templates/system/sys_users.html:33
 msgid "Admin"
-msgstr "Admin"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:48
 msgid "Authentication"
-msgstr "Uwierzytelnianie"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:54
 msgid "Confirm"
-msgstr "Potwerdź"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:59
 #: webmon2/web/templates/system/user.html:40
 msgid "Disable TOTP"
-msgstr "Wyłączenie TOTP"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_user.html:66
 msgid "Really delete user?"
-msgstr "Na pewno usunąć użytkownika?"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_users.html:29
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #: webmon2/web/templates/system/sys_users.html:34
 msgid "Action"
-msgstr "Akcja"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:16
 #: webmon2/web/templates/system/user.html:31
 msgid "Change password"
-msgstr "Zmiana hasła"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:21
 msgid "Current password:"
-msgstr "Aktualne hasło:"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:23
 msgid "New password:"
-msgstr "Nowe hasło:"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:25
 msgid "New password again:"
-msgstr "Nowe hasło powtórnie:"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:36
 msgid "Two-Factor Authentication (2FA)"
-msgstr "Dwu-etapowe uwierzytelnianie (2FA)"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:38
 msgid "TOTP enabled"
-msgstr "TOTP aktywne"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:40
 msgid "Really disable TOTP?"
-msgstr "Na pewno wyłączyć TOTP?"
+msgstr ""
 
 #: webmon2/web/templates/system/user.html:42
 #: webmon2/web/templates/system/user.totp.html:33
 msgid "Setup TOTP"
-msgstr "Konfiguracja TOTP"
+msgstr ""
 
 #: webmon2/web/templates/system/user.totp.html:14
 msgid "TOTP Configuration"
-msgstr "Konfiguracja TOTP"
+msgstr ""
 
 #: webmon2/web/templates/system/user.totp.html:16
 msgid "Secret"
-msgstr "Sekret"
+msgstr ""
 
 #: webmon2/web/templates/system/user.totp.html:17
 msgid "Secret:"
-msgstr "Sekret:"
+msgstr ""
 
 #: webmon2/web/templates/system/user.totp.html:24
 msgid "Confirmation"
-msgstr "Potwierdzenie"
+msgstr ""
 
 #: webmon2/web/templates/system/user.totp.html:28
 msgid "Code:"
-msgstr "Kod:"
-
-#~ msgid "Entries in"
-#~ msgstr "Wpisy w"
-
-#~ msgid "One entry mark to refresh"
-#~ msgid_plural "%(updated)s entries mark to refresh"
-#~ msgstr[0] ""
-#~ msgstr[1] ""
-#~ msgstr[2] ""
-
-#~ msgid ""
-#~ "Check for new albums for given "
-#~ "artist in Jamendo. Either artist ID "
-#~ "or name must be configured; also "
-#~ "source require configured \"jamendo client "
-#~ "id\""
-#~ msgstr ""
-
-#~ msgid ""
-#~ "Check for new tracks for given "
-#~ "artist in Jamendo. Either artist is "
-#~ "or name must be configured; also "
-#~ "source require configured \"jamendo client "
-#~ "id\""
-#~ msgstr ""
-
-#~ msgid ""
-#~ "Check for new albums for given "
-#~ "artist in Jamendo. Either artist ID "
-#~ "or name must be configured; also "
-#~ "source Jamendo client ID"
-#~ msgstr ""
-
-#~ msgid ""
-#~ "Check for new tracks for given "
-#~ "artist in Jamendo. Either artist ID "
-#~ "or name must be configured; also "
-#~ "source require configured \"jamendo client "
-#~ "ID\""
-#~ msgstr ""
-
-#~ msgid "Load data form RSS/Atom channel. Require define url."
-#~ msgstr "Wczytuje dane z kanału RSS/Atom. Wymaga określenia URL."
-
-#~ msgid "Select element matching or not matching to given pattern."
-#~ msgstr "Wybiera elementy pasujące lub nie pasującego do podanego wzorca."
+msgstr ""
 
