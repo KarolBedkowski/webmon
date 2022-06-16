@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-16 12:35+0200\n"
-"PO-Revision-Date: 2022-06-15 09:05+0200\n"
+"POT-Creation-Date: 2022-06-17 15:31+0200\n"
+"PO-Revision-Date: 2022-06-17 15:33+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -203,6 +203,11 @@ msgstr "Maksymalna ilość linii"
 #: webmon2/sources/dummy.py:31
 msgid "Dummy source for development"
 msgstr "Sztuczne źródło na potrzeby dewelopmentu"
+
+#: webmon2/sources/dummy.py:64
+#, python-format
+msgid "dummy entry %(idx)s on %(date)s"
+msgstr "sztunczny wpis %(idx)s o %(date)s"
 
 #: webmon2/sources/file_input.py:30
 msgid "Data from local file"
@@ -410,6 +415,18 @@ msgstr "URL strony"
 #: webmon2/sources/web.py:38
 msgid "Loading timeout"
 msgstr "Maksymalny czas wszytywania"
+
+#: webmon2/sources/web.py:89
+msgid "Response code: "
+msgstr ""
+
+#: webmon2/sources/web.py:148
+msgid "Permanently redirects: "
+msgstr ""
+
+#: webmon2/sources/web.py:159
+msgid "Temporary redirects: "
+msgstr ""
 
 #: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
 msgid "Read"

@@ -14,7 +14,7 @@ import logging
 import random
 import typing as ty
 
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -58,7 +58,11 @@ class DymmySource(AbstractSource):
                 self._source.name + " " + str(entry.updated) + " " + str(idx)
             )
             entry.url = "dummy"
-            entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
+            entry.content = gettext(
+                "dummy entry %(idx)s on %(date)s",
+                idx=idx,
+                date=datetime.datetime.now(),
+            )
             entries.append(entry)
 
         new_state = state.new_ok()
