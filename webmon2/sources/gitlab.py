@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 import gitlab
 import gitlab.v4.objects as gobj
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -107,7 +107,10 @@ class AbstractGitLabSource(AbstractSource):
                 return gitl.projects.get(conf["project"])  # type: ignore
 
             except Exception as err:
-                raise common.InputError(self, "Gitlab auth error: " + str(err))
+                raise common.InputError(
+                    self,
+                    gettext("Connection error: %(err)s", err=err),
+                )
 
         return None
 
@@ -194,7 +197,7 @@ class GitLabCommits(AbstractGitLabSource):
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
-            return state.new_error("Project not found"), []
+            return state.new_error(gettext("Project not found")), []
 
         data_since = self._gitlab_check_project_updated(
             project, state.last_update
@@ -278,7 +281,7 @@ def _format_gl_commit_long(
 ) -> str:
     result = [
         "### " + commit.committed_date,
-        "Author: " + commit.committer_name,
+        gettext("Author: %(author)s", author=commit.committer_name),
     ]
     msg = commit.message.strip().split("\n")
     if not full_message:
@@ -489,7 +492,8 @@ def _build_gl_release_entry(
         release.name,
         " ",
         release.tag_name,
-        "\n\nDate: ",
+        "\n\n",
+        gettext("Date: "),
         release.created_at,
     ]
     links = release.attributes.get("_links")

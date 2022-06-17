@@ -340,7 +340,7 @@ class JamendoTracksSource(JamendoAbstractSource):
         artist_id = any(conf.get("artist_id") for conf in confs)
         artist = any(conf.get("artist") for conf in confs)
         if not artist_id and not artist:
-            yield ("artist_id", "artist name or id is required")
+            yield ("artist_id", gettext("artist name or id is required"))
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
