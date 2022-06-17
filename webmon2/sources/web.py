@@ -16,7 +16,7 @@ import typing as ty
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -86,7 +86,9 @@ class WebSource(AbstractSource):
                 return new_state, []
 
             if response.status_code != 200:
-                msg = f"Response code: {response.status_code}"
+                msg = gettext(
+                    "Response code: %(code)s", code=response.status_code
+                )
                 if response.text:
                     msg += "\n" + response.text
 
@@ -145,7 +147,8 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     new_state.set_prop(
-                        "info", "Permanently redirects: " + href
+                        "info",
+                        gettext("Permanently redirects: %(url)s", url=href),
                     )
                     self._update_source(new_url=href)
                     return href
@@ -155,7 +158,10 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
-                    new_state.set_prop("info", "Temporary redirects: " + href)
+                    new_state.set_prop(
+                        "info",
+                        gettext("Temporary redirects: %(url)s", url=href),
+                    )
                     return href
 
         new_state.del_prop("info")

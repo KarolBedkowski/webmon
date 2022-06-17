@@ -14,6 +14,7 @@ import typing as ty
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -115,12 +116,21 @@ def _after_login(user: model.User) -> None:
 
     db = c.get_db()
     user_id: int = session["user"]
+
+    # set user timezone from browser if not set in settings
     if user_tz := database.settings.get_value(db, "timezone", user_id):
         session["_user_tz"] = user_tz
     else:
         user_tz = session["_user_tz"]
         database.settings.set_value(db, user_id, "timezone", user_tz)
-        db.commit()
 
+    # set user locale from browser if not set in settings
+    if not (user_locale := database.settings.get_value(db, "locale", user_id)):
+        user_locale = request.accept_languages.best_match(
+            current_app.config["LANGUAGES"]
+        )
+        database.settings.set_value(db, user_id, "locale", user_locale)
+
+    db.commit()
     session.permanent = True
     session.modified = True

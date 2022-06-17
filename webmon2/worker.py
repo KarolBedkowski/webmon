@@ -22,6 +22,8 @@ import time
 import typing as ty
 from configparser import ConfigParser
 
+from flask import Flask
+from flask_babel import Babel, force_locale
 from prometheus_client import Counter
 
 from . import common, database, filters, formatters, mailer, model, sources
@@ -46,6 +48,19 @@ _CLEAN_COUNTER = Counter(
 _CLEANUP_INTERVAL = 60 * 60 * 24
 
 
+def _create_app() -> Flask:
+    """Create fake app to configure babel."""
+    app = Flask(__name__)
+    app.config.from_mapping(
+        LANGUAGES=["en", "pl"],
+        BABEL_TRANSLATION_DIRECTORIES="./translations",
+    )
+    app.app_context().push()
+    babel = Babel(app)
+    assert babel
+    return app
+
+
 class CheckWorker(threading.Thread):
     def __init__(
         self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
@@ -66,6 +81,7 @@ class CheckWorker(threading.Thread):
         self._work_interval = (
             15 if self._debug else self._conf.getint("main", "work_interval")
         )
+        self._app = _create_app()
 
     def _notify(self, msg: str) -> None:
         """
@@ -124,7 +140,7 @@ class CheckWorker(threading.Thread):
             time.sleep(self._work_interval)
 
     def _start_worker(self, idx: int) -> FetchWorker:
-        worker = FetchWorker(str(idx), self._todo_queue, self._conf)
+        worker = FetchWorker(str(idx), self._todo_queue, self._conf, self._app)
         worker.start()
         _LOG.debug("CheckWorker worker %s started", idx)
         return worker
@@ -132,7 +148,7 @@ class CheckWorker(threading.Thread):
 
 class FetchWorker(threading.Thread):
     def __init__(
-        self, idx: str, todo_queue: queue.Queue[int], conf: ConfigParser
+        self, idx: str, todo_queue: queue.Queue[int], conf: ConfigParser, app
     ) -> None:
         threading.Thread.__init__(self)
         # id of thread
@@ -141,6 +157,7 @@ class FetchWorker(threading.Thread):
         self._todo_queue: queue.Queue[int] = todo_queue
         # app configuration
         self._conf: ConfigParser = conf
+        self._app = app
 
     def run(self) -> None:
         while not self._todo_queue.empty():
@@ -176,7 +193,6 @@ class FetchWorker(threading.Thread):
         start = time.time()
 
         sys_settings = database.settings.get_dict(db, source.user_id)
-
         # get source object; errors are propagated upwards
         try:
             src = self._get_src(source, sys_settings)
@@ -184,6 +200,43 @@ class FetchWorker(threading.Thread):
             raise Exception(f"unsupported input {source.kind}") from err
 
         assert source.state and src
+
+        with self._app.test_request_context():
+            with force_locale(sys_settings.get("locale", "en")):
+                new_state, loaded = self._load_data(
+                    db, source, src, sys_settings
+                )
+
+        if not new_state:
+            return
+
+        # update source state properties
+        new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
+        new_state.set_prop(
+            "last_update_duration", f"{time.time() - start:0.2f}"
+        )
+        database.sources.save_state(db, new_state, source.user_id)
+        # if source was updated - save new version
+        updated_source = src.updated_source
+        if updated_source:
+            _LOG.debug("[%s] source %d updated", self._idx, source.id)
+            database.sources.save(db, updated_source)
+
+        _LOG.debug(
+            "[%s] processing source %d FINISHED, entries=%d, state=%s",
+            self._idx,
+            source.id,
+            loaded,
+            str(new_state),
+        )
+
+    def _load_data(
+        self,
+        db: database.DB,
+        source: model.Source,
+        src,
+        sys_settings: ty.Dict[str, ty.Any],
+    ):
         # load data
         new_state, entries = src.load(source.state)
         if new_state.status == model.SourceStateStatus.ERROR:
@@ -197,7 +250,7 @@ class FetchWorker(threading.Thread):
                 source.id,
                 new_state.error,
             )
-            return
+            return None, 0
 
         assert source.state and source.interval is not None
         # calculate next update time; source may overwrite user settings
@@ -245,25 +298,7 @@ class FetchWorker(threading.Thread):
 
             _ENTRIES_LOADED.inc(len(entries))
 
-        # update source state properties
-        new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
-        new_state.set_prop(
-            "last_update_duration", f"{time.time() - start:0.2f}"
-        )
-        database.sources.save_state(db, new_state, source.user_id)
-        # if source was updated - save new version
-        updated_source = src.updated_source
-        if updated_source:
-            _LOG.debug("[%s] source %d updated", self._idx, source.id)
-            database.sources.save(db, updated_source)
-
-        _LOG.debug(
-            "[%s] processing source %d FINISHED, entries=%d, state=%s",
-            self._idx,
-            source.id,
-            len(entries),
-            str(new_state),
-        )
+        return new_state, len(entries)
 
     def _final_filter_entries(self, entries: model.Entries) -> model.Entries:
         """

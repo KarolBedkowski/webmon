@@ -17,7 +17,7 @@ from urllib.parse import urljoin
 
 import feedparser
 import requests
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -134,10 +134,14 @@ class RssSource(AbstractSource):
             new_state.set_prop("expires", str(expires))
 
         if status == 301:  # permanent redirects
-            new_state.set_prop("info", "Permanently redirects: " + doc.href)
+            new_state.set_prop(
+                "info", gettext("Permanently redirects: %(url)s", url=doc.href)
+            )
             self._update_source(new_url=doc.href)
         elif status == 302:
-            new_state.set_prop("info", "Temporary redirects: " + doc.href)
+            new_state.set_prop(
+                "info", gettext("Temporary redirects: %(url)s", url=doc.href)
+            )
             self._update_source(new_url=doc.href)
         else:
             new_state.del_prop("info")
@@ -213,15 +217,15 @@ class RssSource(AbstractSource):
                         entry.content = response.text
                         entry.set_opt("content-type", content_type)
                     else:
-                        entry.content = (
-                            "Article not loaded because of "
-                            "content type: " + content_type
+                        entry.content = gettext(
+                            "Article not loaded because of content type: %(type)s",
+                            type=content_type,
                         )
                 else:
                     entry.content = "Loading article error: " + response.text
 
         except Exception as err:  # pylint: disable=broad-except
-            entry.content = "Loading article error: " + str(err)
+            entry.content = gettext("Loading article error: %(err)s", err=err)
         finally:
             if response:
                 response.close()
@@ -319,7 +323,7 @@ def _fail_error(
     state: model.SourceState, doc: feedparser.FeedParserDict, status: int
 ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
     _LOG.error("load document error %r: state: %r %r", status, state, doc)
-    summary = f"Loading page error: {status}"
+    summary = gettext("Loading page error: %(status)s", status=status)
     feed = doc.get("feed")
     if feed:
         summary = feed.get("summary") or summary

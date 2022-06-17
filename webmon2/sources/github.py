@@ -15,7 +15,7 @@ from datetime import datetime, timedelta, timezone
 
 import github3
 from dateutil import tz
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 from github3.repos.commit import RepoCommit
 from github3.repos.release import Release
 from github3.repos.repo import Repository
@@ -69,7 +69,10 @@ class GitHubAbstractSource(AbstractSource):
                     token=conf.get("github_token"),
                 )
             except Exception as err:
-                raise common.InputError(self, "Github auth error: " + str(err))
+                raise common.InputError(
+                    self,
+                    gettext("Connection error: %(err)s", err=err),
+                )
         if not github:
             github = github3.GitHub()
         repository = github.repository(conf["owner"], conf["repository"])
@@ -234,7 +237,10 @@ def _format_gh_commit_short(commit: RepoCommit, _full_message: bool) -> str:
 
 def _format_gh_commit_long(commit: RepoCommit, full_message: bool) -> str:
     cmt = commit.commit
-    result = ["### " + cmt.committer["date"], "Author: " + cmt.author["name"]]
+    result = [
+        "### " + cmt.committer["date"],
+        gettext("Author: %(author)s", author=cmt.author["name"]),
+    ]
     msg = cmt.message.strip().split("\n")
     if not full_message:
         msg = msg[:1]
@@ -501,7 +507,8 @@ def _build_gh_release_entry(
         release.name,
         " ",
         release.tag_name,
-        "\n\nDate: ",
+        "\n\n",
+        gettext("Date: "),
         release.created_at.astimezone(tz.tzlocal()).strftime("%x %X"),
     ]
     if release.html_url:
