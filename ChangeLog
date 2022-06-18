@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.7.0 2022-06-18
+
+### Bug Fixes
+
+- Fix show next/prev unread entry
+- Fix saving new source - no save, no error
+- Fix partial search
+- Fix search for queries with spaces
+- Mark-read action require js; do not open link after click on it
+
+### Features
+
+- Allow user to choice default timezone
+- Translations
+- Localized date formatting
+- Allow to select user locale for messages (non-gui)
+
+### Refactor
+
+- Store timestamps in utc timezone; detect & use user timezone
+- Drop settings description from database
+
+
 ## 2.6.1 2021-11-27
 
 ### Bug Fixes
