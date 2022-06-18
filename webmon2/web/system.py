@@ -472,5 +472,5 @@ def _translate_sett_descr(
         "locale": gettext("User: language"),
     }
     for sett in settings:
-        sett.description = translations.get(sett.key, sett.description)
+        sett.description = translations.get(sett.key, sett.key)
         yield sett

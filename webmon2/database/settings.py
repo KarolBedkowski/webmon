@@ -24,7 +24,6 @@ _GET_ALL_SQL = """
 SELECT s.key AS setting__key,
     coalesce(us.value, s.value) AS setting__value,
     s.value_type AS setting__value_type,
-    s.description AS setting__description,
     us.user_id AS setting__user_id
 FROM settings s
 LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
@@ -45,7 +44,6 @@ _GET_SQL = """
 SELECT s.key AS setting__key,
     coalesce(us.value, s.value) AS setting__value,
     s.value_type AS setting__value_type,
-    s.description AS setting__description,
     us.user_id AS setting__user_id
 FROM settings s
 LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
@@ -108,8 +106,7 @@ def get_dict(db: DB, user_id: int) -> ty.Dict[str, ty.Any]:
 _GET_GLOBAL_SQL = """
 SELECT s.key AS setting__key,
     s.value AS setting__value,
-    s.value_type AS setting__value_type,
-    s.description AS setting__description
+    s.value_type AS setting__value_type
 FROM settings s
 ORDER by description
 """

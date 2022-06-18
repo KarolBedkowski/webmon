@@ -688,6 +688,7 @@ class Setting:
     key: str
     value: ty.Any
     value_type: str
+    # description is not loaded from database
     description: str
     # user id if settings is for given user
     user_id: ty.Optional[int] = None
@@ -705,8 +706,8 @@ class Setting:
             key=row["setting__key"],
             value=value,
             value_type=row["setting__value_type"],
-            description=row["setting__description"],
             user_id=row.get("setting__user_id"),
+            description="",
         )
 
     def to_row(self) -> common.Row:
@@ -714,7 +715,6 @@ class Setting:
             "setting__key": self.key,
             "setting__value": json.dumps(self.value),
             "setting__value_type": self.value_type,
-            "setting__description": self.description,
             "setting__user_id": self.user_id,
         }
 
