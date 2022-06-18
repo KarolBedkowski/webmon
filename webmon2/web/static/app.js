@@ -7,6 +7,11 @@
 (function() {
 	'use strict';
 
+	function t(text) {
+		var t = APP_TRANSLATE || {};
+		return t[text] || text;
+	}
+
 	function _create_question_link(label, callback) {
 		let element = document.createElement("a");
 		element.href = "#";
@@ -26,11 +31,11 @@
 
 		eventTarget.style.display = "none";
 
-		let yesElement = _create_question_link("yes", (event) => {
+		let yesElement = _create_question_link(t("yes"), (event) => {
 			document.location.href = eventTarget.href;
 		});
 
-		let noElement = _create_question_link("no", (event) => {
+		let noElement = _create_question_link(t("no"), (event) => {
 			eventTarget.style.display = "";
 			questionElement.remove();
 		});
@@ -83,6 +88,7 @@
 				executeEntryAction(mark_read_url, formData, (data) => {
 					if (data.result == "read" || data.result == "unread") {
 						article.dataset["state"] = data.result;
+						article.querySelector('a[data-action="mark_read"]').innerText = data.title;
 					}
 					let num_count = data.unread;
 					let val = (num_count > 0) ? "(" + num_count + ")" : "";
@@ -111,6 +117,7 @@
 				executeEntryAction(mark_star_url, formData, (data) => {
 					if (data.result == "star" || data.result == "unstar") {
 						article.dataset["starred"] = data.result;
+						article.querySelector('a[data-action="mark_star"]').innerText = data.title;
 					}
 				}, () => {
 					element.attributes.processing = false;
@@ -144,7 +151,7 @@
 				let articlesId = getArticleIds().join(",");
 				let formData = new FormData();
 				formData.append("ids", articlesId);
-				executeEntryAction(element.attributes.href.value, formData, (data) => {
+				executeEntryAction(element.dataset.url, formData, (data) => {
 					if (data.url) {
 						window.location.href = data.url;
 					} else {

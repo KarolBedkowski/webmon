@@ -254,16 +254,21 @@ WHERE id=%(source__id)s
 def save(db: DB, source: model.Source) -> model.Source:
     """Insert or update source.
 
+    For new sources create & save SourceState object.
+
     Return:
         updates source
     """
     row = source.to_row()
     with db.cursor() as cur:
-        if source.id is None:
+        if not source.id:
             cur.execute(_INSERT_SOURCE_SQL, row)
-            source.id = cur.fetchone()[0]
+            res = cur.fetchone()
+            assert res
+            source.id = res[0]
             # create state for new source
             state = model.SourceState.new(source.id)
+            state.status = model.SourceStateStatus.NEW
             save_state(db, state, source.user_id)
         else:
             cur.execute(_UPDATE_SOURCE_SQL, row)
@@ -450,13 +455,13 @@ def save_state(
     return state
 
 
-_GET_SOURCES_TO_FETCH_SQL = """
+_GET_SOURCES_TO_FETCH_SQL = f"""
 SELECT s.id
 FROM source_state ss
 JOIN sources s ON s.id = ss.source_id
 JOIN users u ON s.user_id = u.id
 WHERE ss.next_update <= now()
-    AND s.status = %s
+    AND s.status = {model.SourceStatus.ACTIVE}
     AND u.active
 """
 
@@ -464,14 +469,16 @@ WHERE ss.next_update <= now()
 def get_sources_to_fetch(db: DB) -> ty.List[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
-        cur.execute(_GET_SOURCES_TO_FETCH_SQL, (model.SourceStatus.ACTIVE,))
+        cur.execute(_GET_SOURCES_TO_FETCH_SQL)
         return [row[0] for row in cur]
 
 
 _REFRESH_SQL = """
 UPDATE source_state
 SET next_update=now()
-WHERE (last_update IS NULL OR last_update < now() - '-1 minutes'::interval)
+WHERE (last_update IS NULL
+        OR last_update < now() - '-1 minutes'::interval
+    )
     AND source_id IN (
         SELECT id FROM sources
         WHERE user_id=%(user_id)s

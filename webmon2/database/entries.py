@@ -13,6 +13,9 @@ import logging
 import typing as ty
 from datetime import date, datetime
 
+import psycopg2
+import psycopg2.errors
+
 from webmon2 import model
 
 from . import _dbcommon as dbc
@@ -73,22 +76,25 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    if args.get("read") is not None:
-        query.add_where("AND read_mark = %(read)s")
+    read = args.get("read")
+    if read is not None:
+        query.add_where(f"AND read_mark = {read}")
 
     if args.get("star") is not None:
         query.add_where("AND e.star_mark = %(star)s")
 
+    # TODO: and e.title %> 'depen' -- injection' ORDER BY e.title <-> 'depende'
+
     if args.get("title_query"):
         query.add_where(
             "AND to_tsvector('simple'::regconfig, (title)::text) "
-            "@@ to_tsquery('pg_catalog.simple', %(title_query)s)"
+            "@@ to_tsquery('simple'::regconfig, %(title_query)s)"
         )
     elif args.get("query"):
         query.add_where(
             "AND to_tsvector('simple'::regconfig, "
             "(content || ' '::text) || (title)::text) "
-            "@@ to_tsquery('pg_catalog.simple', %(query)s)"
+            "@@ to_tsquery('simple'::regconfig, %(query)s)"
         )
 
     return query.build()
@@ -164,7 +170,9 @@ def get_history(  # pylint: disable=too-many-arguments
     # count all
     with db.cursor() as cur:
         cur.execute(f"select count(1) from ({sql}) subq", params)
-        total = int(cur.fetchone()[0])
+        res = cur.fetchone()
+        assert res
+        total = int(res[0])
 
     params["limit"] = limit
     params["offset"] = offset
@@ -204,7 +212,6 @@ def get_total_count(
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
-        "unread": model.EntryReadMark.UNREAD,
     }
 
     if source_id:
@@ -219,7 +226,7 @@ def get_total_count(
         sql = "SELECT count(1) FROM entries WHERE user_id=%(user_id)s"
 
     if unread:
-        sql += " AND read_mark=%(unread)s"
+        sql += f" AND read_mark={model.EntryReadMark.UNREAD}"
 
     _LOG.debug("get_total_count(%r): %s", args, sql)
 
@@ -320,9 +327,9 @@ def find_fulltext(
         "order": _get_order_sql(order),
     }
     if title_only:
-        args["title_query"] = query
+        args["title_query"] = query.replace(" ", "+") + ":*"
     else:
-        args["query"] = query
+        args["query"] = query.replace(" ", "+") + ":*"
 
     sql = _build_find_sql(args)
     _LOG.debug("find_fulltext: %s", sql)
@@ -330,7 +337,11 @@ def find_fulltext(
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
     with db.cursor() as cur:
-        cur.execute(sql, args)
+        try:
+            cur.execute(sql, args)
+        except psycopg2.errors.SyntaxError as err:
+            _LOG.error("find_fulltext syntax error: %s", err)
+            raise dbc.QuerySyntaxError() from err
         yield from _yield_entries(cur, user_sources)
 
 
@@ -678,12 +689,13 @@ WITH DATA AS (
 		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
 		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
 	FROM entries e
-	WHERE user_id = %(user_id)s AND read_mark = %(read_mark)s
+	WHERE user_id = %(user_id)s
+	    AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
 	ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA
-WHERE id=%(entry_id)s
+WHERE id = %(entry_id)s
 """
 
 _GET_RELATED_ENTRY_SQL = """

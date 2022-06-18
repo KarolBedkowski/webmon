@@ -26,19 +26,19 @@
 	</h1>
 	<div class="actions">
 		{% if max_id %}
-		<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}" data-action="mark-all-read">✔ Mark read</a>
+		<a href="#" data-url="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id, mode=showed, page=page) }}" data-action="mark-all-read">✔ {{ _("Mark read") }}</a>
 		{% endif %}
-		<a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ Refresh</a>
-		<a href="{{ url_for('source.source_edit', source_id=source.id, back=request.url) }}">✎ Edit</a>
+		<a href="{{ url_for('source.source_refresh', source_id=source.id, back=request.url) }}">↺ {{ _("Refresh") }}</a>
+		<a href="{{ url_for('source.source_edit', source_id=source.id, back=request.url) }}">✎ {{ _("Edit") }}</a>
 		{% if showed == 'all' %}
-		<a href="{{ url_for('source.source_entries', source_id=source.id) }}">⊙ Show unread only</a>
+		<a href="{{ url_for('source.source_entries', source_id=source.id) }}">⊙ {{ _("Show unread only") }}</a>
 		{% else %}
-		<a href="{{ url_for('source.source_entries', source_id=source.id, mode='all') }}">⊛ Show all</a>
+		<a href="{{ url_for('source.source_entries', source_id=source.id, mode='all') }}">⊛ {{ _("Show all") }}</a>
 		{% endif %}
-		<a href="{{ url_for("entries.entries_search", source_id=source.id) }}">🔍 Search</a>
+		<a href="{{ url_for("entries.entries_search", source_id=source.id) }}">🔍 {{ _("Search") }}</a>
 		{% set url = source.get_setting('web_url') or source.get_setting('url') %}
 		{% if url %}
-		<a href="{{ url | safe }}">🔗 Website</a>
+		<a href="{{ url | safe }}">🔗 {{ _("Website") }}</a>
 		{% endif %}
 	</div>
 	{{ nav_bar() }}
@@ -46,11 +46,11 @@
 
 {% block content %}
 	{% if not entries %}
-		<p>No entries...</p>
-		<p><a href="{{ url_for('source.source_next_unread', source_id=source.id) }}" class="right">→ Go to next unread source</a></p>
+		<p>{{ _("No entries...") }}</p>
+		<p><a href="{{ url_for('source.source_next_unread', source_id=source.id) }}" class="right">→ {{ _("Go to next unread source") }}</a></p>
 	{% endif %}
 	{% for entry in entries %}
-		{{ re.render_entry(entry, 'summary', True, url_for("source.source_entry", source_id=source.id, mode=(showed or 'unread'), entry_id=entry.id)) }}
+		{{ re.render_entry(entry, 'summary', True, webmon2, url_for("source.source_entry", source_id=source.id, mode=(showed or 'unread'), entry_id=entry.id)) }}
 	{% endfor %}
 {% endblock %}
 
@@ -58,8 +58,8 @@
 	{{ nav_bar() }}
 	{% if max_id %}
 		<div class="actions">
-			<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" data-action="mark-all-read">✔ Mark read</a>
-			<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=-1, max_id=-1, go='next') }}">➥ Mark all read and go to next group</a>
+			<a href="#" data-url="{{ url_for('source.source_mark_read', source_id=source.id, min_id=min_id, max_id=max_id) }}" data-action="mark-all-read">✔ {{ _("Mark read") }}</a>
+			<a href="{{ url_for('source.source_mark_read', source_id=source.id, min_id=-1, max_id=-1, go='next') }}">➥ {{ _("Mark all read and go to next group") }}</a>
 		</div>
 	{% endif %}
 {% endblock %}

@@ -13,6 +13,8 @@ import logging
 import re
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
@@ -25,23 +27,29 @@ class Score(AbstractFilter):
     """Apply score to elements by regexp"""
 
     name = "score"
-    short_info = "Change score of elements by defined regular expression"
-    long_info = "Change element score according to matched patterns."
+    short_info = lazy_gettext(
+        "Change score of elements by defined regular expression"
+    )
+    long_info = lazy_gettext(
+        "Change element score according to matched patterns."
+    )
     params = [
         common.SettingDef(
             "patterns",
-            "Regular expressions separated by ';'",
+            lazy_gettext("Regular expressions separated by ';'"),
             required=True,
             multiline=True,
         ),
         common.SettingDef(
             "score_change",
-            "Value added do score when match",
+            lazy_gettext("Value added do score when match"),
             default=5,
             value_type=int,
         ),
         common.SettingDef(
-            "match_many", "Change score on match every pattern", default=True
+            "match_many",
+            lazy_gettext("Change score on match every pattern"),
+            default=True,
         ),
     ]  # type: ty.List[common.SettingDef]
 

@@ -13,8 +13,10 @@ import datetime
 import logging
 import typing as ty
 import urllib
+from zoneinfo import ZoneInfo
 
-from flask import Flask, request
+from flask import Flask, request, session
+from flask_babel import format_datetime, gettext
 
 from webmon2 import formatters
 
@@ -25,7 +27,9 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
     if date is None:
         return ""
 
-    diff = (datetime.datetime.now() - date).total_seconds()
+    diff = (
+        datetime.datetime.now(datetime.timezone.utc) - date
+    ).total_seconds()
     if diff < 60:
         return "<1m"
 
@@ -39,8 +43,14 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
 
 
 def _format_date(date: ty.Any) -> str:
+    if date is None:
+        return gettext("none")
+
     if isinstance(date, datetime.datetime):
-        return date.strftime("%x %X")
+        if user_tz := session.get("_user_tz"):
+            date = date.astimezone(ZoneInfo(user_tz))
+
+        return format_datetime(date)
 
     return str(date)
 

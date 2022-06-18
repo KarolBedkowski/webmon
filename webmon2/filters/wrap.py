@@ -12,6 +12,8 @@ Wrap entry content lines
 import textwrap
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
@@ -23,14 +25,16 @@ class Wrap(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "wrap"
-    short_info = "Wrap long lines"
-    long_info = (
+    short_info = lazy_gettext("Wrap long lines")
+    long_info = lazy_gettext(
         "Wrap long content lines to given width; also allow limit "
         "total number of lines"
     )
     params = [
-        common.SettingDef("width", "Max line width", default=76),
-        common.SettingDef("max_lines", "Max number of lines", value_type=int),
+        common.SettingDef("width", lazy_gettext("Max line width"), default=76),
+        common.SettingDef(
+            "max_lines", lazy_gettext("Max number of lines"), value_type=int
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def validate(self) -> None:

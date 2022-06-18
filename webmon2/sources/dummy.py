@@ -14,6 +14,8 @@ import logging
 import random
 import typing as ty
 
+from flask_babel import gettext, lazy_gettext
+
 from webmon2 import common, model
 
 from .abstract import AbstractSource
@@ -26,39 +28,54 @@ class DymmySource(AbstractSource):
 
     name = "dummy"
     params = AbstractSource.params + []
-    short_info = "Dummy source for development"
+    short_info = lazy_gettext("Dummy source for development")
     long_info = ""
 
     def load(
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
 
-        last_check = state.get_prop("last_check")
+        try:
+            last_check = int(state.get_prop("last_check"))
+        except ValueError:
+            last_check = 1
 
         if (
             last_check
-            and last_check > datetime.datetime.now().timestamp() - 120
+            and last_check
+            > datetime.datetime.now(datetime.timezone.utc).timestamp() - 120
         ):
             return state.new_not_modified(), []
 
         entries = []  # type: ty.List[model.Entry]
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now()
+            entry.updated = entry.created = datetime.datetime.now(
+                datetime.timezone.utc
+            )
             entry.status = model.EntryStatus.NEW
             entry.title = (
                 self._source.name + " " + str(entry.updated) + " " + str(idx)
             )
             entry.url = "dummy"
-            entry.content = f"dummy entry {idx} on {datetime.datetime.now()}"
+            entry.content = gettext(
+                "dummy entry %(idx)s on %(date)s",
+                idx=idx,
+                date=datetime.datetime.now(),
+            )
             entries.append(entry)
 
         new_state = state.new_ok()
         assert self._source.interval is not None
-        new_state.next_update = datetime.datetime.now() + datetime.timedelta(
+        new_state.next_update = datetime.datetime.now(
+            datetime.timezone.utc
+        ) + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )
-        new_state.set_prop("last_check", datetime.datetime.now().timestamp())
+        new_state.set_prop(
+            "last_check",
+            datetime.datetime.now(datetime.timezone.utc).timestamp(),
+        )
         return new_state, entries
 
     @classmethod

@@ -170,17 +170,22 @@ def entries_search() -> str:
             group_id = group.id
 
     entries_ = None
+    error = None
     if query:
-        entries_ = list(
-            database.entries.find_fulltext(
-                db, user_id, query, title_only, group_id, source_id
+        try:
+            entries_ = list(
+                database.entries.find_fulltext(
+                    db, user_id, query, title_only, group_id, source_id
+                )
             )
-        )
+        except database.QuerySyntaxError:
+            error = "Invalid query"
 
     return render_template(
         "entries_search.html",
         entries=entries_,
         query=query,
+        error=error,
         title_only=title_only,
         group_id=group_id or "",
         source_id=source_id or "",

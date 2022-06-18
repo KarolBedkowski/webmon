@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
-# Copyright (c) Karol Będkowski, 2016-2021
+# Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
 # pylint: disable=too-many-arguments
@@ -18,7 +18,7 @@ import json
 import logging
 import typing as ty
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
 
 from psycopg2 import extensions
@@ -281,7 +281,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         source = SourceState()
         source.source_id = source_id
-        source.next_update = datetime.now() + timedelta(minutes=15)
+        source.next_update = datetime.now(timezone.utc) + timedelta(minutes=15)
         source.error_counter = 0
         source.success_counter = 0
         return source
@@ -320,7 +320,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state = self.create_new(status=SourceStateStatus.ERROR, **props)
         state.error = error
         state.error_counter += 1
-        state.last_error = datetime.now()
+        state.last_error = datetime.now(timezone.utc)
         return state
 
     def new_not_modified(self, **props: ty.Any) -> SourceState:
@@ -397,7 +397,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         """
         Change next update time to last_check/last_update/now + interval.
         """
-        last = datetime.now()
+        last = datetime.now(timezone.utc)
         if self.last_check:
             last = max(self.last_check, last)
         elif self.last_update:
@@ -688,6 +688,7 @@ class Setting:
     key: str
     value: ty.Any
     value_type: str
+    # description is not loaded from database
     description: str
     # user id if settings is for given user
     user_id: ty.Optional[int] = None
@@ -705,8 +706,8 @@ class Setting:
             key=row["setting__key"],
             value=value,
             value_type=row["setting__value_type"],
-            description=row["setting__description"],
             user_id=row.get("setting__user_id"),
+            description="",
         )
 
     def to_row(self) -> common.Row:
@@ -714,7 +715,6 @@ class Setting:
             "setting__key": self.key,
             "setting__value": json.dumps(self.value),
             "setting__value_type": self.value_type,
-            "setting__description": self.description,
             "setting__user_id": self.user_id,
         }
 
@@ -800,6 +800,31 @@ class ScoringSett:
             "scoring_sett__pattern": self.pattern,
             "scoring_sett__active": self.active,
             "scoring_sett__score_change": self.score_change,
+        }
+
+
+@dataclass
+class Session:
+    id: int
+    expiry: datetime
+    data: bytes
+
+    def __str__(self) -> str:
+        return common.obj2str(self)
+
+    @classmethod
+    def from_row(cls, row: Cursor) -> Session:
+        return Session(
+            id=row["session__id"],
+            expiry=row["session__expiry"],
+            data=row["session__data"],
+        )
+
+    def to_row(self) -> common.Row:
+        return {
+            "session__id": self.id,
+            "session__expiry": self.expiry,
+            "session__data": self.data,
         }
 
 

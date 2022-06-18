@@ -14,12 +14,12 @@
 {% endblock %}
 
 {% block header %}
-  <h1>{% block title %}Settings{% endblock %}</h1>
-  {{ sn.render_header() }}
+	<h1>{% block title %}{{ _("Settings") }}{% endblock %}</h1>
+	{{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>System informations</h2>
+	<h2>{{ _("System informations") }}</h2>
 
 	<ul>
 	{% for key, value in info %}
@@ -27,7 +27,7 @@
 	{% endfor %}
 	</ul>
 
-	<h3>Global settings</h3>
+	<h3>{{ _("Global settings") }}</h3>
 
 	<ul>
 	{% for sett in settings %}
@@ -35,7 +35,7 @@
 	{% endfor %}
 	</ul>
 
-	<h3>Effective config</h3>
+	<h3>{{ _("Effective config") }}</h3>
 
 	<ul>
 	{% for sec in app_conf.sections() %}
@@ -45,7 +45,7 @@
 	{% endfor %}
 	</ul>
 
-	<h3>DB tables size</h3>
+	<h3>{{ _("DB tables size") }}</h3>
 
 	<ul>
 	{% for name, size in db_tab_sizes %}

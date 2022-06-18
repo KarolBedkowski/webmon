@@ -14,6 +14,8 @@ import logging
 import os
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from .abstract import AbstractSource
@@ -25,12 +27,14 @@ class FileSource(AbstractSource):
     """Load data from local file"""
 
     name = "file"
-    short_info = "Data from local file"
-    long_info = (
+    short_info = lazy_gettext("Data from local file")
+    long_info = lazy_gettext(
         'Source check local, text file defined by "Full file patch" setting'
     )
     params = AbstractSource.params + [
-        common.SettingDef("filename", "Full file patch", required=True),
+        common.SettingDef(
+            "filename", lazy_gettext("Full file patch"), required=True
+        ),
     ]
 
     def load(
@@ -63,7 +67,9 @@ class FileSource(AbstractSource):
             )
 
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now()
+            entry.updated = entry.created = datetime.datetime.now(
+                datetime.timezone.utc
+            )
             entry.status = (
                 model.EntryStatus.UPDATED
                 if state.last_update
@@ -75,11 +81,10 @@ class FileSource(AbstractSource):
             entry.set_opt("content-type", "plain")
             new_state = state.new_ok()
             assert self._source.interval is not None
-            new_state.next_update = (
-                datetime.datetime.now()
-                + datetime.timedelta(
-                    seconds=common.parse_interval(self._source.interval)
-                )
+            new_state.next_update = datetime.datetime.now(
+                datetime.timezone.utc
+            ) + datetime.timedelta(
+                seconds=common.parse_interval(self._source.interval)
             )
             return new_state, [entry]
         except IOError as err:

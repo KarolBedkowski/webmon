@@ -16,6 +16,7 @@ import typing as ty
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -29,11 +30,13 @@ class WebSource(AbstractSource):
     """Load data from web (http/https)"""
 
     name = "url"
-    short_info = "Web page"
-    long_info = "Load data form web page pointed by url."
+    short_info = lazy_gettext("Web page")
+    long_info = lazy_gettext("Load data form web page pointed by URL.")
     params = AbstractSource.params + [
-        common.SettingDef("url", "Web page url", required=True),
-        common.SettingDef("timeout", "loading timeout", default=30),
+        common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
+        common.SettingDef(
+            "timeout", lazy_gettext("Loading timeout"), default=30
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def load(
@@ -46,7 +49,9 @@ class WebSource(AbstractSource):
         if new_state.status != model.SourceStateStatus.ERROR:
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
-            next_update = datetime.datetime.now() + datetime.timedelta(
+            next_update = datetime.datetime.now(
+                datetime.timezone.utc
+            ) + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
             new_state.next_update = max(
@@ -81,7 +86,9 @@ class WebSource(AbstractSource):
                 return new_state, []
 
             if response.status_code != 200:
-                msg = f"Response code: {response.status_code}"
+                msg = gettext(
+                    "Response code: %(code)s", code=response.status_code
+                )
                 if response.text:
                     msg += "\n" + response.text
 
@@ -96,7 +103,9 @@ class WebSource(AbstractSource):
 
             url = self._check_redirects(response, new_state) or url
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now()
+            entry.updated = entry.created = datetime.datetime.now(
+                datetime.timezone.utc
+            )
             entry.status = (
                 model.EntryStatus.UPDATED
                 if state.last_update
@@ -138,7 +147,8 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     new_state.set_prop(
-                        "info", "Permanently redirects: " + href
+                        "info",
+                        gettext("Permanently redirects: %(url)s", url=href),
                     )
                     self._update_source(new_url=href)
                     return href
@@ -148,7 +158,10 @@ class WebSource(AbstractSource):
                 href = hist.headers.get("Location")
                 if href:
                     self._update_source(new_url=href)
-                    new_state.set_prop("info", "Temporary redirects: " + href)
+                    new_state.set_prop(
+                        "info",
+                        gettext("Temporary redirects: %(url)s", url=href),
+                    )
                     return href
 
         new_state.del_prop("info")

@@ -18,6 +18,7 @@ import typing as ty
 import urllib.parse
 
 import requests
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -45,9 +46,9 @@ class JamendoAbstractSource(AbstractSource):
 
     # pylint: disable=no-self-use
     def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
-        last_update = datetime.datetime.now() - datetime.timedelta(
-            days=_JAMENDO_MAX_AGE
-        )
+        last_update = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.timedelta(days=_JAMENDO_MAX_AGE)
         if state.last_update and state.last_update > last_update:
             last_update = state.last_update
 
@@ -172,18 +173,18 @@ class JamendoAlbumsSource(JamendoAbstractSource):
     """Load data from jamendo - new albums"""
 
     name = "jamendo_albums"
-    short_info = "Jamendo albums"
-    long_info = (
+    short_info = lazy_gettext("Jamendo albums")
+    long_info = lazy_gettext(
         "Check for new albums for given artist in Jamendo. "
-        "Either artist is or name must be configured; also source "
-        'require configured "jamendo client id"'
+        "Either artist ID or name must be configured; also source "
+        "require configured 'Jamendo client ID'"
     )
     params = AbstractSource.params + [
-        common.SettingDef("artist_id", "artist id"),
-        common.SettingDef("artist", "artist name"),
+        common.SettingDef("artist_id", lazy_gettext("Artist ID")),
+        common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
             "jamendo_client_id",
-            "jamendo client id",
+            lazy_gettext("Jamendo client ID"),
             required=True,
             global_param=True,
         ),
@@ -273,18 +274,18 @@ class JamendoTracksSource(JamendoAbstractSource):
     """Load data from jamendo - new tracks for artists"""
 
     name = "jamendo_tracks"
-    short_info = "Jamendo tracks"
-    long_info = (
+    short_info = lazy_gettext("Jamendo tracks")
+    long_info = lazy_gettext(
         "Check for new tracks for given artist in Jamendo. "
-        "Either artist is or name must be configured; also source "
-        'require configured "jamendo client id"'
+        "Either artist ID or name must be configured; also source "
+        "require configured 'Jamendo client ID'"
     )
     params = AbstractSource.params + [
-        common.SettingDef("artist_id", "artist id"),
-        common.SettingDef("artist", "artist name"),
+        common.SettingDef("artist_id", lazy_gettext("Artist ID")),
+        common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
             "jamendo_client_id",
-            "jamendo client id",
+            lazy_gettext("Jamendo client ID"),
             required=True,
             global_param=True,
         ),
@@ -339,7 +340,7 @@ class JamendoTracksSource(JamendoAbstractSource):
         artist_id = any(conf.get("artist_id") for conf in confs)
         artist = any(conf.get("artist") for conf in confs)
         if not artist_id and not artist:
-            yield ("artist_id", "artist name or id is required")
+            yield ("artist_id", gettext("artist name or id is required"))
 
     @classmethod
     def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
@@ -376,13 +377,16 @@ def _jamendo_track_format(
 
 def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
     try:
-        return datetime.datetime.fromisoformat(data["releasedate"])
+        releasedate = datetime.datetime.fromisoformat(data["releasedate"])
+        if not releasedate.tzinfo:
+            releasedate = releasedate.replace(tzinfo=datetime.timezone.utc)
+        return releasedate
     except ValueError:
         _LOG.debug("wrong releasedate in %s", data)
-        return datetime.datetime.now()
+        return datetime.datetime.now(datetime.timezone.utc)
     except KeyError:
         _LOG.debug("missing releasedate in %s", data)
-        return datetime.datetime.now()
+        return datetime.datetime.now(datetime.timezone.utc)
 
 
 # class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

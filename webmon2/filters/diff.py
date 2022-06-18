@@ -13,6 +13,8 @@ import difflib
 import logging
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, database, model
 
 from ._abstract import AbstractFilter
@@ -26,17 +28,23 @@ class NDiff(AbstractFilter):
     """Compare text with previous version (in state)."""
 
     name = "ndiff"
-    short_info = "Diff with previous content"
-    long_info = "Compare current and previous content; show changed elements"
+    short_info = lazy_gettext("Diff with previous content")
+    long_info = lazy_gettext(
+        "Compare current and previous content; show changed elements"
+    )
     params = [
         common.SettingDef(
             "threshold",
-            "Skip elements when changes percent is below this level",
+            lazy_gettext(
+                "Skip elements when changes percent is below this level"
+            ),
             default=0.1,
         ),
         common.SettingDef(
             "min_changed",
-            "Skip elements when changes lines is below this level",
+            lazy_gettext(
+                "Skip elements when changes lines is below this level"
+            ),
             default=1,
         ),
     ]  # type: ty.List[common.SettingDef]

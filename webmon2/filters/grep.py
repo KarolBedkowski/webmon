@@ -12,6 +12,8 @@ Select entries by matching text.
 import re
 import typing as ty
 
+from flask_babel import lazy_gettext
+
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
@@ -23,14 +25,19 @@ class Grep(AbstractFilter):
     """Strip white spaces from input"""
 
     name = "grep"
-    short_info = "Filter elements by regular expression"
-    long_info = "Select element matching or not matching to given pattern."
+    short_info = lazy_gettext("Filter elements by regular expression")
+    long_info = lazy_gettext(
+        "Select elements matching or not matching to given pattern."
+    )
     params = [
         common.SettingDef(
-            "pattern", "Regular expression", required=True, multiline=True
+            "pattern",
+            lazy_gettext("Regular expression"),
+            required=True,
+            multiline=True,
         ),
         common.SettingDef(
-            "invert", "Accept items not matching", default=False
+            "invert", lazy_gettext("Accept items not matching"), default=False
         ),
     ]  # type: ty.List[common.SettingDef]
 

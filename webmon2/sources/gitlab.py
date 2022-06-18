@@ -11,10 +11,11 @@ Inputs related to gitlab
 """
 import logging
 import typing as ty
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import gitlab
 import gitlab.v4.objects as gobj
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
@@ -44,14 +45,18 @@ class AbstractGitLabSource(AbstractSource):
     # pylint: disable=too-few-public-methods
     params = AbstractSource.params + [
         common.SettingDef(
-            "project", "project id; i.e. user/project", required=True
+            "project",
+            lazy_gettext("Project ID; i.e. user/project"),
+            required=True,
         ),
         common.SettingDef(
-            "gitlab_url", "GitLab url", default=_GITLAB_DEFAULT_URL
+            "gitlab_url",
+            lazy_gettext("GitLab URL"),
+            default=_GITLAB_DEFAULT_URL,
         ),
         common.SettingDef(
             "gitlab_token",
-            "user personal token",
+            lazy_gettext("User personal token"),
             required=True,
             global_param=True,
         ),
@@ -72,7 +77,9 @@ class AbstractGitLabSource(AbstractSource):
             to load
         """
         if not last_updated:
-            min_date = datetime.now() - timedelta(days=_GITLAB_MAX_AGE)
+            min_date = datetime.now(timezone.utc) - timedelta(
+                days=_GITLAB_MAX_AGE
+            )
             return min_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
         last_activity_at = project.last_activity_at
@@ -81,7 +88,8 @@ class AbstractGitLabSource(AbstractSource):
 
         last_activity = datetime.strptime(
             project.last_activity_at, "%Y-%m-%dT%H:%M:%S.%fZ"
-        )
+        ).replace(tzinfo=timezone.utc)
+
         if last_activity <= last_updated.replace():
             return None
 
@@ -99,7 +107,10 @@ class AbstractGitLabSource(AbstractSource):
                 return gitl.projects.get(conf["project"])  # type: ignore
 
             except Exception as err:
-                raise common.InputError(self, "Gitlab auth error: " + str(err))
+                raise common.InputError(
+                    self,
+                    gettext("Connection error: %(err)s", err=err),
+                )
 
         return None
 
@@ -153,7 +164,7 @@ def _build_entry(
     entry.title = source.name
     entry.status = model.EntryStatus.NEW
     entry.content = content
-    entry.created = entry.updated = datetime.now()
+    entry.created = entry.updated = datetime.now(timezone.utc)
     entry.set_opt("content-type", "markdown")
     return entry
 
@@ -162,17 +173,21 @@ class GitLabCommits(AbstractGitLabSource):
     """Load last commits from gitlab."""
 
     name = "gitlab_commits"
-    short_info = "Commit history from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Commit history from GitLab repository")
+    long_info = lazy_gettext(
         "Source load commits history from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "short_list", "show commits as short list", default=True
+            "short_list",
+            lazy_gettext("Show commits as short list"),
+            default=True,
         ),
         common.SettingDef(
-            "full_message", "show commits whole commit body", default=False
+            "full_message",
+            lazy_gettext("Show commits whole commit body"),
+            default=False,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -182,7 +197,7 @@ class GitLabCommits(AbstractGitLabSource):
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
-            return state.new_error("Project not found"), []
+            return state.new_error(gettext("Project not found")), []
 
         data_since = self._gitlab_check_project_updated(
             project, state.last_update
@@ -266,7 +281,7 @@ def _format_gl_commit_long(
 ) -> str:
     result = [
         "### " + commit.committed_date,
-        "Author: " + commit.committer_name,
+        gettext("Author: %(author)s", author=commit.committer_name),
     ]
     msg = commit.message.strip().split("\n")
     if not full_message:
@@ -280,14 +295,16 @@ class GitLabTagsSource(AbstractGitLabSource):
     """Load last tags from gitlab."""
 
     name = "gitlab_tags"
-    short_info = "Tags from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Tags from GitLab repository")
+    long_info = lazy_gettext(
         "Source load tags from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", default=5
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            default=5,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -379,14 +396,16 @@ class GitLabReleasesSource(AbstractGitLabSource):
     """Load last releases from gitlab."""
 
     name = "gitlab_releases"
-    short_info = "Releases from GitLab repository"
-    long_info = (
+    short_info = lazy_gettext("Releases from GitLab repository")
+    long_info = lazy_gettext(
         "Source load releases history from configured repository."
         " For work required configured GitLab account with token."
     )
     params = AbstractGitLabSource.params + [
         common.SettingDef(
-            "max_items", "Maximal number of tags to load", value_type=int
+            "max_items",
+            lazy_gettext("Maximal number of tags to load"),
+            value_type=int,
         ),
     ]  # type: ty.List[common.SettingDef]
 
@@ -473,7 +492,8 @@ def _build_gl_release_entry(
         release.name,
         " ",
         release.tag_name,
-        "\n\nDate: ",
+        "\n\n",
+        gettext("Date: "),
         release.created_at,
     ]
     links = release.attributes.get("_links")

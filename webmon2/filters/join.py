@@ -14,6 +14,8 @@ import logging
 import typing as ty
 from functools import reduce
 
+from flask_babel import lazy_gettext
+
 from webmon2 import model
 
 from ._abstract import AbstractFilter
@@ -32,10 +34,16 @@ def _join_entries(
     if next_entry.title:
         if not first_entry.title:
             title = "… | " + next_entry.title
-        elif len(first_entry.title) < 80:
+        elif (
+            len(first_entry.title) < 80
+            and first_entry.title != next_entry.title
+        ):
             title = first_entry.title + " | " + next_entry.title
-            if len(title) > 80:
-                title = title[:80] + "…"
+        else:
+            title = first_entry.title
+
+        if len(title) > 80:
+            title = title[:80] + "…"
 
         first_entry.title = title
 
@@ -47,8 +55,8 @@ class Join(AbstractFilter):
     """Join all entries into one conten"""
 
     name = "join"
-    short_info = "Join elements"
-    long_info = (
+    short_info = lazy_gettext("Join elements")
+    long_info = lazy_gettext(
         "Join content from all elements loaded by source to one element"
     )
 

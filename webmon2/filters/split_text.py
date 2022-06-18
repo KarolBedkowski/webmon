@@ -14,6 +14,7 @@ import logging
 import typing as ty
 
 from cssselect import GenericTranslator, SelectorError
+from flask_babel import lazy_gettext
 from lxml import etree
 
 from webmon2 import common, model
@@ -51,10 +52,14 @@ class GetElementsByCss(AbstractFilter):
     """Extract elements from html/xml by css selector"""
 
     name = "get-elements-by-css"
-    short_info = "Extract elements by CSS query"
-    long_info = "Search and extract element from content by given CSS query"
+    short_info = lazy_gettext("Extract elements by CSS query")
+    long_info = lazy_gettext(
+        "Search and extract element from content by given CSS query"
+    )
     params = [
-        common.SettingDef("sel", "selector", required=True, multiline=True),
+        common.SettingDef(
+            "sel", lazy_gettext("Selector"), required=True, multiline=True
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def __init__(self, config: model.ConfDict):
@@ -77,12 +82,14 @@ class GetElementsByXpath(AbstractFilter):
     """Extract elements from html/xml by xpath selector"""
 
     name = "get-elements-by-xpath"
-    short_info = "Extract elements by xpath"
-    long_info = (
+    short_info = lazy_gettext("Extract elements by xpath")
+    long_info = lazy_gettext(
         "Search and extract elements from html/xml content by given xpath"
     )
     params = [
-        common.SettingDef("xpath", "selector", required=True, multiline=True),
+        common.SettingDef(
+            "xpath", lazy_gettext("Selector"), required=True, multiline=True
+        ),
     ]  # type: ty.List[common.SettingDef]
     stop_change_content = True
 
@@ -94,10 +101,14 @@ class GetElementsById(AbstractFilter):
     """Extract elements from html/xml by element id"""
 
     name = "get-elements-by-id"
-    short_info = "Extract elements by given ID"
-    long_info = "Search and extract element from html content by given ID"
+    short_info = lazy_gettext("Extract elements by given ID")
+    long_info = lazy_gettext(
+        "Search and extract element from html content by given ID"
+    )
     params = [
-        common.SettingDef("sel", "selector", required=True, multiline=True),
+        common.SettingDef(
+            "sel", lazy_gettext("Selector"), required=True, multiline=True
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:

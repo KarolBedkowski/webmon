@@ -2,7 +2,7 @@
 """
 Access to binaries stored in database.
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -41,7 +41,7 @@ def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
                 "WHERE datahash=%s AND user_id=%s",
                 (datahash, user_id),
             )
-            res: ty.Optional[ty.Tuple[bytes, str]] = cur.fetchone()
+            res: ty.Optional[ty.Tuple[bytes, str]] = cur.fetchone()  # type: ignore
             if res:
                 return res
 

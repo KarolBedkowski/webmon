@@ -19,7 +19,9 @@ import smtplib
 import subprocess
 import typing as ty
 from configparser import ConfigParser
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import html2text as h2t
 from prometheus_client import Counter
@@ -28,6 +30,13 @@ from webmon2 import common, database, formatters, model
 
 _LOG = logging.getLogger(__name__)
 _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
+
+
+@dataclass
+class Ctx:
+    user_id: int
+    conf: ty.Dict[str, ty.Any]
+    timezone: ty.Optional[ZoneInfo] = None
 
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
@@ -48,18 +57,25 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         db,
         user.id,
         "mail_last_send",
-        conv=lambda x: datetime.fromtimestamp(float(x)),
+        conv=lambda x: datetime.fromtimestamp(float(x or 0), tz=timezone.utc),
     )
     if last_send:
         interval = timedelta(
             seconds=common.parse_interval(conf.get("mail_interval", "1h"))
         )
-        if last_send + interval > datetime.now():
+        if last_send + interval > datetime.now(timezone.utc):
             _LOG.debug("still waiting for send mail")
             return
 
+    ctx = Ctx(
+        user_id=user.id,
+        conf=conf,
+    )
+    if tzone := conf.get("timezone"):
+        ctx.timezone = ZoneInfo(tzone)
+
     try:
-        content = "".join(_process_groups(db, conf, user.id))
+        content = "".join(_process_groups(ctx, db))
     except Exception as err:  # pylint: disable=broad-except
         _LOG.error("prepare mail for user %d error: %s", user.id, err)
         return
@@ -69,17 +85,18 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
 
     _SENT_MAIL_COUNT.inc()
     database.users.set_state(
-        db, user.id, "mail_last_send", datetime.now().timestamp()
+        db,
+        user.id,
+        "mail_last_send",
+        datetime.now(timezone.utc).timestamp(),
     )
 
 
-def _process_groups(
-    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int
-) -> ty.Iterable[str]:
+def _process_groups(ctx: Ctx, db: database.DB) -> ty.Iterable[str]:
     """
     Iterate over source groups for `user_id` and build mail body.
     """
-    for group in database.groups.get_all(db, user_id):
+    for group in database.groups.get_all(db, ctx.user_id):
         if group.mail_report == model.MailReportMode.NO_SEND:
             _LOG.debug("group %s skipped", group.name)
             continue
@@ -89,11 +106,11 @@ def _process_groups(
             continue
 
         assert group.id
-        yield from _process_group(db, conf, user_id, group.id)
+        yield from _process_group(ctx, db, group.id)
 
 
 def _process_group(
-    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, group_id: int
+    ctx: Ctx, db: database.DB, group_id: int
 ) -> ty.Iterator[str]:
     """
     Process sources in `group_id` and build mail body part.
@@ -101,7 +118,7 @@ def _process_group(
     _LOG.debug("processing group %d", group_id)
     sources = [
         source
-        for source in database.sources.get_all(db, user_id, group_id)
+        for source in database.sources.get_all(db, ctx.user_id, group_id)
         if source.unread and source.mail_report != model.MailReportMode.NO_SEND
     ]
     if not sources:
@@ -116,13 +133,13 @@ def _process_group(
     yield "\n\n"
 
     for source in sources:
-        yield from _proces_source(db, conf, user_id, source.id)
+        yield from _proces_source(ctx, db, source.id)
 
     yield "\n\n\n"
 
 
 def _proces_source(
-    db: database.DB, conf: ty.Dict[str, ty.Any], user_id: int, source_id: int
+    ctx: Ctx, db: database.DB, source_id: int
 ) -> ty.Iterator[str]:
     """
     Build mail content for `source_id`.
@@ -131,7 +148,9 @@ def _proces_source(
 
     entries = [
         entry
-        for entry in database.entries.find(db, user_id, source_id=source_id)
+        for entry in database.entries.find(
+            db, ctx.user_id, source_id=source_id
+        )
         if model.MailReportMode.SEND
         in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
     ]
@@ -149,11 +168,11 @@ def _proces_source(
 
     for entry in entries:
         _LOG.debug("processing entry id %dd", entry.id)
-        yield from _render_entry_plain(entry)
+        yield from _render_entry_plain(ctx, entry)
 
-    if conf.get("mail_mark_read"):
+    if ctx.conf.get("mail_mark_read"):
         ids = [entry.id for entry in entries]
-        database.entries.mark_read(db, user_id, ids=ids)
+        database.entries.mark_read(db, ctx.user_id, ids=ids)
 
     yield "\n\n"
 
@@ -165,12 +184,18 @@ def _adjust_header(line: str, prefix: str = "###") -> str:
     return line
 
 
-def _render_entry_plain(entry: model.Entry) -> ty.Iterator[str]:
+def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
     """
     Render entry as markdown document.
     If entry content type is not plain or markdown try convert it to plain text.
     """
-    title = (entry.title or "") + " " + entry.updated.strftime("%x %X")  # type: ignore
+    updated = entry.updated
+    assert updated
+    if tzone := ctx.timezone:
+        updated = updated.astimezone(tzone)
+
+    title = (entry.title or "") + " " + updated.strftime("%x %X")  # type: ignore
+
     yield "### "
     yield _get_entry_score_mark(entry)
     if entry.url:

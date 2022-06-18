@@ -1,4 +1,4 @@
-{% macro render_entry(entry, mode, onlist, openlink=None) -%}
+{% macro render_entry(entry, mode, onlist, webmon2, openlink=None) -%}
 	<article data-state="{% if entry.read_mark %}read{% else %}unread{% endif %}" data-entry-id="{{ entry.id }}"
 			data-starred="{% if entry.star_mark %}star{% else %}unstar{% endif %}">
 		<!-- {{ entry.score }} -->
@@ -24,15 +24,15 @@
 			</h4>
 			<div class="actions">
 				<a href="{{ url_for('source.source_entries', source_id=entry.source_id) }}">{{ entry.source.name }}</a>
-				| &#9716;<time title="{{ entry.updated }}">{{ entry.updated|age }}</time>
-				| <a href="#" data-action="mark_read"></a>
-				| <a href="#" data-action="mark_star"></a>
+				| &#9716; <time title="{{ entry.updated | format_date }}">{{ entry.updated|age }}</time>
+				| <a href="#" data-action="mark_read">{% if entry.read_mark == webmon2.model.EntryReadMark.READ %}{{ _("Unread") }}{% else %}{{ _("Read") }}{% endif %}</a>
+				| <a href="#" data-action="mark_star">{% if entry.star_mark %}{{ _("Unstar") }}{% else %}{{ _("Star") }}{% endif %}</a>
 				{% if entry.url %}
-					| <a href="{{ entry.url }}">Original content</a>
+					| <a href="{{ entry.url }}">{{ _("Original content") }}</a>
 				{% endif %}
 				{% set url = entry.source.get_setting('web_url') or entry.source.get_setting('url') %}
 				{% if url %}
-					| <a href="{{ url | safe }}">🔗 Website</a>
+					| <a href="{{ url | safe }}">🔗 {{ _("Website") }}</a>
 				{% endif %}
 			</div>
 		</header>
@@ -41,7 +41,7 @@
 			<section>
 				{{ entry.get_summary()|cleanup_html|safe }}
 			</section>
-			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">Read more…</a><footer>
+			<footer><a href="{{ url_for("entry.entry", entry_id=entry.id) }}">{{ _("Read more…") }}</a><footer>
 		{% elif entry.content %}
 			<section>
 			{% if content_type == 'markdown' %}

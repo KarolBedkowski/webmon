@@ -14,7 +14,7 @@ include = ["ChangeLog"]
 license = "GPL-2.0-or-later"
 name = "webmon2"
 readme = "README.rst"
-version = "2.6.1"
+version = "2.7.0"
 
 [tool.poetry.dependencies]
 Flask = "^2.0"
@@ -38,6 +38,7 @@ python-dateutil = "^2.8"
 python-gitlab = "^2.10"
 readability-lxml = "^0.8"
 requests = "^2.21.0"
+flask-babel = "*"
 sdnotify = { version = "*", optional = true }
 
 [tool.poetry.dev-dependencies]

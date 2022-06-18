@@ -6,20 +6,20 @@
 <body>
 
 {% block header %}
-  <h1>{% block title %}Scoring{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Scoring") }}{% endblock %}</h1>
   {{ sn.render_header() }}
 {% endblock %}
 
 {% block content %}
-	<h2>Global scoring rules</h2>
+	<h2>{{ _("Global scoring rules") }}</h2>
 	<form method="POST">
 		<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 		<table id="tab-rules">
 			<thead>
 				<tr>
-					<th>Pattern</th>
-					<th>Active</th>
-					<th>Score</th>
+					<th>{{ _("Pattern") }}</th>
+					<th>{{ _("Active") }}</th>
+					<th>{{ _("Score") }}</th>
 					<th>&nbsp;</th>
 				</tr>
 			</thead>
@@ -29,14 +29,14 @@
 					<td><input type="text" name="r-{{ loop.index0 }}-pattern" value="{{ r.pattern }}" required></td>
 					<td><input type="checkbox" name="r-{{ loop.index0 }}-active" {% if r.active %}checked="checked"{% endif %} /></td>
 					<td><input type="number" name="r-{{ loop.index0 }}-score" value="{{ r.score_change }}" required /></td>
-					<td><a href="#" data-action="delete">Delete</a></td>
+					<td><a href="#" data-action="delete">{{ _("Delete") }}</a></td>
 				</tr>
 				{% endfor %}
 			</tbody>
 		</table>
 		<div class="row2">
-			<a href="#" id='add-new-rule'>Add new rule</a>
-			<button class="right" type="submit">Save</button>
+			<a href="#" id='add-new-rule'>{{ _("Add new rule") }}</a>
+			<button class="right" type="submit">{{ _("Save") }}</button>
 		</div>
 	</form>
 {% endblock %}

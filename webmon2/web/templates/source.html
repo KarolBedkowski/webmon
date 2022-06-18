@@ -5,13 +5,13 @@
   <body>
 
 {% block header %}
-  <h1>{% block title %}Source{% endblock %}</h1>
+  <h1>{% block title %}{{ _("Source") }}{% endblock %}</h1>
 {% endblock %}
 
 {% block content %}
 	{% if errors %}
 		<p class="error">
-			<b>Validation errors:</b>
+			<b>{{ _("Validation errors:") }}</b>
 			{% for field, err in errors.items() %}
 			<br/>{{ err }}
 			{% endfor %}
@@ -23,16 +23,16 @@
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
-				<label for="source-name" class="field-required">Name</label>
+				<label for="source-name" class="field-required">{{ _("Name") }}</label>
 				<input type="text" name="name" id="source-name" value="{{ form.name }}" required="required" />
 				{% if form.status != 0 %}
-					<label for="source-status">Status</label>
+					<label for="source-status">{{ _("Status") }}</label>
 					<select name="status" id="source-status">
-						{{ rf.render_option(1, "Active",  form.status) }}
-						{{ rf.render_option(2, "Disabled",  form.status) }}
+						{{ rf.render_option(1, _("Active"),  form.status) }}
+						{{ rf.render_option(2, _("Disabled"),  form.status) }}
 					</select>
 				{% endif %}
-				<label for="source-group">Group</label>
+				<label for="source-group">{{ _("Group") }}</label>
 				<select name="group_id" id="source-group" value="{{ form.group_id }}" required="required">
 					{% if not form.id %}
 					<option value=""></option>
@@ -41,15 +41,15 @@
 					<option value="{{ group.id }}" {% if group.id == form.group_id %} selected="selected"{% endif %}>{{ group.name }}</option>
 					{% endfor %}
 				</select>
-				<label for="source-interval">Interval</label>
+				<label for="source-interval">{{ _("Interval") }}</label>
 				<input type="text" name="interval" id="source-interval" value="{{ form.interval or '' }}"/>
-				<label for="source-mail-report">Send mail reports</label>
-				{{ rf.render_select("mail_report", "source-mail-report", [(1, 'as configured in group'), (0, 'no'), (2, 'yes')], form.mail_report) }}
-				<label for="source-default-prio">Default score for entries</label>
+				<label for="source-mail-report">{{ _("Send mail reports") }}</label>
+				{{ rf.render_select("mail_report", "source-mail-report", [(1, _('as configured in group')), (0, _('no')), (2, _('yes'))], form.mail_report) }}
+				<label for="source-default-prio">{{ _("Default score for entries") }}</label>
 				<input type="number" name="default_score" id="source-default-prio" value="{{ form.default_score }}" required="required" />
 			</div>
 			{% if form.settings %}
-				<h4>Source settings</h4>
+				<h4>{{ _("Source settings") }}</h4>
 				<div class="form-wrapper">
 				{% for sett in form.settings %}
 					{{ rf.render_field(sett) }}
@@ -59,36 +59,36 @@
 			<p class="row2">
 				<span class="left">
 					{% if form.id %}
-					<a href="{{ url_for('source.source_delete', source_id=form.id, delete_self=1) }}" data-req-confirm="yes" data-question="Really delete source?">⚠ Delete</a></span>
+					<a href="{{ url_for('source.source_delete', source_id=form.id, delete_self=1) }}" data-req-confirm="yes" data-question="Really delete source?">⚠ {{ _("Delete") }}</a></span>
 					{% endif %}
 				</span>
 				<span class="right">
 					{% if request.args.get('back') %}
-						<a href="{{ request.args['back'] }}">Back</a>
+						<a href="{{ request.args['back'] }}">{{ _("Back") }}</a>
 					{% else %}
-						<a href="#" data-action="hist-back">Back</a>
+						<a href="#" data-action="hist-back">{{ _("Back") }}</a>
 					{% endif %}
-					{% if form.status == webmon2.model.SourceState.NOT_ACTIVATED %}
-						<button type="submit" value="save_activate" name="next_action">Save &amp; activate</button>
+					{% if form.status == webmon2.model.SourceStatus.NOT_ACTIVATED %}
+						<button type="submit" value="save_activate" name="next_action">{{ _("Save &amp; activate") }}</button>
 					{% else %}
-						<button type="submit">Save</button>
+						<button type="submit">{{ _("Save") }}</button>
 					{% endif %}
-					<button type="submit" value="edit_filters" name="next_action">Save and edit filters</button>
+					<button type="submit" value="edit_filters" name="next_action">{{ _("Save and edit filters") }}</button>
 				</span>
 			</p>
 		</form>
 	</section>
 	{% if form.id %}
 	<section>
-		<h2>State</h2>
-		<p>Next update: {{ source.state.next_update | format_date }}</p>
-		<p>Last update: {{ source.state.last_update | format_date }}</p>
-		<p>Last check: {{ source.state.last_check | format_date }}</p>
-		<p>Updates: {{ source.state.success_counter }}</p>
-		<p>Errors: {{ source.state.error_counter }}</p>
-		<p>Last error at: {{ source.state.last_error | format_date }}</p>
-		<p>Last error message: {{ source.state.error }}</p>
-		<h3>Additional</h3>
+		<h2>{{ _("State") }}</h2>
+		<p>{{ _("Next update:") }} {{ source.state.next_update | format_date }}</p>
+		<p>{{ _("Last update:") }} {{ source.state.last_update | format_date }}</p>
+		<p>{{ _("Last check:") }} {{ source.state.last_check | format_date }}</p>
+		<p>{{ _("Updates:") }} {{ source.state.success_counter }}</p>
+		<p>{{ _("Errors:") }} {{ source.state.error_counter }}</p>
+		<p>{{ _("Last error at:") }} {{ source.state.last_error | format_date }}</p>
+		<p>{{ _("Last error message:") }} {{ source.state.error }}</p>
+		<h3>{{ _("Additional") }}</h3>
 		{% for key, val in source.state.visible_props() %}
 			<p>{{ key | format_key }}: {{ val}}</p>
 		{% endfor %}

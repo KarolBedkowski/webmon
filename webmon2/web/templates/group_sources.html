@@ -6,24 +6,24 @@
   <body>
 
 {% block header %}
-	<h1>{% block title %}Sources in group {{ group.name }} ({{ sources|length}}){% endblock %}</h1>
+	<h1>{% block title %}{{ _("Sources in group") }} {{ group.name }} ({{ sources|length}}){% endblock %}</h1>
 	<div class="actions">
-		<a href="{{ url_for("group.refresh_group", group_id=group.id)}}">Refresh group</a>
-		<a href="{{ url_for("source.source_new")}}">New source</a>
+		<a href="{{ url_for("group.refresh_group", group_id=group.id)}}">{{ _("Refresh group") }}</a>
+		<a href="{{ url_for("source.source_new")}}">{{ _("New source") }}</a>
 	</div>
 {% endblock %}
 
 {% block content %}
 	<p>
 		<form id="form">
-			<label for="filter-state">Show:</label>
+			<label for="filter-state">{{ _("Show") }}:</label>
 			<select id="form-status" name="status" value="{{ status }}">
-				{{ rf.render_option("all", "All", status) }}
-				{{ rf.render_option("active", "Active", status) }}
-				{{ rf.render_option("disabled", "Disabled", status) }}
-				{{ rf.render_option("notconf", "Not configured", status) }}
-				{{ rf.render_option("error", "With errors", status) }}
-				{{ rf.render_option("notupdated", "Not updated", status) }}
+				{{ rf.render_option("all", _("All"), status) }}
+				{{ rf.render_option("active", _("Active"), status) }}
+				{{ rf.render_option("disabled", _("Disabled"), status) }}
+				{{ rf.render_option("notconf", _("Not configured"), status) }}
+				{{ rf.render_option("error", _("With errors"), status) }}
+				{{ rf.render_option("notupdated", _("Not updated"), status) }}
 			</select>
 		</form>
 	</p>

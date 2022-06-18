@@ -32,7 +32,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
         with open(filename, encoding="UTF-8") as fin:
             inps = [
                 doc
-                for doc in yaml.load_all(fin)
+                for doc in yaml.load_all(fin, Loader=None)
                 if doc and doc.get("enable", True)
             ]
             _LOG.debug("loading sources - found %d enabled sources", len(inps))

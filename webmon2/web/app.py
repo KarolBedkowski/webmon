@@ -17,6 +17,7 @@ import typing as ty
 from argparse import Namespace
 from configparser import ConfigParser
 
+import flask_babel
 from flask import (
     Flask,
     Response,
@@ -46,6 +47,7 @@ from webmon2 import database, worker
 from . import _commons as c
 from . import (
     _filters,
+    appsession,
     atom,
     entries,
     entry,
@@ -112,11 +114,17 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         SECURITY_PASSWORD_SALT=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf",
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="Strict",
+        SESSION_TYPE="db",
         APPLICATION_ROOT=web_root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
+        LANGUAGES=["en", "pl"],
+        BABEL_TRANSLATION_DIRECTORIES="../translations",
     )
     app.config["app_conf"] = conf
     app.app_context().push()
+
+    app.session_interface = appsession.DBSessionInterface(True)  # type: ignore
+    babel = flask_babel.Babel(app)
 
     _register_blueprints(app)
 
@@ -150,6 +158,8 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             if request.method == "GET":
                 _count_unread(user_id)
 
+            g.locale = str(flask_babel.get_locale())
+
             return None
 
         # pages that not need valid user
@@ -175,7 +185,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def after_request(  # pylint: disable=unused-variable
         resp: Response,
     ) -> Response:
-        cont_type = (resp.content_type.split(";") or [""])[0]
+        cont_type = (resp.content_type or "").partition(";")[0]
         if cont_type in (
             "application/json",
             "application/atom+xml",
@@ -203,6 +213,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def handle_context() -> ty.Dict[str, ty.Any]:
         """Inject object into jinja2 templates."""
         return {"webmon2": webmon2}
+
+    @babel.localeselector
+    def get_locale():
+        return request.accept_languages.best_match(app.config["LANGUAGES"])
+
+    @babel.timezoneselector
+    def get_timezone():
+        return session.get("_user_tz")
 
     return app
 

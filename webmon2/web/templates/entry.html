@@ -8,24 +8,24 @@
 	<nav class="row2">
 		<span class="left">
 		{% if prev_entry %}
-			<a href="{{ url_for("entry.entry", entry_id=prev_entry) }}">← Prev</a>
+			<a href="{{ url_for("entry.entry", entry_id=prev_entry) }}">← {{ _("Prev") }}</a>
 		{% endif %}
 		</span>
 		<span class="right">
 		{% if next_entry %}
-			<a href="{{ url_for("entry.entry", entry_id=next_entry) }}">Next →</a>
+			<a href="{{ url_for("entry.entry", entry_id=next_entry) }}">{{ _("Next") }} →</a>
 		{% endif %}
 		</span>
 	</nav>
 {% endmacro %}
 
 {% block header %}
-	<h1>{% block title %}Entry{% endblock %}</h1>
+	<h1>{% block title %}{{ _("Entry") }}{% endblock %}</h1>
 	{{ nav_bar() }}
 {% endblock %}
 
 {% block content %}
-	{{ re.render_entry(entry, 'content', False) }}
+	{{ re.render_entry(entry, 'content', False, webmon2) }}
 {% endblock %}
 
 {% block footer %}

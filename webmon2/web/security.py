@@ -14,6 +14,7 @@ import typing as ty
 
 from flask import (
     Blueprint,
+    current_app,
     flash,
     redirect,
     render_template,
@@ -21,8 +22,9 @@ from flask import (
     session,
     url_for,
 )
+from flask_babel import gettext
 
-from webmon2 import database, security
+from webmon2 import database, model, security
 
 from . import _commons as c
 
@@ -50,27 +52,25 @@ def login() -> ty.Any:
         try:
             user = database.users.get(db, login=flogin)
         except database.NotFound:
-            flash("Invalid user and/or password")
+            flash(gettext("Invalid user and/or password"))
             return render_template("login.html")
 
         assert user.password is not None
         if user.active and security.verify_password(user.password, fpassword):
+            session["_user_tz"] = request.form["_user_tz"]
             if user.totp and security.otp_available():
                 session["temp_user_id"] = user.id
                 session.permanent = False
                 return redirect(url_for("sec.login_totp"))
 
-            session["user"] = user.id
-            session["user_admin"] = bool(user.admin)
             back = session.get("_back_url")
             if back:
                 del session["_back_url"]
 
-            session.permanent = True
-
+            _after_login(user)
             return redirect(back or url_for("root.index"))
 
-        flash("Invalid user and/or password")
+        flash(gettext("Invalid user and/or password"))
 
     return render_template("login.html")
 
@@ -94,14 +94,11 @@ def login_totp() -> ty.Any:
             if back:
                 del session["_back_url"]
 
-            session["user"] = user.id
-            session["user_admin"] = bool(user.admin)
             del session["temp_user_id"]
-            session.permanent = True
-            session.modified = True
+            _after_login(user)
             return redirect(back or url_for("root.index"))
 
-        flash("Invalid TOTP answer")
+        flash(gettext("Invalid TOTP answer"))
 
     return render_template("login.totp.html")
 
@@ -111,3 +108,29 @@ def logout() -> ty.Any:
     session.clear()
     session.modified = True
     return redirect(url_for("root.index"))
+
+
+def _after_login(user: model.User) -> None:
+    session["user"] = user.id
+    session["user_admin"] = bool(user.admin)
+
+    db = c.get_db()
+    user_id: int = session["user"]
+
+    # set user timezone from browser if not set in settings
+    if user_tz := database.settings.get_value(db, "timezone", user_id):
+        session["_user_tz"] = user_tz
+    else:
+        user_tz = session["_user_tz"]
+        database.settings.set_value(db, user_id, "timezone", user_tz)
+
+    # set user locale from browser if not set in settings
+    if not (user_locale := database.settings.get_value(db, "locale", user_id)):
+        user_locale = request.accept_languages.best_match(
+            current_app.config["LANGUAGES"]
+        )
+        database.settings.set_value(db, user_id, "locale", user_locale)
+
+    db.commit()
+    session.permanent = True
+    session.modified = True

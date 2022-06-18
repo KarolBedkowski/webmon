@@ -14,6 +14,7 @@ import logging
 import typing as ty
 
 from flask import Blueprint, abort, render_template, request, session
+from flask_babel import gettext
 
 from webmon2 import database, model
 
@@ -80,9 +81,14 @@ def entry_mark_read_api() -> ty.Any:
     )
     db.commit()
 
+    read_state = state == "read"
+    if updated:
+        read_state = not read_state
+
     res = {
         "result": state if updated else "",
         "unread": database.entries.get_total_count(db, user_id, unread=True),
+        "title": gettext("Read") if read_state else gettext("Unread"),
     }
 
     return res
@@ -98,4 +104,12 @@ def entry_mark_star_api() -> ty.Any:
         db, user_id, entry_id, star=state == "star"
     )
     db.commit()
-    return {"result": state if updated else ""}
+
+    star_state = state == "star"
+    if updated:
+        star_state = not star_state
+
+    return {
+        "result": state if updated else "",
+        "title": gettext("Star") if star_state else gettext("Unstar"),
+    }

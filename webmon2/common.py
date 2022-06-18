@@ -2,7 +2,7 @@
 """
 Commons elements - errors etc
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -17,10 +17,8 @@ import os.path
 import pathlib
 import typing as ty
 
-from dateutil import tz
-
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 
 
 _LOG = logging.getLogger("common")
@@ -284,11 +282,11 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
         return None
 
     try:
-        parsed = email.utils.parsedate_to_datetime(date)
-        if parsed:
-            return parsed.astimezone(tz.tzlocal()).replace(tzinfo=None)
+        return email.utils.parsedate_to_datetime(date)
     except TypeError:
         pass
+    except ValueError as err:
+        _LOG.debug("parse_http_date '%s' error: %s", date, err)
 
     return None
 
