@@ -803,6 +803,31 @@ class ScoringSett:
         }
 
 
+@dataclass
+class Session:
+    id: int
+    expiry: datetime
+    data: bytes
+
+    def __str__(self) -> str:
+        return common.obj2str(self)
+
+    @classmethod
+    def from_row(cls, row: Cursor) -> Session:
+        return Session(
+            id=row["session__id"],
+            expiry=row["session__expiry"],
+            data=row["session__data"],
+        )
+
+    def to_row(self) -> common.Row:
+        return {
+            "session__id": self.id,
+            "session__expiry": self.expiry,
+            "session__data": self.data,
+        }
+
+
 UserSources = ty.Dict[int, Source]
 
 

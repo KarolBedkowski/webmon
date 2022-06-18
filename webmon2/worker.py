@@ -455,6 +455,12 @@ def _delete_old_entries(db: database.DB) -> None:
         db.rollback()
         _LOG.warning("_delete_old_entries error: %s", err)
 
+    # delete expired sessions
+    db.begin()
+    cnt = database.system.delete_expired_sessions(db)
+    _LOG.info("deleted %d expired sessions", cnt)
+    db.commit()
+
 
 def _send_mails(db: database.DB, conf: ConfigParser) -> None:
     """

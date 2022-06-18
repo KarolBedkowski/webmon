@@ -47,6 +47,7 @@ from webmon2 import database, worker
 from . import _commons as c
 from . import (
     _filters,
+    appsession,
     atom,
     entries,
     entry,
@@ -113,6 +114,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         SECURITY_PASSWORD_SALT=b"rY\xac\xf9\x0c\xa6M\xffH\xb8h8\xc7\xcf",
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_SAMESITE="Strict",
+        SESSION_TYPE="db",
         APPLICATION_ROOT=web_root,
         SEND_FILE_MAX_AGE_DEFAULT=60 * 60 * 24 * 7,
         LANGUAGES=["en", "pl"],
@@ -121,6 +123,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
+    app.session_interface = appsession.DBSessionInterface(True)
     babel = flask_babel.Babel(app)
 
     _register_blueprints(app)

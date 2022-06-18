@@ -13,6 +13,8 @@ Database routines to system related objects
 import logging
 import typing as ty
 
+from webmon2 import model
+
 from ._db import DB
 
 _LOG = logging.getLogger(__name__)
@@ -60,3 +62,45 @@ def get_table_sizes(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
     with db.cursor() as cur:
         cur.execute(_GET_DB_TAB_SIZESSQL)
         yield from cur
+
+
+_GET_SESSION_SQL = """
+select id as session__id, expiry as session__expiry, data as session__data
+from sessions
+where id = %s
+"""
+
+
+def get_session(db: DB, session_id: int) -> ty.Optional[model.Session]:
+    with db.cursor() as cur:
+        cur.execute(_GET_SESSION_SQL, (session_id,))
+        if row := cur.fetchone():
+            return model.Session.from_row(row)
+
+    return None
+
+
+def delete_session(db: DB, session_id: int) -> None:
+    with db.cursor() as cur:
+        cur.execute("delete from sessions where id=?", (session_id,))
+
+
+_SAVE_SESSION_SQL = """
+INSERT INTO sessions (id, expiry, data)
+VALUES (%(session__id)s, %(session__expiry)s, %(session__data)s)
+ON CONFLICT (id)
+DO UPDATE
+SET expiry=%(session__expiry)s,
+    data=%(session__data)s
+"""
+
+
+def save_session(db: DB, session: model.Session) -> None:
+    with db.cursor() as cur:
+        cur.execute(_SAVE_SESSION_SQL, session.to_row())
+
+
+def delete_expired_sessions(db: DB) -> int:
+    with db.cursor() as cur:
+        cur.execute("delete from sessions where expiry <= now()")
+        return cur.rowcount
