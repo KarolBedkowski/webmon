@@ -18,7 +18,7 @@ import typing as ty
 import urllib.parse
 
 import requests
-from flask_babel import lazy_gettext
+from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
