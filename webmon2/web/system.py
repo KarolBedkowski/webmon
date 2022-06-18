@@ -55,7 +55,8 @@ def sett_index() -> ty.Any:
 def sett_globals() -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
-    settings = list(database.settings.get_all(db, user_id))
+    settings = database.settings.get_all(db, user_id)
+    settings = list(_translate_sett_descr(settings))
     form = forms.FieldsForm(
         [forms.Field.from_setting(sett, "sett-") for sett in settings]
     )
@@ -442,3 +443,34 @@ def sys_info() -> ty.Any:
         app_conf=current_app.config["app_conf"],
         db_tab_sizes=db_tab_sizes,
     )
+
+
+def _translate_sett_descr(
+    settings: ty.Iterable[model.Setting],
+) -> ty.Iterable[model.Setting]:
+    """Get translated descriptions"""
+
+    translations = {
+        "github_user": gettext("GitHub: user name"),
+        "github_token": gettext("GitHub: access token"),
+        "interval": gettext("Default refresh interval"),
+        "jamendo_client_id": gettext("Jamendo: client ID"),
+        "keep_entries_days": gettext("Keep read entries by given days"),
+        "mail_enabled": gettext("Email: enable email reports"),
+        "mail_interval": gettext("Email: send email interval"),
+        "mail_to": gettext("Email: recipient"),
+        "mail_subject": gettext("Email: subject"),
+        "mail_encrypt": gettext("Email: enable encryption"),
+        "mail_html": gettext("Email: send miltipart email with html content"),
+        "mail_mark_read": gettext("Email: mark reported entries read"),
+        "start_at_unread_group": gettext("Start at first unread group"),
+        "gitlab_token": gettext("GitLab: personal token"),
+        "silent_hours_from": gettext("Silent hours: begin"),
+        "silent_hours_to": gettext("Silent hours: end"),
+        "minimal_score": gettext("Minimal score of entries to show"),
+        "timezone": gettext("User: default timezone"),
+        "locale": gettext("User: language"),
+    }
+    for sett in settings:
+        sett.description = translations.get(sett.key, sett.description)
+        yield sett

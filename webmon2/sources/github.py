@@ -113,13 +113,13 @@ def _build_entry(
 
 
 class GithubInput(GitHubAbstractSource):
-    """Load last commits from github."""
+    """Load last commits from GitHub."""
 
     name = "github_commits"
-    short_info = lazy_gettext("Commit history from Github repository")
+    short_info = lazy_gettext("Commit history from GitHub repository")
     long_info = lazy_gettext(
         "Source load commits history from configured repository."
-        " For work required configured Github account with token."
+        " For work required configured GitHub account with token."
     )
     params = AbstractSource.params + [
         common.SettingDef(
@@ -253,10 +253,10 @@ class GithubTagsSource(GitHubAbstractSource):
     """Load last tags from github."""
 
     name = "github_tags"
-    short_info = lazy_gettext("Tags from Github repository")
+    short_info = lazy_gettext("Tags from GitHub repository")
     long_info = lazy_gettext(
         "Source load tags from configured repository."
-        " For work required configured Github account with token."
+        " For work required configured GitHub account with token."
     )
     params = AbstractSource.params + [
         common.SettingDef(
@@ -392,10 +392,10 @@ class GithubReleasesSource(GitHubAbstractSource):
     """Load last releases from github."""
 
     name = "github_releases"
-    short_info = lazy_gettext("Releases from Github repository")
+    short_info = lazy_gettext("Releases from GitHub repository")
     long_info = lazy_gettext(
         "Source load releases history from configured repository."
-        " For work required configured Github account with token."
+        " For work required configured GitHub account with token."
     )
     params = AbstractSource.params + [
         common.SettingDef(

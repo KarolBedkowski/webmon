@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-17 16:12+0200\n"
+"POT-Creation-Date: 2022-06-18 19:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -214,13 +214,13 @@ msgid "Connection error: %(err)s"
 msgstr ""
 
 #: webmon2/sources/github.py:119
-msgid "Commit history from Github repository"
+msgid "Commit history from GitHub repository"
 msgstr ""
 
 #: webmon2/sources/github.py:120
 msgid ""
 "Source load commits history from configured repository. For work required"
-" configured Github account with token."
+" configured GitHub account with token."
 msgstr ""
 
 #: webmon2/sources/github.py:126 webmon2/sources/github.py:263
@@ -257,13 +257,13 @@ msgid "Author: %(author)s"
 msgstr ""
 
 #: webmon2/sources/github.py:256
-msgid "Tags from Github repository"
+msgid "Tags from GitHub repository"
 msgstr ""
 
 #: webmon2/sources/github.py:257
 msgid ""
 "Source load tags from configured repository. For work required configured"
-" Github account with token."
+" GitHub account with token."
 msgstr ""
 
 #: webmon2/sources/github.py:282 webmon2/sources/github.py:421
@@ -272,13 +272,13 @@ msgid "Maximal number of tags to load"
 msgstr ""
 
 #: webmon2/sources/github.py:395
-msgid "Releases from Github repository"
+msgid "Releases from GitHub repository"
 msgstr ""
 
 #: webmon2/sources/github.py:396
 msgid ""
 "Source load releases history from configured repository. For work "
-"required configured Github account with token."
+"required configured GitHub account with token."
 msgstr ""
 
 #: webmon2/sources/github.py:511 webmon2/sources/gitlab.py:496
@@ -542,68 +542,144 @@ msgstr ""
 msgid "No more unread sources..."
 msgstr ""
 
-#: webmon2/web/system.py:72 webmon2/web/system.py:366
+#: webmon2/web/system.py:73 webmon2/web/system.py:367
 msgid "There are errors in form"
 msgstr ""
 
-#: webmon2/web/system.py:88 webmon2/web/system.py:368
+#: webmon2/web/system.py:89 webmon2/web/system.py:369
 msgid "User changed somewhere else; reloading..."
 msgstr ""
 
-#: webmon2/web/system.py:90
+#: webmon2/web/system.py:91
 msgid "New passwords not match"
 msgstr ""
 
-#: webmon2/web/system.py:92
+#: webmon2/web/system.py:93
 msgid "Missing new password"
 msgstr ""
 
-#: webmon2/web/system.py:94
+#: webmon2/web/system.py:95
 msgid "Missing current password"
 msgstr ""
 
-#: webmon2/web/system.py:105
+#: webmon2/web/system.py:106
 msgid "Password changed"
 msgstr ""
 
-#: webmon2/web/system.py:107
+#: webmon2/web/system.py:108
 msgid "Wrong current password"
 msgstr ""
 
-#: webmon2/web/system.py:169
+#: webmon2/web/system.py:170
 msgid "TOTP saved"
 msgstr ""
 
-#: webmon2/web/system.py:176
+#: webmon2/web/system.py:177
 msgid "Wrong TOTP response"
 msgstr ""
 
-#: webmon2/web/system.py:212 webmon2/web/system.py:230
-#: webmon2/web/system.py:236
+#: webmon2/web/system.py:213 webmon2/web/system.py:231
+#: webmon2/web/system.py:237
 msgid "No file to import"
 msgstr ""
 
-#: webmon2/web/system.py:220 webmon2/web/system.py:244
+#: webmon2/web/system.py:221 webmon2/web/system.py:245
 msgid "Import completed"
 msgstr ""
 
-#: webmon2/web/system.py:258 webmon2/web/system.py:276
+#: webmon2/web/system.py:259 webmon2/web/system.py:277
 #, python-format
 msgid "One entry mark read"
 msgid_plural "%(updated)s entries mark read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: webmon2/web/system.py:306
+#: webmon2/web/system.py:307
 msgid "Saved"
 msgstr ""
 
-#: webmon2/web/system.py:334 webmon2/web/system.py:393
+#: webmon2/web/system.py:335 webmon2/web/system.py:394
 msgid "User not found"
 msgstr ""
 
-#: webmon2/web/system.py:399
+#: webmon2/web/system.py:400
 msgid "User deleted"
+msgstr ""
+
+#: webmon2/web/system.py:454
+msgid "GitHub: user name"
+msgstr ""
+
+#: webmon2/web/system.py:455
+msgid "GitHub: access token"
+msgstr ""
+
+#: webmon2/web/system.py:456
+msgid "Default refresh interval"
+msgstr ""
+
+#: webmon2/web/system.py:457
+msgid "Jamendo: client ID"
+msgstr ""
+
+#: webmon2/web/system.py:458
+msgid "Keep read entries by given days"
+msgstr ""
+
+#: webmon2/web/system.py:459
+msgid "Email: enable email reports"
+msgstr ""
+
+#: webmon2/web/system.py:460
+msgid "Email: send email interval"
+msgstr ""
+
+#: webmon2/web/system.py:461
+msgid "Email: recipient"
+msgstr ""
+
+#: webmon2/web/system.py:462
+msgid "Email: subject"
+msgstr ""
+
+#: webmon2/web/system.py:463
+msgid "Email: enable encryption"
+msgstr ""
+
+#: webmon2/web/system.py:464
+msgid "Email: send miltipart email with html content"
+msgstr ""
+
+#: webmon2/web/system.py:465
+msgid "Email: mark reported entries read"
+msgstr ""
+
+#: webmon2/web/system.py:466
+msgid "Start at first unread group"
+msgstr ""
+
+#: webmon2/web/system.py:467
+msgid "GitLab: personal token"
+msgstr ""
+
+#: webmon2/web/system.py:468
+msgid "Silent hours: begin"
+msgstr ""
+
+#: webmon2/web/system.py:469
+msgid "Silent hours: end"
+msgstr ""
+
+#: webmon2/web/system.py:470
+msgid "Minimal score of entries to show"
+msgstr ""
+
+#: webmon2/web/system.py:471
+msgid "User: default timezone"
+msgstr ""
+
+#: webmon2/web/system.py:472
+msgid "User: language"
 msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:31

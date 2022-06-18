@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-17 16:12+0200\n"
-"PO-Revision-Date: 2022-06-17 16:15+0200\n"
+"POT-Creation-Date: 2022-06-18 19:40+0200\n"
+"PO-Revision-Date: 2022-06-18 19:40+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -229,16 +229,16 @@ msgid "Connection error: %(err)s"
 msgstr "Błąd połączenia: %(err)s"
 
 #: webmon2/sources/github.py:119
-msgid "Commit history from Github repository"
-msgstr "Historia zmian z reportorium Github"
+msgid "Commit history from GitHub repository"
+msgstr "Historia zmian z repozytorium GitHub"
 
 #: webmon2/sources/github.py:120
 msgid ""
 "Source load commits history from configured repository. For work required"
-" configured Github account with token."
+" configured GitHub account with token."
 msgstr ""
-"Źródło wczytuje historię zmian z podanego repozytorium. Do działania "
-"wymaga skonfigurowanego konta Github z tokenem."
+"Źródło wczytuje historię zmian ze skonfigurowanego repozytorium. Do pracy"
+" wymaga Skonfigurowanego konta GitHub z tokenem."
 
 #: webmon2/sources/github.py:126 webmon2/sources/github.py:263
 #: webmon2/sources/github.py:402
@@ -274,16 +274,16 @@ msgid "Author: %(author)s"
 msgstr "Autor: %(author)s"
 
 #: webmon2/sources/github.py:256
-msgid "Tags from Github repository"
-msgstr "Tagi z repozytorium Github"
+msgid "Tags from GitHub repository"
+msgstr "Tagi z repozytorium GitHub"
 
 #: webmon2/sources/github.py:257
 msgid ""
 "Source load tags from configured repository. For work required configured"
-" Github account with token."
+" GitHub account with token."
 msgstr ""
-"Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
-"skonfigurowanego konta Github z tokenem."
+"Źródło wczytuje tagi ze skonfigurowanego repozytorium. Do pracy wymaga "
+"skonfigurowanego konta GitHub z tokenem."
 
 #: webmon2/sources/github.py:282 webmon2/sources/github.py:421
 #: webmon2/sources/gitlab.py:306 webmon2/sources/gitlab.py:407
@@ -291,13 +291,13 @@ msgid "Maximal number of tags to load"
 msgstr "Maksymalna ilość tagów do wczytania"
 
 #: webmon2/sources/github.py:395
-msgid "Releases from Github repository"
-msgstr "Wydania z repozytorium Github"
+msgid "Releases from GitHub repository"
+msgstr "Wydania z repozytorium GitHub"
 
 #: webmon2/sources/github.py:396
 msgid ""
 "Source load releases history from configured repository. For work "
-"required configured Github account with token."
+"required configured GitHub account with token."
 msgstr ""
 "Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta Github z tokenem."
@@ -577,52 +577,52 @@ msgstr "Źródło zmienione w tle, przeładowywanie..."
 msgid "No more unread sources..."
 msgstr "Brak nieprzeczytanych źródeł..."
 
-#: webmon2/web/system.py:72 webmon2/web/system.py:366
+#: webmon2/web/system.py:73 webmon2/web/system.py:367
 msgid "There are errors in form"
 msgstr "W formie występują błędy"
 
-#: webmon2/web/system.py:88 webmon2/web/system.py:368
+#: webmon2/web/system.py:89 webmon2/web/system.py:369
 msgid "User changed somewhere else; reloading..."
 msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
 
-#: webmon2/web/system.py:90
+#: webmon2/web/system.py:91
 msgid "New passwords not match"
 msgstr "Nowe hasła nie pasują"
 
-#: webmon2/web/system.py:92
+#: webmon2/web/system.py:93
 msgid "Missing new password"
 msgstr "Brak nowego hasła"
 
-#: webmon2/web/system.py:94
+#: webmon2/web/system.py:95
 msgid "Missing current password"
 msgstr "Brak obecnego hasła"
 
-#: webmon2/web/system.py:105
+#: webmon2/web/system.py:106
 msgid "Password changed"
 msgstr "Hasło zmienione"
 
-#: webmon2/web/system.py:107
+#: webmon2/web/system.py:108
 msgid "Wrong current password"
 msgstr "Niewłaściwe aktualne hasło"
 
-#: webmon2/web/system.py:169
+#: webmon2/web/system.py:170
 msgid "TOTP saved"
 msgstr "Zapisano TOTP"
 
-#: webmon2/web/system.py:176
+#: webmon2/web/system.py:177
 msgid "Wrong TOTP response"
 msgstr "Błędna odpowiedź TOTP"
 
-#: webmon2/web/system.py:212 webmon2/web/system.py:230
-#: webmon2/web/system.py:236
+#: webmon2/web/system.py:213 webmon2/web/system.py:231
+#: webmon2/web/system.py:237
 msgid "No file to import"
 msgstr "Brak pliku do importu"
 
-#: webmon2/web/system.py:220 webmon2/web/system.py:244
+#: webmon2/web/system.py:221 webmon2/web/system.py:245
 msgid "Import completed"
 msgstr "Import zakończony"
 
-#: webmon2/web/system.py:258 webmon2/web/system.py:276
+#: webmon2/web/system.py:259 webmon2/web/system.py:277
 #, python-format
 msgid "One entry mark read"
 msgid_plural "%(updated)s entries mark read"
@@ -630,17 +630,93 @@ msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
 msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
 msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
 
-#: webmon2/web/system.py:306
+#: webmon2/web/system.py:307
 msgid "Saved"
 msgstr "Zapisano"
 
-#: webmon2/web/system.py:334 webmon2/web/system.py:393
+#: webmon2/web/system.py:335 webmon2/web/system.py:394
 msgid "User not found"
 msgstr "Użytkownik nie znaleziony"
 
-#: webmon2/web/system.py:399
+#: webmon2/web/system.py:400
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
+
+#: webmon2/web/system.py:454
+msgid "GitHub: user name"
+msgstr "Github: nazwa użytkownika"
+
+#: webmon2/web/system.py:455
+msgid "GitHub: access token"
+msgstr "GitHub: token dostępowy"
+
+#: webmon2/web/system.py:456
+msgid "Default refresh interval"
+msgstr "Domyślny interwał odświeżania"
+
+#: webmon2/web/system.py:457
+msgid "Jamendo: client ID"
+msgstr "Jamendo: id klienta"
+
+#: webmon2/web/system.py:458
+msgid "Keep read entries by given days"
+msgstr "Zachowaj przeczytane wpisy przez daną ilość dni"
+
+#: webmon2/web/system.py:459
+msgid "Email: enable email reports"
+msgstr "Email: włącz raporty email"
+
+#: webmon2/web/system.py:460
+msgid "Email: send email interval"
+msgstr "Email: interwał wysyłania emaili"
+
+#: webmon2/web/system.py:461
+msgid "Email: recipient"
+msgstr "Email: odbiorca"
+
+#: webmon2/web/system.py:462
+msgid "Email: subject"
+msgstr "Email: temat"
+
+#: webmon2/web/system.py:463
+msgid "Email: enable encryption"
+msgstr "Email: włącz szyfrowanie"
+
+#: webmon2/web/system.py:464
+msgid "Email: send miltipart email with html content"
+msgstr "Email: wysyłaj email wieloczęściowy z zawartością html"
+
+#: webmon2/web/system.py:465
+msgid "Email: mark reported entries read"
+msgstr "Email: zaznacz wysłane wpisy jako przeczytane"
+
+#: webmon2/web/system.py:466
+msgid "Start at first unread group"
+msgstr "Zaczynaj od pierwszej nieprzeczytanej grupy"
+
+#: webmon2/web/system.py:467
+msgid "GitLab: personal token"
+msgstr "GitLab: osobisty token"
+
+#: webmon2/web/system.py:468
+msgid "Silent hours: begin"
+msgstr "Ciche godziny: początek"
+
+#: webmon2/web/system.py:469
+msgid "Silent hours: end"
+msgstr "Ciche godziny: koniec"
+
+#: webmon2/web/system.py:470
+msgid "Minimal score of entries to show"
+msgstr "Minimalne ilość punktów wpisu aby go pokazać"
+
+#: webmon2/web/system.py:471
+msgid "User: default timezone"
+msgstr "Użytkownik: domyślna strefa czasowa"
+
+#: webmon2/web/system.py:472
+msgid "User: language"
+msgstr "Użytkownik: język"
 
 #: webmon2/web/templates/_render_entry.html:31
 msgid "Original content"
@@ -1405,4 +1481,85 @@ msgstr "Kod:"
 
 #~ msgid "Gitlab authentication error: %(err)s"
 #~ msgstr ""
+
+#~ msgid "Commit history from Github repository"
+#~ msgstr "Historia zmian z reportorium Github"
+
+#~ msgid ""
+#~ "Source load commits history from "
+#~ "configured repository. For work required "
+#~ "configured Github account with token."
+#~ msgstr ""
+#~ "Źródło wczytuje historię zmian z "
+#~ "podanego repozytorium. Do działania wymaga "
+#~ "skonfigurowanego konta Github z tokenem."
+
+#~ msgid "Tags from Github repository"
+#~ msgstr "Tagi z repozytorium Github"
+
+#~ msgid ""
+#~ "Source load tags from configured "
+#~ "repository. For work required configured "
+#~ "Github account with token."
+#~ msgstr ""
+#~ "Źródło wczytuje tagi z podanego "
+#~ "repozytorium. Do pracy wymaga skonfigurowanego"
+#~ " konta Github z tokenem."
+
+#~ msgid "Releases from Github repository"
+#~ msgstr "Wydania z repozytorium Github"
+
+#~ msgid ""
+#~ "Source load releases history from "
+#~ "configured repository. For work required "
+#~ "configured Github account with token."
+#~ msgstr ""
+#~ "Źródło wczytuje historię wydań z "
+#~ "podanego repozytorium. Do pracy wymaga "
+#~ "skonfigurowanego konta Github z tokenem."
+
+#~ msgid "Github user name"
+#~ msgstr "Nazwa użytkownika Github"
+
+#~ msgid "Guthub access token"
+#~ msgstr "Token dostępowy Github"
+
+#~ msgid "Enable mail reports"
+#~ msgstr "Włącz raporty mailowe"
+
+#~ msgid "Send mail interval"
+#~ msgstr "Interwał wysyłki maili"
+
+#~ msgid "Email recipient"
+#~ msgstr "Adresat maili"
+
+#~ msgid "Email subject"
+#~ msgstr "Temat maila"
+
+#~ msgid "Encrypt email"
+#~ msgstr "Szyfruj email"
+
+#~ msgid "Send miltipart email with html content"
+#~ msgstr "Wysyłaj wieloczęsciowy mail z zawartością html"
+
+#~ msgid "Mark reported entries read"
+#~ msgstr "Zaznacz raportowane wpisy jako przeczytane"
+
+#~ msgid "GitLab personal token"
+#~ msgstr "Osobisty token GitLab"
+
+#~ msgid "Begin of silent hours"
+#~ msgstr "Początek cichych godzin"
+
+#~ msgid "End of silent hours"
+#~ msgstr "Koniec cichych godzin"
+
+#~ msgid "Miminal score of entries to show."
+#~ msgstr "Minimalna ilość punktów dla pokazywanych wpisów."
+
+#~ msgid "Default user timezone"
+#~ msgstr "Domyślna strefa czasowa użytkownika"
+
+#~ msgid "User locale"
+#~ msgstr "Język użytkownika"
 
