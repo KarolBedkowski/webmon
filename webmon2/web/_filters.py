@@ -16,7 +16,7 @@ import urllib
 from zoneinfo import ZoneInfo
 
 from flask import Flask, request, session
-from flask_babel import format_datetime
+from flask_babel import format_datetime, gettext
 
 from webmon2 import formatters
 
@@ -43,6 +43,9 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
 
 
 def _format_date(date: ty.Any) -> str:
+    if date is None:
+        return gettext("none")
+
     if isinstance(date, datetime.datetime):
         if user_tz := session.get("_user_tz"):
             date = date.astimezone(ZoneInfo(user_tz))

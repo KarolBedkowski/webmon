@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-18 19:40+0200\n"
-"PO-Revision-Date: 2022-06-18 19:40+0200\n"
+"POT-Creation-Date: 2022-06-18 19:48+0200\n"
+"PO-Revision-Date: 2022-06-18 19:50+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -467,6 +467,10 @@ msgstr "Maksymalny czas wszytywania"
 #, python-format
 msgid "Response code: %(code)s"
 msgstr "Kod odpowiedzi: %(code)s"
+
+#: webmon2/web/_filters.py:47
+msgid "none"
+msgstr "brak"
 
 #: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
 msgid "Read"
