@@ -1,4 +1,4 @@
-webmon ver 2.6.x
+webmon ver 2.7.x
 ================
 
 Monitor changes on web pages, command results, GitHub repositories, Jamendo
@@ -157,7 +157,7 @@ file in ~/.local/share/webmon2 and creating subclass of:
 Licence
 -------
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
