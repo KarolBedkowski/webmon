@@ -178,7 +178,7 @@ def entries_search() -> str:
                     db, user_id, query, title_only, group_id, source_id
                 )
             )
-        except database.SyntaxError:
+        except database.QuerySyntaxError:
             error = "Invalid query"
 
     return render_template(

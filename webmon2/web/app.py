@@ -123,7 +123,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    app.session_interface = appsession.DBSessionInterface(True)
+    app.session_interface = appsession.DBSessionInterface(True)  # type: ignore
     babel = flask_babel.Babel(app)
 
     _register_blueprints(app)

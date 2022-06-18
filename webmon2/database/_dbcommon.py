@@ -13,14 +13,14 @@ import typing as ty
 
 from psycopg2 import extensions
 
-Cursor = ty.Type[extensions.cursor]
+Cursor = extensions.cursor
 
 
 class NotFound(Exception):
     pass
 
 
-class SyntaxError(Exception):
+class QuerySyntaxError(Exception):
     pass
 
 

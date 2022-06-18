@@ -263,7 +263,9 @@ def save(db: DB, source: model.Source) -> model.Source:
     with db.cursor() as cur:
         if not source.id:
             cur.execute(_INSERT_SOURCE_SQL, row)
-            source.id = cur.fetchone()[0]
+            res = cur.fetchone()
+            assert res
+            source.id = res[0]
             # create state for new source
             state = model.SourceState.new(source.id)
             state.status = model.SourceStateStatus.NEW

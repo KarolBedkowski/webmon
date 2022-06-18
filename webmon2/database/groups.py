@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -209,7 +209,7 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     with db.cursor() as cur:
         if group.id is None:
             cur.execute(_INSERT_GROUP_SQL, row)
-            group.id = cur.fetchone()[0]
+            group.id = cur.fetchone()[0]  # type: ignore
         else:
             cur.execute(_UPDATE_GROUP_SQL, row)
 
@@ -385,14 +385,14 @@ def delete(db: DB, user_id: int, group_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if not cur.fetchone()[0]:
+        if not cur.fetchone()[0]:  # type: ignore
             raise common.OperationError("can't delete last group")
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT count(1) FROM sources WHERE group_id=%s", (group_id,)
         )
-        if cur.fetchone()[0]:
+        if cur.fetchone()[0]:  # type: ignore
             # there are sources in group find destination group
             dst_group_id = _find_dst_group(db, user_id, group_id)
             cur.execute(

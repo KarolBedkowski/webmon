@@ -170,7 +170,9 @@ def get_history(  # pylint: disable=too-many-arguments
     # count all
     with db.cursor() as cur:
         cur.execute(f"select count(1) from ({sql}) subq", params)
-        total = int(cur.fetchone()[0])
+        res = cur.fetchone()
+        assert res
+        total = int(res[0])
 
     params["limit"] = limit
     params["offset"] = offset
@@ -339,7 +341,7 @@ def find_fulltext(
             cur.execute(sql, args)
         except psycopg2.errors.SyntaxError as err:
             _LOG.error("find_fulltext syntax error: %s", err)
-            raise dbc.SyntaxError() from err
+            raise dbc.QuerySyntaxError() from err
         yield from _yield_entries(cur, user_sources)
 
 
