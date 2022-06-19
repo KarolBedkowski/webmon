@@ -93,6 +93,18 @@ def _proxy_links(content: str) -> str:
             node.attrib["src"] = url_for("proxy.proxy", path=src)
             changed = True
 
+    for node in document.xpath("//source"):
+        src = node.attrib.get("srcset")
+        if src:
+            res = []
+            for part in src.split(" "):
+                if part.startswith("http"):
+                    res.append(url_for("proxy.proxy", path=part))
+                else:
+                    res.append(part)
+            node.attrib["srcset"] = " ".join(res)
+            changed = True
+
     if not changed:
         return content
 
