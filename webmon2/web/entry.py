@@ -13,7 +13,7 @@ Web gui
 import logging
 import typing as ty
 
-from flask import Blueprint, abort, render_template, request, session
+from flask import Blueprint, abort, g, render_template, request, session
 from flask_babel import gettext
 
 from webmon2 import database, model
@@ -45,6 +45,9 @@ def entry(entry_id: int) -> ty.Any:
             read=model.EntryReadMark.MANUAL_READ,
         )
         entry_.read_mark = model.EntryReadMark.MANUAL_READ
+        g.entries_unread_count = database.entries.get_total_count(
+            db, user_id, unread=True
+        )
         db.commit()
 
     next_entry = database.entries.find_next_entry_id(
