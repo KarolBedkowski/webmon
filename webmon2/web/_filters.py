@@ -15,7 +15,9 @@ import typing as ty
 import urllib
 from zoneinfo import ZoneInfo
 
-from flask import Flask, request, session
+import lxml
+import lxml.html
+from flask import Flask, request, session, url_for
 from flask_babel import format_datetime, gettext
 
 from webmon2 import formatters
@@ -81,6 +83,22 @@ def _format_key(inp: str) -> str:
     return inp[0].upper() + inp[1:]
 
 
+def _proxy_links(content: str) -> str:
+    """Replace links to img/other objects to local proxy."""
+    document = lxml.html.document_fromstring(content)
+    changed = False
+    for node in document.xpath("//img"):
+        src = node.attrib.get("src")
+        if src and src.startswith("http"):
+            node.attrib["src"] = url_for("proxy.proxy", path=src)
+            changed = True
+
+    if not changed:
+        return content
+
+    return lxml.etree.tostring(document).decode("utf-8")
+
+
 def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
@@ -91,3 +109,4 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["summary"] = formatters.entry_summary
     app.jinja_env.filters["entry_score_class"] = _entry_score_class
     app.jinja_env.filters["format_key"] = _format_key
+    app.jinja_env.filters["proxy_links"] = _proxy_links
