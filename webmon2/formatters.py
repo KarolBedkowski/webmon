@@ -120,8 +120,18 @@ def entry_summary(
         document = lxml.html.document_fromstring(content)
         # pylint: disable=c-extension-no-member
         content = "\n".join(lxml.etree.XPath("//text()")(document))
+    else:
+        content = (
+            content.replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("&", "&amp;")
+        )
 
     if len(content) > 400:
-        content = "\n".join(content.split("\n", 21)[:20])[:400] + "\n…"
+        lines = content[:400].split("\n", 10)
+        if len(lines) > 10:
+            lines = lines[:10]
+
+        content = "\n".join(lines) + "\n…"
 
     return content
