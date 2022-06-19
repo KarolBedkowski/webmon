@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-18 19:48+0200\n"
+"POT-Creation-Date: 2022-06-19 17:08+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -546,11 +546,11 @@ msgstr ""
 msgid "No more unread sources..."
 msgstr ""
 
-#: webmon2/web/system.py:73 webmon2/web/system.py:367
+#: webmon2/web/system.py:73 webmon2/web/system.py:384
 msgid "There are errors in form"
 msgstr ""
 
-#: webmon2/web/system.py:89 webmon2/web/system.py:369
+#: webmon2/web/system.py:89 webmon2/web/system.py:386
 msgid "User changed somewhere else; reloading..."
 msgstr ""
 
@@ -598,91 +598,98 @@ msgid_plural "%(updated)s entries mark read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: webmon2/web/system.py:307
+#: webmon2/web/system.py:294
+#, python-format
+msgid "One source updated"
+msgid_plural "%(updated)s sources updated"
+msgstr[0] ""
+msgstr[1] ""
+
+#: webmon2/web/system.py:324
 msgid "Saved"
 msgstr ""
 
-#: webmon2/web/system.py:335 webmon2/web/system.py:394
+#: webmon2/web/system.py:352 webmon2/web/system.py:411
 msgid "User not found"
 msgstr ""
 
-#: webmon2/web/system.py:400
+#: webmon2/web/system.py:417
 msgid "User deleted"
 msgstr ""
 
-#: webmon2/web/system.py:454
+#: webmon2/web/system.py:471
 msgid "GitHub: user name"
 msgstr ""
 
-#: webmon2/web/system.py:455
+#: webmon2/web/system.py:472
 msgid "GitHub: access token"
 msgstr ""
 
-#: webmon2/web/system.py:456
+#: webmon2/web/system.py:473
 msgid "Default refresh interval"
 msgstr ""
 
-#: webmon2/web/system.py:457
+#: webmon2/web/system.py:474
 msgid "Jamendo: client ID"
 msgstr ""
 
-#: webmon2/web/system.py:458
+#: webmon2/web/system.py:475
 msgid "Keep read entries by given days"
 msgstr ""
 
-#: webmon2/web/system.py:459
+#: webmon2/web/system.py:476
 msgid "Email: enable email reports"
 msgstr ""
 
-#: webmon2/web/system.py:460
+#: webmon2/web/system.py:477
 msgid "Email: send email interval"
 msgstr ""
 
-#: webmon2/web/system.py:461
+#: webmon2/web/system.py:478
 msgid "Email: recipient"
 msgstr ""
 
-#: webmon2/web/system.py:462
+#: webmon2/web/system.py:479
 msgid "Email: subject"
 msgstr ""
 
-#: webmon2/web/system.py:463
+#: webmon2/web/system.py:480
 msgid "Email: enable encryption"
 msgstr ""
 
-#: webmon2/web/system.py:464
+#: webmon2/web/system.py:481
 msgid "Email: send miltipart email with html content"
 msgstr ""
 
-#: webmon2/web/system.py:465
+#: webmon2/web/system.py:482
 msgid "Email: mark reported entries read"
 msgstr ""
 
-#: webmon2/web/system.py:466
+#: webmon2/web/system.py:483
 msgid "Start at first unread group"
 msgstr ""
 
-#: webmon2/web/system.py:467
+#: webmon2/web/system.py:484
 msgid "GitLab: personal token"
 msgstr ""
 
-#: webmon2/web/system.py:468
+#: webmon2/web/system.py:485
 msgid "Silent hours: begin"
 msgstr ""
 
-#: webmon2/web/system.py:469
+#: webmon2/web/system.py:486
 msgid "Silent hours: end"
 msgstr ""
 
-#: webmon2/web/system.py:470
+#: webmon2/web/system.py:487
 msgid "Minimal score of entries to show"
 msgstr ""
 
-#: webmon2/web/system.py:471
+#: webmon2/web/system.py:488
 msgid "User: default timezone"
 msgstr ""
 
-#: webmon2/web/system.py:472
+#: webmon2/web/system.py:489
 msgid "User: language"
 msgstr ""
 
@@ -1252,6 +1259,10 @@ msgstr ""
 
 #: webmon2/web/templates/system/data.html:42
 msgid "Mark read all entries fetched before today"
+msgstr ""
+
+#: webmon2/web/templates/system/data.html:43
+msgid "Randomize next check time for all active sources"
 msgstr ""
 
 #: webmon2/web/templates/system/globals.html:14

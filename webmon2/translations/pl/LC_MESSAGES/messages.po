@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-18 19:48+0200\n"
-"PO-Revision-Date: 2022-06-18 19:51+0200\n"
+"POT-Creation-Date: 2022-06-19 17:08+0200\n"
+"PO-Revision-Date: 2022-06-19 17:09+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -581,11 +581,11 @@ msgstr "Źródło zmienione w tle, przeładowywanie..."
 msgid "No more unread sources..."
 msgstr "Brak nieprzeczytanych źródeł..."
 
-#: webmon2/web/system.py:73 webmon2/web/system.py:367
+#: webmon2/web/system.py:73 webmon2/web/system.py:384
 msgid "There are errors in form"
 msgstr "W formie występują błędy"
 
-#: webmon2/web/system.py:89 webmon2/web/system.py:369
+#: webmon2/web/system.py:89 webmon2/web/system.py:386
 msgid "User changed somewhere else; reloading..."
 msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
 
@@ -634,91 +634,99 @@ msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
 msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
 msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
 
-#: webmon2/web/system.py:307
+#: webmon2/web/system.py:294
+#, python-format
+msgid "One source updated"
+msgid_plural "%(updated)s sources updated"
+msgstr[0] "Jedno źródło zaktualizowane"
+msgstr[1] "%(updated)s źródła zaktualizowane"
+msgstr[2] "%(updated)s źródeł zaktualizowanych"
+
+#: webmon2/web/system.py:324
 msgid "Saved"
 msgstr "Zapisano"
 
-#: webmon2/web/system.py:335 webmon2/web/system.py:394
+#: webmon2/web/system.py:352 webmon2/web/system.py:411
 msgid "User not found"
 msgstr "Użytkownik nie znaleziony"
 
-#: webmon2/web/system.py:400
+#: webmon2/web/system.py:417
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
 
-#: webmon2/web/system.py:454
+#: webmon2/web/system.py:471
 msgid "GitHub: user name"
 msgstr "Github: nazwa użytkownika"
 
-#: webmon2/web/system.py:455
+#: webmon2/web/system.py:472
 msgid "GitHub: access token"
 msgstr "GitHub: token dostępowy"
 
-#: webmon2/web/system.py:456
+#: webmon2/web/system.py:473
 msgid "Default refresh interval"
 msgstr "Domyślny interwał odświeżania"
 
-#: webmon2/web/system.py:457
+#: webmon2/web/system.py:474
 msgid "Jamendo: client ID"
 msgstr "Jamendo: id klienta"
 
-#: webmon2/web/system.py:458
+#: webmon2/web/system.py:475
 msgid "Keep read entries by given days"
 msgstr "Zachowaj przeczytane wpisy przez daną ilość dni"
 
-#: webmon2/web/system.py:459
+#: webmon2/web/system.py:476
 msgid "Email: enable email reports"
 msgstr "Email: włącz raporty email"
 
-#: webmon2/web/system.py:460
+#: webmon2/web/system.py:477
 msgid "Email: send email interval"
 msgstr "Email: interwał wysyłania emaili"
 
-#: webmon2/web/system.py:461
+#: webmon2/web/system.py:478
 msgid "Email: recipient"
 msgstr "Email: odbiorca"
 
-#: webmon2/web/system.py:462
+#: webmon2/web/system.py:479
 msgid "Email: subject"
 msgstr "Email: temat"
 
-#: webmon2/web/system.py:463
+#: webmon2/web/system.py:480
 msgid "Email: enable encryption"
 msgstr "Email: włącz szyfrowanie"
 
-#: webmon2/web/system.py:464
+#: webmon2/web/system.py:481
 msgid "Email: send miltipart email with html content"
 msgstr "Email: wysyłaj email wieloczęściowy z zawartością html"
 
-#: webmon2/web/system.py:465
+#: webmon2/web/system.py:482
 msgid "Email: mark reported entries read"
 msgstr "Email: zaznacz wysłane wpisy jako przeczytane"
 
-#: webmon2/web/system.py:466
+#: webmon2/web/system.py:483
 msgid "Start at first unread group"
 msgstr "Zaczynaj od pierwszej nieprzeczytanej grupy"
 
-#: webmon2/web/system.py:467
+#: webmon2/web/system.py:484
 msgid "GitLab: personal token"
 msgstr "GitLab: osobisty token"
 
-#: webmon2/web/system.py:468
+#: webmon2/web/system.py:485
 msgid "Silent hours: begin"
 msgstr "Ciche godziny: początek"
 
-#: webmon2/web/system.py:469
+#: webmon2/web/system.py:486
 msgid "Silent hours: end"
 msgstr "Ciche godziny: koniec"
 
-#: webmon2/web/system.py:470
+#: webmon2/web/system.py:487
 msgid "Minimal score of entries to show"
 msgstr "Minimalne ilość punktów wpisu aby go pokazać"
 
-#: webmon2/web/system.py:471
+#: webmon2/web/system.py:488
 msgid "User: default timezone"
 msgstr "Użytkownik: domyślna strefa czasowa"
 
-#: webmon2/web/system.py:472
+#: webmon2/web/system.py:489
 msgid "User: language"
 msgstr "Użytkownik: język"
 
@@ -1229,7 +1237,7 @@ msgstr "Ustawienia globalne"
 
 #: webmon2/web/templates/system/_sett_nav.html:5
 msgid "Data"
-msgstr "Data"
+msgstr "Dane"
 
 #: webmon2/web/templates/system/_sett_nav.html:6
 #: webmon2/web/templates/system/scoring.html:9
@@ -1289,6 +1297,10 @@ msgstr "Zaznasz wszystko jako przeczytane"
 #: webmon2/web/templates/system/data.html:42
 msgid "Mark read all entries fetched before today"
 msgstr "Zaznacz wszystko starsze niż dzień jako przeczytane"
+
+#: webmon2/web/templates/system/data.html:43
+msgid "Randomize next check time for all active sources"
+msgstr "Losowo zmień czas kolejnego sprawdzenia dla wszystkich aktywnych źródeł"
 
 #: webmon2/web/templates/system/globals.html:14
 msgid "Default and global settings"

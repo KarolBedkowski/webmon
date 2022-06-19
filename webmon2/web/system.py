@@ -284,6 +284,23 @@ def sett_data_mark_all_old_read() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
+@BP.route("/settings/data/manipulation/randomize_next_check")
+def sett_data_randomize_next_check() -> ty.Any:
+    user_id = session["user"]
+    db = c.get_db()
+    updated = database.sources.randomize_next_check(db, user_id)
+    db.commit()
+    flash(
+        ngettext(
+            "One source updated",
+            "%(updated)s sources updated",
+            updated,
+            updated=updated,
+        )
+    )
+    return redirect(url_for("system.sett_data"))
+
+
 @BP.route("/settings/scoring", methods=["GET", "POST"])
 def sett_scoring() -> ty.Any:
     user_id = session["user"]
