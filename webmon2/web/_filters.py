@@ -109,4 +109,9 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["summary"] = formatters.entry_summary
     app.jinja_env.filters["entry_score_class"] = _entry_score_class
     app.jinja_env.filters["format_key"] = _format_key
-    app.jinja_env.filters["proxy_links"] = _proxy_links
+
+    app_conf = app.config["app_conf"]
+    if app_conf.getboolean("web", "proxy_media"):
+        app.jinja_env.filters["proxy_links"] = _proxy_links
+    else:
+        app.jinja_env.filters["proxy_links"] = lambda x: x

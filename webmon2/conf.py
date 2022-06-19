@@ -31,6 +31,7 @@ port = 5000
 root = /
 minify = false
 pool = 20
+proxy_media = false
 
 [smtp]
 enabled = False
