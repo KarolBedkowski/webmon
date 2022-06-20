@@ -13,9 +13,12 @@ import datetime
 import logging
 import typing as ty
 import urllib
+from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
-from flask import Flask, request, session
+import lxml
+import lxml.html
+from flask import Flask, request, session, url_for
 from flask_babel import format_datetime, gettext
 
 from webmon2 import formatters
@@ -81,6 +84,67 @@ def _format_key(inp: str) -> str:
     return inp[0].upper() + inp[1:]
 
 
+def _create_proxy_url(url: str, entry=None) -> str:
+    """Create proxied link; if url is relative, use entry.url as base."""
+    if not url:
+        return ""
+
+    if url.startswith("http://") or url.startswith("https://"):
+        return url_for("proxy.proxy", path=url)
+
+    # handle related urls
+    if not entry or not entry.url:
+        return url
+
+    url = urljoin(entry.url, url)
+    return url_for("proxy.proxy", path=url)
+
+
+def _create_proxy_urls_srcset(srcset: str, entry=None) -> ty.Iterable[str]:
+    """Create proxied links from srcset.
+
+    srcset is in form srcset="<url>" or
+    srcset="<url> <size>, <url> <size>, ..."
+    """
+    parts = srcset.split(" ")
+    if len(parts) == 1:
+        yield _create_proxy_url(parts[0], entry)
+        return
+
+    for idx, part in enumerate(parts):
+        if idx % 2:
+            # size part
+            yield part
+        else:
+            yield _create_proxy_url(part, entry)
+
+
+def _proxy_links(content: str, entry=None) -> str:
+    """Replace links to img/other objects to local proxy."""
+    document = lxml.html.document_fromstring(content)
+    changed = False
+    for node in document.xpath("//img"):
+        src = node.attrib.get("src")
+        res = _create_proxy_url(src, entry)
+        if src != res:
+            node.attrib["src"] = res
+            node.attrib["org_src"] = src
+            changed = True
+
+    for node in document.xpath("//source"):
+        src = node.attrib.get("srcset")
+        res = " ".join(_create_proxy_urls_srcset(src, entry))
+        if res != src:
+            node.attrib["srcset"] = res
+            node.attrib["org_srcset"] = src
+            changed = True
+
+    if not changed:
+        return content
+
+    return lxml.etree.tostring(document).decode("utf-8")
+
+
 def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
@@ -91,3 +155,9 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["summary"] = formatters.entry_summary
     app.jinja_env.filters["entry_score_class"] = _entry_score_class
     app.jinja_env.filters["format_key"] = _format_key
+
+    app_conf = app.config["app_conf"]
+    if app_conf.getboolean("web", "proxy_media"):
+        app.jinja_env.filters["proxy_links"] = _proxy_links
+    else:
+        app.jinja_env.filters["proxy_links"] = lambda x: x

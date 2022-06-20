@@ -52,6 +52,7 @@ from . import (
     entries,
     entry,
     group,
+    proxy,
     root,
     security,
     source,
@@ -73,6 +74,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(system.BP)
     app.register_blueprint(security.BP)
     app.register_blueprint(atom.BP)
+    app.register_blueprint(proxy.BP)
 
 
 def _start_bg_tasks(args: Namespace) -> None:

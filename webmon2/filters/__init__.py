@@ -31,6 +31,7 @@ def _load_filters() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
     from . import (
         diff,
+        fix_urls,
         grep,
         history,
         html2text,

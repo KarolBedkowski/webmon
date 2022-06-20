@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-19 17:08+0200\n"
+"POT-Creation-Date: 2022-06-20 18:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -31,6 +31,14 @@ msgstr ""
 
 #: webmon2/filters/diff.py:45
 msgid "Skip elements when changes lines is below this level"
+msgstr ""
+
+#: webmon2/filters/fix_urls.py:32
+msgid "Convert relative URLs"
+msgstr ""
+
+#: webmon2/filters/fix_urls.py:33
+msgid "Convert relative URLs to absolute when it possible in HTML results."
 msgstr ""
 
 #: webmon2/filters/grep.py:28
@@ -57,15 +65,15 @@ msgstr ""
 msgid "Remove elements already loaded in past by given source"
 msgstr ""
 
-#: webmon2/filters/html2text.py:31
+#: webmon2/filters/html2text.py:32
 msgid "Convert html to text"
 msgstr ""
 
-#: webmon2/filters/html2text.py:32
+#: webmon2/filters/html2text.py:33
 msgid "Try convert html content do plain text; remove all formatting, images etc."
 msgstr ""
 
-#: webmon2/filters/html2text.py:38 webmon2/filters/wrap.py:34
+#: webmon2/filters/html2text.py:39 webmon2/filters/wrap.py:34
 msgid "Max line width"
 msgstr ""
 
@@ -435,23 +443,23 @@ msgstr ""
 msgid "Response code: %(code)s"
 msgstr ""
 
-#: webmon2/web/_filters.py:47
+#: webmon2/web/_filters.py:50
 msgid "none"
 msgstr ""
 
-#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+#: webmon2/web/entry.py:94 webmon2/web/templates/_render_entry.html:28
 msgid "Read"
 msgstr ""
 
-#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+#: webmon2/web/entry.py:94 webmon2/web/templates/_render_entry.html:28
 msgid "Unread"
 msgstr ""
 
-#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:117 webmon2/web/templates/_render_entry.html:29
 msgid "Star"
 msgstr ""
 
-#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:117 webmon2/web/templates/_render_entry.html:29
 msgid "Unstar"
 msgstr ""
 
