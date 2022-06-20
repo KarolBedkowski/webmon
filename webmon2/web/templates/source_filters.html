@@ -15,7 +15,7 @@
 			{% for filter in filters %}
 			<li>{{ filter.name }} <br/>
 				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="up") }}">{{ _("Move up") }}</a> |
-				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="down") }}">{{ _("Move") }} down</a> |
+				<a href="{{ url_for("source.source_filter_move", source_id=source.id, idx=loop.index0, move="down") }}">{{ _("Move down") }}</a> |
 				<a href="{{ url_for("source.source_filter_edit", source_id=source.id, idx=loop.index0) }}">{{ _("Edit") }}</a> |
 				<a href="{{ url_for("source.source_filter_delete", source_id=source.id, idx=loop.index0) }}">{{ _("Delete") }}</a>
 			</li>

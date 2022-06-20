@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-20 18:41+0200\n"
-"PO-Revision-Date: 2022-06-20 18:44+0200\n"
+"POT-Creation-Date: 2022-06-20 19:11+0200\n"
+"PO-Revision-Date: 2022-06-20 19:11+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -41,7 +41,9 @@ msgstr "Konwersja relatywnych URL-i"
 
 #: webmon2/filters/fix_urls.py:33
 msgid "Convert relative URLs to absolute when it possible in HTML results."
-msgstr "Konwertuje relatywne URL-e do absolutnych jeżeli jest to możliwe w treści HTML."
+msgstr ""
+"Konwertuje relatywne URL-e do absolutnych jeżeli jest to możliwe w treści"
+" HTML."
 
 #: webmon2/filters/grep.py:28
 msgid "Filter elements by regular expression"
@@ -1206,8 +1208,8 @@ msgid "Move up"
 msgstr "Przenieś w górę"
 
 #: webmon2/web/templates/source_filters.html:18
-msgid "Move"
-msgstr "Przenieś"
+msgid "Move down"
+msgstr "Przenieś w dół"
 
 #: webmon2/web/templates/source_filters.html:28
 msgid "Add filter"
@@ -1586,4 +1588,7 @@ msgstr "Kod:"
 
 #~ msgid "User locale"
 #~ msgstr "Język użytkownika"
+
+#~ msgid "Move"
+#~ msgstr "Przenieś"
 
