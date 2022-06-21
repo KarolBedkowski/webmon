@@ -131,6 +131,14 @@ def _proxy_links(content: str, entry=None) -> str:
             node.attrib["org_src"] = src
             changed = True
 
+    for node in document.xpath("//a"):
+        src = node.attrib.get("href")
+        res = _create_proxy_url(src, entry)
+        if src != res:
+            node.attrib["href"] = res
+            node.attrib["org_href"] = src
+            changed = True
+
     for node in document.xpath("//source"):
         src = node.attrib.get("srcset")
         res = " ".join(_create_proxy_urls_srcset(src, entry))

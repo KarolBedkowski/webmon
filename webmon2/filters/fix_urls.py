@@ -52,6 +52,10 @@ class Html2Text(AbstractFilter):
             src = node.attrib.get("src")
             node.attrib["src"] = _convert_link(src, base)
 
+        for node in document.xpath("//a"):
+            src = node.attrib.get("href")
+            node.attrib["href"] = _convert_link(src, base)
+
         for node in document.xpath("//source"):
             src = node.attrib.get("srcset")
             node.attrib["srcset"] = " ".join(_convert_srcset_links(src, base))
