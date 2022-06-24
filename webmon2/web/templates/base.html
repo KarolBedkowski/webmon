@@ -16,6 +16,8 @@
 		<link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='icon-192.png') }}">
 		<link rel="manifest" href="{{ url_for("root.manifest_json") }}">
 		{% block styles %}{% endblock %}
+		<script defer type="text/javascript" src="{{ url_for('static', filename="t_" + g.locale + '.js') }}"></script>
+		<script defer type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
 	</head>
 	<body>
 		<header id="main-header">
@@ -50,7 +52,5 @@
 			</footer>
 		</section>
 	</body>
-		<script type="text/javascript" src="{{ url_for('static', filename="t_" + g.locale + '.js') }}"></script>
-		<script type="text/javascript" src="{{ url_for('static', filename='app.js') }}"></script>
 	{% block scripts %}{% endblock %}
 </html>
