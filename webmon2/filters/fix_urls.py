@@ -25,7 +25,7 @@ _ = ty
 _LOG = logging.getLogger(__name__)
 
 
-class Html2Text(AbstractFilter):
+class FixHtmlUrls(AbstractFilter):
     """Convert relative urls in html content."""
 
     name = "fix_urls"
