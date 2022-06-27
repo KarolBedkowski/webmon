@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-20 19:11+0200\n"
+"POT-Creation-Date: 2022-06-27 09:12+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -821,28 +821,28 @@ msgstr ""
 msgid "Successful updates:"
 msgstr ""
 
-#: webmon2/web/templates/base.html:28 webmon2/web/templates/entries.html:23
+#: webmon2/web/templates/base.html:30 webmon2/web/templates/entries.html:23
 msgid "Entries"
 msgstr ""
 
-#: webmon2/web/templates/base.html:29 webmon2/web/templates/starred.html:8
+#: webmon2/web/templates/base.html:31 webmon2/web/templates/starred.html:8
 msgid "Starred"
 msgstr ""
 
-#: webmon2/web/templates/base.html:30 webmon2/web/templates/history.html:22
+#: webmon2/web/templates/base.html:32 webmon2/web/templates/history.html:22
 msgid "History"
 msgstr ""
 
-#: webmon2/web/templates/base.html:31 webmon2/web/templates/groups.html:25
+#: webmon2/web/templates/base.html:33 webmon2/web/templates/groups.html:25
 #: webmon2/web/templates/sources.html:9
 msgid "Sources"
 msgstr ""
 
-#: webmon2/web/templates/base.html:32 webmon2/web/templates/groups.html:8
+#: webmon2/web/templates/base.html:34 webmon2/web/templates/groups.html:8
 msgid "Groups"
 msgstr ""
 
-#: webmon2/web/templates/base.html:33 webmon2/web/templates/filter_edit.html:21
+#: webmon2/web/templates/base.html:35 webmon2/web/templates/filter_edit.html:21
 #: webmon2/web/templates/system/data.html:9
 #: webmon2/web/templates/system/globals.html:9
 #: webmon2/web/templates/system/sys_info.html:17
@@ -853,7 +853,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: webmon2/web/templates/base.html:34
+#: webmon2/web/templates/base.html:36
 msgid "Logout"
 msgstr ""
 
@@ -992,6 +992,11 @@ msgstr ""
 #: webmon2/web/templates/source_new.html:19
 #: webmon2/web/templates/system/sys_user.html:70
 msgid "Back"
+msgstr ""
+
+#: webmon2/web/templates/group_entries.html:22
+#: webmon2/web/templates/source_entries.html:20
+msgid "Entries in"
 msgstr ""
 
 #: webmon2/web/templates/group_entries.html:47
