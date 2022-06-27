@@ -42,23 +42,25 @@ class FixHtmlUrls(AbstractFilter):
         base = entry.url
 
         try:
-            document = lxml.html.fragment_fromstring(entry.content)
+            document = lxml.html.fromstring(entry.content, base_url=entry.url)
         except lxml.etree.ParserError as err:
             _LOG.warning("parse error: %s", err)
             yield entry
             return
 
         for node in document.xpath("//img"):
-            src = node.attrib.get("src")
-            node.attrib["src"] = _convert_link(src, base)
+            if src := node.attrib.get("src"):
+                node.attrib["src"] = _convert_link(src, base)
 
         for node in document.xpath("//a"):
-            src = node.attrib.get("href")
-            node.attrib["href"] = _convert_link(src, base)
+            if src := node.attrib.get("href"):
+                node.attrib["href"] = _convert_link(src, base)
 
         for node in document.xpath("//source"):
-            src = node.attrib.get("srcset")
-            node.attrib["srcset"] = " ".join(_convert_srcset_links(src, base))
+            if src := node.attrib.get("srcset"):
+                node.attrib["srcset"] = " ".join(
+                    _convert_srcset_links(src, base)
+                )
 
         entry.content = lxml.etree.tostring(document).decode("utf-8")
         yield entry
