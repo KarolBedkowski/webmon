@@ -108,7 +108,7 @@ SELECT s.key AS setting__key,
     s.value AS setting__value,
     s.value_type AS setting__value_type
 FROM settings s
-ORDER by description
+ORDER by s.key
 """
 
 

@@ -451,6 +451,7 @@ def sys_info() -> ty.Any:
     db = c.get_db()
     info.extend(database.system.get_sysinfo(db))
     settings = database.settings.get_global(db)
+    settings = list(_translate_sett_descr(settings))
     db_tab_sizes = database.system.get_table_sizes(db)
 
     return render_template(
