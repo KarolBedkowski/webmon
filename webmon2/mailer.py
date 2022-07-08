@@ -10,8 +10,7 @@
 Sending reports by mail functions
 """
 
-import email.mime.multipart
-import email.mime.text
+import email.message
 import email.utils
 import logging
 import re
@@ -149,10 +148,17 @@ def _proces_source(
     entries = [
         entry
         for entry in database.entries.find(
-            db, ctx.user_id, source_id=source_id
+            db,
+            ctx.user_id,
+            source_id=source_id,
         )
         if model.MailReportMode.SEND
         in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
+        or (
+            entry.source.mail_report  # type: ignore
+            == entry.source.group.mail_report  # type: ignore
+            == model.MailReportMode.AS_GROUP_SOURCE
+        )
     ]
 
     if not entries:
@@ -222,27 +228,42 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
 
 def _prepare_msg(
     conf: ty.Dict[str, ty.Any], content: str
-) -> email.mime.base.MIMEBase:
+) -> email.message.EmailMessage:
     """
     Prepare email message according to `conf` and with `content`.
     If `mail_html` enabled build multi part message (convert `content` using
     markdown -> html converter).
     """
-    body_plain = (
-        _encrypt(conf, content) if conf.get("mail_encrypt") else content
-    )
-
+    msg = email.message.EmailMessage()
     if not conf.get("mail_html"):
-        return email.mime.text.MIMEText(body_plain, "plain", "utf-8")
+        if conf.get("mail_encrypt"):
+            content = _encrypt(conf, content)
 
-    msg = email.mime.multipart.MIMEMultipart("alternative")
-    msg.attach(email.mime.text.MIMEText(body_plain, "plain", "utf-8"))
+        msg.set_content(content)
+        return msg
 
+    msg.set_content(content)
     html = formatters.format_markdown(content)
-    if conf.get("mail_encrypt"):
-        html = _encrypt(conf, html)
+    msg.add_alternative(html, subtype="html")
 
-    msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
+    if conf.get("mail_encrypt"):
+        content = _encrypt(conf, msg.as_string())
+
+        msg = email.message.EmailMessage()
+
+        submsg1 = email.message.Message()
+        submsg1.set_payload("Version: 1\n")
+        submsg1.set_type("application/pgp-encrypted")
+        msg.attach(submsg1)
+
+        submsg2 = email.message.Message()
+        submsg2.set_type("application/octet-stream")
+        submsg2.set_payload(content)
+        msg.attach(submsg2)
+
+        msg.set_type("multipart/encrypted")
+        msg.set_param("protocol", "application/pgp-encrypted")
+
     return msg
 
 
