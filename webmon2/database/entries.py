@@ -278,8 +278,8 @@ def find(
         order: optional sorting
     """
     args = {
-        "limit": limit or 25,
-        "offset": offset or 0,
+        "limit": limit,
+        "offset": offset,
         "group_id": group_id,
         "source_id": source_id,
         "user_id": user_id,
