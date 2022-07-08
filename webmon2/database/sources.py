@@ -681,7 +681,7 @@ def find_next_unread(db: DB, user_id: int) -> ty.Optional[int]:
 
 _RANDOMIZE_NEXT_CHECK_SQL = f"""
 UPDATE source_state
-SET next_update = next_update + (random() * 60) * interval '1 minute'
+SET next_update = next_update + (random() * 180) * interval '1 minute'
 WHERE source_id IN (
     SELECT id
     FROM sources
