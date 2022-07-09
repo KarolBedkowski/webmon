@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-27 09:12+0200\n"
+"POT-Creation-Date: 2022-07-09 10:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -397,12 +397,12 @@ msgstr ""
 msgid "Load article"
 msgstr ""
 
-#: webmon2/sources/rss.py:138 webmon2/sources/web.py:151
+#: webmon2/sources/rss.py:138 webmon2/sources/web.py:161
 #, python-format
 msgid "Permanently redirects: %(url)s"
 msgstr ""
 
-#: webmon2/sources/rss.py:143 webmon2/sources/web.py:163
+#: webmon2/sources/rss.py:143 webmon2/sources/web.py:173
 #, python-format
 msgid "Temporary redirects: %(url)s"
 msgstr ""
@@ -422,23 +422,27 @@ msgstr ""
 msgid "Loading page error: %(status)s"
 msgstr ""
 
-#: webmon2/sources/web.py:33
+#: webmon2/sources/web.py:34
 msgid "Web page"
 msgstr ""
 
-#: webmon2/sources/web.py:34
+#: webmon2/sources/web.py:35
 msgid "Load data form web page pointed by URL."
 msgstr ""
 
-#: webmon2/sources/web.py:36
+#: webmon2/sources/web.py:37
 msgid "Web page URL"
 msgstr ""
 
-#: webmon2/sources/web.py:38
+#: webmon2/sources/web.py:39
 msgid "Loading timeout"
 msgstr ""
 
-#: webmon2/sources/web.py:89
+#: webmon2/sources/web.py:43
+msgid "Fix URL-s"
+msgstr ""
+
+#: webmon2/sources/web.py:99
 #, python-format
 msgid "Response code: %(code)s"
 msgstr ""
@@ -463,35 +467,35 @@ msgstr ""
 msgid "Unstar"
 msgstr ""
 
-#: webmon2/web/forms.py:169
+#: webmon2/web/forms.py:175
 msgid "Missing group"
 msgstr ""
 
-#: webmon2/web/forms.py:172 webmon2/web/forms.py:272
+#: webmon2/web/forms.py:178 webmon2/web/forms.py:278
 msgid "Missing name"
 msgstr ""
 
-#: webmon2/web/forms.py:175
+#: webmon2/web/forms.py:181
 msgid "Missing source kind"
 msgstr ""
 
-#: webmon2/web/forms.py:178
+#: webmon2/web/forms.py:184
 msgid "Unknown kind"
 msgstr ""
 
-#: webmon2/web/forms.py:184
+#: webmon2/web/forms.py:190
 msgid "Invalid interval"
 msgstr ""
 
-#: webmon2/web/forms.py:323
+#: webmon2/web/forms.py:329
 msgid "Passwords not match"
 msgstr ""
 
-#: webmon2/web/forms.py:326
+#: webmon2/web/forms.py:332
 msgid "Missing login"
 msgstr ""
 
-#: webmon2/web/forms.py:329
+#: webmon2/web/forms.py:335
 msgid "Password is required for new user"
 msgstr ""
 
@@ -625,80 +629,84 @@ msgstr ""
 msgid "User deleted"
 msgstr ""
 
-#: webmon2/web/system.py:471
+#: webmon2/web/system.py:472
 msgid "GitHub: user name"
 msgstr ""
 
-#: webmon2/web/system.py:472
+#: webmon2/web/system.py:473
 msgid "GitHub: access token"
 msgstr ""
 
-#: webmon2/web/system.py:473
+#: webmon2/web/system.py:474
 msgid "Default refresh interval"
 msgstr ""
 
-#: webmon2/web/system.py:474
+#: webmon2/web/system.py:475
 msgid "Jamendo: client ID"
 msgstr ""
 
-#: webmon2/web/system.py:475
+#: webmon2/web/system.py:476
 msgid "Keep read entries by given days"
 msgstr ""
 
-#: webmon2/web/system.py:476
+#: webmon2/web/system.py:477
 msgid "Email: enable email reports"
 msgstr ""
 
-#: webmon2/web/system.py:477
+#: webmon2/web/system.py:478
 msgid "Email: send email interval"
 msgstr ""
 
-#: webmon2/web/system.py:478
+#: webmon2/web/system.py:479
 msgid "Email: recipient"
 msgstr ""
 
-#: webmon2/web/system.py:479
+#: webmon2/web/system.py:480
 msgid "Email: subject"
 msgstr ""
 
-#: webmon2/web/system.py:480
+#: webmon2/web/system.py:481
 msgid "Email: enable encryption"
 msgstr ""
 
-#: webmon2/web/system.py:481
+#: webmon2/web/system.py:482
 msgid "Email: send miltipart email with html content"
 msgstr ""
 
-#: webmon2/web/system.py:482
+#: webmon2/web/system.py:483
 msgid "Email: mark reported entries read"
 msgstr ""
 
-#: webmon2/web/system.py:483
+#: webmon2/web/system.py:484
 msgid "Start at first unread group"
 msgstr ""
 
-#: webmon2/web/system.py:484
+#: webmon2/web/system.py:485
 msgid "GitLab: personal token"
 msgstr ""
 
-#: webmon2/web/system.py:485
+#: webmon2/web/system.py:486
 msgid "Silent hours: begin"
 msgstr ""
 
-#: webmon2/web/system.py:486
+#: webmon2/web/system.py:487
 msgid "Silent hours: end"
 msgstr ""
 
-#: webmon2/web/system.py:487
+#: webmon2/web/system.py:488
 msgid "Minimal score of entries to show"
 msgstr ""
 
-#: webmon2/web/system.py:488
+#: webmon2/web/system.py:489
 msgid "User: default timezone"
 msgstr ""
 
-#: webmon2/web/system.py:489
+#: webmon2/web/system.py:490
 msgid "User: language"
+msgstr ""
+
+#: webmon2/web/system.py:491
+msgid "User GPG public key"
 msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:31

@@ -13,9 +13,11 @@ Sending reports by mail functions
 import email.message
 import email.utils
 import logging
+import os
 import re
 import smtplib
 import subprocess
+import tempfile
 import typing as ty
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -320,8 +322,27 @@ def _send_mail(
 
 
 def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
+    args = ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]]
+
+    if user_key := conf.get("gpg_key"):
+        keyfile_name = None
+        with tempfile.NamedTemporaryFile(delete=False) as keyfile:
+            keyfile.write(user_key.encode("UTF-8"))
+            keyfile_name = keyfile.name
+
+        args.append("-f")
+        args.append(keyfile_name)
+        try:
+            return __do_encrypt(args, message)
+        finally:
+            os.unlink(keyfile.name)
+
+    return __do_encrypt(args, message)
+
+
+def __do_encrypt(args: ty.List[str], message: str) -> str:
     with subprocess.Popen(
-        ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]],
+        args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -329,13 +350,13 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:
             _LOG.error(
-                "EMailOutput: encrypt error: %s; mail_to: %r",
+                "EMailOutput: encrypt error: %s; args: %r",
                 stderr,
-                conf["mail_to"],
+                args,
             )
-            return stderr.decode("utf-8")
+            return stderr.decode("ascii")
 
-        return stdout.decode("utf-8")
+        return stdout.decode("ascii")
 
 
 def _get_entry_score_mark(entry: model.Entry) -> str:

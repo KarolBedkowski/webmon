@@ -488,6 +488,7 @@ def _translate_sett_descr(
         "minimal_score": gettext("Minimal score of entries to show"),
         "timezone": gettext("User: default timezone"),
         "locale": gettext("User: language"),
+        "gpg_key": gettext("User GPG public key"),
     }
     for sett in settings:
         sett.description = translations.get(sett.key, sett.key)

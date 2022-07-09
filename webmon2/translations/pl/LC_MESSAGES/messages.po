@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-27 09:12+0200\n"
-"PO-Revision-Date: 2022-06-27 09:14+0200\n"
+"POT-Creation-Date: 2022-07-09 10:50+0200\n"
+"PO-Revision-Date: 2022-07-09 10:51+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -432,12 +432,12 @@ msgstr "Wczytuj zawartość wpisów"
 msgid "Load article"
 msgstr "Wczytuj artykuły"
 
-#: webmon2/sources/rss.py:138 webmon2/sources/web.py:151
+#: webmon2/sources/rss.py:138 webmon2/sources/web.py:161
 #, python-format
 msgid "Permanently redirects: %(url)s"
 msgstr "Ostateczne przeniesienie: %(url)s"
 
-#: webmon2/sources/rss.py:143 webmon2/sources/web.py:163
+#: webmon2/sources/rss.py:143 webmon2/sources/web.py:173
 #, python-format
 msgid "Temporary redirects: %(url)s"
 msgstr "Tymczasowe przeniesienie: %(url)s"
@@ -457,23 +457,27 @@ msgstr "Błąd ładowania artykułu: %(err)s"
 msgid "Loading page error: %(status)s"
 msgstr "Błąd wczytywania strony: %(status)s"
 
-#: webmon2/sources/web.py:33
+#: webmon2/sources/web.py:34
 msgid "Web page"
 msgstr "Strona Web"
 
-#: webmon2/sources/web.py:34
+#: webmon2/sources/web.py:35
 msgid "Load data form web page pointed by URL."
 msgstr "Wczytuje dane ze strony web wskazanej przez URL."
 
-#: webmon2/sources/web.py:36
+#: webmon2/sources/web.py:37
 msgid "Web page URL"
 msgstr "URL strony"
 
-#: webmon2/sources/web.py:38
+#: webmon2/sources/web.py:39
 msgid "Loading timeout"
 msgstr "Maksymalny czas wszytywania"
 
-#: webmon2/sources/web.py:89
+#: webmon2/sources/web.py:43
+msgid "Fix URL-s"
+msgstr "Popraw URL-e"
+
+#: webmon2/sources/web.py:99
 #, python-format
 msgid "Response code: %(code)s"
 msgstr "Kod odpowiedzi: %(code)s"
@@ -498,35 +502,35 @@ msgstr "Zaznacz"
 msgid "Unstar"
 msgstr "Odznacz"
 
-#: webmon2/web/forms.py:169
+#: webmon2/web/forms.py:175
 msgid "Missing group"
 msgstr "Brak grupy"
 
-#: webmon2/web/forms.py:172 webmon2/web/forms.py:272
+#: webmon2/web/forms.py:178 webmon2/web/forms.py:278
 msgid "Missing name"
 msgstr "Brak nazwy"
 
-#: webmon2/web/forms.py:175
+#: webmon2/web/forms.py:181
 msgid "Missing source kind"
 msgstr "Brak rodzaju źródła"
 
-#: webmon2/web/forms.py:178
+#: webmon2/web/forms.py:184
 msgid "Unknown kind"
 msgstr "Nieznany rodzaj"
 
-#: webmon2/web/forms.py:184
+#: webmon2/web/forms.py:190
 msgid "Invalid interval"
 msgstr "Niewłaściwy interwał"
 
-#: webmon2/web/forms.py:323
+#: webmon2/web/forms.py:329
 msgid "Passwords not match"
 msgstr "Hasła nie pasują do siebie"
 
-#: webmon2/web/forms.py:326
+#: webmon2/web/forms.py:332
 msgid "Missing login"
 msgstr "Brak loginu"
 
-#: webmon2/web/forms.py:329
+#: webmon2/web/forms.py:335
 msgid "Password is required for new user"
 msgstr "Hasło jest wymagane dla nowego użytkownika"
 
@@ -664,81 +668,85 @@ msgstr "Użytkownik nie znaleziony"
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
 
-#: webmon2/web/system.py:471
+#: webmon2/web/system.py:472
 msgid "GitHub: user name"
 msgstr "Github: nazwa użytkownika"
 
-#: webmon2/web/system.py:472
+#: webmon2/web/system.py:473
 msgid "GitHub: access token"
 msgstr "GitHub: token dostępowy"
 
-#: webmon2/web/system.py:473
+#: webmon2/web/system.py:474
 msgid "Default refresh interval"
 msgstr "Domyślny interwał odświeżania"
 
-#: webmon2/web/system.py:474
+#: webmon2/web/system.py:475
 msgid "Jamendo: client ID"
 msgstr "Jamendo: id klienta"
 
-#: webmon2/web/system.py:475
+#: webmon2/web/system.py:476
 msgid "Keep read entries by given days"
 msgstr "Zachowaj przeczytane wpisy przez daną ilość dni"
 
-#: webmon2/web/system.py:476
+#: webmon2/web/system.py:477
 msgid "Email: enable email reports"
 msgstr "Email: włącz raporty email"
 
-#: webmon2/web/system.py:477
+#: webmon2/web/system.py:478
 msgid "Email: send email interval"
 msgstr "Email: interwał wysyłania emaili"
 
-#: webmon2/web/system.py:478
+#: webmon2/web/system.py:479
 msgid "Email: recipient"
 msgstr "Email: odbiorca"
 
-#: webmon2/web/system.py:479
+#: webmon2/web/system.py:480
 msgid "Email: subject"
 msgstr "Email: temat"
 
-#: webmon2/web/system.py:480
+#: webmon2/web/system.py:481
 msgid "Email: enable encryption"
 msgstr "Email: włącz szyfrowanie"
 
-#: webmon2/web/system.py:481
+#: webmon2/web/system.py:482
 msgid "Email: send miltipart email with html content"
 msgstr "Email: wysyłaj email wieloczęściowy z zawartością html"
 
-#: webmon2/web/system.py:482
+#: webmon2/web/system.py:483
 msgid "Email: mark reported entries read"
 msgstr "Email: zaznacz wysłane wpisy jako przeczytane"
 
-#: webmon2/web/system.py:483
+#: webmon2/web/system.py:484
 msgid "Start at first unread group"
 msgstr "Zaczynaj od pierwszej nieprzeczytanej grupy"
 
-#: webmon2/web/system.py:484
+#: webmon2/web/system.py:485
 msgid "GitLab: personal token"
 msgstr "GitLab: osobisty token"
 
-#: webmon2/web/system.py:485
+#: webmon2/web/system.py:486
 msgid "Silent hours: begin"
 msgstr "Ciche godziny: początek"
 
-#: webmon2/web/system.py:486
+#: webmon2/web/system.py:487
 msgid "Silent hours: end"
 msgstr "Ciche godziny: koniec"
 
-#: webmon2/web/system.py:487
+#: webmon2/web/system.py:488
 msgid "Minimal score of entries to show"
 msgstr "Minimalne ilość punktów wpisu aby go pokazać"
 
-#: webmon2/web/system.py:488
+#: webmon2/web/system.py:489
 msgid "User: default timezone"
 msgstr "Użytkownik: domyślna strefa czasowa"
 
-#: webmon2/web/system.py:489
+#: webmon2/web/system.py:490
 msgid "User: language"
 msgstr "Użytkownik: język"
+
+#: webmon2/web/system.py:491
+msgid "User GPG public key"
+msgstr "Klucz GPG użytkownika"
 
 #: webmon2/web/templates/_render_entry.html:31
 msgid "Original content"
