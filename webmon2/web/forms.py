@@ -91,6 +91,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     def from_setting(setting: model.Setting, prefix: str) -> Field:
         field_type_class: ty.Any
         options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
+        parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
 
         if setting.value_type == "int":
             field_type = "number"
@@ -106,6 +107,10 @@ class Field:  # pylint: disable=too-many-instance-attributes
             field_type = "select"
             field_type_class = str
             options = [(i, i) for i in ("en", "pl")]
+        elif setting.value_type == "text":
+            field_type = "str"
+            field_type_class = str
+            parameters = {"multiline": True}
         else:
             field_type = "str"
             field_type_class = str
@@ -119,6 +124,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             type=field_type,
             type_class=field_type_class,
             options=options,
+            parameters=parameters,
         )
         return field
 
