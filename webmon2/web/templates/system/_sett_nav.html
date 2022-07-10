@@ -4,6 +4,7 @@
 		<a href="{{ url_for("system.sett_globals") }}">{{ _("Global parameters") }}</a>
 		<a href="{{ url_for("system.sett_data") }}">{{ _("Data") }}</a>
 		<a href="{{ url_for("system.sett_scoring") }}">{{ _("Scoring") }}</a>
+		<a href="{{ url_for("system.sett_logs") }}">{{ _("Logi") }}</a>
 		{% if session["user_admin"] %}
 		<a href="{{ url_for("system.sett_sys_users") }}">{{ _("Sys users") }}</a>
 		<a href="{{ url_for("system.sys_info") }}">{{ _("Sys info") }}</a>

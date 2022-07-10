@@ -328,6 +328,14 @@ def sett_scoring() -> ty.Any:
     return render_template("system/scoring.html", rules=rules)
 
 
+@BP.route("/settings/logs")
+def sett_logs() -> ty.Any:
+    user_id = session["user"]
+    db = c.get_db()
+    logs = database.users.get_logs(db, user_id)
+    return render_template("system/logs.html", logs=logs)
+
+
 @BP.route("/settings/system/users", methods=["GET"])
 def sett_sys_users() -> ty.Any:
     if not session["user_admin"]:

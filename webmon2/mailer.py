@@ -40,7 +40,7 @@ class Ctx:
     timezone: ty.Optional[ZoneInfo] = None
 
 
-def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
+def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
     """Process unread entries for user and send report via mail"""
     if not user.id:
         raise ValueError("require existing user")
@@ -48,10 +48,10 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
         _LOG.debug("mail not enabled for user %d", user.id)
-        return
+        return False
 
     if _is_silent_hour(conf):
-        return
+        return False
 
     # it is time for send mail?
     last_send = database.users.get_state(
@@ -66,7 +66,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         )
         if last_send + interval > datetime.now(timezone.utc):
             _LOG.debug("still waiting for send mail")
-            return
+            return False
 
     ctx = Ctx(
         user_id=user.id,
@@ -79,10 +79,10 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         content = "".join(_process_groups(ctx, db))
     except Exception as err:  # pylint: disable=broad-except
         _LOG.error("prepare mail for user %d error: %s", user.id, err)
-        return
+        return False
 
     if content and not _send_mail(conf, content, app_conf, user):
-        return
+        return False
 
     _SENT_MAIL_COUNT.inc()
     database.users.set_state(
@@ -91,6 +91,8 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         "mail_last_send",
         datetime.now(timezone.utc).timestamp(),
     )
+
+    return True
 
 
 def _process_groups(ctx: Ctx, db: database.DB) -> ty.Iterable[str]:

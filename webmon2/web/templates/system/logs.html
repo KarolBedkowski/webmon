@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+<body>
+
+{% block styles %}
+<style>
+	table th {text-align: center;}
+	table,td,th {border: 1px solid black; border-collapse: collapse;}
+	td,th {padding: 0.1em 0.5em;}
+</style>
+{% endblock %}
+
+{% block header %}
+  <h1>{% block title %}{{ _("Logs") }}{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<table stype="width: 100%">
+		<thead>
+			<tr>
+				<th>{{ _("Date & time") }}</th>
+				<th>{{ _("Message") }}</th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for log in logs %}
+			<tr>
+				<td>{{ log.ts | format_date }}</td>
+				<td>{{ log.content }}</td>
+				<td>
+					{% if log.source_id %}
+					<a href="{{ url_for('source.source_edit', source_id=log.source_id) }}">{{ _("Source") }}</a>
+					{% endif %}
+				</td>
+			</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+{% endblock %}
+</body>
+</html>

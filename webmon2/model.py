@@ -17,7 +17,7 @@ import hashlib
 import json
 import logging
 import typing as ty
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
 
@@ -829,6 +829,42 @@ class Session:
 
 
 UserSources = ty.Dict[int, Source]
+
+
+@dataclass
+class UserLog:
+    user_id: int
+    content: str
+    ts: datetime = field(default_factory=datetime.utcnow)
+    related: ty.Optional[ty.Dict[str, ty.Any]] = None
+
+    def __str__(self) -> str:
+        return common.obj2str(self)
+
+    @property
+    def source_id(self) -> ty.Optional[int]:
+        return self.related and self.related.get("source_id")  # type: ignore
+
+    @staticmethod
+    def new(user_id: int, content: str, **related: ty.Any) -> UserLog:
+        return UserLog(user_id=user_id, content=content, related=related)
+
+    @classmethod
+    def from_row(cls, row: Cursor) -> UserLog:
+        return UserLog(
+            user_id=row["user_logs__user_id"],
+            content=row["user_logs__content"],
+            ts=row["user_logs__ts"],
+            related=try_load_json("user_logs__related", row),
+        )
+
+    def to_row(self) -> common.Row:
+        return {
+            "user_logs__user_id": self.user_id,
+            "user_logs__content": self.content,
+            "user_logs__ts": self.ts,
+            "user_logs__related": json.dumps(self.related),
+        }
 
 
 def try_load_json(column: str, row: Cursor, default: ty.Any = None) -> ty.Any:

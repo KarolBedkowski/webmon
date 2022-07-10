@@ -178,6 +178,12 @@ class FetchWorker(threading.Thread):
                     db.rollback()
                     if source:
                         _save_state_error(db, source, str(err))
+                        database.users.put_log(
+                            db,
+                            source.user_id,
+                            f"process source '{source.name}' error {err}",
+                            source_id=source_id,
+                        )
                 finally:
                     db.commit()
 
@@ -221,6 +227,14 @@ class FetchWorker(threading.Thread):
         if updated_source:
             _LOG.debug("[%s] source %d updated", self._idx, source.id)
             database.sources.save(db, updated_source)
+
+        if loaded:
+            database.users.put_log(
+                db,
+                source.user_id,
+                f"process source {source.name} finished; loaded {loaded}",
+                source_id=source.id,
+            )
 
         _LOG.debug(
             "[%s] processing source %d FINISHED, entries=%d, state=%s",
@@ -436,9 +450,14 @@ def _delete_old_entries(db: database.DB) -> None:
             _CLEAN_COUNTER.labels(user.id, "entries").inc(deleted_entries)
             _CLEAN_COUNTER.labels(user.id, "oids").inc(deleted_oids)
 
-            removed_bin = database.binaries.remove_unused(db, user.id)
-            _LOG.info("removed %d binaries for user %d", removed_bin, user.id)
-            _CLEAN_COUNTER.labels(user.id, "binaries").inc(removed_bin)
+            removed = database.binaries.remove_unused(db, user.id)
+            _LOG.info("removed %d binaries for user %d", removed, user.id)
+            _CLEAN_COUNTER.labels(user.id, "binaries").inc(removed)
+
+            removed = database.users.delete_old_log(db, user.id)
+            _LOG.info("removed %d logs for user %d", removed, user.id)
+            _CLEAN_COUNTER.labels(user.id, "logs").inc(removed)
+
             db.commit()
         except Exception as err:  # pylint: disable=broad-except
             db.rollback()
@@ -474,12 +493,15 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
     _LOG.debug("_send_mails start")
     users = list(database.users.get_all_active(db))
     for user in users:
+        assert user.id
         db.begin()
         try:
-            mailer.process(db, user, conf)
-        except Exception:  # pylint: disable=broad-except
+            if mailer.process(db, user, conf):
+                database.users.put_log(db, user.id, "send mail success")
+        except Exception as err:  # pylint: disable=broad-except
             _LOG.exception("send mail error")
             db.rollback()
+            database.users.put_log(db, user.id, f"send mail error {err}")
         else:
             db.commit()
 
