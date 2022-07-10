@@ -26,6 +26,7 @@
 				{{ rf.render_option("error", _("With errors"), status) }}
 				{{ rf.render_option("notupdated", _("Not updated"), status) }}
 			</select>
+			<wbr/>
 			<label for="form-order">{{ _("Order by:") }}</label>
 			<select id="form-order" name="order" value="{{ order }}">
 				{{ rf.render_option("name", _("Name") + " ▴", order) }}

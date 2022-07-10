@@ -32,7 +32,7 @@
 			<input type="hidden" name="_csrf_token" value="{{ session['_csrf_token'] }}"/>
 			<input type="hidden" name="_entity_hash" value="{{ entity_hash }}" />
 			<div class="form-wrapper">
-				<label for="user-login" class="field-required">{{ _("Login") }}</label>
+				<label for="user-login" class="field-required">{{ _("Login") }}</label><wbr/>
 				<input type="text" name="login" id="user-login" value="{{ form.login }}" required="required"
 					{% if form.id %}readonly="readonly"{% endif %} />
 

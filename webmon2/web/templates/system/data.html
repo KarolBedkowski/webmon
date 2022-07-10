@@ -12,8 +12,10 @@
 
 {% block content %}
 	<h2>{{ _("Export data") }}</h2>
-	<p><a href="{{ url_for('system.sett_data_export') }}">{{ _("Download sources and groups") }}</a></p>
-	<p><a href="{{ url_for('system.sett_data_export_opml') }}">{{ _("Download OPML file") }}</a></p>
+	<ul>
+	<li><a href="{{ url_for('system.sett_data_export') }}">{{ _("Download sources and groups") }}</a></li>
+	<li><a href="{{ url_for('system.sett_data_export_opml') }}">{{ _("Download OPML file") }}</a></li>
+	</ul>
 
 	<h2>{{ _("Import data") }}</h3>
 	<h3>{{ _("Import Webmon2 dump") }}</h3>

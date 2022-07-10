@@ -32,6 +32,7 @@
 					{{ rf.render_option(grp, name, group_id) }}
 				{% endfor %}
 			</select>
+			<wbr/>
 			<label for="form-source">{{ _("Source:") }}</label>
 			<select id="form-source" name="source" value="{{ source_id }}">
 				{{ rf.render_option(0, _("ALL"), source_id) }}
