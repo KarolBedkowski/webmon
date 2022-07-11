@@ -1,10 +1,10 @@
 {% macro render_header() -%}
 	<nav class="actions">
 		<a href="{{ url_for("system.sett_user") }}">{{ _("User") }}</a>
-		<a href="{{ url_for("system.sett_globals") }}">{{ _("Global parameters") }}</a>
+		<a href="{{ url_for("system.sett_globals") }}">{{ _("Parameters") }}</a>
 		<a href="{{ url_for("system.sett_data") }}">{{ _("Data") }}</a>
 		<a href="{{ url_for("system.sett_scoring") }}">{{ _("Scoring") }}</a>
-		<a href="{{ url_for("system.sett_logs") }}">{{ _("Logi") }}</a>
+		<a href="{{ url_for("system.sett_logs") }}">{{ _("Logs") }}</a>
 		{% if session["user_admin"] %}
 		<a href="{{ url_for("system.sett_sys_users") }}">{{ _("Sys users") }}</a>
 		<a href="{{ url_for("system.sys_info") }}">{{ _("Sys info") }}</a>
