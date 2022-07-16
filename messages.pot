@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-07-11 16:40+0200\n"
+"POT-Creation-Date: 2022-07-16 18:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -548,6 +548,10 @@ msgstr ""
 
 #: webmon2/web/source.py:60
 msgid "Source deleted"
+msgstr ""
+
+#: webmon2/web/source.py:132
+msgid "Source saved"
 msgstr ""
 
 #: webmon2/web/source.py:140

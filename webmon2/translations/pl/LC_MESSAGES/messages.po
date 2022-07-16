@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-07-11 16:40+0200\n"
-"PO-Revision-Date: 2022-07-11 16:40+0200\n"
+"POT-Creation-Date: 2022-07-16 18:38+0200\n"
+"PO-Revision-Date: 2022-07-16 18:38+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: pl\n"
 "Language-Team: pl <LL@li.org>\n"
@@ -471,7 +471,7 @@ msgstr "URL strony"
 
 #: webmon2/sources/web.py:39
 msgid "Loading timeout"
-msgstr "Maksymalny czas wszytywania"
+msgstr "Maksymalny czas wczytywania"
 
 #: webmon2/sources/web.py:43
 msgid "Fix URL-s"
@@ -586,6 +586,10 @@ msgstr "Źródło zaznaczone do odświeżenia"
 #: webmon2/web/source.py:60
 msgid "Source deleted"
 msgstr "Źródło usunięte"
+
+#: webmon2/web/source.py:132
+msgid "Source saved"
+msgstr "Źródło zapisane"
 
 #: webmon2/web/source.py:140
 msgid "Source changed somewhere else; reloading..."
