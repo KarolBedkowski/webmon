@@ -1,8 +1,8 @@
-webmon ver 2.7.x
+webmon ver 2.8.x
 ================
 
-Monitor changes on web pages, command results, GitHub repositories, Jamendo
-albums, RSS channels.
+Monitor changes on web pages, command results, GitHub & Gitlab repositories,
+Jamendo albums, RSS channels, custom user sources etc.
 With web ui and optionally sending report by mail.
 
 Inspired by https://github.com/thp/urlwatch and http://miniflux.app/ (webmon2
@@ -11,7 +11,7 @@ gui)
 Dependences
 -----------
 
-* Python 3.0+
+* Python 3.9+
 * Postgresql 10+
 * requests
 * yaml

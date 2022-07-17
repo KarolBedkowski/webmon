@@ -1,5 +1,38 @@
 # Changelog
 
+## 2.8.0 2022-07-17
+
+### Bug Fixes
+
+- Fix entry summary formatting
+- Fix updating unread entries counter after show entry
+- Html2text: use better way to construct links
+- Fix handling invalid data by FixHtmlUrls filter
+- Fix display global settings in system into
+- No limit for messages in mail
+- Fix delete session on logout
+- Fix layout, css
+- Fix labels & translations
+
+### Features
+
+- Allow to randomize next check time
+- Proxy links to images via application
+- Better formatting for summarized content
+- Handle relative links in entries
+- Convert relative links to absolute
+- Allow to use multiline-textbox in config parameters
+- Allow to configure user gpg public key to encrypt email
+- Log basic events in database that can be useful for user (errors etc)
+
+### Miscellaneous Tasks
+
+- Clean code
+- Update translation
+- Randomize next check time set random time in 3h range
+- Fix css in users table
+
+
 ## 2.7.0 2022-06-18
 
 ### Bug Fixes
