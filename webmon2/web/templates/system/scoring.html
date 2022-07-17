@@ -4,6 +4,13 @@
 <!DOCTYPE html>
 <html>
 <body>
+{% block styles %}
+<style>
+	table th {text-align: center;}
+	table tr td:nth-child(2) { text-align: center;}
+	td,th {padding: 0.1em 0.5em;}
+</style>
+{% endblock %}
 
 {% block header %}
   <h1>{% block title %}{{ _("Scoring") }}{% endblock %}</h1>

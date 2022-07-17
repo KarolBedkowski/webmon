@@ -82,7 +82,7 @@ def get_session(db: DB, session_id: int) -> ty.Optional[model.Session]:
 
 def delete_session(db: DB, session_id: int) -> None:
     with db.cursor() as cur:
-        cur.execute("delete from sessions where id=?", (session_id,))
+        cur.execute("delete from sessions where id=%s", (session_id,))
 
 
 _SAVE_SESSION_SQL = """

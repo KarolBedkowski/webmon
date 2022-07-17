@@ -12,6 +12,7 @@ Convert html to text.
 import logging
 import re
 import typing as ty
+from urllib.parse import urljoin
 
 import html2text as h2t
 from flask_babel import lazy_gettext
@@ -70,15 +71,9 @@ _LINKS_SCHEMA = {"http", "https", "mailto", "ftp"}
 def _convert_links(content: str, page_link: str) -> str:
     """convert relative links to absolute"""
 
-    # def convert_links(match: re.Match[str]) -> str: ## py3.7 not supported
-    def convert_links(match: re.Match) -> str:  # type: ignore
+    def convert_links(match: re.Match[str]) -> str:
         link = match.group(1)
-        if ":" in link and link.split(":", 1)[0] in _LINKS_SCHEMA:
-            return str(match.group(0))
-
-        if link[0] == "/" and page_link[-1] == "/":
-            link = link[1:]
-
-        return f"(<{page_link}{link}>)"
+        url = urljoin(page_link, link)
+        return f"(<{url}>)"
 
     return _RE_LINKS.sub(convert_links, content)

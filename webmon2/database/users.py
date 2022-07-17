@@ -218,3 +218,54 @@ def delete(db: DB, user_id: int) -> None:
     """Remove user from database."""
     with db.cursor() as cur:
         cur.execute("DELETE FROM users WHERE id=%s", (user_id,))
+
+
+_PUT_LOG_SQL = """
+INSERT INTO user_logs (user_id, ts, content, related)
+VALUES (%(user_logs__user_id)s, %(user_logs__ts)s, %(user_logs__content)s,
+  %(user_logs__related)s)
+"""
+
+
+def save_log(db: DB, log: model.UserLog) -> None:
+    """Save UserLog into database."""
+    with db.cursor() as cur:
+        cur.execute(_PUT_LOG_SQL, log.to_row())
+
+
+def put_log(db: DB, user_id: int, content: str, **related: ty.Any) -> None:
+    """Add entry to user log."""
+    log = model.UserLog(user_id=user_id, content=content, related=related)
+    with db.cursor() as cur:
+        cur.execute(_PUT_LOG_SQL, log.to_row())
+
+
+_GET_LOG_SQL = """
+SELECT user_id as user_logs__user_id, ts as user_logs__ts,
+    content as user_logs__content, related as user_logs__related
+FROM user_logs
+WHERE user_id=%s
+ORDER BY ts DESC
+"""
+
+
+def get_logs(db: DB, user_id: int) -> ty.Iterable[model.UserLog]:
+    """Get all logs for `user_id`."""
+    with db.cursor() as cur:
+        cur.execute(_GET_LOG_SQL, (user_id,))
+        for row in cur:
+            yield model.UserLog.from_row(row)
+
+
+_DELETE_OLD_LOGS_SQL = """
+DELETE FROM user_logs
+WHERE user_id=%s
+    and ts < now() - interval '7 days'
+"""
+
+
+def delete_old_log(db: DB, user_id: int) -> int:
+    """Delete all user logs older than 7 days."""
+    with db.cursor() as cur:
+        cur.execute(_DELETE_OLD_LOGS_SQL, (user_id,))
+        return cur.rowcount

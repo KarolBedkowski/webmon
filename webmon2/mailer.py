@@ -10,13 +10,14 @@
 Sending reports by mail functions
 """
 
-import email.mime.multipart
-import email.mime.text
+import email.message
 import email.utils
 import logging
+import os
 import re
 import smtplib
 import subprocess
+import tempfile
 import typing as ty
 from configparser import ConfigParser
 from dataclasses import dataclass
@@ -39,7 +40,7 @@ class Ctx:
     timezone: ty.Optional[ZoneInfo] = None
 
 
-def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
+def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
     """Process unread entries for user and send report via mail"""
     if not user.id:
         raise ValueError("require existing user")
@@ -47,10 +48,10 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
     conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
         _LOG.debug("mail not enabled for user %d", user.id)
-        return
+        return False
 
     if _is_silent_hour(conf):
-        return
+        return False
 
     # it is time for send mail?
     last_send = database.users.get_state(
@@ -65,7 +66,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         )
         if last_send + interval > datetime.now(timezone.utc):
             _LOG.debug("still waiting for send mail")
-            return
+            return False
 
     ctx = Ctx(
         user_id=user.id,
@@ -78,10 +79,10 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         content = "".join(_process_groups(ctx, db))
     except Exception as err:  # pylint: disable=broad-except
         _LOG.error("prepare mail for user %d error: %s", user.id, err)
-        return
+        return False
 
     if content and not _send_mail(conf, content, app_conf, user):
-        return
+        return False
 
     _SENT_MAIL_COUNT.inc()
     database.users.set_state(
@@ -90,6 +91,8 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> None:
         "mail_last_send",
         datetime.now(timezone.utc).timestamp(),
     )
+
+    return True
 
 
 def _process_groups(ctx: Ctx, db: database.DB) -> ty.Iterable[str]:
@@ -149,10 +152,17 @@ def _proces_source(
     entries = [
         entry
         for entry in database.entries.find(
-            db, ctx.user_id, source_id=source_id
+            db,
+            ctx.user_id,
+            source_id=source_id,
         )
         if model.MailReportMode.SEND
         in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
+        or (
+            entry.source.mail_report  # type: ignore
+            == entry.source.group.mail_report  # type: ignore
+            == model.MailReportMode.AS_GROUP_SOURCE
+        )
     ]
 
     if not entries:
@@ -222,27 +232,42 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
 
 def _prepare_msg(
     conf: ty.Dict[str, ty.Any], content: str
-) -> email.mime.base.MIMEBase:
+) -> email.message.EmailMessage:
     """
     Prepare email message according to `conf` and with `content`.
     If `mail_html` enabled build multi part message (convert `content` using
     markdown -> html converter).
     """
-    body_plain = (
-        _encrypt(conf, content) if conf.get("mail_encrypt") else content
-    )
-
+    msg = email.message.EmailMessage()
     if not conf.get("mail_html"):
-        return email.mime.text.MIMEText(body_plain, "plain", "utf-8")
+        if conf.get("mail_encrypt"):
+            content = _encrypt(conf, content)
 
-    msg = email.mime.multipart.MIMEMultipart("alternative")
-    msg.attach(email.mime.text.MIMEText(body_plain, "plain", "utf-8"))
+        msg.set_content(content)
+        return msg
 
+    msg.set_content(content)
     html = formatters.format_markdown(content)
-    if conf.get("mail_encrypt"):
-        html = _encrypt(conf, html)
+    msg.add_alternative(html, subtype="html")
 
-    msg.attach(email.mime.text.MIMEText(html, "html", "utf-8"))
+    if conf.get("mail_encrypt"):
+        content = _encrypt(conf, msg.as_string())
+
+        msg = email.message.EmailMessage()
+
+        submsg1 = email.message.Message()
+        submsg1.set_payload("Version: 1\n")
+        submsg1.set_type("application/pgp-encrypted")
+        msg.attach(submsg1)
+
+        submsg2 = email.message.Message()
+        submsg2.set_type("application/octet-stream")
+        submsg2.set_payload(content)
+        msg.attach(submsg2)
+
+        msg.set_type("multipart/encrypted")
+        msg.set_param("protocol", "application/pgp-encrypted")
+
     return msg
 
 
@@ -299,8 +324,27 @@ def _send_mail(
 
 
 def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
+    args = ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]]
+
+    if user_key := conf.get("gpg_key"):
+        keyfile_name = None
+        with tempfile.NamedTemporaryFile(delete=False) as keyfile:
+            keyfile.write(user_key.encode("UTF-8"))
+            keyfile_name = keyfile.name
+
+        args.append("-f")
+        args.append(keyfile_name)
+        try:
+            return __do_encrypt(args, message)
+        finally:
+            os.unlink(keyfile.name)
+
+    return __do_encrypt(args, message)
+
+
+def __do_encrypt(args: ty.List[str], message: str) -> str:
     with subprocess.Popen(
-        ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]],
+        args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -308,13 +352,13 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:
             _LOG.error(
-                "EMailOutput: encrypt error: %s; mail_to: %r",
+                "EMailOutput: encrypt error: %s; args: %r",
                 stderr,
-                conf["mail_to"],
+                args,
             )
-            return stderr.decode("utf-8")
+            return stderr.decode("ascii")
 
-        return stdout.decode("utf-8")
+        return stdout.decode("ascii")
 
 
 def _get_entry_score_mark(entry: model.Entry) -> str:

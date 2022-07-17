@@ -19,6 +19,7 @@ import requests
 from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
+from webmon2.filters.fix_urls import FixHtmlUrls
 
 from .abstract import AbstractSource
 
@@ -37,6 +38,11 @@ class WebSource(AbstractSource):
         common.SettingDef(
             "timeout", lazy_gettext("Loading timeout"), default=30
         ),
+        common.SettingDef(
+            "fix_urls",
+            lazy_gettext("Fix URL-s"),
+            default=True,
+        ),
     ]  # type: ty.List[common.SettingDef]
 
     def load(
@@ -47,6 +53,10 @@ class WebSource(AbstractSource):
             new_state, entries = self._load(state, session)
 
         if new_state.status != model.SourceStateStatus.ERROR:
+            if self._conf["fix_urls"]:
+                fltr = FixHtmlUrls({})
+                entries = fltr.filter(entries, state, new_state)
+
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now(

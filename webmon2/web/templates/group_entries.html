@@ -19,7 +19,7 @@
 {% endmacro %}
 
 {% block header %}
-	<h1>{% block title %}Entries in {{ group.name}}{% endblock %}
+	<h1>{% block title %}{{ _("Entries in") }} {{ group.name}}{% endblock %}
 		{% if showed == 'all' %}
 			({{ total_entries }})
 		{% else %}

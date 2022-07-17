@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2022-06-18 19:48+0200\n"
+"POT-Creation-Date: 2022-07-16 18:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -31,6 +31,14 @@ msgstr ""
 
 #: webmon2/filters/diff.py:45
 msgid "Skip elements when changes lines is below this level"
+msgstr ""
+
+#: webmon2/filters/fix_urls.py:32
+msgid "Convert relative URLs"
+msgstr ""
+
+#: webmon2/filters/fix_urls.py:33
+msgid "Convert relative URLs to absolute when it possible in HTML results."
 msgstr ""
 
 #: webmon2/filters/grep.py:28
@@ -57,15 +65,15 @@ msgstr ""
 msgid "Remove elements already loaded in past by given source"
 msgstr ""
 
-#: webmon2/filters/html2text.py:31
+#: webmon2/filters/html2text.py:32
 msgid "Convert html to text"
 msgstr ""
 
-#: webmon2/filters/html2text.py:32
+#: webmon2/filters/html2text.py:33
 msgid "Try convert html content do plain text; remove all formatting, images etc."
 msgstr ""
 
-#: webmon2/filters/html2text.py:38 webmon2/filters/wrap.py:34
+#: webmon2/filters/html2text.py:39 webmon2/filters/wrap.py:34
 msgid "Max line width"
 msgstr ""
 
@@ -389,12 +397,12 @@ msgstr ""
 msgid "Load article"
 msgstr ""
 
-#: webmon2/sources/rss.py:138 webmon2/sources/web.py:151
+#: webmon2/sources/rss.py:138 webmon2/sources/web.py:161
 #, python-format
 msgid "Permanently redirects: %(url)s"
 msgstr ""
 
-#: webmon2/sources/rss.py:143 webmon2/sources/web.py:163
+#: webmon2/sources/rss.py:143 webmon2/sources/web.py:173
 #, python-format
 msgid "Temporary redirects: %(url)s"
 msgstr ""
@@ -414,76 +422,80 @@ msgstr ""
 msgid "Loading page error: %(status)s"
 msgstr ""
 
-#: webmon2/sources/web.py:33
+#: webmon2/sources/web.py:34
 msgid "Web page"
 msgstr ""
 
-#: webmon2/sources/web.py:34
+#: webmon2/sources/web.py:35
 msgid "Load data form web page pointed by URL."
 msgstr ""
 
-#: webmon2/sources/web.py:36
+#: webmon2/sources/web.py:37
 msgid "Web page URL"
 msgstr ""
 
-#: webmon2/sources/web.py:38
+#: webmon2/sources/web.py:39
 msgid "Loading timeout"
 msgstr ""
 
-#: webmon2/sources/web.py:89
+#: webmon2/sources/web.py:43
+msgid "Fix URL-s"
+msgstr ""
+
+#: webmon2/sources/web.py:99
 #, python-format
 msgid "Response code: %(code)s"
 msgstr ""
 
-#: webmon2/web/_filters.py:47
+#: webmon2/web/_filters.py:50
 msgid "none"
 msgstr ""
 
-#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+#: webmon2/web/entry.py:94 webmon2/web/templates/_render_entry.html:28
 msgid "Read"
 msgstr ""
 
-#: webmon2/web/entry.py:91 webmon2/web/templates/_render_entry.html:28
+#: webmon2/web/entry.py:94 webmon2/web/templates/_render_entry.html:28
 msgid "Unread"
 msgstr ""
 
-#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:117 webmon2/web/templates/_render_entry.html:29
 msgid "Star"
 msgstr ""
 
-#: webmon2/web/entry.py:114 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:117 webmon2/web/templates/_render_entry.html:29
 msgid "Unstar"
 msgstr ""
 
-#: webmon2/web/forms.py:169
+#: webmon2/web/forms.py:175
 msgid "Missing group"
 msgstr ""
 
-#: webmon2/web/forms.py:172 webmon2/web/forms.py:272
+#: webmon2/web/forms.py:178 webmon2/web/forms.py:278
 msgid "Missing name"
 msgstr ""
 
-#: webmon2/web/forms.py:175
+#: webmon2/web/forms.py:181
 msgid "Missing source kind"
 msgstr ""
 
-#: webmon2/web/forms.py:178
+#: webmon2/web/forms.py:184
 msgid "Unknown kind"
 msgstr ""
 
-#: webmon2/web/forms.py:184
+#: webmon2/web/forms.py:190
 msgid "Invalid interval"
 msgstr ""
 
-#: webmon2/web/forms.py:323
+#: webmon2/web/forms.py:329
 msgid "Passwords not match"
 msgstr ""
 
-#: webmon2/web/forms.py:326
+#: webmon2/web/forms.py:332
 msgid "Missing login"
 msgstr ""
 
-#: webmon2/web/forms.py:329
+#: webmon2/web/forms.py:335
 msgid "Password is required for new user"
 msgstr ""
 
@@ -538,6 +550,10 @@ msgstr ""
 msgid "Source deleted"
 msgstr ""
 
+#: webmon2/web/source.py:132
+msgid "Source saved"
+msgstr ""
+
 #: webmon2/web/source.py:140
 msgid "Source changed somewhere else; reloading..."
 msgstr ""
@@ -546,11 +562,11 @@ msgstr ""
 msgid "No more unread sources..."
 msgstr ""
 
-#: webmon2/web/system.py:73 webmon2/web/system.py:367
+#: webmon2/web/system.py:73 webmon2/web/system.py:392
 msgid "There are errors in form"
 msgstr ""
 
-#: webmon2/web/system.py:89 webmon2/web/system.py:369
+#: webmon2/web/system.py:89 webmon2/web/system.py:394
 msgid "User changed somewhere else; reloading..."
 msgstr ""
 
@@ -598,92 +614,103 @@ msgid_plural "%(updated)s entries mark read"
 msgstr[0] ""
 msgstr[1] ""
 
-#: webmon2/web/system.py:307
+#: webmon2/web/system.py:294
+#, python-format
+msgid "One source updated"
+msgid_plural "%(updated)s sources updated"
+msgstr[0] ""
+msgstr[1] ""
+
+#: webmon2/web/system.py:324
 msgid "Saved"
 msgstr ""
 
-#: webmon2/web/system.py:335 webmon2/web/system.py:394
+#: webmon2/web/system.py:360 webmon2/web/system.py:419
 msgid "User not found"
 msgstr ""
 
-#: webmon2/web/system.py:400
+#: webmon2/web/system.py:425
 msgid "User deleted"
 msgstr ""
 
-#: webmon2/web/system.py:454
+#: webmon2/web/system.py:480
 msgid "GitHub: user name"
 msgstr ""
 
-#: webmon2/web/system.py:455
+#: webmon2/web/system.py:481
 msgid "GitHub: access token"
 msgstr ""
 
-#: webmon2/web/system.py:456
+#: webmon2/web/system.py:482
 msgid "Default refresh interval"
 msgstr ""
 
-#: webmon2/web/system.py:457
+#: webmon2/web/system.py:483
 msgid "Jamendo: client ID"
 msgstr ""
 
-#: webmon2/web/system.py:458
+#: webmon2/web/system.py:484
 msgid "Keep read entries by given days"
 msgstr ""
 
-#: webmon2/web/system.py:459
+#: webmon2/web/system.py:485
 msgid "Email: enable email reports"
 msgstr ""
 
-#: webmon2/web/system.py:460
+#: webmon2/web/system.py:486
 msgid "Email: send email interval"
 msgstr ""
 
-#: webmon2/web/system.py:461
+#: webmon2/web/system.py:487
 msgid "Email: recipient"
 msgstr ""
 
-#: webmon2/web/system.py:462
+#: webmon2/web/system.py:488
 msgid "Email: subject"
 msgstr ""
 
-#: webmon2/web/system.py:463
+#: webmon2/web/system.py:489
 msgid "Email: enable encryption"
 msgstr ""
 
-#: webmon2/web/system.py:464
+#: webmon2/web/system.py:490
 msgid "Email: send miltipart email with html content"
 msgstr ""
 
-#: webmon2/web/system.py:465
+#: webmon2/web/system.py:491
 msgid "Email: mark reported entries read"
 msgstr ""
 
-#: webmon2/web/system.py:466
+#: webmon2/web/system.py:492
 msgid "Start at first unread group"
 msgstr ""
 
-#: webmon2/web/system.py:467
+#: webmon2/web/system.py:493
 msgid "GitLab: personal token"
 msgstr ""
 
-#: webmon2/web/system.py:468
+#: webmon2/web/system.py:494
 msgid "Silent hours: begin"
 msgstr ""
 
-#: webmon2/web/system.py:469
+#: webmon2/web/system.py:495
 msgid "Silent hours: end"
 msgstr ""
 
-#: webmon2/web/system.py:470
+#: webmon2/web/system.py:496
 msgid "Minimal score of entries to show"
 msgstr ""
 
-#: webmon2/web/system.py:471
+#: webmon2/web/system.py:497
 msgid "User: default timezone"
 msgstr ""
 
-#: webmon2/web/system.py:472
+#: webmon2/web/system.py:498
 msgid "User: language"
+msgstr ""
+
+#: webmon2/web/system.py:499
+msgid "User GPG public key"
 msgstr ""
 
 #: webmon2/web/templates/_render_entry.html:31
@@ -757,7 +784,7 @@ msgstr ""
 #: webmon2/web/templates/_render_source.html:24
 #: webmon2/web/templates/group.html:35 webmon2/web/templates/source.html:62
 #: webmon2/web/templates/source_filters.html:20
-#: webmon2/web/templates/system/scoring.html:32
+#: webmon2/web/templates/system/scoring.html:39
 #: webmon2/web/templates/system/sys_user.html:66
 msgid "Delete"
 msgstr ""
@@ -806,28 +833,28 @@ msgstr ""
 msgid "Successful updates:"
 msgstr ""
 
-#: webmon2/web/templates/base.html:28 webmon2/web/templates/entries.html:23
+#: webmon2/web/templates/base.html:30 webmon2/web/templates/entries.html:23
 msgid "Entries"
 msgstr ""
 
-#: webmon2/web/templates/base.html:29 webmon2/web/templates/starred.html:8
+#: webmon2/web/templates/base.html:31 webmon2/web/templates/starred.html:8
 msgid "Starred"
 msgstr ""
 
-#: webmon2/web/templates/base.html:30 webmon2/web/templates/history.html:22
+#: webmon2/web/templates/base.html:32 webmon2/web/templates/history.html:22
 msgid "History"
 msgstr ""
 
-#: webmon2/web/templates/base.html:31 webmon2/web/templates/groups.html:25
+#: webmon2/web/templates/base.html:33 webmon2/web/templates/groups.html:25
 #: webmon2/web/templates/sources.html:9
 msgid "Sources"
 msgstr ""
 
-#: webmon2/web/templates/base.html:32 webmon2/web/templates/groups.html:8
+#: webmon2/web/templates/base.html:34 webmon2/web/templates/groups.html:8
 msgid "Groups"
 msgstr ""
 
-#: webmon2/web/templates/base.html:33 webmon2/web/templates/filter_edit.html:21
+#: webmon2/web/templates/base.html:35 webmon2/web/templates/filter_edit.html:21
 #: webmon2/web/templates/system/data.html:9
 #: webmon2/web/templates/system/globals.html:9
 #: webmon2/web/templates/system/sys_info.html:17
@@ -838,7 +865,7 @@ msgstr ""
 msgid "Settings"
 msgstr ""
 
-#: webmon2/web/templates/base.html:34
+#: webmon2/web/templates/base.html:36
 msgid "Logout"
 msgstr ""
 
@@ -922,7 +949,7 @@ msgstr ""
 #: webmon2/web/templates/filter_edit.html:34
 #: webmon2/web/templates/group.html:44 webmon2/web/templates/source.html:74
 #: webmon2/web/templates/system/globals.html:24
-#: webmon2/web/templates/system/scoring.html:39
+#: webmon2/web/templates/system/scoring.html:46
 #: webmon2/web/templates/system/sys_user.html:71
 msgid "Save"
 msgstr ""
@@ -944,7 +971,7 @@ msgid "Group"
 msgstr ""
 
 #: webmon2/web/templates/group.html:25 webmon2/web/templates/source.html:26
-#: webmon2/web/templates/sources.html:31 webmon2/web/templates/sources.html:32
+#: webmon2/web/templates/sources.html:32 webmon2/web/templates/sources.html:33
 msgid "Name"
 msgstr ""
 
@@ -977,6 +1004,11 @@ msgstr ""
 #: webmon2/web/templates/source_new.html:19
 #: webmon2/web/templates/system/sys_user.html:70
 msgid "Back"
+msgstr ""
+
+#: webmon2/web/templates/group_entries.html:22
+#: webmon2/web/templates/source_entries.html:20
+msgid "Entries in"
 msgstr ""
 
 #: webmon2/web/templates/group_entries.html:47
@@ -1015,7 +1047,7 @@ msgstr ""
 
 #: webmon2/web/templates/group_sources.html:22
 #: webmon2/web/templates/source.html:31 webmon2/web/templates/sources.html:23
-#: webmon2/web/templates/system/scoring.html:21
+#: webmon2/web/templates/system/scoring.html:28
 #: webmon2/web/templates/system/sys_user.html:42
 #: webmon2/web/templates/system/sys_users.html:32
 msgid "Active"
@@ -1052,11 +1084,11 @@ msgstr ""
 msgid "Show group:"
 msgstr ""
 
-#: webmon2/web/templates/history.html:30 webmon2/web/templates/history.html:37
+#: webmon2/web/templates/history.html:30 webmon2/web/templates/history.html:38
 msgid "ALL"
 msgstr ""
 
-#: webmon2/web/templates/history.html:35
+#: webmon2/web/templates/history.html:36
 msgid "Source:"
 msgstr ""
 
@@ -1073,6 +1105,7 @@ msgstr ""
 
 #: webmon2/web/templates/source.html:8
 #: webmon2/web/templates/source_filters.html:8
+#: webmon2/web/templates/system/logs.html:17
 msgid "Source"
 msgstr ""
 
@@ -1154,7 +1187,7 @@ msgid "Move up"
 msgstr ""
 
 #: webmon2/web/templates/source_filters.html:18
-msgid "Move"
+msgid "Move down"
 msgstr ""
 
 #: webmon2/web/templates/source_filters.html:28
@@ -1169,15 +1202,15 @@ msgstr ""
 msgid "Refresh sources with errors"
 msgstr ""
 
-#: webmon2/web/templates/sources.html:29
+#: webmon2/web/templates/sources.html:30
 msgid "Order by:"
 msgstr ""
 
-#: webmon2/web/templates/sources.html:33 webmon2/web/templates/sources.html:34
+#: webmon2/web/templates/sources.html:34 webmon2/web/templates/sources.html:35
 msgid "Last update"
 msgstr ""
 
-#: webmon2/web/templates/sources.html:35 webmon2/web/templates/sources.html:36
+#: webmon2/web/templates/sources.html:36 webmon2/web/templates/sources.html:37
 msgid "Next update"
 msgstr ""
 
@@ -1188,7 +1221,7 @@ msgid "User"
 msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:4
-msgid "Global parameters"
+msgid "Parameters"
 msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:5
@@ -1196,15 +1229,20 @@ msgid "Data"
 msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:6
-#: webmon2/web/templates/system/scoring.html:9
+#: webmon2/web/templates/system/scoring.html:16
 msgid "Scoring"
 msgstr ""
 
-#: webmon2/web/templates/system/_sett_nav.html:8
-msgid "Sys users"
+#: webmon2/web/templates/system/_sett_nav.html:7
+#: webmon2/web/templates/system/logs.html:9
+msgid "Logs"
 msgstr ""
 
 #: webmon2/web/templates/system/_sett_nav.html:9
+msgid "Sys users"
+msgstr ""
+
+#: webmon2/web/templates/system/_sett_nav.html:10
 msgid "Sys info"
 msgstr ""
 
@@ -1212,65 +1250,69 @@ msgstr ""
 msgid "Export data"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:15
+#: webmon2/web/templates/system/data.html:16
 msgid "Download sources and groups"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:16
+#: webmon2/web/templates/system/data.html:17
 msgid "Download OPML file"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:18
+#: webmon2/web/templates/system/data.html:20
 msgid "Import data"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:19
+#: webmon2/web/templates/system/data.html:21
 msgid "Import Webmon2 dump"
-msgstr ""
-
-#: webmon2/web/templates/system/data.html:23
-#: webmon2/web/templates/system/data.html:33
-msgid "File:"
 msgstr ""
 
 #: webmon2/web/templates/system/data.html:25
 #: webmon2/web/templates/system/data.html:35
+msgid "File:"
+msgstr ""
+
+#: webmon2/web/templates/system/data.html:27
+#: webmon2/web/templates/system/data.html:37
 msgid "Import"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:29
+#: webmon2/web/templates/system/data.html:31
 msgid "Import OPML"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:39
+#: webmon2/web/templates/system/data.html:41
 msgid "Data manipulation"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:41
+#: webmon2/web/templates/system/data.html:43
 msgid "Mark read all entries"
 msgstr ""
 
-#: webmon2/web/templates/system/data.html:42
+#: webmon2/web/templates/system/data.html:44
 msgid "Mark read all entries fetched before today"
+msgstr ""
+
+#: webmon2/web/templates/system/data.html:45
+msgid "Randomize next check time for all active sources"
 msgstr ""
 
 #: webmon2/web/templates/system/globals.html:14
 msgid "Default and global settings"
 msgstr ""
 
-#: webmon2/web/templates/system/scoring.html:14
+#: webmon2/web/templates/system/scoring.html:21
 msgid "Global scoring rules"
 msgstr ""
 
-#: webmon2/web/templates/system/scoring.html:20
+#: webmon2/web/templates/system/scoring.html:27
 msgid "Pattern"
 msgstr ""
 
-#: webmon2/web/templates/system/scoring.html:22
+#: webmon2/web/templates/system/scoring.html:29
 msgid "Score"
 msgstr ""
 
-#: webmon2/web/templates/system/scoring.html:38
+#: webmon2/web/templates/system/scoring.html:45
 msgid "Add new rule"
 msgstr ""
 

@@ -20,7 +20,7 @@
 {% endmacro %}
 
 {% block header %}
-	<h1>{% block title %}{{ _("Entry") }}{% endblock %}</h1>
+	<h1>{% block title %}{{ _("Entry") }} - {{ entry.human_title() }} {% endblock %}</h1>
 	{{ nav_bar() }}
 {% endblock %}
 

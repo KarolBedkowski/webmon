@@ -129,7 +129,7 @@ def source_edit(
                     database.sources.save_state(db, source.state, user_id)
 
                 db.commit()
-                flash("Source saved")
+                flash(gettext("Source saved"))
                 if next_action == "edit_filters":
                     return redirect(
                         url_for("source.source_filters", source_id=u_source.id)

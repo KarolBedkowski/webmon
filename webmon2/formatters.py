@@ -10,6 +10,7 @@
 Formating entry content functions
 """
 
+import itertools
 import logging
 import typing as ty
 
@@ -113,15 +114,36 @@ def cleanup_html(content: str) -> str:
 def entry_summary(
     content: ty.Optional[str], content_type: ty.Optional[str]
 ) -> str:
+    """Summarize content; try to get max 10 lines and no more than about 300
+    characters from content. May be not accurate.
+    """
+
     if not content:
         return ""
 
     if content_type not in ("markdown", "plain"):
         document = lxml.html.document_fromstring(content)
         # pylint: disable=c-extension-no-member
-        content = "\n".join(lxml.etree.XPath("//text()")(document))
+        lines = lxml.etree.XPath("//text()")(document)[:50]
+    else:
+        content = (
+            content[:400]
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("&", "&amp;")
+        )
+        lines = content.split("\n", 50)
 
-    if len(content) > 400:
-        content = "\n".join(content.split("\n", 21)[:20])[:400] + "\n…"
+    def join():
+        total_content = 0
+        for idx, line in enumerate(
+            filter(None, (line.strip() for line in lines))
+        ):
+            total_content += len(line)
+            if idx == 10 or total_content > 300:
+                yield line + "…"
+                return
 
-    return content
+            yield line
+
+    return "<br/>".join(join())

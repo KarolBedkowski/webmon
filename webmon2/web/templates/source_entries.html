@@ -17,7 +17,7 @@
 
 
 {% block header %}
-	<h1>{% block title %}Entries in {{ source.name }}{% endblock %}
+	<h1>{% block title %}{{ _("Entries in") }} {{ source.name }}{% endblock %}
 		{% if showed == 'all' %}
 			({{ total_entries }})
 		{% else %}

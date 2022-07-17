@@ -45,15 +45,15 @@
 		{% elif entry.content %}
 			<section>
 			{% if content_type == 'markdown' %}
-				{{ entry.content|format_markdown|safe }}
+				{{ entry.content|format_markdown|proxy_links(entry)|safe }}
 			{% elif content_type == 'preformated' %}
 				<pre>{{ entry.content }}</pre>
 			{% elif content_type == 'safe' %}
-				{{ entry.content|safe }}
+				{{ entry.content|proxy_links(entry)|safe }}
 			{% elif content_type == 'plain' %}
 				{{ entry.content }}
 			{% else %}
-				{{ entry.get_summary()|cleanup_html|safe }}
+				{{ entry.get_summary()|cleanup_html|proxy_links(entry)|safe }}
 			{% endif %}
 			</section>
 		{% endif %}

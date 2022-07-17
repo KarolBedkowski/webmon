@@ -677,3 +677,22 @@ def find_next_unread(db: DB, user_id: int) -> ty.Optional[int]:
         )
         row = cur.fetchone()
         return row[0] if row else None
+
+
+_RANDOMIZE_NEXT_CHECK_SQL = f"""
+UPDATE source_state
+SET next_update = next_update + (random() * 180) * interval '1 minute'
+WHERE source_id IN (
+    SELECT id
+    FROM sources
+    WHERE user_id = %s
+      AND status = {model.SourceStatus.ACTIVE}
+)
+"""
+
+
+def randomize_next_check(db: DB, user_id: int) -> int:
+    """Add random (0-60minutes) to next check for all user sources."""
+    with db.cursor() as cur:
+        cur.execute(_RANDOMIZE_NEXT_CHECK_SQL, (user_id,))
+        return cur.rowcount

@@ -284,6 +284,23 @@ def sett_data_mark_all_old_read() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
+@BP.route("/settings/data/manipulation/randomize_next_check")
+def sett_data_randomize_next_check() -> ty.Any:
+    user_id = session["user"]
+    db = c.get_db()
+    updated = database.sources.randomize_next_check(db, user_id)
+    db.commit()
+    flash(
+        ngettext(
+            "One source updated",
+            "%(updated)s sources updated",
+            updated,
+            updated=updated,
+        )
+    )
+    return redirect(url_for("system.sett_data"))
+
+
 @BP.route("/settings/scoring", methods=["GET", "POST"])
 def sett_scoring() -> ty.Any:
     user_id = session["user"]
@@ -309,6 +326,14 @@ def sett_scoring() -> ty.Any:
 
     rules = database.scoring.get(db, user_id)
     return render_template("system/scoring.html", rules=rules)
+
+
+@BP.route("/settings/logs")
+def sett_logs() -> ty.Any:
+    user_id = session["user"]
+    db = c.get_db()
+    logs = database.users.get_logs(db, user_id)
+    return render_template("system/logs.html", logs=logs)
 
 
 @BP.route("/settings/system/users", methods=["GET"])
@@ -434,6 +459,7 @@ def sys_info() -> ty.Any:
     db = c.get_db()
     info.extend(database.system.get_sysinfo(db))
     settings = database.settings.get_global(db)
+    settings = list(_translate_sett_descr(settings))
     db_tab_sizes = database.system.get_table_sizes(db)
 
     return render_template(
@@ -470,6 +496,7 @@ def _translate_sett_descr(
         "minimal_score": gettext("Minimal score of entries to show"),
         "timezone": gettext("User: default timezone"),
         "locale": gettext("User: language"),
+        "gpg_key": gettext("User GPG public key"),
     }
     for sett in settings:
         sett.description = translations.get(sett.key, sett.key)

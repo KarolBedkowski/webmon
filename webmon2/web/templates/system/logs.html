@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% import '_render_field.html' as rf %}
+{% import 'system/_sett_nav.html' as sn %}
+<!DOCTYPE html>
+<html>
+<body>
+
+{% block header %}
+  <h1>{% block title %}{{ _("Logs") }}{% endblock %}</h1>
+  {{ sn.render_header() }}
+{% endblock %}
+
+{% block content %}
+	<code>
+	{% for log in logs -%}
+	{{ log.ts | format_date }}: {{ log.content -}}
+	{% if log.source_id -%}&nbsp; [<a href="{{ url_for('source.source_edit', source_id=log.source_id) }}">{{ _("Source") }}</a>]{% endif -%}
+	<br/>
+	{% endfor -%}
+	</code>
+{% endblock %}
+</body>
+</html>
