@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 import requests
-from flask import Blueprint, Response, abort, request
+from flask import Blueprint, Response
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("proxy", __name__, url_prefix="/proxy")

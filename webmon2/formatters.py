@@ -10,7 +10,6 @@
 Formating entry content functions
 """
 
-import itertools
 import logging
 import typing as ty
 

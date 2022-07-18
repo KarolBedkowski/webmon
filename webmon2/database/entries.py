@@ -83,8 +83,6 @@ def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
     if args.get("star") is not None:
         query.add_where("AND e.star_mark = %(star)s")
 
-    # TODO: and e.title %> 'depen' -- injection' ORDER BY e.title <-> 'depende'
-
     if args.get("title_query"):
         query.add_where(
             "AND to_tsvector('simple'::regconfig, (title)::text) "

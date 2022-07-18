@@ -171,7 +171,7 @@ def get_all_dict(
 
 
 def _build_source(
-    row: Cursor, user_groups: ty.Dict[int, model.SourceGroup]
+    row: ty.Any, user_groups: ty.Dict[int, model.SourceGroup]
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
