@@ -61,21 +61,23 @@ class GitHubAbstractSource(AbstractSource):
 
     def _github_get_repository(self, conf: model.ConfDict) -> Repository:
         """Create repository object according to configuration."""
-        github = None
-        if conf.get("github_user") and conf.get("github_token"):
-            try:
+        try:
+            if conf.get("github_user") and conf.get("github_token"):
                 github = github3.login(
                     username=conf.get("github_user"),
                     token=conf.get("github_token"),
                 )
-            except Exception as err:
-                raise common.InputError(
-                    self,
-                    gettext("Connection error: %(err)s", err=err),
-                )
-        if not github:
-            github = github3.GitHub()
-        repository = github.repository(conf["owner"], conf["repository"])
+            else:
+                github = github3.GitHub()
+
+            repository = github.repository(conf["owner"], conf["repository"])
+
+        except Exception as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            )
+
         return repository
 
     @classmethod
