@@ -143,10 +143,10 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def before_request() -> ty.Any:  # pylint: disable=unused-variable
         request.req_start_time = time.time()  # type: ignore
         path = request.path
-        # pages that not need valid user and additional data like locale setting
+        # pages that not need valid user and don't need additional data like
+        # locale setting
         if (
             path == "/favicon.ico"
-            or path.startswith("/static")
             or path.startswith("/metrics")
             or path.startswith("/atom")
         ):
@@ -161,6 +161,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             # path that not need load additional data
             if (
                 path.startswith("/binary/")
+                or path.startswith("/static")
                 or path == "/manifest.json"
                 or path.startswith("/entry/mark/")
             ):
