@@ -168,4 +168,4 @@ def register(app: Flask) -> None:
     if app_conf.getboolean("web", "proxy_media"):
         app.jinja_env.filters["proxy_links"] = _proxy_links
     else:
-        app.jinja_env.filters["proxy_links"] = lambda x: x
+        app.jinja_env.filters["proxy_links"] = lambda x, y=None: x
