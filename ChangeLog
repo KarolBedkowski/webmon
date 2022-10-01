@@ -1,5 +1,21 @@
 # Changelog
 
+
+## 2.8.1 2022-10-01
+
+### Bug Fixes
+
+- Github: handle errors when get repositories
+- Not create sessions on static/metrics/atom requests
+- Static files required valid user
+- Fix error when no proxy is enabled
+- Fix arguments in users subcommands
+
+### Refactor
+
+- Clean code
+
+
 ## 2.8.0 2022-07-17
 
 ### Bug Fixes
