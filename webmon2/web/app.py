@@ -142,18 +142,22 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     @app.before_request
     def before_request() -> ty.Any:  # pylint: disable=unused-variable
         request.req_start_time = time.time()  # type: ignore
+        path = request.path
+        # pages that not need valid user and don't need additional data like
+        # locale setting
+        if path == "/favicon.ico" or path.startswith(("/metrics", "/atom")):
+            return None
+
         if not _check_csrf_token():
             return abort(400)
 
-        path = request.path
         user_id = session.get("user")
         if user_id is not None:
             # user is logged
             # path that not need load additional data
             if (
-                path.startswith("/binary/")
+                path.startswith(("/binary/", "/static", "/entry/mark/"))
                 or path == "/manifest.json"
-                or path.startswith("/entry/mark/")
             ):
                 return None
 
@@ -165,13 +169,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             return None
 
         # pages that not need valid user
-        if (
-            path == "/favicon.ico"
-            or path.startswith("/static")
-            or path.startswith("/sec/login")
-            or path.startswith("/metrics")
-            or path.startswith("/atom")
-        ):
+        if path.startswith("/sec/login"):
             return None
 
         # login is requred; redirect to login page
@@ -194,6 +192,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
             "text/plain",
         ):
             _set_cache_contol_no_cache(resp)
+
         if cont_type == "text/html":
             _set_cache_contol_no_cache(resp)
             resp.headers["Content-Security-Policy"] = _CSP

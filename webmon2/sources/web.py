@@ -185,7 +185,7 @@ class WebSource(AbstractSource):
 
     def _load_image(
         self, url: str, session: requests.Session
-    ) -> ty.Optional[ty.Tuple[str, bytes]]:  # pylint: disable=no-self-use
+    ) -> ty.Optional[ty.Tuple[str, bytes]]:
         url_splited = urlsplit(url)
         favicon_url = urlunsplit(
             (url_splited[0], url_splited[1], "favicon.ico", "", "")

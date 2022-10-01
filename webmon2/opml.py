@@ -13,6 +13,7 @@ Import/export data in opml format.
 import itertools
 import logging
 import typing as ty
+from contextlib import suppress
 from xml.etree.ElementTree import Element
 
 from defusedxml import ElementTree as etree
@@ -77,12 +78,11 @@ def dump_data(db: database.DB, user_id: int) -> str:
 def _dump_source(source: model.Source) -> ty.Optional[Element]:
     scls = sources.get_source_class(source.kind)
     if scls:
-        try:
+        with suppress(NotImplementedError):
             data = scls.to_opml(source)
             if data:
                 return E.outline(**data)  # type: ignore
-        except NotImplementedError:
-            pass
+
     return None
 
 

@@ -31,11 +31,12 @@ class DBSession(CallbackDict, SessionMixin):
         def on_update(self):
             self.modified = True
 
-        CallbackDict.__init__(self, initial, on_update)
         self.sid = sid
         self.modified = False
         if permanent:
             self.permanent = permanent
+
+        CallbackDict.__init__(self, initial, on_update)
 
 
 class DBSessionInterface(FlaskSessionInterface):
@@ -105,6 +106,9 @@ class DBSessionInterface(FlaskSessionInterface):
             if saved_session:
                 saved_session.data = val
                 saved_session.expiry = expires
+            elif not session.modified:
+                db.commit()
+                return
             else:
                 saved_session = model.Session(session.sid, expires, val)
 

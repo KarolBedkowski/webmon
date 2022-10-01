@@ -14,7 +14,7 @@ import logging
 import typing as ty
 
 import requests
-from flask import Blueprint, Response, abort, request
+from flask import Blueprint, Response
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("proxy", __name__, url_prefix="/proxy")
@@ -31,7 +31,7 @@ _EXCLUDED_HEADERS = [
 def proxy(path: str) -> ty.Any:
     _LOG.debug("proxy request to: %s", path)
 
-    resp = requests.get(path)
+    resp = requests.get(path, timeout=30)
     headers = [
         (name, value)
         for (name, value) in resp.raw.headers.items()

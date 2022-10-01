@@ -77,9 +77,4 @@ def verify_totp(secret: str, totp: str) -> bool:
     if not totp:
         return False
 
-    try:
-        totp_val = int(totp)
-    except ValueError:
-        return False
-
-    return bool(pyotp.TOTP(secret).verify(totp_val, valid_window=1))
+    return bool(pyotp.TOTP(secret).verify(totp, valid_window=1))

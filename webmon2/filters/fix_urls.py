@@ -67,7 +67,7 @@ class FixHtmlUrls(AbstractFilter):
 
 
 def _convert_link(url: str, base: str) -> str:
-    if url.startswith("http://") or url.startswith("https://"):
+    if url.startswith(("http://", "https://")):
         return url
 
     return urljoin(base, url)

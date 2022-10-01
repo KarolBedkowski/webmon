@@ -18,7 +18,6 @@ from webmon2 import model
 from . import _dbcommon as dbc
 from . import binaries, groups
 from ._db import DB
-from ._dbcommon import Cursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -171,7 +170,7 @@ def get_all_dict(
 
 
 def _build_source(
-    row: Cursor, user_groups: ty.Dict[int, model.SourceGroup]
+    row: ty.Any, user_groups: ty.Dict[int, model.SourceGroup]
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
@@ -298,7 +297,7 @@ def update_filter(
         filter_: filter configuration
     """
     try:
-        source = get(db, source_id, False, False)
+        source = get(db, source_id, with_group=False)
     except dbc.NotFound:
         _LOG.warning("update_filter: source %d not found", source_id)
         return
@@ -325,7 +324,7 @@ def delete_filter(
         filter_idx: filter index to delete
 
     """
-    source = get(db, source_id, False, False)
+    source = get(db, source_id, with_group=False)
     if not source or source.user_id != user_id:
         _LOG.warning("invalid source (%r, %r) %r", user_id, source_id, source)
         return
@@ -353,7 +352,7 @@ def move_filter(
     if direction not in ("up", "down"):
         raise ValueError("invalid direction")
 
-    source = get(db, source_id, False, False)
+    source = get(db, source_id, with_group=False)
     if not source or source.user_id != user_id:
         return
 

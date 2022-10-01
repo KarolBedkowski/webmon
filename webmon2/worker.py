@@ -548,7 +548,7 @@ def _save_state_error(
     _SOURCES_PROCESSED_ERRORS.inc()
     assert source.state
 
-    new_state = state if state else source.state.new_error(str(err))
+    new_state = state or source.state.new_error(err)
     new_state.next_update = _calc_next_check_on_error(source)
     new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
     database.sources.save_state(db, new_state, source.user_id)

@@ -138,6 +138,7 @@ class AbstractSource:
                 method="GET",
                 headers={"User-agent": self.AGENT},
                 allow_redirects=True,
+                timeout=30,
             )
             if response:
                 response.raise_for_status()

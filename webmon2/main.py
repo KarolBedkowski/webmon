@@ -2,7 +2,7 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -17,6 +17,7 @@ import signal
 import sys
 import typing as ty
 from configparser import ConfigParser
+from contextlib import suppress
 
 from werkzeug.serving import is_running_from_reloader
 
@@ -25,19 +26,15 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
-    try:
+    with suppress(ImportError):
         from rich.traceback import install
 
         install()
-    except ImportError:
-        pass
 
-try:
+with suppress(ImportError):
     import icecream
 
     icecream.install()
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    pass
 
 try:
     import sdnotify
@@ -58,7 +55,7 @@ from . import (
 )
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 _ = ty
 
 
@@ -132,8 +129,8 @@ def _parse_options() -> argparse.Namespace:
     )
 
     parser_users_add = parser_users_sc.add_parser("add", help="add user")
-    parser_users_add.add_argument("-l" "--login", required=True)
-    parser_users_add.add_argument("-p" "--password", required=True)
+    parser_users_add.add_argument("-l", "--login", required=True)
+    parser_users_add.add_argument("-p", "--password", required=True)
     parser_users_add.add_argument(
         "--admin",
         action="store_true",
@@ -144,13 +141,13 @@ def _parse_options() -> argparse.Namespace:
     parser_users_cp = parser_users_sc.add_parser(
         "passwd", help="change user password"
     )
-    parser_users_cp.add_argument("-l" "--login", required=True)
-    parser_users_cp.add_argument("-p" "--password", required=True)
+    parser_users_cp.add_argument("-l", "--login", required=True)
+    parser_users_cp.add_argument("-p", "--password", required=True)
 
     parser_users_rtotp = parser_users_sc.add_parser(
         "remove_totp", help="remove two factor authentication for user"
     )
-    parser_users_rtotp.add_argument("-l" "--login", required=True)
+    parser_users_rtotp.add_argument("-l", "--login", required=True)
 
     parser_serve = subparsers.add_parser("serve", help="Start application")
 
@@ -374,10 +371,8 @@ def main() -> None:
         signal.signal(signal.SIGALRM, _sd_watchdog)
         signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
-    try:
+    with suppress(locale.Error):
         locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())  # type: ignore
-    except locale.Error:
-        pass
 
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)

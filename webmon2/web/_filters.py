@@ -89,7 +89,7 @@ def _create_proxy_url(url: str, entry=None) -> str:
     if not url:
         return ""
 
-    if url.startswith("http://") or url.startswith("https://"):
+    if url.startswith(("http://", "https://")):
         return url_for("proxy.proxy", path=url)
 
     # handle related urls
@@ -168,4 +168,4 @@ def register(app: Flask) -> None:
     if app_conf.getboolean("web", "proxy_media"):
         app.jinja_env.filters["proxy_links"] = _proxy_links
     else:
-        app.jinja_env.filters["proxy_links"] = lambda x: x
+        app.jinja_env.filters["proxy_links"] = lambda x, y=None: x

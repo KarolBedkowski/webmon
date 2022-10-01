@@ -13,6 +13,7 @@ import datetime
 import logging
 import time
 import typing as ty
+from contextlib import suppress
 from urllib.parse import urljoin
 
 import feedparser
@@ -103,11 +104,9 @@ class RssSource(AbstractSource):
 
         # self._check_sy_updateperiod(doc.feed)
 
-        try:
+        with suppress(KeyError):
             # pylint: disable=unsubscriptable-object
             self._update_source(web_url=doc["feed"]["link"])
-        except KeyError:
-            pass
 
         entries = doc.get("entries")
         if state.last_update:
@@ -195,7 +194,6 @@ class RssSource(AbstractSource):
 
         return result
 
-    # pylint: disable=no-self-use
     def _load_article(
         self, entry: model.Entry, sess: requests.Session
     ) -> model.Entry:
