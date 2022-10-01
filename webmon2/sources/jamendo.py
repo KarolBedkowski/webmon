@@ -44,7 +44,6 @@ class JamendoAbstractSource(AbstractSource):
         super().__init__(source, sys_settings)
         self._update_source()
 
-    # pylint: disable=no-self-use
     def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
         last_update = datetime.datetime.now(
             datetime.timezone.utc
@@ -54,7 +53,7 @@ class JamendoAbstractSource(AbstractSource):
 
         return last_update
 
-    # pylint: disable=no-self-use,too-many-return-statements
+    # pylint: disable=too-many-return-statements
     def _make_request(self, url: str) -> ty.Tuple[int, ty.Any]:
         _LOG.debug("make request: %s", url)
         headers = {

@@ -11,6 +11,7 @@ Inputs related to github
 """
 import logging
 import typing as ty
+from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 
 import github3
@@ -361,16 +362,13 @@ def _filter_tags(
     commit last update date with min_date; return only tags with date after
     than min_date"""
     for tag in tags:
-        try:
+        with suppress(github3.exceptions.NotFoundError):
             commit = repository.commit(tag.commit.sha)
             if commit:
                 commit_date = common.parse_http_date(commit.last_modified)
                 if commit_date and commit_date > min_date:
                     tag.ex_commit_date = commit_date
                     yield tag
-
-        except github3.exceptions.NotFoundError:
-            pass
 
 
 def _load_tags(

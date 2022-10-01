@@ -31,7 +31,7 @@ _EXCLUDED_HEADERS = [
 def proxy(path: str) -> ty.Any:
     _LOG.debug("proxy request to: %s", path)
 
-    resp = requests.get(path)
+    resp = requests.get(path, timeout=30)
     headers = [
         (name, value)
         for (name, value) in resp.raw.headers.items()

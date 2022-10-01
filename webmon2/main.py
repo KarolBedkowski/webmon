@@ -2,7 +2,7 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016-2021
+Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -17,6 +17,7 @@ import signal
 import sys
 import typing as ty
 from configparser import ConfigParser
+from contextlib import suppress
 
 from werkzeug.serving import is_running_from_reloader
 
@@ -25,19 +26,15 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
-    try:
+    with suppress(ImportError):
         from rich.traceback import install
 
         install()
-    except ImportError:
-        pass
 
-try:
+with suppress(ImportError):
     import icecream
 
     icecream.install()
-except ImportError:  # Graceful fallback if IceCream isn't installed.
-    pass
 
 try:
     import sdnotify
@@ -58,7 +55,7 @@ from . import (
 )
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 _ = ty
 
 
@@ -374,10 +371,8 @@ def main() -> None:
         signal.signal(signal.SIGALRM, _sd_watchdog)
         signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
-    try:
+    with suppress(locale.Error):
         locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())  # type: ignore
-    except locale.Error:
-        pass
 
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)

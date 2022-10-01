@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 import typing as ty
 from configparser import ConfigParser
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -316,10 +317,8 @@ def _send_mail(
         _LOG.exception("send mail error")
         return False
     finally:
-        try:
+        with suppress():
             smtp.quit()
-        except:  # noqa: E722; pylint: disable=bare-except
-            pass
     return True
 
 
@@ -332,8 +331,7 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
             keyfile.write(user_key.encode("UTF-8"))
             keyfile_name = keyfile.name
 
-        args.append("-f")
-        args.append(keyfile_name)
+        args.extend(("-f", keyfile_name))
         try:
             return __do_encrypt(args, message)
         finally:

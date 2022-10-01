@@ -89,7 +89,7 @@ def _create_proxy_url(url: str, entry=None) -> str:
     if not url:
         return ""
 
-    if url.startswith("http://") or url.startswith("https://"):
+    if url.startswith(("http://", "https://")):
         return url_for("proxy.proxy", path=url)
 
     # handle related urls

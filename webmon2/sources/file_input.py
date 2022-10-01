@@ -12,6 +12,7 @@ Local file source
 import datetime
 import logging
 import os
+import pathlib
 import typing as ty
 
 from flask_babel import lazy_gettext
@@ -58,9 +59,7 @@ class FileSource(AbstractSource):
                 return state.new_not_modified(), []
 
         try:
-            content = ""
-            with open(fname, "r", encoding="UTF-8") as finput:
-                content = finput.read()
+            content = pathlib.Path(fname).read_text(encoding="UTF-8")
 
             _LOG.debug(
                 "load content source=%d, content=%s", self._source.id, content

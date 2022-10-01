@@ -16,6 +16,7 @@ import logging
 import os.path
 import pathlib
 import typing as ty
+from contextlib import suppress
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
@@ -77,8 +78,8 @@ def get_subclasses_with_name(
     """Iter over subclasses and yield `name` attribute"""
 
     def find(
-        parent_cls: ty.Type[ParentClass2],
-    ) -> ty.Iterator[ty.Tuple[str, ty.Type[ParentClass2]]]:
+        parent_cls: ParentClass2,
+    ) -> ty.Iterator[ty.Tuple[str, ParentClass2]]:
         for rcls in getattr(parent_cls, "__subclasses__")():
             name = getattr(rcls, "name")
             if name:
@@ -173,7 +174,7 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
     start_time, end_time = int: hour * 60 + minutes
     """
     # pylint: disable=invalid-sequence-index
-    inp = inp.replace(" ", "").replace("\t", "")
+    inp = inp.replace(" ", "").expandtabs(0)
     for hrang in inp.split(","):
         if "-" not in hrang:
             continue
@@ -182,12 +183,10 @@ def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
         if not start or not stop:
             continue
 
-        try:
+        with suppress(ValueError):
             start_hm = _parse_hour_min(start)
             stop_hm = _parse_hour_min(stop)
             yield (start_hm, stop_hm)
-        except ValueError:
-            pass
 
 
 def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
