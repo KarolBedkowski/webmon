@@ -132,8 +132,8 @@ def _parse_options() -> argparse.Namespace:
     )
 
     parser_users_add = parser_users_sc.add_parser("add", help="add user")
-    parser_users_add.add_argument("-l" "--login", required=True)
-    parser_users_add.add_argument("-p" "--password", required=True)
+    parser_users_add.add_argument("-l", "--login", required=True)
+    parser_users_add.add_argument("-p", "--password", required=True)
     parser_users_add.add_argument(
         "--admin",
         action="store_true",
@@ -144,13 +144,13 @@ def _parse_options() -> argparse.Namespace:
     parser_users_cp = parser_users_sc.add_parser(
         "passwd", help="change user password"
     )
-    parser_users_cp.add_argument("-l" "--login", required=True)
-    parser_users_cp.add_argument("-p" "--password", required=True)
+    parser_users_cp.add_argument("-l", "--login", required=True)
+    parser_users_cp.add_argument("-p", "--password", required=True)
 
     parser_users_rtotp = parser_users_sc.add_parser(
         "remove_totp", help="remove two factor authentication for user"
     )
-    parser_users_rtotp.add_argument("-l" "--login", required=True)
+    parser_users_rtotp.add_argument("-l", "--login", required=True)
 
     parser_serve = subparsers.add_parser("serve", help="Start application")
 
