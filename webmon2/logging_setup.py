@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# -*- coding: utf-8 -*-
 """Logging setup.
 Copyright (c) Karol Będkowski, 2014-2021
 

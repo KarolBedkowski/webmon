@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
 # Copyright © 2019 Karol Będkowski
@@ -186,13 +185,11 @@ class AbstractSource:
         raise NotImplementedError()
 
 
-_IMAGE_TYPES = set(
-    (
-        "image/png",
-        "image/x-icon",
-        "image/vnd.microsoft.icon",
-    )
-)
+_IMAGE_TYPES = {
+    "image/png",
+    "image/x-icon",
+    "image/vnd.microsoft.icon",
+}
 
 
 def _check_content_type(

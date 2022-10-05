@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
 # Copyright © 2019 Karol Będkowski
@@ -45,7 +44,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
 
             return inps
 
-    except IOError as err:
+    except OSError as err:
         _LOG.error("loading sources from file %s error: %s", filename, err)
     except yaml.error.YAMLError as err:
         _LOG.error(

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
 # Copyright © 2019 Karol Będkowski
@@ -234,7 +233,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         cls, *confs: model.ConfDict
     ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration."""
-        yield from super(JamendoAlbumsSource, cls).validate_conf(*confs)
+        yield from super().validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
         artist = any(conf.get("artist") for conf in confs)
         if not artist_id and not artist:
@@ -335,7 +334,7 @@ class JamendoTracksSource(JamendoAbstractSource):
         cls, *confs: model.ConfDict
     ) -> ty.Iterable[ty.Tuple[str, str]]:
         """Validate input configuration."""
-        yield from super(JamendoTracksSource, cls).validate_conf(*confs)
+        yield from super().validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
         artist = any(conf.get("artist") for conf in confs)
         if not artist_id and not artist:

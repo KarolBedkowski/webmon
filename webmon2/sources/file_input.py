@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-# -*- coding: utf-8 -*-
 # vim:fenc=utf-8
 #
 # Copyright © 2019 Karol Będkowski
@@ -86,7 +85,7 @@ class FileSource(AbstractSource):
                 seconds=common.parse_interval(self._source.interval)
             )
             return new_state, [entry]
-        except IOError as err:
+        except OSError as err:
             return state.new_error(str(err)), []
 
     @classmethod
