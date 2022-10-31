@@ -10,6 +10,7 @@ Web gui
 """
 
 import logging
+import os
 import typing as ty
 
 import prometheus_client
@@ -23,6 +24,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -131,6 +133,15 @@ def metrics() -> ty.Any:
 @BP.route("/health")
 def health() -> ty.Any:
     return "ok"
+
+
+@BP.route("/favicon.ico")
+def favicon() -> ty.Any:
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
 
 @common.cache
