@@ -128,6 +128,11 @@ def metrics() -> ty.Any:
     )
 
 
+@BP.route("/health")
+def health() -> ty.Any:
+    return "ok"
+
+
 @common.cache
 def _build_manifest() -> str:
     manifest = {

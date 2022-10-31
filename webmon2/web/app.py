@@ -144,7 +144,9 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         path = request.path
         # pages that not need valid user and don't need additional data like
         # locale setting
-        if path == "/favicon.ico" or path.startswith(("/metrics", "/atom")):
+        if path == "/favicon.ico" or path.startswith(
+            ("/metrics", "/atom", "/health")
+        ):
             return None
 
         if not _check_csrf_token():
