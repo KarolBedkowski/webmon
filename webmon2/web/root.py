@@ -13,8 +13,10 @@ import ipaddress
 import logging
 import os
 import typing as ty
+from contextlib import suppress
 
 import prometheus_client
+import psycopg2
 from flask import (
     Blueprint,
     Response,
@@ -126,18 +128,22 @@ def _metrics_accesslist() -> ty.List[
     return networks
 
 
-@BP.route("/metrics")
-def metrics() -> ty.Any:
+def _is_address_allowed() -> bool:
     assert request.remote_addr
     if allowed_nets := _metrics_accesslist():
-        allowed = False
         for net in allowed_nets:
             if ipaddress.ip_address(request.remote_addr) in net:
-                allowed = True
-                break
+                return True
 
-        if not allowed:
-            abort(401)
+        return False
+
+    return True
+
+
+@BP.route("/metrics")
+def metrics() -> ty.Any:
+    if not _is_address_allowed():
+        abort(401)
 
     return Response(
         prometheus_client.generate_latest(),  # type: ignore
@@ -148,6 +154,19 @@ def metrics() -> ty.Any:
 @BP.route("/health")
 def health() -> ty.Any:
     return "ok"
+
+
+@BP.route("/health/live")
+def health_live() -> ty.Any:
+    if not _is_address_allowed():
+        abort(401)
+
+    with suppress(psycopg2.OperationalError):
+        db = c.get_db()
+        if database.system.ping(db):
+            return "ok"
+
+    return abort(500)
 
 
 @BP.route("/favicon.ico")

@@ -103,3 +103,11 @@ def delete_expired_sessions(db: DB) -> int:
     with db.cursor() as cur:
         cur.execute("delete from sessions where expiry <= now()")
         return cur.rowcount
+
+
+def ping(db: DB) -> bool:
+    with db.cursor() as cur:
+        cur.execute("select now()")
+        return bool(cur.fetchone())
+
+    return False
