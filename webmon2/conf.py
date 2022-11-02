@@ -9,6 +9,7 @@
 Application configuration.
 """
 import argparse
+import ipaddress
 import logging
 import os
 import typing as ty
@@ -124,7 +125,8 @@ def validate(conf: ConfigParser) -> bool:
     valid_web = _validate_web(conf)
     valid_main = _validate_main(conf)
     valid_smtp = _validate_smtp(conf)
-    return valid_web and valid_main and valid_smtp
+    valid_metrics = _validate_metrics(conf)
+    return valid_web and valid_main and valid_smtp and valid_metrics
 
 
 def _validate_web(conf: ConfigParser) -> bool:
@@ -202,6 +204,23 @@ def _validate_smtp(conf: ConfigParser) -> bool:
         if not conf.get("smtp", "from"):
             _LOG.error("Missing SMTP 'from' address")
             valid = False
+
+    return valid
+
+
+def _validate_metrics(conf: ConfigParser) -> bool:
+    valid = True
+    if allow_from := conf.get("metrics", "allow_from"):
+        for addr in allow_from.split(","):
+            addr = addr.strip()
+            try:
+                if "/" in addr:
+                    ipaddress.ip_network(addr, strict=False)
+                else:
+                    ipaddress.ip_address(addr)
+            except ValueError:
+                _LOG.error("Invalid IP or network: %s", addr)
+                valid = False
 
     return valid
 

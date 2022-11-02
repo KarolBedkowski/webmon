@@ -9,6 +9,7 @@
 Web gui
 """
 
+import ipaddress
 import logging
 import os
 import typing as ty
@@ -111,18 +112,32 @@ def groups() -> ty.Any:
 
 
 @common.cache
-def _metrics_accesslist() -> ty.List[str]:
+def _metrics_accesslist() -> ty.List[
+    ty.Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
+]:
     conf = current_app.config["app_conf"]
-    return [
-        ip.strip()
-        for ip in conf.get("metrics", "allow_from", fallback="").split(",")
-    ]
+    networks = []
+    for addr in conf.get("metrics", "allow_from", fallback="").split(","):
+        addr = addr.strip()
+        if "/" not in addr:
+            addr = addr + "/32"
+        networks.append(ipaddress.ip_network(addr, strict=False))
+
+    return networks
 
 
 @BP.route("/metrics")
 def metrics() -> ty.Any:
-    if request.remote_addr not in _metrics_accesslist():
-        abort(401)
+    assert request.remote_addr
+    if allowed_nets := _metrics_accesslist():
+        allowed = False
+        for net in allowed_nets:
+            if ipaddress.ip_address(request.remote_addr) in net:
+                allowed = True
+                break
+
+        if not allowed:
+            abort(401)
 
     return Response(
         prometheus_client.generate_latest(),  # type: ignore
