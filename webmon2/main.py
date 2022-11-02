@@ -157,7 +157,7 @@ def _parse_options() -> argparse.Namespace:
         dest="web_app_root",
     )
     parser_serve.add_argument(
-        "--workers", type=int, default=2, help="number of background workers"
+        "--workers", type=int, help="number of background workers"
     )
     parser_serve.add_argument(
         "--address",

@@ -90,7 +90,7 @@ def update_from_args(
         if args.web_port:
             conf.set("web", "port", str(args.web_port))
 
-        if args.workers:
+        if args.workers is not None:
             conf.set("main", "workers", str(args.workers))
 
         if args.smtp_server_address:
@@ -166,8 +166,7 @@ def _validate_main(conf: ConfigParser) -> bool:
         valid = False
     else:
         if workers < 1:
-            _LOG.error("Invalid workers parameter")
-            valid = False
+            _LOG.warning("number of workers is %s", workers)
 
     try:
         work_interval = int(conf.get("main", "work_interval"))
