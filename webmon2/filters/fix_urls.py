@@ -61,7 +61,13 @@ class FixHtmlUrls(AbstractFilter):
                     _convert_srcset_links(src, base)
                 )
 
-        entry.content = lxml.etree.tostring(document).decode("utf-8")
+        try:
+            entry.content = lxml.etree.tostring(
+                document, encoding="UTF-8"
+            ).decode("utf-8")
+        except lxml.etree.SerialisationError as err:
+            _LOG.warning("serialize error: %s", err)
+
         yield entry
 
 
