@@ -18,6 +18,7 @@ import sys
 import typing as ty
 from configparser import ConfigParser
 from contextlib import suppress
+from pathlib import Path
 
 from werkzeug.serving import is_running_from_reloader
 
@@ -224,13 +225,13 @@ def _parse_options() -> argparse.Namespace:
 
 def _load_user_classes() -> None:
     users_scripts_dir = os.path.expanduser("~/.local/share/" + APP_NAME)
-    if not os.path.isdir(users_scripts_dir):
+    if not Path(users_scripts_dir).is_dir():
         return
 
     for fname in os.listdir(users_scripts_dir):
         fpath = os.path.join(users_scripts_dir, fname)
         if (
-            os.path.isfile(fpath)
+            Path(fpath).is_file()
             and fname.endswith(".py")
             and not fname.startswith("_")
         ):

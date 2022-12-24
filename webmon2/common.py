@@ -17,6 +17,7 @@ import os.path
 import pathlib
 import typing as ty
 from contextlib import suppress
+from pathlib import Path
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
@@ -136,8 +137,9 @@ def create_missing_dir(path: str) -> None:
     If path exists and is not directory - raise error.
     """
     path = os.path.expanduser(path)
-    if os.path.exists(path):
-        if os.path.isdir(path):
+    pat = Path(path)
+    if pat.exists():
+        if pat.is_dir():
             return
         raise RuntimeError(f"path {path} exists and is not dir")
 

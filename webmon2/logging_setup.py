@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 """Logging setup.
-Copyright (c) Karol Będkowski, 2014-2021
+Copyright (c) Karol Będkowski, 2014-2022
 
 This file is part of webmon.
 Licence: GPLv2+
@@ -12,9 +12,10 @@ import sys
 import tempfile
 import time
 import typing as ty
+from pathlib import Path
 
 __author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2021"
+__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 
 _ = ty
 
@@ -46,7 +47,7 @@ def _create_dirs_for_log(filename: str) -> str:
     log_dir_access = os.access(log_dir, os.W_OK)
 
     create_temp = False
-    if os.path.isabs(filename):
+    if Path(filename).is_absolute():
         if not log_dir_access:
             create_temp = True
 

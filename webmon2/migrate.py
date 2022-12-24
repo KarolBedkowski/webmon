@@ -12,6 +12,7 @@ import argparse
 import logging
 import os
 import typing as ty
+from pathlib import Path
 
 import yaml
 
@@ -23,7 +24,7 @@ _LOG = logging.getLogger(__name__)
 def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
     """Load sources configuration from `filename`."""
     _LOG.debug("loading sources from %s", filename)
-    if not os.path.isfile(filename):
+    if not Path(filename).is_file():
         _LOG.error("loading sources file error: '%s' not found", filename)
         return None
 

@@ -22,6 +22,7 @@ from configparser import ConfigParser
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import html2text as h2t
@@ -334,7 +335,7 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
         try:
             return __do_encrypt(args, message)
         finally:
-            os.unlink(keyfile.name)
+            Path(keyfile.name).unlink()
 
     return __do_encrypt(args, message)
 

@@ -126,7 +126,7 @@ def group_entries(
         return abort(404)
 
     order = request.args.get("order", "updated")
-    offset = (page or 0) * c.PAGE_LIMIT
+    offset = page * c.PAGE_LIMIT
     mode = "all" if mode == "all" else "unread"
     unread = mode != "all"
 

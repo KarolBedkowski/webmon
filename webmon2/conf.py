@@ -14,6 +14,7 @@ import logging
 import os
 import typing as ty
 from configparser import ConfigParser
+from pathlib import Path
 
 _LOG = logging.getLogger("conf")
 
@@ -58,7 +59,7 @@ def load_conf(fileobj: ty.Iterable[str]) -> ConfigParser:
 
 def try_load_user_conf() -> ty.Optional[ConfigParser]:
     user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
-    if os.path.isfile(user_conf):
+    if Path(user_conf).is_file():
         try:
             _LOG.info("loading %s", user_conf)
             with open(user_conf, encoding="UTF-8") as fileobj:

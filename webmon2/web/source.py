@@ -163,7 +163,7 @@ def source_entries(
     if not source:
         return abort(404)
 
-    offset = (page or 0) * c.PAGE_LIMIT
+    offset = page * c.PAGE_LIMIT
     mode = "all" if mode == "all" else "unread"
     unread = mode == "unread"
 
