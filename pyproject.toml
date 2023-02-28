@@ -1,3 +1,8 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.0.0"]
+
+
 [tool.poetry]
 authors = ["Karol Będkowski <karol.bedkowski@gmail.com>"]
 classifiers = [
@@ -33,7 +38,7 @@ markdown2 = "^2.4"
 prometheus-client = "^0.11"
 psycopg2 = "^2.8"
 pyotp = { version = "^2.6", optional = true }
-python = "^3.8"
+python = "^3.9"
 python-dateutil = "^2.8"
 python-gitlab = "^2.10"
 readability-lxml = "^0.8"
@@ -53,8 +58,10 @@ sd = ["sdnotify"]
 [tool.poetry.scripts]
 webmon2 = "webmon2.main:main"
 
+
 [tool.black]
 line-length = 79
+
 
 [tool.isort]
 line_length = 79
@@ -62,13 +69,48 @@ multi_line_output = 3
 profile = "black"
 skip = "migrations"
 
+
 [tool.bandit]
 skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
 
-[build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.0.0"]
 
 [tool.mypy]
-python_version = 3.8
+python_version = 3.9
 strict = true
+exclude = [
+  '_test\.py$'
+]
+allow_untyped_defs = true
+allow_untyped_calls = true
+ignore_missing_imports = true
+
+
+[tool.flake8]
+builtins = "_"
+
+
+[tool.pylint.main]
+ignore=["build", "dist", "tmp", "doc"]
+jobs=4
+extension-pkg-allow-list="lxml"
+extension-pkg-whitelist="lxml"
+py-version = [3, 9]
+disable = ["missing-docstring", "format", "unused-argument"]
+
+[tool.pylint.basic]
+good-names=["i", "j", "k", "ex", "Run", "_", "db", "err", "ok", "x", "y", "id", "ts"]
+
+#[tool.pylint.exceptions]
+#overgeneral-exceptions = [""]
+
+[tool.pylint.design]
+#max-args = 8
+max-attributes = 10
+
+[tool.pylint.variables]
+additional-builtins = ["_", "ngettext", "ic"]
+
+
+
+[tool.ruff]
+builtins = ["_", "ic", "ic_stack", "ngettext"]
