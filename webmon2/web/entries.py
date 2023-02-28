@@ -94,7 +94,10 @@ def entries_history() -> ty.Any:
     if not any(1 for id_, _ in sources if id_ == source_id):
         source_id = None
 
-    entries_, total, = database.entries.get_history(
+    (
+        entries_,
+        total,
+    ) = database.entries.get_history(
         db,
         user_id,
         group_id=group_id,

@@ -147,7 +147,11 @@ class CheckWorker(threading.Thread):
 
 class FetchWorker(threading.Thread):
     def __init__(
-        self, idx: str, todo_queue: queue.Queue[int], conf: ConfigParser, app
+        self,
+        idx: str,
+        todo_queue: queue.Queue[int],
+        conf: ConfigParser,
+        app: ty.Any,
     ) -> None:
         threading.Thread.__init__(self)
         # id of thread
@@ -170,6 +174,22 @@ class FetchWorker(threading.Thread):
                         db, id_=source_id, with_state=True
                     )
                     self._process_source(db, source)
+                except sources.LoadError as err:
+                    _LOG.info(
+                        "[%s] process source %d error: %s",
+                        self._idx,
+                        source_id,
+                        err,
+                    )
+                    db.rollback()
+                    if source:
+                        _save_state_error(db, source, str(err))
+                        database.users.put_log(
+                            db,
+                            source.user_id,
+                            f"process source '{source.name}' error {err}",
+                            source_id=source_id,
+                        )
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
                         "[%s] process source %d error", self._idx, source_id
@@ -247,9 +267,9 @@ class FetchWorker(threading.Thread):
         self,
         db: database.DB,
         source: model.Source,
-        src,
-        sys_settings: ty.Dict[str, ty.Any],
-    ):
+        src: sources.AbstractSource,
+        sys_settings: dict[str, ty.Any],
+    ) -> tuple[model.SourceState, int]:
         # load data
         new_state, entries = src.load(source.state)
         if new_state.status == model.SourceStateStatus.ERROR:

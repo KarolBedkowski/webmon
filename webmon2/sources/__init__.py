@@ -19,11 +19,11 @@ from .abstract import AbstractSource
 
 _LOG = logging.getLogger(__name__)
 __all__ = (
+    "AbstractSource",
     "UnknownInputException",
     "get_source",
-    "sources_name",
     "sources_info",
-    "AbstractSource",
+    "sources_name",
 )
 
 

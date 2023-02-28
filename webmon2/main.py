@@ -373,7 +373,7 @@ def main() -> None:
         signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
     with suppress(locale.Error):
-        locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())  # type: ignore
+        locale.setlocale(locale.LC_ALL, locale.getlocale())  # type: ignore
 
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)

@@ -12,7 +12,6 @@ Sending reports by mail functions
 import email.message
 import email.utils
 import logging
-import os
 import re
 import smtplib
 import subprocess
@@ -205,7 +204,7 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
     if tzone := ctx.timezone:
         updated = updated.astimezone(tzone)
 
-    title = (entry.title or "") + " " + updated.strftime("%x %X")  # type: ignore
+    title = (entry.title or "") + " " + updated.strftime("%x %X")
 
     yield "### "
     yield _get_entry_score_mark(entry)

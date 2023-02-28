@@ -10,7 +10,6 @@ Migration utils
 """
 import argparse
 import logging
-import os
 import typing as ty
 from pathlib import Path
 

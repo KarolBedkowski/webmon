@@ -166,12 +166,18 @@ class GithubInput(GitHubAbstractSource):
             return state.new_not_modified(etag=repository.etag), []
 
         etag = state.get_prop("etag")
-        if hasattr(repository, "commits"):
-            commits = list(repository.commits(since=data_since))
-        else:
-            commits = list(
-                repository.iter_commits(since=data_since, etag=etag)
-            )
+        try:
+            if hasattr(repository, "commits"):
+                commits = list(repository.commits(since=data_since))
+            else:
+                commits = list(
+                    repository.iter_commits(since=data_since, etag=etag)
+                )
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if not commits:
             new_state = state.new_not_modified(etag=repository.etag)
@@ -200,7 +206,6 @@ class GithubInput(GitHubAbstractSource):
         entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, [entry]
 
@@ -295,9 +300,15 @@ class GithubTagsSource(GitHubAbstractSource):
         if not self._github_check_repo_updated(repository, state.last_update):
             return state.new_not_modified(etag=repository.etag), []
 
-        tags = _load_tags(
-            repository, self._conf["max_items"], state.get_prop("etag")
-        )
+        try:
+            tags = _load_tags(
+                repository, self._conf["max_items"], state.get_prop("etag")
+            )
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if state.last_update:
             tags = _filter_tags(tags, repository, state.last_update)
@@ -322,7 +333,6 @@ class GithubTagsSource(GitHubAbstractSource):
         entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, [entry]
 
@@ -433,10 +443,16 @@ class GithubReleasesSource(GitHubAbstractSource):
 
         etag = state.get_prop("etag")
         max_items = self._conf["max_items"] or 100
-        if hasattr(repository, "releases"):
-            releases = list(repository.releases(max_items, etag=etag))
-        else:
-            releases = list(repository.iter_releases(max_items, etag=etag))
+        try:
+            if hasattr(repository, "releases"):
+                releases = list(repository.releases(max_items, etag=etag))
+            else:
+                releases = list(repository.iter_releases(max_items, etag=etag))
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if state.last_update:
             last_update = state.last_update.replace(tzinfo=tz.tzlocal())
@@ -470,7 +486,6 @@ class GithubReleasesSource(GitHubAbstractSource):
             entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, entries
 
