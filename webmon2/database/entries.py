@@ -127,7 +127,7 @@ def get_history(  # pylint: disable=too-many-arguments
     group_id: ty.Optional[int],
     offset: int = 0,
     limit: int = 20,
-) -> ty.Tuple[model.Entries, int]:
+) -> tuple[model.Entries, int]:
     """
     Get entries manually read (read_mark=2) for given user ordered by id
     Optionally filter by `source_id` and/or `group_id`.
@@ -336,7 +336,7 @@ def find_fulltext(
     with db.cursor() as cur:
         try:
             cur.execute(sql, args)
-        except psycopg2.errors.SyntaxError as err:
+        except psycopg2.errors.SyntaxError as err:  # pylint: disable=no-member
             _LOG.error("find_fulltext syntax error: %s", err)
             raise dbc.QuerySyntaxError() from err
         yield from _yield_entries(cur, user_sources)
@@ -505,7 +505,7 @@ def _save_entry_icon(db: DB, entries: model.Entries) -> None:
 
 def delete_old(
     db: DB, user_id: int, max_datetime: datetime
-) -> ty.Tuple[int, int]:
+) -> tuple[int, int]:
     """
     Delete old entries for given user.
     Keep unread and starred messages.
@@ -541,7 +541,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         changed = cur.rowcount
 
     _LOG.debug("changed: %d", changed)
-    return changed  # type: ignore
+    return changed
 
 
 def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:

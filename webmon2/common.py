@@ -340,5 +340,5 @@ def _cache(
 
 # functools.cache is available in 3.9+
 cache: ty.Callable[[ty.Callable[..., ty.Any]], ty.Any] = (
-    functools.cache if hasattr(functools, "cache") else _cache  # type: ignore
+    functools.cache if hasattr(functools, "cache") else _cache
 )

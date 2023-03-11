@@ -8,6 +8,8 @@
 """
 Template filters
 """
+from __future__ import annotations
+
 import datetime
 import logging
 import typing as ty
@@ -20,7 +22,7 @@ import lxml.html
 from flask import Flask, request, session, url_for
 from flask_babel import format_datetime, gettext
 
-from webmon2 import formatters
+from webmon2 import formatters, model
 
 _LOG = logging.getLogger(__name__)
 
@@ -46,13 +48,13 @@ def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
 
 def _format_date(date: ty.Any) -> str:
     if date is None:
-        return gettext("none")
+        return gettext("none")  # type: ignore
 
     if isinstance(date, datetime.datetime):
         if user_tz := session.get("_user_tz"):
             date = date.astimezone(ZoneInfo(user_tz))
 
-        return format_datetime(date)
+        return format_datetime(date)  # type: ignore
 
     return str(date)
 
@@ -83,7 +85,7 @@ def _format_key(inp: str) -> str:
     return inp[0].upper() + inp[1:]
 
 
-def _create_proxy_url(url: str, entry=None) -> str:
+def _create_proxy_url(url: str, entry: model.Entry | None = None) -> str:
     """Create proxied link; if url is relative, use entry.url as base."""
     if not url:
         return ""
@@ -99,7 +101,9 @@ def _create_proxy_url(url: str, entry=None) -> str:
     return url_for("proxy.proxy", path=url)
 
 
-def _create_proxy_urls_srcset(srcset: str, entry=None) -> ty.Iterable[str]:
+def _create_proxy_urls_srcset(
+    srcset: str, entry: model.Entry | None = None
+) -> ty.Iterable[str]:
     """Create proxied links from srcset.
 
     srcset is in form srcset="<url>" or
@@ -118,7 +122,7 @@ def _create_proxy_urls_srcset(srcset: str, entry=None) -> ty.Iterable[str]:
             yield _create_proxy_url(part, entry)
 
 
-def _proxy_links(content: str, entry=None) -> str:
+def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
     """Replace links to img/other objects to local proxy."""
     document = lxml.html.document_fromstring(content)
     changed = False
@@ -149,7 +153,7 @@ def _proxy_links(content: str, entry=None) -> str:
     if not changed:
         return content
 
-    return lxml.etree.tostring(document).decode("utf-8")
+    return lxml.etree.tostring(document).decode("utf-8")  # type:ignore
 
 
 def register(app: Flask) -> None:

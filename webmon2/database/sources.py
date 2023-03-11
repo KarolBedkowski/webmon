@@ -24,7 +24,7 @@ _LOG = logging.getLogger(__name__)
 
 def get_names(
     db: DB, user_id: int, group_id: ty.Optional[int]
-) -> ty.List[ty.Tuple[int, str]]:
+) -> list[tuple[int, str]]:
     """
     Get list of id, name all user sources optionally filtered by `group_id`
     and ordered by name;
@@ -130,7 +130,9 @@ def get_all(
     if group_id:
         user_groups = {group_id: groups.get(db, group_id, user_id)}
     else:
-        user_groups = {grp.id: grp for grp in groups.get_all(db, user_id)}  # type: ignore
+        user_groups = {
+            grp.id: grp for grp in groups.get_all(db, user_id)  # type: ignore
+        }
 
     args = {"user_id": user_id, "group_id": group_id}
     sql = _GET_SOURCES_SQL
@@ -152,7 +154,7 @@ def get_all_dict(
     group_id: ty.Optional[int] = None,
     status: ty.Optional[str] = None,
     order: ty.Optional[str] = None,
-) -> ty.Dict[int, model.Source]:
+) -> dict[int, model.Source]:
     """Get all sources for given user and (optional) in group as dict
     source id -> source
 
@@ -169,7 +171,7 @@ def get_all_dict(
 
 
 def _build_source(
-    row: ty.Any, user_groups: ty.Dict[int, model.SourceGroup]
+    row: ty.Any, user_groups: dict[int, model.SourceGroup]
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
@@ -281,11 +283,11 @@ def delete(db: DB, source_id: int) -> int:
         number of deleted sources (should be 1)"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 def update_filter(
-    db: DB, source_id: int, filter_idx: int, filter_: ty.Dict[str, ty.Any]
+    db: DB, source_id: int, filter_idx: int, filter_: dict[str, ty.Any]
 ) -> None:
     """Append or update filter in given source.
 
@@ -464,7 +466,7 @@ WHERE ss.next_update <= now()
 """
 
 
-def get_sources_to_fetch(db: DB) -> ty.List[int]:
+def get_sources_to_fetch(db: DB) -> list[int]:
     """Find sources with next update state in past"""
     with db.cursor() as cur:
         cur.execute(_GET_SOURCES_TO_FETCH_SQL)
@@ -583,7 +585,7 @@ def mark_read(
 
 def get_filter_state(
     db: DB, source_id: int, filter_name: str
-) -> ty.Optional[ty.Dict[str, ty.Any]]:
+) -> ty.Optional[dict[str, ty.Any]]:
     """Get state for given filter in source"""
     with db.cursor() as cur:
         cur.execute(
@@ -604,7 +606,7 @@ def get_filter_state(
 
 
 def put_filter_state(
-    db: DB, source_id: int, filter_name: str, state: ty.Dict[str, ty.Any]
+    db: DB, source_id: int, filter_name: str, state: dict[str, ty.Any]
 ) -> None:
     """Save source filter state"""
     with db.cursor() as cur:

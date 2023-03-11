@@ -134,12 +134,13 @@ def entry_summary(
 
     def join():
         total_content = 0
+        line: str
         for idx, line in enumerate(
             filter(None, (line.strip() for line in lines))
         ):
             total_content += len(line)
             if idx == 10 or total_content > 300:
-                yield line + "…"
+                yield f"{line}…"
                 return
 
             yield line

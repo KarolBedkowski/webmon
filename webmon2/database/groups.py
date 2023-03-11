@@ -20,7 +20,7 @@ from ._db import DB
 _LOG = logging.getLogger(__name__)
 
 
-def get_names(db: DB, user_id: int) -> ty.List[ty.Tuple[int, str]]:
+def get_names(db: DB, user_id: int) -> list[tuple[int, str]]:
     """
     Get list of id, name all user groups ordered by name.
     """
@@ -54,7 +54,7 @@ ORDER BY sg.name
 """
 
 
-def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
+def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
     """Get all groups for `user_id` with number of unread entries"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -274,7 +274,7 @@ def mark_read(
     group_id: int,
     max_id: ty.Optional[int] = None,
     min_id: ty.Optional[int] = None,
-    ids: ty.Optional[ty.List[int]] = None,
+    ids: ty.Optional[list[int]] = None,
 ) -> int:
     """Mark entries in given `group_id` read.
     If `ids` is given mark entries from this list; else if `max_id` is given
@@ -311,7 +311,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
@@ -354,7 +354,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
         return etag
 
 
-def get_state(db: DB, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
+def get_state(db: DB, group_id: int) -> ty.Optional[tuple[datetime, str]]:
     """Get group entries last modified information.
 
     Return:

@@ -29,7 +29,7 @@ LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
 """
 
 
-def get_all(db: DB, user_id: int) -> ty.List[model.Setting]:
+def get_all(db: DB, user_id: int) -> list[model.Setting]:
     """Get all settings for given user."""
     if not user_id:
         raise ValueError("missing user_id")
@@ -111,7 +111,7 @@ ORDER by s.key
 """
 
 
-def get_global(db: DB) -> ty.List[model.Setting]:
+def get_global(db: DB) -> list[model.Setting]:
     """Get global settings."""
     with db.cursor() as cur:
         cur.execute(_GET_GLOBAL_SQL)

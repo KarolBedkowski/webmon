@@ -146,7 +146,7 @@ def metrics() -> ty.Any:
         abort(401)
 
     return Response(
-        prometheus_client.generate_latest(),  # type: ignore
+        prometheus_client.generate_latest(),
         mimetype="text/plain; version=0.0.4; charset=utf-8",
     )
 

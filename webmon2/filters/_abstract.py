@@ -23,7 +23,7 @@ class AbstractFilter:
     name: str = None  # type: ignore
     short_info = ""
     long_info = ""
-    params = []  # type: ty.List[common.SettingDef]
+    params: list[common.SettingDef] = []
 
     def __init__(self, config: model.ConfDict) -> None:
         super().__init__()
@@ -45,7 +45,7 @@ class AbstractFilter:
     @classmethod
     def validate_conf(
         cls, *confs: model.ConfDict
-    ) -> ty.Iterable[ty.Tuple[str, str]]:
+    ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """
@@ -79,9 +79,9 @@ class AbstractFilter:
         raise NotImplementedError()
 
     @classmethod
-    def get_param_types(cls) -> ty.Dict[str, ty.Type[ty.Any]]:
+    def get_param_types(cls) -> dict[str, ty.Type[ty.Any]]:
         return {param.name: param.type for param in cls.params}
 
     @classmethod
-    def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
+    def get_param_defaults(cls) -> dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}

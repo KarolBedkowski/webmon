@@ -174,7 +174,7 @@ class FetchWorker(threading.Thread):
                         db, id_=source_id, with_state=True
                     )
                     self._process_source(db, source)
-                except sources.LoadError as err:
+                except common.InputError as err:
                     _LOG.info(
                         "[%s] process source %d error: %s",
                         self._idx,
@@ -222,7 +222,7 @@ class FetchWorker(threading.Thread):
         try:
             src = self._get_src(source, sys_settings)
         except sources.UnknownInputException as err:
-            raise Exception(f"unsupported input {source.kind}") from err
+            raise ValueError(f"unsupported input {source.kind}") from err
 
         assert source.state and src
 
@@ -269,8 +269,9 @@ class FetchWorker(threading.Thread):
         source: model.Source,
         src: sources.AbstractSource,
         sys_settings: dict[str, ty.Any],
-    ) -> tuple[model.SourceState, int]:
+    ) -> tuple[model.SourceState | None, int]:
         # load data
+        assert source.state
         new_state, entries = src.load(source.state)
         if new_state.status == model.SourceStateStatus.ERROR:
             # stop processing source when error occurred

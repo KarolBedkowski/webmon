@@ -12,6 +12,7 @@ Based on flask-session.
 
 """
 import pickle
+import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -23,7 +24,7 @@ from werkzeug.datastructures import CallbackDict
 from webmon2 import database, model
 
 
-class DBSession(CallbackDict, SessionMixin):
+class DBSession(CallbackDict[str, ty.Any], SessionMixin):
     """Server-side sessions."""
 
     def __init__(self, initial=None, sid=None, permanent=None):
@@ -100,6 +101,7 @@ class DBSessionInterface(FlaskSessionInterface):
 
             saved_session = database.system.get_session(db, session.sid)
             expires = self.get_expiration_time(app, session)
+            assert expires
             val = pickle.dumps(dict(session))
             if saved_session:
                 saved_session.data = val

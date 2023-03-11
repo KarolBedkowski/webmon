@@ -52,7 +52,7 @@ class UnknownFilterException(Exception):
     pass
 
 
-def get_filter(conf: ty.Dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
+def get_filter(conf: dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
     """Get filter object by configuration"""
     name = conf.get("name")
     if not name:
@@ -69,7 +69,7 @@ def get_filter(conf: ty.Dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
 
 
 def filter_by(
-    filters_conf: ty.List[ty.Dict[str, ty.Any]],
+    filters_conf: list[dict[str, ty.Any]],
     entries: model.Entries,
     prev_state: model.SourceState,
     curr_state: model.SourceState,
@@ -87,13 +87,13 @@ def filter_by(
     return entries
 
 
-def filters_name() -> ty.List[str]:
+def filters_name() -> list[str]:
     return [
         name for name, scls in common.get_subclasses_with_name(AbstractFilter)
     ]
 
 
-def filters_info() -> ty.List[ty.Tuple[str, str, str]]:
+def filters_info() -> list[tuple[str, str, str]]:
     return [
         (name, scls.short_info, scls.long_info)
         for name, scls in common.get_subclasses_with_name(AbstractFilter)

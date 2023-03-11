@@ -124,13 +124,13 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    app.session_interface = appsession.DBSessionInterface(True)  # type: ignore
+    app.session_interface = appsession.DBSessionInterface(True)
     babel = flask_babel.Babel(app)
 
     _register_blueprints(app)
 
     # @app.teardown_appcontext
-    @app.teardown_request  # type: ignore
+    @app.teardown_request
     def teardown_db(  # pylint: disable=unused-variable
         _exception: ty.Optional[BaseException],
     ) -> None:
@@ -212,7 +212,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         return resp
 
     @app.context_processor
-    def handle_context() -> ty.Dict[str, ty.Any]:
+    def handle_context() -> dict[str, ty.Any]:
         """Inject object into jinja2 templates."""
         return {"webmon2": webmon2}
 

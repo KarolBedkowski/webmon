@@ -31,7 +31,7 @@ ORDER BY 1
 """
 
 
-def get_sysinfo(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
+def get_sysinfo(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     """Get system info."""
 
     with db.cursor() as cur:
@@ -57,7 +57,7 @@ def get_sysinfo(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
         yield from cur
 
 
-def get_table_sizes(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
+def get_table_sizes(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     with db.cursor() as cur:
         cur.execute(_GET_DB_TAB_SIZESSQL)
         yield from cur
