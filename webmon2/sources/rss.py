@@ -153,7 +153,6 @@ class RssSource(AbstractSource):
             ]
 
         del doc
-        doc = None
         return new_state, items
 
     def _limit_items(

@@ -516,7 +516,7 @@ def refresh(
         )
         updated = cur.rowcount
 
-    return updated  # type: ignore
+    return updated
 
 
 _REFRESH_ERRORS_SQL = """
@@ -533,7 +533,7 @@ def refresh_errors(db: DB, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id, model.SourceStatus.ACTIVE))
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 _MARK_READ_SQL = """
@@ -578,7 +578,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 def get_filter_state(
@@ -597,7 +597,10 @@ def get_filter_state(
     if not row:
         return None
 
-    return json.loads(row[0]) if isinstance(row[0], str) and row[0] else row[0]  # type: ignore
+    if isinstance(row[0], str) and row[0]:
+        return json.loads(row[0])  # type: ignore
+
+    return None
 
 
 def put_filter_state(

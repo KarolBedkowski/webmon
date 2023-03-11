@@ -7,7 +7,6 @@ This file is part of webmon.
 Licence: GPLv2+
 """
 
-import time
 import unittest
 
 from . import common

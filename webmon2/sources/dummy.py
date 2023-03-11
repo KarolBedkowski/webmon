@@ -33,7 +33,6 @@ class DymmySource(AbstractSource):
     def load(
         self, state: model.SourceState
     ) -> ty.Tuple[model.SourceState, model.Entries]:
-
         try:
             last_check = int(state.get_prop("last_check"))
         except ValueError:

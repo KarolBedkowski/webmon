@@ -114,9 +114,9 @@ def groups() -> ty.Any:
 
 
 @common.cache
-def _metrics_accesslist() -> ty.List[
-    ty.Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
-]:
+def _metrics_accesslist() -> (
+    ty.List[ty.Union[ipaddress.IPv4Network, ipaddress.IPv6Network]]
+):
     conf = current_app.config["app_conf"]
     networks = []
     for addr in conf.get("metrics", "allow_from", fallback="").split(","):

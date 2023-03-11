@@ -30,20 +30,20 @@ __all__ = (
 def _load_plugins() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
 
-    from . import dummy, file_input, jamendo, web
+    from . import dummy, file_input, jamendo, web  # noqa:F401
 
     try:
-        from . import github
+        from . import github  # noqa:F401
     except ImportError:
         _LOG.warning("github3 module not found")
 
     try:
-        from . import rss
+        from . import rss  # noqa:F401
     except ImportError:
         _LOG.warning("feedparser module not found")
 
     try:
-        from . import gitlab
+        from . import gitlab  # noqa:F401
     except ImportError:
         _LOG.warning("gitlab module not found")
 

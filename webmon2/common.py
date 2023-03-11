@@ -207,7 +207,6 @@ def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 class SettingDef:
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,

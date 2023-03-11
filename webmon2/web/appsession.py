@@ -89,7 +89,6 @@ class DBSessionInterface(FlaskSessionInterface):
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         with database.DB.get() as db:
-
             if not session:
                 if session.modified:
                     database.system.delete_session(db, session.sid)

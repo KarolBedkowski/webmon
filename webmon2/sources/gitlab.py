@@ -238,7 +238,6 @@ class GitLabCommits(AbstractGitLabSource):
         entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, [entry]
 
@@ -348,7 +347,6 @@ class GitLabTagsSource(AbstractGitLabSource):
         entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, [entry]
 
@@ -454,7 +452,6 @@ class GitLabReleasesSource(AbstractGitLabSource):
             entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, entries
 

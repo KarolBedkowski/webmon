@@ -682,13 +682,13 @@ def mark_all_read(
 
 _GET_RELATED_RM_ENTRY_SQL = """
 WITH DATA AS (
-        SELECT e.id,
-                lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
-                lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
-        FROM entries e
-        WHERE user_id = %(user_id)s
-            AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
-        ORDER BY {order}
+    SELECT e.id,
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
+    FROM entries e
+    WHERE user_id = %(user_id)s
+        AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
+    ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA
@@ -697,12 +697,12 @@ WHERE id = %(entry_id)s
 
 _GET_RELATED_ENTRY_SQL = """
 WITH DATA AS (
-        SELECT e.id,
-                lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
-                lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
-        FROM entries e
-        WHERE user_id = %(user_id)s
-        ORDER BY {order}
+    SELECT e.id,
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+    FROM entries e
+    WHERE user_id = %(user_id)s
+    ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA

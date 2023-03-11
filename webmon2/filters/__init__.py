@@ -4,7 +4,6 @@
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
-
 """
 Filters
 """
@@ -28,22 +27,20 @@ __all__ = (
 
 def _load_filters() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
-    from . import (
-        diff,
-        fix_urls,
-        grep,
-        history,
-        html2text,
-        join,
-        score,
-        sort,
-        split_re,
-        strip,
-        wrap,
-    )
+    from . import diff  # noqa:F401
+    from . import fix_urls  # noqa:F401
+    from . import grep  # noqa:F401
+    from . import history  # noqa:F401
+    from . import html2text  # noqa:F401
+    from . import join  # noqa:F401
+    from . import score  # noqa:F401
+    from . import sort  # noqa:F401
+    from . import split_re  # noqa:F401
+    from . import strip  # noqa:F401
+    from . import wrap  # noqa:F401
 
     try:
-        from . import split_text
+        from . import split_text  # noqa:F401
     except ImportError as err:
         _LOG.warning("module not found: %s", err)
 

@@ -26,7 +26,6 @@ psycopg2.extras.register_default_json(globally=True)
 
 
 class DB:
-
     INSTANCE = None
     POOL = None
 
