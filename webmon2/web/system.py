@@ -38,8 +38,7 @@ from flask_babel import gettext, ngettext
 
 from webmon2 import VERSION, common, database, imp_exp, model, opml, security
 
-from . import _commons as c
-from . import forms
+from . import _commons as c, forms
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")

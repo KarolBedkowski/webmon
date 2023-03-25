@@ -16,8 +16,10 @@ import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from flask.sessions import SessionInterface as FlaskSessionInterface
-from flask.sessions import SessionMixin
+from flask.sessions import (
+    SessionInterface as FlaskSessionInterface,
+    SessionMixin,
+)
 from itsdangerous import BadSignature, Signer, want_bytes
 from werkzeug.datastructures import CallbackDict
 
@@ -134,7 +136,7 @@ class DBSessionInterface(FlaskSessionInterface):
             domain=domain,
             path=path,
             secure=self.get_cookie_secure(app),
-            **conditional_cookie_kwargs
+            **conditional_cookie_kwargs,
         )
 
 

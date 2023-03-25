@@ -27,17 +27,19 @@ __all__ = (
 
 def _load_filters() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
-    from . import diff  # noqa:F401
-    from . import fix_urls  # noqa:F401
-    from . import grep  # noqa:F401
-    from . import history  # noqa:F401
-    from . import html2text  # noqa:F401
-    from . import join  # noqa:F401
-    from . import score  # noqa:F401
-    from . import sort  # noqa:F401
-    from . import split_re  # noqa:F401
-    from . import strip  # noqa:F401
-    from . import wrap  # noqa:F401
+    from . import (
+        diff,  # noqa:F401
+        fix_urls,  # noqa:F401
+        grep,  # noqa:F401
+        history,  # noqa:F401
+        html2text,  # noqa:F401
+        join,  # noqa:F401
+        score,  # noqa:F401
+        sort,  # noqa:F401
+        split_re,  # noqa:F401
+        strip,  # noqa:F401
+        wrap,  # noqa:F401
+    )
 
     try:
         from . import split_text  # noqa:F401

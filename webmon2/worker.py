@@ -419,8 +419,8 @@ class FetchWorker(threading.Thread):
     def _get_src(
         self, source: model.Source, sys_settings: ty.Dict[str, str]
     ) -> ty.Optional[sources.AbstractSource]:
-        """
-        Create and initialize source object according to `source` configuration.
+        """Create and initialize source object according to `source`
+        configuration.
         """
         if not source.interval:
             interval = sys_settings.get("interval") or "1d"

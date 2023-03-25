@@ -20,7 +20,8 @@ _LOG = logging.getLogger(__name__)
 
 
 _GET_DB_TAB_SIZESSQL = """
-SELECT relname AS "tables", pg_size_pretty(pg_total_relation_size (c.oid)) AS "size"
+SELECT relname AS "tables",
+    pg_size_pretty(pg_total_relation_size (c.oid)) AS "size"
 FROM pg_class c
 LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE nspname NOT IN ('pg_catalog','information_schema')

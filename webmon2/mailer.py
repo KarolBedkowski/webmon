@@ -157,10 +157,10 @@ def _proces_source(
             source_id=source_id,
         )
         if model.MailReportMode.SEND
-        in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
+        in (entry.source.mail_report, entry.source.group.mail_report)
         or (
-            entry.source.mail_report  # type: ignore
-            == entry.source.group.mail_report  # type: ignore
+            entry.source.mail_report
+            == entry.source.group.mail_report
             == model.MailReportMode.AS_GROUP_SOURCE
         )
     ]
@@ -195,9 +195,9 @@ def _adjust_header(line: str, prefix: str = "###") -> str:
 
 
 def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
-    """
-    Render entry as markdown document.
-    If entry content type is not plain or markdown try convert it to plain text.
+    """Render entry as markdown document.
+    If entry content type is not plain or markdown try convert it to plain
+    text.
     """
     updated = entry.updated
     assert updated

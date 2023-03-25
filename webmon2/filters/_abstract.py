@@ -17,7 +17,7 @@ from webmon2 import common, database, model
 _ = ty
 
 
-class AbstractFilter:
+class AbstractFilter(metaclass=abc.ABCMeta):
     """Base class for all filters."""
 
     name: str = None  # type: ignore

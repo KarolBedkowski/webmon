@@ -108,8 +108,8 @@ def get(
 
 _UPDATE_USER_SQL = """
 UPDATE users SET login=%(user__login)s, email=%(user__email)s,
-    password=%(user__password)s, active=%(user__active)s, admin=%(user__admin)s,
-    totp=%(user__totp)s
+    password=%(user__password)s, active=%(user__active)s,
+    admin=%(user__admin)s, totp=%(user__totp)s
 WHERE id=%(user__id)s
 """
 _INSERT_USER_SQL = """
@@ -124,8 +124,8 @@ def save(db: DB, user: model.User) -> model.User:
     """Insert or update user.
 
     Raises:
-        `LoginAlreadyExistsError`: login exist for another user  (check only for
-            new user)
+        `LoginAlreadyExistsError`: login exist for another user  (check only
+            for new user)
 
     Return:
         updated user

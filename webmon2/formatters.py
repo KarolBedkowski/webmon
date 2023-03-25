@@ -86,7 +86,7 @@ def body_format(body: str, content_type: str) -> str:
     return _clean_html_brutal(format_markdown(body))
 
 
-def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
+def sanitize_content(body: str, content_type: str) -> tuple[str, str]:
     if not body:
         return body, content_type
 
@@ -105,7 +105,9 @@ def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
 
 
 def cleanup_html(content: str) -> str:
-    """Try to clean html content from scripts, styles and keep only body part"""
+    """Try to clean html content from scripts, styles and keep only body
+    part.
+    """
     return _clean_html_brutal(content)
 
 

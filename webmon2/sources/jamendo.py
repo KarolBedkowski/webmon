@@ -68,7 +68,7 @@ class JamendoAbstractSource(AbstractSource):
                 response.raise_for_status()
 
                 if not response:
-                    raise Exception("No response")
+                    raise ConnectionError("No response")
 
                 if response.status_code == 304:
                     return 304, None

@@ -7,6 +7,8 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 
@@ -18,7 +20,7 @@ from ._dbcommon import NotFound
 _LOG = logging.getLogger(__name__)
 
 
-def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
+def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
     """Get binary data from db identified by `datahash` and `userid`.
 
     Args:
@@ -41,7 +43,7 @@ def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
                 "WHERE datahash=%s AND user_id=%s",
                 (datahash, user_id),
             )
-            res: ty.Optional[ty.Tuple[bytes, str]] = cur.fetchone()  # type: ignore
+            res: tuple[bytes, str] | None = cur.fetchone()  # type: ignore
             if res:
                 return res
 
@@ -140,7 +142,7 @@ WHERE icon IS NOT NULL
 """
 
 
-def clean_sources_entries(db: DB) -> ty.Tuple[int, int]:
+def clean_sources_entries(db: DB) -> tuple[int, int]:
     """
     Clean old binaries.
 

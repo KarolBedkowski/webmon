@@ -117,7 +117,7 @@ def group(key: str) -> Response:
 
         rss_items.append(
             gen_item(
-                title=entry.title or entry.source.group.name,  # type: ignore
+                title=entry.title or entry.source.group.name,
                 link=url,
                 description=body,
                 args={

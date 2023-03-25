@@ -43,8 +43,8 @@ except ImportError:
 import webmon2
 from webmon2 import database, worker
 
-from . import _commons as c
 from . import (
+    _commons as c,
     _filters,
     appsession,
     atom,

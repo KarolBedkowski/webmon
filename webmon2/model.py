@@ -136,7 +136,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.default_score: int = 0
 
         # ref objects
-        self.group: ty.Optional[SourceGroup] = None
+        self.group: SourceGroup = None  # type:ignore
         self.state: ty.Optional[SourceState] = None
         # is source has unread entries
         self.unread: ty.Optional[int] = None
@@ -507,7 +507,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
         # icon as data - tuple(content type, data)
         self.icon_data: ty.Optional[ty.Tuple[str, ty.Any]] = None
-        self.source: ty.Optional[Source] = None
+        self.source: Source = None  # type: ignore
 
     def __str__(self) -> str:
         return common.obj2str(self)

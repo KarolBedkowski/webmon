@@ -17,8 +17,7 @@ import psycopg2.errors
 
 from webmon2 import model
 
-from . import _dbcommon as dbc
-from . import binaries, sources
+from . import _dbcommon as dbc, binaries, sources
 from ._db import DB
 from ._dbcommon import Cursor
 
@@ -44,7 +43,7 @@ _GET_ENTRIES_SQL_MAIN_COLS = """
 """
 
 
-def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
+def _build_find_sql(args: dict[str, ty.Any]) -> str:
     """
     Build sql for fetch entries
 
@@ -102,7 +101,9 @@ def _yield_entries(
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
-        entry.source = user_sources.get(entry.source_id)
+        source = user_sources.get(entry.source_id)
+        assert source
+        entry.source = source
         yield entry
 
 
@@ -544,7 +545,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     return changed
 
 
-def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
+def check_oids(db: DB, oids: list[str], source_id: int) -> ty.Set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
@@ -586,7 +587,7 @@ def mark_read(
     min_id: ty.Optional[int] = None,
     max_id: ty.Optional[int] = None,
     read: model.EntryReadMark = model.EntryReadMark.READ,
-    ids: ty.Optional[ty.List[int]] = None,
+    ids: ty.Optional[list[int]] = None,
 ) -> int:
     """Change read mark for given entry.
     If `entry_id` is given - mark only this one entry; else if `ids` is given -
@@ -650,7 +651,8 @@ def mark_all_read(
     Args:
         db: database object
         user_id: user id
-        max_date: optional date or datetime to mark entries older than this date
+        max_date: optional date or datetime to mark entries older than
+            this date
     Return:
         number of updated items
     """
@@ -683,8 +685,10 @@ def mark_all_read(
 _GET_RELATED_RM_ENTRY_SQL = """
 WITH DATA AS (
     SELECT e.id,
-       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
-       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order})
+            AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order})
+            AS NEXT
     FROM entries e
     WHERE user_id = %(user_id)s
         AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
@@ -698,8 +702,10 @@ WHERE id = %(entry_id)s
 _GET_RELATED_ENTRY_SQL = """
 WITH DATA AS (
     SELECT e.id,
-       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
-       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order})
+            AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order})
+            AS NEXT
     FROM entries e
     WHERE user_id = %(user_id)s
     ORDER BY {order}

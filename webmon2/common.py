@@ -25,9 +25,9 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 
 _LOG = logging.getLogger("common")
 
-ConfDict = ty.Dict[str, ty.Any]
+ConfDict = dict[str, ty.Any]
 
-Row = ty.Dict[str, ty.Any]
+Row = dict[str, ty.Any]
 
 
 class ParamError(Exception):
@@ -214,7 +214,7 @@ class SettingDef:
         description: str,
         default: ty.Optional[ty.Any] = None,
         required: bool = False,
-        options: ty.Optional[ty.Dict[str, ty.Any]] = None,
+        options: ty.Optional[dict[str, ty.Any]] = None,
         value_type: ty.Optional[ty.Type[ty.Any]] = None,
         global_param: bool = False,
         **kwargs: ty.Any,
@@ -227,9 +227,13 @@ class SettingDef:
         self.parameters = kwargs
         self.type: ty.Type[ty.Any]
         if value_type is None:
-            self.type = str if default is None else type(default)  # type: ignore
+            if default is None:
+                self.type = str
+            else:
+                self.type = type(default)
         else:
             self.type = value_type
+
         self.global_param = global_param
 
     def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
@@ -292,8 +296,8 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
 
 
 def parse_form_list_data(
-    form: ty.Dict[str, ty.Any], prefix: str
-) -> ty.Iterable[ty.Dict[str, ty.Any]]:
+    form: dict[str, ty.Any], prefix: str
+) -> ty.Iterable[dict[str, ty.Any]]:
     """Parse form data named <prefix>-<idx>-<name> to
     enumeration[{<name>: <value>}]
     for each idx and matched prefix
@@ -339,6 +343,7 @@ def _cache(
 
 
 # functools.cache is available in 3.9+
+# FIXME: remove
 cache: ty.Callable[[ty.Callable[..., ty.Any]], ty.Any] = (
     functools.cache if hasattr(functools, "cache") else _cache
 )

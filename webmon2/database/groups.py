@@ -92,7 +92,8 @@ WHERE id=%s AND user_id=%s
 
 
 def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
-    """Get one group by `group_id`. Optionally check is group belong to `user_id`.
+    """Get one group by `group_id`. Optionally check is group belong
+    to `user_id`.
 
     Raises:
         `NotFound`: group not found

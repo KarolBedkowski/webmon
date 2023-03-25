@@ -81,12 +81,12 @@ class GitHubAbstractSource(AbstractSource):
         return repository
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
     def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
+        cls, opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
 
@@ -152,11 +152,11 @@ class GithubInput(GitHubAbstractSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         repository = self._github_get_repository(self._conf)
         data_since = self._github_check_repo_updated(
@@ -223,12 +223,12 @@ class GithubInput(GitHubAbstractSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
     def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
+        cls, opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
 
@@ -289,11 +289,11 @@ class GithubTagsSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         conf = self._conf
         repository = self._github_get_repository(conf)
@@ -354,12 +354,12 @@ class GithubTagsSource(GitHubAbstractSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
     def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
+        cls, opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
 
@@ -430,11 +430,11 @@ class GithubReleasesSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return releases."""
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(repository, state.last_update):
@@ -497,18 +497,19 @@ class GithubReleasesSource(GitHubAbstractSource):
 
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/releases"
+            conf["url"] = (
+                "http://github.com/"
+                f"{conf['owner']}/{conf['repository']}/releases"
+            )
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
     def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
+        cls, opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
 

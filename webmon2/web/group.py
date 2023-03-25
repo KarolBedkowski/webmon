@@ -26,8 +26,7 @@ from flask_babel import gettext, ngettext
 
 from webmon2 import common, database, model
 
-from . import _commons as c
-from . import forms
+from . import _commons as c, forms
 
 _ = ty
 _LOG = logging.getLogger(__name__)
