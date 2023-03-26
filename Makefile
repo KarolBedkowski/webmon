@@ -26,6 +26,14 @@ check:
 .PHONY: clean
 ## Delete all temporary files
 clean:
+	rm -rf .ipynb_checkpoints
+	rm -rf **/.ipynb_checkpoints
+	rm -rf .pytest_cache
+	rm -rf **/.pytest_cache
+	rm -rf __pycache__
+	rm -rf **/__pycache__
+	rm -rf build
+	rm -rf dist
 	rm -f report_*.txt report_*.html webmon_*.prom
 	rm -f pylint.txt mypy.txt
 	rm -fr htmlcov/
@@ -58,7 +66,10 @@ mo:
 
 .PHONY: build
 ## build packages
-build:
+build: clean
+	pip-compile --generate-hashes \
+		--extra=sdnotify --extra=minify --extra=otp \
+		--output-file=requirements-extra.txt pyproject.toml
 	pip-compile --generate-hashes --extra=dev --output-file=requirements-dev.txt pyproject.toml
 	pip-compile --generate-hashes --output-file=requirements.txt pyproject.toml
 	hatchling build

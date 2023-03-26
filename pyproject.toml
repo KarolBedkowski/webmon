@@ -45,9 +45,6 @@ dependencies = [
 
 
 [project.optional-dependencies]
-qrcode = [
-  "PyQRCode>=1.2"
-]
 sdnotify = [
   "sdnotify",
 ]
@@ -58,7 +55,6 @@ otp = [
   "pyotp>=2.6",
   "PyQRCode",
 ]
-sd = ["sdnotify"]
 dev = [
   "pre-commit>=2.15.0",
   "stackprinter",
