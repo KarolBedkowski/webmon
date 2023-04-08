@@ -13,6 +13,7 @@ from urllib.parse import urlsplit, urlunsplit
 
 import requests
 from flask_babel import gettext, lazy_gettext
+from lxml.html import clean
 
 from webmon2 import common, model
 from webmon2.filters.fix_urls import FixHtmlUrls
@@ -96,7 +97,7 @@ class WebSource(AbstractSource):
                     "Response code: %(code)s", code=response.status_code
                 )
                 if response.text:
-                    msg += "\n" + response.text
+                    msg += "\n" + self._clean_content(response.text)
 
                 return state.new_error(msg), []
 
@@ -119,7 +120,7 @@ class WebSource(AbstractSource):
             )
             entry.title = self._source.name
             entry.url = url
-            entry.content = response.text
+            entry.content = self._clean_content(response.text)
             entry.set_opt("content-type", "html")
             entry.icon = new_state.icon
 
@@ -217,6 +218,18 @@ class WebSource(AbstractSource):
         src = model.Source(kind="rss", name=name, user_id=0, group_id=0)
         src.settings = {"url": url}
         return src
+
+    def _clean_content(self, content: str) -> str:
+        if not content:
+            return content
+
+        cleaner = clean.Cleaner(
+            style=True,
+            inline_style=False,
+        )
+        content = cleaner.clean_html(content)
+        content = clean.autolink_html(content)
+        return content
 
 
 def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
