@@ -106,21 +106,24 @@ def _create_proxy_urls_srcset(
     srcset is in form srcset="<url>" or
     srcset="<url> <size>, <url> <size>, ..."
     """
-    parts = srcset.split(" ")
-    if len(parts) == 1:
-        yield _create_proxy_url(parts[0], entry)
-        return
+    for part in srcset.split(","):
+        if not part:
+            yield ""
+            continue
 
-    for idx, part in enumerate(parts):
-        if idx % 2:
-            # size part
-            yield part
-        else:
-            yield _create_proxy_url(part, entry)
+        prefix = ""
+        if part[0] == " ":
+            prefix = ""
+            part = part.strip()
+
+        url, sep, size = part.partition(" ")
+        url = _create_proxy_url(url, entry)
+        yield f"{prefix}{part}{sep}{size}"
 
 
 def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
     """Replace links to img/other objects to local proxy."""
+    # TODO: use lxml.html links functions
     document = lxml.html.document_fromstring(content)
     changed = False
     for node in document.xpath("//img"):
@@ -131,17 +134,9 @@ def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
             node.attrib["org_src"] = src
             changed = True
 
-    for node in document.xpath("//a"):
-        src = node.attrib.get("href")
-        res = _create_proxy_url(src, entry)
-        if src != res:
-            node.attrib["href"] = res
-            node.attrib["org_href"] = src
-            changed = True
-
     for node in document.xpath("//source"):
         src = node.attrib.get("srcset")
-        res = " ".join(_create_proxy_urls_srcset(src, entry))
+        res = ",".join(_create_proxy_urls_srcset(src, entry))
         if res != src:
             node.attrib["srcset"] = res
             node.attrib["org_srcset"] = src
