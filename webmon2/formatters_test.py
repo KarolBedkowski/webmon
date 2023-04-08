@@ -1,6 +1,3 @@
-#! /usr/bin/env python
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski <Karol Będkowski@kntbk>
 #
 # Distributed under terms of the GPLv3 license.

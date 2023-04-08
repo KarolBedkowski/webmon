@@ -1,6 +1,3 @@
-#! /usr/bin/env python3
-# vim:fenc=utf-8
-#
 # Copyright © 2022 Karol Będkowski <Karol Będkowski@kkomp>
 #
 # Distributed under terms of the GPLv3 license.
@@ -11,7 +8,7 @@ Database-based server-side session storage.
 Based on flask-session.
 
 """
-import pickle
+import pickle  # nosec
 import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4

@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """Logging setup.
 Copyright (c) Karol Będkowski, 2014-2022
 

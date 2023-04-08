@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Access to binaries stored in database.
 

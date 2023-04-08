@@ -1,6 +1,4 @@
-#!/usr/bin/python3
 """
-
 Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
