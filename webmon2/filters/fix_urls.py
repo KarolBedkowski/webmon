@@ -44,19 +44,21 @@ class FixHtmlUrls(AbstractFilter):
             yield entry
             return
 
-        for node in document.xpath("//img"):
-            if src := node.attrib.get("src"):
-                node.attrib["src"] = _convert_link(src, base)
+        document.make_links_absolute(base)
 
-        for node in document.xpath("//a"):
-            if src := node.attrib.get("href"):
-                node.attrib["href"] = _convert_link(src, base)
+        # for node in document.xpath("//img"):
+        #     if src := node.attrib.get("src"):
+        #         node.attrib["src"] = _convert_link(src, base)
 
-        for node in document.xpath("//source"):
-            if src := node.attrib.get("srcset"):
-                node.attrib["srcset"] = " ".join(
-                    _convert_srcset_links(src, base)
-                )
+        # for node in document.xpath("//a"):
+        #     if src := node.attrib.get("href"):
+        #         node.attrib["href"] = _convert_link(src, base)
+
+        # for node in document.xpath("//source"):
+        #     if src := node.attrib.get("srcset"):
+        #         node.attrib["srcset"] = ",".join(
+        #             _convert_srcset_links(src, base)
+        #         )
 
         try:
             entry.content = lxml.etree.tostring(
@@ -81,14 +83,7 @@ def _convert_srcset_links(srcset: str, base: str) -> ty.Iterable[str]:
     srcset is in form srcset="<url>" or
     srcset="<url> <size>, <url> <size>, ..."
     """
-    parts = srcset.split(" ")
-    if len(parts) == 1:
-        yield _convert_link(parts[0], base)
-        return
-
-    for idx, part in enumerate(parts):
-        if idx % 2:
-            # size part
-            yield part
-        else:
-            yield _convert_link(part, base)
+    for part in srcset.split(","):
+        url, sep, size = part.partition(" ")
+        url = _convert_link(url, base)
+        yield f"{url}{sep}{size}"
