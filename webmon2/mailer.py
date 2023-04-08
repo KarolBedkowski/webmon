@@ -342,6 +342,7 @@ def __do_encrypt(args: ty.List[str], message: str) -> str:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        shell=False,  # nosec B603
     ) as subp:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:

@@ -131,16 +131,15 @@ def get_all(
         }
 
     args = {"user_id": user_id, "group_id": group_id}
-    sql = _GET_SOURCES_SQL
+    sql = [_GET_SOURCES_SQL]
     if group_id is not None:
-        sql += " and group_id = %(group_id)s"
+        sql.append(" and group_id = %(group_id)s")
 
-    sql += _get_status_sql(status)
-    sql += _get_order_sql(order)
+    sql.extend((_get_status_sql(status), _get_order_sql(order)))
 
     _LOG.debug("get_all %r %s", args, sql)
     with db.cursor() as cur:
-        cur.execute(sql, args)
+        cur.execute("".join(sql), args)
         return [_build_source(row, user_groups) for row in cur]
 
 
@@ -459,7 +458,7 @@ JOIN users u ON s.user_id = u.id
 WHERE ss.next_update <= now()
     AND s.status = {model.SourceStatus.ACTIVE}
     AND u.active
-"""
+"""  # nosec B608
 
 
 def get_sources_to_fetch(db: DB) -> list[int]:
@@ -493,18 +492,18 @@ def refresh(
     if not (user_id or source_id or group_id):
         raise ValueError("missing user_id/source_id/group_id")
 
-    sql = _REFRESH_SQL
+    sql = [_REFRESH_SQL]
     if group_id:
-        sql += (
+        sql.append(
             "and source_id in "
             "(select id from sources where group_id=%(group_id)s)"
         )
     elif source_id:
-        sql += "and source_id=%(source_id)s"
+        sql.append("and source_id=%(source_id)s")
 
     with db.cursor() as cur:
         cur.execute(
-            sql,
+            "".join(sql),
             {
                 "group_id": group_id,
                 "source_id": source_id,
@@ -687,7 +686,7 @@ WHERE source_id IN (
     WHERE user_id = %s
       AND status = {model.SourceStatus.ACTIVE}
 )
-"""
+"""  # nosec B608
 
 
 def randomize_next_check(db: DB, user_id: int) -> int:

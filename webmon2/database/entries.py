@@ -164,7 +164,7 @@ def get_history(  # pylint: disable=too-many-arguments
 
     # count all
     with db.cursor() as cur:
-        cur.execute(f"select count(1) from ({sql}) subq", params)
+        cur.execute(f"select count(1) from ({sql}) subq", params)  # nosec B608
         res = cur.fetchone()
         assert res
         total = int(res[0])

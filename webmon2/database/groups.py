@@ -319,7 +319,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
     Return:
         etag value
     """
-    etag_h = hashlib.md5(str(group_id).encode("ascii"))
+    etag_h = hashlib.md5(str(group_id).encode("ascii"), usedforsecurity=False)
     etag_h.update(str(last_modified).encode("ascii"))
     etag = etag_h.hexdigest()
 

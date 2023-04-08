@@ -80,7 +80,7 @@ class DBSessionInterface(FlaskSessionInterface):
             return DBSession(sid=sid, permanent=self.permanent)
 
         try:
-            data = pickle.loads(want_bytes(saved_session.data))
+            data = pickle.loads(want_bytes(saved_session.data))  # nosec
             return DBSession(data, sid=sid)
         except pickle.UnpicklingError:
             return DBSession(sid=sid, permanent=self.permanent)

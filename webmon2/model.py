@@ -383,7 +383,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         if not content_type_data:
             return self.icon
 
-        self.icon = hashlib.sha1(content_type_data[1]).hexdigest()
+        self.icon = hashlib.sha1(
+            content_type_data[1], usedforsecurity=False
+        ).hexdigest()
         self.icon_data = content_type_data
         return self.icon
 
@@ -541,7 +543,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         data = "".join(
             map(str, (self.source_id, self.title, self.url, self.content))
         )
-        csum = hashlib.sha1(data.encode("utf-8"))
+        csum = hashlib.sha1(data.encode("utf-8"), usedforsecurity=False)
         self.oid = base64.b64encode(csum.digest()).decode("ascii")
         return self.oid
 
@@ -628,7 +630,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             return self.icon
 
         try:
-            self.icon = hashlib.sha1(self.icon_data[1]).hexdigest()
+            self.icon = hashlib.sha1(
+                self.icon_data[1], usedforsecurity=False
+            ).hexdigest()
         except Exception as err:  # pylint: disable=broad-except
             _LOG.error("hasing %r error: %s", self.icon_data, err)
 

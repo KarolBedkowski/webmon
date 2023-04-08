@@ -11,6 +11,7 @@ import logging
 import os.path
 import sys
 import typing as ty
+from pathlib import Path
 
 import psycopg2
 from psycopg2 import extensions, extras, pool
@@ -135,13 +136,15 @@ class DB:
             fpath = os.path.join(schema_files, fname)
             try:
                 with self._conn.cursor() as cur:
-                    with open(fpath, encoding="UTF-8") as update_file:
-                        cur.execute(update_file.read())
+                    sql = Path(fpath).read_text(encoding="UTF-8")
+                    _LOG.debug("execute: %s", sql)
+                    cur.execute(sql)
                     cur.execute(
                         "insert into schema_version(version) values(%s)",
                         (version,),
                     )
                 self._conn.commit()
+
             except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
                 _LOG.exception("schema update error: %s", err)
@@ -151,9 +154,9 @@ class DB:
         with self.cursor() as cur:
             try:
                 cur.execute("select max(version) from schema_version")
-                row = cur.fetchone()
-                if row:
+                if row := cur.fetchone():
                     return row[0] or 0
+
             except psycopg2.ProgrammingError:
                 _LOG.info("no schema version")
 
