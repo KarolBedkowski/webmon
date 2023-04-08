@@ -9,6 +9,7 @@ Filters for splitting input text into many entries
 import logging
 import typing as ty
 
+import lxml.html
 from cssselect import GenericTranslator, SelectorError
 from flask_babel import lazy_gettext
 from lxml import etree
@@ -17,9 +18,6 @@ from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 
-# from lxml import etree
-
-
 _ = ty
 _LOG = logging.getLogger(__name__)
 
@@ -27,20 +25,17 @@ _LOG = logging.getLogger(__name__)
 def _get_elements_by_xpath(
     entry: model.Entry, expression: str
 ) -> model.Entries:
-    # pylint: disable=no-member
-    html_parser = etree.HTMLParser(
-        encoding="utf-8", recover=True, strip_cdata=True
-    )
     if not entry.content:
         return
 
-    document = etree.fromstring(entry.content, html_parser)
+    document = lxml.html.fromstring(entry.content)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
         if isinstance(elem, etree._Element):
             content = etree.tostring(elem).decode("utf-8")
         else:
             content = str(elem)
+
         yield _new_entry(entry, content)
 
 
@@ -108,13 +103,10 @@ class GetElementsById(AbstractFilter):
     ]  # type: ty.List[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        # pylint: disable=no-member
-        html_parser = etree.HTMLParser(
-            encoding="utf-8", recover=True, strip_cdata=True
-        )
         if not entry.content:
             return
-        document = etree.fromstring(entry.content, html_parser)
+
+        document = lxml.html.fromstring(entry.content)
         for elem in document.xpath(".//*[@id=$id]", id=self._conf["sel"]):
             # pylint: disable=protected-access
             if isinstance(elem, etree._Element):
