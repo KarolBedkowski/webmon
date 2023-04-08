@@ -5,6 +5,15 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
     hooks:
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+      - id: fix-byte-order-marker
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-case-conflict
+      - id: check-docstring-first
       - id: check-yaml
       - id: check-added-large-files
       - id: check-toml
@@ -12,13 +21,8 @@ repos:
       - id: mixed-line-ending
       - id: requirements-txt-fixer
 
-  - repo: https://github.com/psf/black
-    rev: 23.1.0
-    hooks:
-      - id: black
-
   - repo: https://github.com/myint/rstcheck
-    rev: v6.1.1
+    rev: v6.1.2
     hooks:
       - id: rstcheck
 
@@ -29,7 +33,7 @@ repos:
         args: ['--baseline', '.secrets.baseline']
 
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.16.0
+    rev: v8.16.2
     hooks:
       - id: gitleaks
 

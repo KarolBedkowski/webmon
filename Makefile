@@ -11,17 +11,14 @@ run:
 .PHONY: pylint
 ## Lint using pylint
 pylint:
-	pylint webmon2 | tee pylint.txt
-
-.PHONY: mypy
-## Lint using mypy
-mypy:
-	mypy webmon2 | tee mypy.txt
+	pylint webmon2
 
 .PHONY: check
-## Lint using ruff
+## Lint using ruff, bandit, mypy
 check:
 	ruff .
+	bandit -c pyproject.toml  -r webmon2
+	mypy webmon2
 
 .PHONY: clean
 ## Delete all temporary files
@@ -41,7 +38,7 @@ clean:
 .PHONY: format
 ## Format files using black & isort
 format:
-	ruff . --fix
+	ruff . --fix-only
 	black .
 
 .PHONY: test
