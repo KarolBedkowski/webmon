@@ -82,7 +82,7 @@ def _format_key(inp: str) -> str:
     return inp[0].upper() + inp[1:]
 
 
-def _create_proxy_url(url: str, entry: model.Entry | None = None) -> str:
+def _create_proxy_url(url: str, entry_url: str | None = None) -> str:
     """Create proxied link; if url is relative, use entry.url as base."""
     if not url:
         return ""
@@ -91,15 +91,15 @@ def _create_proxy_url(url: str, entry: model.Entry | None = None) -> str:
         return url_for("proxy.proxy", path=url)
 
     # handle related urls
-    if not entry or not entry.url:
+    if not entry_url:
         return url
 
-    url = urljoin(entry.url, url)
+    url = urljoin(entry_url, url)
     return url_for("proxy.proxy", path=url)
 
 
 def _create_proxy_urls_srcset(
-    srcset: str, entry: model.Entry | None = None
+    srcset: str, entry_url: str | None = None
 ) -> ty.Iterable[str]:
     """Create proxied links from srcset.
 
@@ -113,22 +113,23 @@ def _create_proxy_urls_srcset(
 
         prefix = ""
         if part[0] == " ":
-            prefix = ""
+            prefix = " "
             part = part.strip()
 
         url, sep, size = part.partition(" ")
-        url = _create_proxy_url(url, entry)
-        yield f"{prefix}{part}{sep}{size}"
+        url = _create_proxy_url(url, entry_url)
+        yield f"{prefix}{url}{sep}{size}"
 
 
 def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
     """Replace links to img/other objects to local proxy."""
-    # TODO: use lxml.html links functions
     document = lxml.html.document_fromstring(content)
     changed = False
+    entry_url = entry.url if entry else None
+
     for node in document.xpath("//img"):
         src = node.attrib.get("src")
-        res = _create_proxy_url(src, entry)
+        res = _create_proxy_url(src, entry_url)
         if src != res:
             node.attrib["src"] = res
             node.attrib["org_src"] = src
@@ -136,7 +137,7 @@ def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
 
     for node in document.xpath("//source"):
         src = node.attrib.get("srcset")
-        res = ",".join(_create_proxy_urls_srcset(src, entry))
+        res = ",".join(_create_proxy_urls_srcset(src, entry_url))
         if res != src:
             node.attrib["srcset"] = res
             node.attrib["org_srcset"] = src
