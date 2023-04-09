@@ -58,6 +58,7 @@ otp = [
 dev = [
   "pre-commit>=2.15.0",
   "stackprinter",
+  "freezegun"
 ]
 
 [project.scripts]
@@ -87,11 +88,14 @@ skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
 python_version = 3.9
 strict = true
 exclude = [
-  '_test\.py$'
+  '.*_test\.py$'
 ]
 allow_untyped_defs = true
 allow_untyped_calls = true
 ignore_missing_imports = true
+sqlite_cache = true
+incremental = true
+
 
 
 [tool.flake8]

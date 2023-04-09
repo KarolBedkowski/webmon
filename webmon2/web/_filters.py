@@ -24,13 +24,13 @@ from webmon2 import formatters, model
 _LOG = logging.getLogger(__name__)
 
 
-def _age_filter(date: ty.Optional[datetime.datetime]) -> str:
+def _age_filter(date: datetime.datetime | None) -> str:
     if date is None:
         return ""
 
-    diff = (
-        datetime.datetime.now(datetime.timezone.utc) - date
-    ).total_seconds()
+    diff = int(
+        (datetime.datetime.now(datetime.timezone.utc) - date).total_seconds()
+    )
     if diff < 60:
         return "<1m"
 
