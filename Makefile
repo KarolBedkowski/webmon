@@ -19,6 +19,7 @@ check:
 	ruff .
 	bandit -c pyproject.toml  -r webmon2
 	mypy webmon2
+	refurb webmon2
 
 .PHONY: clean
 ## Delete all temporary files
