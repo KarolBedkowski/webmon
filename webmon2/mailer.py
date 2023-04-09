@@ -5,6 +5,7 @@
 """
 Sending reports by mail functions
 """
+from __future__ import annotations
 
 import email.message
 import email.utils
@@ -33,8 +34,8 @@ _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
 @dataclass
 class Ctx:
     user_id: int
-    conf: ty.Dict[str, ty.Any]
-    timezone: ty.Optional[ZoneInfo] = None
+    conf: dict[str, ty.Any]
+    timezone: ZoneInfo | None = None
 
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
@@ -228,7 +229,7 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
 
 
 def _prepare_msg(
-    conf: ty.Dict[str, ty.Any], content: str
+    conf: dict[str, ty.Any], content: str
 ) -> email.message.EmailMessage:
     """
     Prepare email message according to `conf` and with `content`.
@@ -269,7 +270,7 @@ def _prepare_msg(
 
 
 def _send_mail(
-    conf: ty.Dict[str, ty.Any],
+    conf: dict[str, ty.Any],
     content: str,
     app_conf: ConfigParser,
     user: model.User,
@@ -318,7 +319,7 @@ def _send_mail(
     return True
 
 
-def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
+def _encrypt(conf: dict[str, ty.Any], message: str) -> str:
     args = ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]]
 
     if user_key := conf.get("gpg_key"):
@@ -336,7 +337,7 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
     return __do_encrypt(args, message)
 
 
-def __do_encrypt(args: ty.List[str], message: str) -> str:
+def __do_encrypt(args: list[str], message: str) -> str:
     with subprocess.Popen(
         args,
         stdin=subprocess.PIPE,
@@ -368,7 +369,7 @@ def _get_entry_score_mark(entry: model.Entry) -> str:
     return ""
 
 
-def _is_silent_hour(conf: ty.Dict[str, ty.Any]) -> bool:
+def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     begin = conf.get("silent_hours_from", "")
     end = conf.get("silent_hours_to", "")
 

@@ -5,6 +5,8 @@
 """
 Load data from webpage
 """
+from __future__ import annotations
+
 import datetime
 import email.utils
 import logging
@@ -40,11 +42,11 @@ class WebSource(AbstractSource):
             lazy_gettext("Fix URL-s"),
             default=True,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
         with requests.Session() as session:
             new_state, entries = self._load(state, session)
@@ -69,7 +71,7 @@ class WebSource(AbstractSource):
 
     def _load(
         self, state: model.SourceState, session: requests.Session
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
         headers = _prepare_headers(state)
         response = None
@@ -144,7 +146,7 @@ class WebSource(AbstractSource):
 
     def _check_redirects(
         self, response: requests.Response, new_state: model.SourceState
-    ) -> ty.Optional[str]:
+    ) -> str | None:
         if not response.history:
             new_state.del_prop("info")
             return None
@@ -174,7 +176,7 @@ class WebSource(AbstractSource):
         new_state.del_prop("info")
         return None
 
-    def _update_source(self, new_url: ty.Optional[str] = None) -> None:
+    def _update_source(self, new_url: str | None = None) -> None:
         self._updated_source = self._updated_source or self._source.clone()
         if new_url:
             assert self._updated_source.settings is not None
@@ -182,7 +184,7 @@ class WebSource(AbstractSource):
 
     def _load_image(
         self, url: str, session: requests.Session
-    ) -> ty.Optional[ty.Tuple[str, bytes]]:
+    ) -> tuple[str, bytes] | None:
         url_splited = urlsplit(url)
         favicon_url = urlunsplit(
             (url_splited[0], url_splited[1], "favicon.ico", "", "")
@@ -193,7 +195,7 @@ class WebSource(AbstractSource):
         return None
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -204,9 +206,7 @@ class WebSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -232,7 +232,7 @@ class WebSource(AbstractSource):
         return content
 
 
-def _prepare_headers(state: model.SourceState) -> ty.Dict[str, str]:
+def _prepare_headers(state: model.SourceState) -> dict[str, str]:
     headers = {"User-agent": AbstractSource.AGENT, "Connection": "close"}
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(

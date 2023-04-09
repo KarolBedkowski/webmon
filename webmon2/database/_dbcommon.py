@@ -5,6 +5,8 @@
 """
 Common functions for db access
 """
+from __future__ import annotations
+
 import typing as ty
 
 from psycopg2 import extensions
@@ -22,10 +24,10 @@ class QuerySyntaxError(Exception):
 
 class Query:
     def __init__(self, cols: str, from_: str) -> None:
-        self.cols: ty.List[str] = [cols]
-        self.from_: ty.List[str] = [from_]
-        self.where: ty.List[str] = []
-        self.order: ty.Optional[str] = None
+        self.cols: list[str] = [cols]
+        self.from_: list[str] = [from_]
+        self.where: list[str] = []
+        self.order: str | None = None
         self.limit: bool = False
         self.offset: bool = False
 

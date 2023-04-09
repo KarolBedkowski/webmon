@@ -5,6 +5,8 @@
 """
 Access to entries in db.
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 from datetime import date, datetime
@@ -121,8 +123,8 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
 def get_history(  # pylint: disable=too-many-arguments
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int],
-    group_id: ty.Optional[int],
+    source_id: int | None,
+    group_id: int | None,
     offset: int = 0,
     limit: int = 20,
 ) -> tuple[model.Entries, int]:
@@ -185,8 +187,8 @@ def get_history(  # pylint: disable=too-many-arguments
 def get_total_count(
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
+    source_id: int | None = None,
+    group_id: int | None = None,
     unread: bool = True,
 ) -> int:
     """Get number of read/all entries for user/source/group.
@@ -240,7 +242,7 @@ _ORDER_SQL = {
 }
 
 
-def _get_order_sql(order: ty.Optional[str]) -> str:
+def _get_order_sql(order: str | None) -> str:
     """Get sql part for order entries."""
     if not order:
         return "e.updated"
@@ -252,12 +254,12 @@ def _get_order_sql(order: ty.Optional[str]) -> str:
 def find(
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
+    source_id: int | None = None,
+    group_id: int | None = None,
     unread: bool = True,
-    offset: ty.Optional[int] = None,
-    limit: ty.Optional[int] = None,
-    order: ty.Optional[str] = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    order: str | None = None,
 ) -> model.Entries:
     """Find entries for user/source/group unread or all.
     Limit and offset work only for getting all entries.
@@ -299,9 +301,9 @@ def find_fulltext(
     user_id: int,
     query: str,
     title_only: bool,
-    group_id: ty.Optional[int] = None,
-    source_id: ty.Optional[int] = None,
-    order: ty.Optional[str] = None,
+    group_id: int | None = None,
+    source_id: int | None = None,
+    order: str | None = None,
 ) -> model.Entries:
     """Find entries for user by full-text search on title or title and content.
     Search in source (if given source_id) or in group (if given group_id)
@@ -379,8 +381,8 @@ FROM entries
 
 def get(
     db: DB,
-    id_: ty.Optional[int] = None,
-    oid: ty.Optional[str] = None,
+    id_: int | None = None,
+    oid: str | None = None,
     with_source: bool = False,
     with_group: bool = False,
 ) -> model.Entry:
@@ -542,14 +544,14 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     return changed
 
 
-def check_oids(db: DB, oids: list[str], source_id: int) -> ty.Set[str]:
+def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
     if not source_id:
         raise ValueError("missing source_id")
 
-    result = set()  # type: ty.Set[str]
+    result: set[str] = set()
     with db.cursor() as cur:
         for idx in range(0, len(oids), 100):
             part_oids = tuple(oids[idx : idx + 100])
@@ -580,11 +582,11 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> ty.Set[str]:
 def mark_read(
     db: DB,
     user_id: int,
-    entry_id: ty.Optional[int] = None,
-    min_id: ty.Optional[int] = None,
-    max_id: ty.Optional[int] = None,
+    entry_id: int | None = None,
+    min_id: int | None = None,
+    max_id: int | None = None,
     read: model.EntryReadMark = model.EntryReadMark.READ,
-    ids: ty.Optional[list[int]] = None,
+    ids: list[int] | None = None,
 ) -> int:
     """Change read mark for given entry.
     If `entry_id` is given - mark only this one entry; else if `ids` is given -
@@ -640,7 +642,7 @@ def mark_read(
 
 
 def mark_all_read(
-    db: DB, user_id: int, max_date: ty.Union[None, date, datetime] = None
+    db: DB, user_id: int, max_date: date | datetime | None = None
 ) -> int:
     """Mark all entries for given user as read; optionally mark only entries
     older than `max_date`.
@@ -713,7 +715,7 @@ WHERE id=%(entry_id)s
 """
 
 
-def _get_related_sql(unread: bool, order: ty.Optional[str]) -> str:
+def _get_related_sql(unread: bool, order: str | None) -> str:
     order_key = "updated"
     if order in ("title", "updated", "score"):
         order_key = order
@@ -734,8 +736,8 @@ def find_next_entry_id(
     user_id: int,
     entry_id: int,
     unread: bool = True,
-    order: ty.Optional[str] = None,
-) -> ty.Optional[int]:
+    order: str | None = None,
+) -> int | None:
     """Find next entry to given.
 
     Args:
@@ -766,8 +768,8 @@ def find_prev_entry_id(
     user_id: int,
     entry_id: int,
     unread: bool = True,
-    order: ty.Optional[str] = None,
-) -> ty.Optional[int]:
+    order: str | None = None,
+) -> int | None:
     """Find previous entry to given.
 
     Args:

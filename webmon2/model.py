@@ -23,7 +23,7 @@ _LOG = logging.getLogger(__name__)
 
 
 Row = ty.Any
-ConfDict = ty.Dict[str, ty.Any]
+ConfDict = dict[str, ty.Any]
 
 
 class MailReportMode(IntEnum):
@@ -38,9 +38,9 @@ class SourceGroup:
     name: str
     user_id: int
     # id of source group
-    id: ty.Optional[int] = None
+    id: int | None = None
     # feed url - hash part; if feed is disable - feed = "off"
-    feed: ty.Optional[str] = None
+    feed: str | None = None
     # configuration of mail sending for this group
     mail_report: MailReportMode = MailReportMode.AS_GROUP_SOURCE
     # number of unread entries in group / not in source_groups table
@@ -119,11 +119,11 @@ class Source:  # pylint: disable=too-many-instance-attributes
         self.kind: str = kind
         self.name: str = name
         # update interval
-        self.interval: ty.Optional[str] = None
+        self.interval: str | None = None
         # additional settings
-        self.settings: ty.Optional[ty.Dict[str, ty.Any]] = None
+        self.settings: dict[str, ty.Any] | None = None
         # filters configuration
-        self.filters: ty.List[ty.Dict[str, ty.Any]] = []
+        self.filters: list[dict[str, ty.Any]] = []
         self.user_id: int = user_id
         # status of source
         self.status: SourceStatus = SourceStatus.NOT_ACTIVATED
@@ -134,9 +134,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
 
         # ref objects
         self.group: SourceGroup = None  # type:ignore
-        self.state: ty.Optional[SourceState] = None
+        self.state: SourceState | None = None
         # is source has unread entries
-        self.unread: ty.Optional[int] = None
+        self.unread: int | None = None
 
     def __str__(self) -> str:
         return common.obj2str(self)
@@ -223,8 +223,8 @@ class SourceStateStatus(Enum):
     OK = "ok"
 
 
-Props = ty.Dict[str, ty.Any]
-IconData = ty.Tuple[str, bytes]
+Props = dict[str, ty.Any]
+IconData = tuple[str, bytes]
 
 
 class SourceState:  # pylint: disable=too-many-instance-attributes
@@ -246,27 +246,27 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
     def __init__(self) -> None:
         self.source_id: int = 0
         # next source update time
-        self.next_update: ty.Optional[datetime] = None
+        self.next_update: datetime | None = None
         # last source update time (load new new items or update existing)
-        self.last_update: ty.Optional[datetime] = None
+        self.last_update: datetime | None = None
         # last check for changes
-        self.last_check: ty.Optional[datetime] = None
+        self.last_check: datetime | None = None
         # last source update failed time
-        self.last_error: ty.Optional[datetime] = None
+        self.last_error: datetime | None = None
         # number of failed updates since last success update
         self.error_counter: int = 0
         # number of success updated since last failure
         self.success_counter: int = 0
         # source updates status
-        self.status: ty.Optional[SourceStateStatus] = None
-        self.error: ty.Optional[str] = None
+        self.status: SourceStateStatus | None = None
+        self.error: str | None = None
         # additional informations stored by source loader
-        self.props: ty.Optional[Props] = None
+        self.props: Props | None = None
         # icon hash
-        self.icon: ty.Optional[str] = None
+        self.icon: str | None = None
 
         # icon as binary data; loaded from binaries
-        self.icon_data: ty.Optional[IconData] = None
+        self.icon_data: IconData | None = None
 
     @staticmethod
     def new(source_id: int) -> SourceState:
@@ -281,7 +281,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return source
 
     def create_new(
-        self, status: ty.Optional[SourceStateStatus] = None, **props: ty.Any
+        self, status: SourceStateStatus | None = None, **props: ty.Any
     ) -> SourceState:
         """
         Create new `SourceState` and copy basic data from current object.
@@ -350,13 +350,13 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         if self.props and key in self.props:
             del self.props[key]
 
-    def visible_props(self) -> ty.Iterable[ty.Tuple[str, str]]:
+    def visible_props(self) -> ty.Iterable[tuple[str, str]]:
         if not self.props:
             return []
 
         return ((key, val) for key, val in self.props.items() if key[0] != "_")
 
-    def update_props(self, props: ty.Optional[Props]) -> None:
+    def update_props(self, props: Props | None) -> None:
         """
         Update4 states from `states` dict.
         """
@@ -369,8 +369,8 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         self.props.update(props)
 
     def set_icon(
-        self, content_type_data: ty.Optional[ty.Tuple[str, bytes]]
-    ) -> ty.Optional[str]:
+        self, content_type_data: tuple[str, bytes] | None
+    ) -> str | None:
         """
         Set icon; create and set hash into `icon` field; put data from
         `content_type_data` into `icon_data` field.
@@ -476,15 +476,13 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         "score",
     )
 
-    def __init__(
-        self, id_: ty.Optional[int] = None, source_id: ty.Optional[int] = None
-    ):
+    def __init__(self, id_: int | None = None, source_id: int | None = None):
         self.id: int = id_  # type: ignore
         self.source_id: int = source_id  # type: ignore
         # time of entry updated
-        self.updated: ty.Optional[datetime] = None
+        self.updated: datetime | None = None
         # time of entry created
-        self.created: ty.Optional[datetime] = None
+        self.created: datetime | None = None
         # is entry is read
         self.read_mark: EntryReadMark = EntryReadMark.UNREAD
         # is entry is marked
@@ -492,20 +490,20 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         # entry status, new or updated for changed entries (not used)
         self.status: EntryStatus = EntryStatus.NEW
         # unique hash for entry
-        self.oid: ty.Optional[str] = None
-        self.title: ty.Optional[str] = None
+        self.oid: str | None = None
+        self.title: str | None = None
         # url associated to entry
-        self.url: ty.Optional[str] = None
-        self.content: ty.Optional[str] = None
+        self.url: str | None = None
+        self.content: str | None = None
         # additional information about entry; ie. content type
-        self.opts: ty.Optional[ty.Dict[str, ty.Any]] = None
+        self.opts: dict[str, ty.Any] | None = None
         self.user_id: int = None  # type: ignore
         # hash of icon, from binaries table
-        self.icon: ty.Optional[str] = None
+        self.icon: str | None = None
         self.score = 0  # type; int
 
         # icon as data - tuple(content type, data)
-        self.icon_data: ty.Optional[ty.Tuple[str, ty.Any]] = None
+        self.icon_data: tuple[str, ty.Any] | None = None
         self.source: Source = None  # type: ignore
 
     def __str__(self) -> str:
@@ -548,8 +546,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         return self.oid
 
     def get_opt(
-        self, key: str, default: ty.Optional[OptValue] = None
-    ) -> ty.Optional[OptValue]:
+        self, key: str, default: OptValue | None = None
+    ) -> OptValue | None:
         """
         Get additional data for entry identified by `key`; return `default` if
         not data found.
@@ -594,7 +592,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
         return False
 
-    def _get_content_type(self) -> ty.Optional[str]:
+    def _get_content_type(self) -> str | None:
         return self.get_opt("content-type")
 
     def _set_content_type(self, content_type: str) -> None:
@@ -606,7 +604,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     content_type = property(_get_content_type, _set_content_type)
     """Content type of entry content."""
 
-    def get_summary(self) -> ty.Optional[str]:
+    def get_summary(self) -> str | None:
         """
         Get summary of entry content for preview.
         """
@@ -622,7 +620,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if not self.title:
             _LOG.error("missing title %s", self)
 
-    def calculate_icon_hash(self) -> ty.Optional[str]:
+    def calculate_icon_hash(self) -> str | None:
         """
         Calculate hash of icon binary data.
         """
@@ -689,7 +687,7 @@ class Setting:
     # description is not loaded from database
     description: str
     # user id if settings is for given user
-    user_id: ty.Optional[int] = None
+    user_id: int | None = None
 
     def __str__(self) -> str:
         return common.obj2str(self)
@@ -719,14 +717,14 @@ class Setting:
 
 @dataclass
 class User:
-    id: ty.Optional[int] = None
-    login: ty.Optional[str] = None
-    email: ty.Optional[str] = None
-    password: ty.Optional[str] = None
+    id: int | None = None
+    login: str | None = None
+    email: str | None = None
+    password: str | None = None
     active: bool = True
     admin: bool = False
     # totp token if user configure totp
-    totp: ty.Optional[str] = None
+    totp: str | None = None
 
     @classmethod
     def from_row(cls, row: Row) -> User:
@@ -773,7 +771,7 @@ class ScoringSett:
     pattern: str
     active: bool = True
     score_change: int = 0
-    id: ty.Optional[int] = None  # pylint: disable=redefined-builtin
+    id: int | None = None  # pylint: disable=redefined-builtin
 
     def __str__(self) -> str:
         return common.obj2str(self)
@@ -804,7 +802,7 @@ class ScoringSett:
 @dataclass
 class Session:
     id: int
-    expiry: datetime
+    expiry: datetime | None
     data: bytes
 
     def __str__(self) -> str:
@@ -826,7 +824,7 @@ class Session:
         }
 
 
-UserSources = ty.Dict[int, Source]
+UserSources = dict[int, Source]
 
 
 @dataclass
@@ -834,13 +832,13 @@ class UserLog:
     user_id: int
     content: str
     ts: datetime = field(default_factory=datetime.utcnow)
-    related: ty.Optional[ty.Dict[str, ty.Any]] = None
+    related: dict[str, ty.Any] | None = None
 
     def __str__(self) -> str:
         return common.obj2str(self)
 
     @property
-    def source_id(self) -> ty.Optional[int]:
+    def source_id(self) -> int | None:
         return self.related and self.related.get("source_id")  # type: ignore
 
     @staticmethod

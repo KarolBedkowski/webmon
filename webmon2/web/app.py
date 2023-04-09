@@ -5,6 +5,7 @@
 """
 Web gui application
 """
+from __future__ import annotations
 
 import logging
 import os
@@ -129,7 +130,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     # @app.teardown_appcontext
     @app.teardown_request
     def teardown_db(  # pylint: disable=unused-variable
-        _exception: ty.Optional[BaseException],
+        _exception: BaseException | None,
     ) -> None:
         db = g.pop("db", None)
         if db is not None:

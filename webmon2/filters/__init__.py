@@ -4,6 +4,8 @@
 """
 Filters
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 
@@ -51,7 +53,7 @@ class UnknownFilterException(Exception):
     pass
 
 
-def get_filter(conf: dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
+def get_filter(conf: dict[str, ty.Any]) -> AbstractFilter | None:
     """Get filter object by configuration"""
     name = conf.get("name")
     if not name:

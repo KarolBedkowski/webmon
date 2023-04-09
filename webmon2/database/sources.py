@@ -5,6 +5,8 @@
 """
 Access & manage sources
 """
+from __future__ import annotations
+
 import json
 import logging
 import typing as ty
@@ -14,12 +16,11 @@ from webmon2 import model
 from . import _dbcommon as dbc, binaries, groups
 from ._db import DB
 
-_ = ty
 _LOG = logging.getLogger(__name__)
 
 
 def get_names(
-    db: DB, user_id: int, group_id: ty.Optional[int]
+    db: DB, user_id: int, group_id: int | None
 ) -> list[tuple[int, str]]:
     """
     Get list of id, name all user sources optionally filtered by `group_id`
@@ -84,7 +85,7 @@ _ORDER_SQL_PART = {
 }
 
 
-def _get_order_sql(order: ty.Optional[str]) -> str:
+def _get_order_sql(order: str | None) -> str:
     if not order:
         return " ORDER BY s.name"
     return _ORDER_SQL_PART.get(order, " ORDER BY s.name")
@@ -99,7 +100,7 @@ _STATUS_SQL_PART = {
 }
 
 
-def _get_status_sql(status: ty.Optional[str]) -> str:
+def _get_status_sql(status: str | None) -> str:
     if status:
         return _STATUS_SQL_PART.get(status, "")
     return ""
@@ -108,9 +109,9 @@ def _get_status_sql(status: ty.Optional[str]) -> str:
 def get_all(
     db: DB,
     user_id: int,
-    group_id: ty.Optional[int] = None,
-    status: ty.Optional[str] = None,
-    order: ty.Optional[str] = None,
+    group_id: int | None = None,
+    status: str | None = None,
+    order: str | None = None,
 ) -> ty.Iterable[model.Source]:
     """Get all sources for given user and (optional) in group.
     Include state and number of unread entries.
@@ -146,9 +147,9 @@ def get_all(
 def get_all_dict(
     db: DB,
     user_id: int,
-    group_id: ty.Optional[int] = None,
-    status: ty.Optional[str] = None,
-    order: ty.Optional[str] = None,
+    group_id: int | None = None,
+    status: str | None = None,
+    order: str | None = None,
 ) -> dict[int, model.Source]:
     """Get all sources for given user and (optional) in group as dict
     source id -> source
@@ -193,7 +194,7 @@ def get(
     id_: int,
     with_state: bool = False,
     with_group: bool = True,
-    user_id: ty.Optional[int] = None,
+    user_id: int | None = None,
 ) -> model.Source:
     """Get one source with optionally with state and group info.
     Optionally check is source belong to given user.
@@ -396,7 +397,7 @@ WHERE source_id=%s
 """
 
 
-def get_state(db: DB, source_id: int) -> ty.Optional[model.SourceState]:
+def get_state(db: DB, source_id: int) -> model.SourceState | None:
     """Get state for given source"""
     with db.cursor() as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
@@ -485,8 +486,8 @@ WHERE (last_update IS NULL
 def refresh(
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
+    source_id: int | None = None,
+    group_id: int | None = None,
 ) -> int:
     """Mark source to refresh; return founded sources"""
     if not (user_id or source_id or group_id):
@@ -555,9 +556,9 @@ def mark_read(
     db: DB,
     user_id: int,
     source_id: int,
-    max_id: ty.Optional[int] = None,
-    min_id: ty.Optional[int] = None,
-    ids: ty.Optional[ty.Iterable[int]] = None,
+    max_id: int | None = None,
+    min_id: int | None = None,
+    ids: ty.Iterable[int] | None = None,
 ) -> int:
     """Mark source read"""
     args = {
@@ -580,7 +581,7 @@ def mark_read(
 
 def get_filter_state(
     db: DB, source_id: int, filter_name: str
-) -> ty.Optional[dict[str, ty.Any]]:
+) -> dict[str, ty.Any] | None:
     """Get state for given filter in source"""
     with db.cursor() as cur:
         cur.execute(
@@ -621,7 +622,7 @@ def put_filter_state(
 
 def find_next_entry_id(
     db: DB, source_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     with db.cursor() as cur:
         if unread:
             cur.execute(
@@ -644,7 +645,7 @@ def find_next_entry_id(
 
 def find_prev_entry_id(
     db: DB, source_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     with db.cursor() as cur:
         if unread:
             cur.execute(
@@ -665,7 +666,7 @@ def find_prev_entry_id(
         return row[0] if row else None
 
 
-def find_next_unread(db: DB, user_id: int) -> ty.Optional[int]:
+def find_next_unread(db: DB, user_id: int) -> int | None:
     with db.cursor() as cur:
         cur.execute(
             "SELECT e.source_id "

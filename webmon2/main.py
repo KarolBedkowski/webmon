@@ -6,6 +6,7 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
 
 import argparse
 import importlib.util
@@ -314,7 +315,7 @@ def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:
 
 
 def _load_conf(args: argparse.Namespace) -> ConfigParser:
-    app_conf: ty.Optional[ConfigParser]
+    app_conf: ConfigParser | None
     if args.conf:
         app_conf = conf.load_conf(args.conf)
     else:

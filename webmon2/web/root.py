@@ -5,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import ipaddress
 import logging
@@ -112,7 +113,7 @@ def groups() -> ty.Any:
 
 @common.cache
 def _metrics_accesslist() -> (
-    ty.List[ty.Union[ipaddress.IPv4Network, ipaddress.IPv6Network]]
+    list[ipaddress.IPv4Network | ipaddress.IPv6Network]
 ):
     conf = current_app.config["app_conf"]
     networks = []

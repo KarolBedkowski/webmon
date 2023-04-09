@@ -6,12 +6,12 @@
 Abstract filter definition
 """
 
+from __future__ import annotations
+
 import abc
 import typing as ty
 
 from webmon2 import common, database, model
-
-_ = ty
 
 
 class AbstractFilter(metaclass=abc.ABCMeta):
@@ -24,7 +24,7 @@ class AbstractFilter(metaclass=abc.ABCMeta):
 
     def __init__(self, config: model.ConfDict) -> None:
         super().__init__()
-        self.db: ty.Optional[database.DB] = None
+        self.db: database.DB | None = None
         self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params}, config
         )

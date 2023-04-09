@@ -5,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -153,7 +154,7 @@ def group_mark_read(group_id: int) -> ty.Any:
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
     user_id = session["user"]
-    ids: ty.Optional[ty.List[int]] = None
+    ids: list[int] | None = None
     r_ids = request.form.get("ids", "")
     if r_ids:
         ids = list(map(int, r_ids.split(","))) or None

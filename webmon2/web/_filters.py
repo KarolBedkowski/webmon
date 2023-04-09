@@ -64,10 +64,13 @@ def _entry_score_class(score: int) -> str:
     """Get class name for entry score."""
     if score < -5:
         return "prio-lowest"
+
     if score < 0:
         return "prio-low"
+
     if score > 5:
         return "prio-highest"
+
     if score > 0:
         return "prio-high"
 
@@ -98,27 +101,53 @@ def _create_proxy_url(url: str, entry_url: str | None = None) -> str:
     return url_for("proxy.proxy", path=url)
 
 
+def _extract_prefix_postfix(instr: str) -> tuple[str, int, int]:
+    prefix = len(instr)
+
+    for num, char in enumerate(instr):
+        print(2, num, repr(char))
+        if char != " ":
+            prefix = num
+            break
+
+    instr = instr[prefix:]
+    postfix = len(instr)
+
+    for num, char in enumerate(reversed(instr)):
+        if char != " ":
+            postfix = num
+            break
+
+    if postfix:
+        instr = instr[:-postfix]
+
+    return instr, prefix, postfix
+
+
+def _apply_prefix_postfix(instr: str, prefix: int, postfix: int) -> str:
+    return (" " * prefix) + instr + (" " * postfix)
+
+
 def _create_proxy_urls_srcset(
     srcset: str, entry_url: str | None = None
 ) -> ty.Iterable[str]:
     """Create proxied links from srcset.
+    Preserve spaces.
 
     srcset is in form srcset="<url>" or
     srcset="<url> <size>, <url> <size>, ..."
+
     """
     for part in srcset.split(","):
         if not part:
             yield ""
             continue
 
-        prefix = ""
-        if part[0] == " ":
-            prefix = " "
-            part = part.strip()
-
+        part, prefix, postfix = _extract_prefix_postfix(part)
         url, sep, size = part.partition(" ")
         url = _create_proxy_url(url, entry_url)
-        yield f"{prefix}{url}{sep}{size}"
+        url = _apply_prefix_postfix(url, prefix, postfix)
+        yield f"{url}{sep}{size}"
 
 
 def _proxy_links(content: str, entry: model.Entry | None = None) -> str:

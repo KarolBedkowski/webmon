@@ -5,9 +5,9 @@
 """
 Formating entry content functions
 """
+from __future__ import annotations
 
 import logging
-import typing as ty
 
 import lxml
 import markdown2
@@ -108,9 +108,7 @@ def cleanup_html(content: str) -> str:
     return _clean_html_brutal(content)
 
 
-def entry_summary(
-    content: ty.Optional[str], content_type: ty.Optional[str]
-) -> str:
+def entry_summary(content: str | None, content_type: str | None) -> str:
     """Summarize content; try to get max 10 lines and no more than about 300
     characters from content. May be not accurate.
     """

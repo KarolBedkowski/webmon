@@ -64,18 +64,18 @@ def get_source(
     raise UnknownInputException()
 
 
-def get_source_class(kind: str) -> ty.Optional[ty.Type[AbstractSource]]:
+def get_source_class(kind: str) -> ty.Type[AbstractSource] | None:
     scls = common.find_subclass(AbstractSource, kind)
     return scls
 
 
-def sources_name() -> ty.List[str]:
+def sources_name() -> list[str]:
     return [
         name for name, scls in common.get_subclasses_with_name(AbstractSource)
     ]
 
 
-def sources_info() -> ty.List[ty.Tuple[str, str, str]]:
+def sources_info() -> list[tuple[str, str, str]]:
     return [
         (name, scls.short_info, scls.long_info)
         for name, scls in common.get_subclasses_with_name(AbstractSource)

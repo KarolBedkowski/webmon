@@ -5,6 +5,8 @@
 """
 Jamendo input.
 """
+from __future__ import annotations
+
 import datetime
 import logging
 
@@ -22,7 +24,7 @@ from .abstract import AbstractSource
 
 # from urllib3 import poolmanager
 
-JsonResult = ty.List[ty.Dict[str, ty.Any]]
+JsonResult = list[dict[str, ty.Any]]
 
 _LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
@@ -50,7 +52,7 @@ class JamendoAbstractSource(AbstractSource):
         return last_update
 
     # pylint: disable=too-many-return-statements
-    def _make_request(self, url: str) -> ty.Tuple[int, ty.Any]:
+    def _make_request(self, url: str) -> tuple[int, ty.Any]:
         _LOG.debug("make request: %s", url)
         headers = {
             "User-agent": "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
@@ -110,13 +112,11 @@ class JamendoAbstractSource(AbstractSource):
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
     @classmethod
@@ -183,11 +183,11 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> tuple[model.SourceState, list[model.Entry]]:
         """Return one part - page content."""
         conf = self._conf
         last_update = self._get_last_update(state)
@@ -228,7 +228,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
     @classmethod
     def validate_conf(
         cls, *confs: model.ConfDict
-    ) -> ty.Iterable[ty.Tuple[str, str]]:
+    ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
@@ -237,13 +237,11 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             yield ("artist_id", "artist name or id is required")
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -284,11 +282,11 @@ class JamendoTracksSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> tuple[model.SourceState, list[model.Entry]]:
         """Return one part - page content."""
         conf = self._conf
         last_update = self._get_last_update(state)
@@ -329,7 +327,7 @@ class JamendoTracksSource(JamendoAbstractSource):
     @classmethod
     def validate_conf(
         cls, *confs: model.ConfDict
-    ) -> ty.Iterable[ty.Tuple[str, str]]:
+    ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
         artist_id = any(conf.get("artist_id") for conf in confs)
@@ -338,13 +336,11 @@ class JamendoTracksSource(JamendoAbstractSource):
             yield ("artist_id", gettext("artist name or id is required"))
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -370,7 +366,7 @@ def _jamendo_track_format(
             )
 
 
-def _get_release_date(data: ty.Dict[str, str]) -> datetime.datetime:
+def _get_release_date(data: dict[str, str]) -> datetime.datetime:
     try:
         releasedate = datetime.datetime.fromisoformat(data["releasedate"])
         if not releasedate.tzinfo:

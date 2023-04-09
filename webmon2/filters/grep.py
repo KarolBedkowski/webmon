@@ -5,6 +5,8 @@
 """
 Select entries by matching text.
 """
+from __future__ import annotations
+
 import re
 import typing as ty
 
@@ -35,13 +37,13 @@ class Grep(AbstractFilter):
         common.SettingDef(
             "invert", lazy_gettext("Accept items not matching"), default=False
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         pattern = conf.get("pattern")
         # self._re: ty.Optional[re.Pattern[str]]  py3.7
-        self._re: ty.Optional[re.Pattern]  # type: ignore
+        self._re: re.Pattern | None  # type: ignore
         if pattern:
             self._re = re.compile(
                 pattern, re.IGNORECASE | re.MULTILINE | re.DOTALL

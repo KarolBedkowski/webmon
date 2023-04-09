@@ -24,22 +24,24 @@ psycopg2.extras.register_default_json(globally=True)
 
 
 class DB:
-    INSTANCE = None
-    POOL = None
+    POOL: pool.ThreadedConnectionPool = None  # type: ignore
 
     __slots__ = ("_conn",)
 
     def __init__(self) -> None:
         super().__init__()
-        self._conn: ty.Optional[psycopg2.extensions.connection] = None
+        self._conn: psycopg2.extensions.connection | None = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
     def connect(self) -> None:
         assert DB.POOL
         self._conn = DB.POOL.getconn()
+        if not self._conn:
+            raise RuntimeError("no connection")
+
         self._conn.autocommit = False
-        self._conn.initialize(_LOG)
+        self._conn.initialize(_LOG)  # type: ignore
 
     @classmethod
     def get(cls) -> DB:

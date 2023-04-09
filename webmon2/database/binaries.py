@@ -9,7 +9,6 @@ Licence: GPLv2+
 from __future__ import annotations
 
 import logging
-import typing as ty
 
 import psycopg2
 
@@ -54,7 +53,7 @@ def save(
     user_id: int,
     content_type: str,
     datahash: str,
-    data: ty.Union[None, str, bytes],
+    data: str | bytes | None,
 ) -> None:
     """
     Save binary in database.

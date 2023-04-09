@@ -5,6 +5,7 @@
 """
 Database routines to system related objects
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -68,7 +69,7 @@ where id = %s
 """
 
 
-def get_session(db: DB, session_id: int) -> ty.Optional[model.Session]:
+def get_session(db: DB, session_id: int) -> model.Session | None:
     with db.cursor() as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
         if row := cur.fetchone():

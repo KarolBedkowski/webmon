@@ -5,6 +5,8 @@
 """
 RSS data loader
 """
+from __future__ import annotations
+
 import datetime
 import logging
 import time
@@ -237,9 +239,7 @@ class RssSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(
-        cls, opml_node: dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         url = opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -254,7 +254,7 @@ class RssSource(AbstractSource):
 
     def _load_image(
         self, doc: feedparser.FeedParserDict
-    ) -> ty.Optional[tuple[str, bytes]]:
+    ) -> tuple[str, bytes] | None:
         _LOG.debug("source %d load image", self._source.id)
         feed = doc.feed
         image_href = None
@@ -289,9 +289,9 @@ class RssSource(AbstractSource):
 
     def _update_source(
         self,
-        new_url: ty.Optional[str] = None,
-        web_url: ty.Optional[str] = None,
-        interval: ty.Optional[str] = None,
+        new_url: str | None = None,
+        web_url: str | None = None,
+        interval: str | None = None,
     ) -> None:
         assert self._source.settings is not None
 
@@ -324,8 +324,8 @@ def _fail_error(
 
 
 def _get_val_str(
-    entry: dict[str, ty.Any], key: str, default: ty.Optional[str] = None
-) -> ty.Optional[str]:
+    entry: dict[str, ty.Any], key: str, default: str | None = None
+) -> str | None:
     val = entry.get(key)
     if val is None:
         return default
@@ -336,8 +336,8 @@ def _get_val_str(
 def _get_val_dt(
     entry: dict[str, ty.Any],
     key: str,
-    default: ty.Optional[datetime.datetime] = None,
-) -> ty.Optional[datetime.datetime]:
+    default: datetime.datetime | None = None,
+) -> datetime.datetime | None:
     val = entry.get(key)
     if val is None:
         return default

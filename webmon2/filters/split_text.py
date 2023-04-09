@@ -51,7 +51,7 @@ class GetElementsByCss(AbstractFilter):
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def __init__(self, config: model.ConfDict):
         super().__init__(config)
@@ -81,7 +81,7 @@ class GetElementsByXpath(AbstractFilter):
         common.SettingDef(
             "xpath", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -100,7 +100,7 @@ class GetElementsById(AbstractFilter):
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:

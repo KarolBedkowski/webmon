@@ -4,10 +4,11 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
+
 import hashlib
 import logging
 import random
-import typing as ty
 from datetime import datetime
 
 from webmon2 import common, model
@@ -160,7 +161,7 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
         return model.SourceGroup.from_row(row)
 
 
-def get_last_update(db: DB, group_id: int) -> ty.Optional[datetime]:
+def get_last_update(db: DB, group_id: int) -> datetime | None:
     """Find last update time for entries in group"""
     with db.cursor() as cur:
         cur.execute(
@@ -238,7 +239,7 @@ LIMIT 1
 """
 
 
-def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
+def get_next_unread_group(db: DB, user_id: int) -> int | None:
     """Find group with unread entries for `user_id`.
 
     Return:
@@ -271,9 +272,9 @@ def mark_read(
     db: DB,
     user_id: int,
     group_id: int,
-    max_id: ty.Optional[int] = None,
-    min_id: ty.Optional[int] = None,
-    ids: ty.Optional[list[int]] = None,
+    max_id: int | None = None,
+    min_id: int | None = None,
+    ids: list[int] | None = None,
 ) -> int:
     """Mark entries in given `group_id` read.
     If `ids` is given mark entries from this list; else if `max_id` is given
@@ -353,7 +354,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
         return etag
 
 
-def get_state(db: DB, group_id: int) -> ty.Optional[tuple[datetime, str]]:
+def get_state(db: DB, group_id: int) -> tuple[datetime, str] | None:
     """Get group entries last modified information.
 
     Return:
@@ -444,7 +445,7 @@ def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
 
 def find_next_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     """Find next entry to given in group.
 
     Args:
@@ -480,7 +481,7 @@ def find_next_entry_id(
 
 def find_prev_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     """Find previous entry to given in group.
 
     Args:

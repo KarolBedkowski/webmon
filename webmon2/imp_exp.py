@@ -5,6 +5,7 @@
 """
 Import/Export sources & groups.
 """
+from __future__ import annotations
 
 import json
 import logging
@@ -16,8 +17,8 @@ _LOG = logging.getLogger(__name__)
 
 
 def dump_object(
-    obj: ty.Any, attrs: ty.Optional[ty.Iterable[str]] = None
-) -> ty.Dict[str, ty.Any]:
+    obj: ty.Any, attrs: ty.Iterable[str] | None = None
+) -> dict[str, ty.Any]:
     if not attrs and hasattr(obj, "__slots__"):
         attrs = getattr(obj, "__slots__")
 
@@ -32,14 +33,14 @@ def dump_object(
 
 def _dump_groups(
     groups: ty.Iterable[model.SourceGroup],
-) -> ty.Iterable[ty.Dict[str, ty.Any]]:
+) -> ty.Iterable[dict[str, ty.Any]]:
     for group in groups:
         yield dump_object(group, ("id", "name", "user_id"))
 
 
 def _dump_sources(
     sources: ty.Iterable[model.Source],
-) -> ty.Iterable[ty.Dict[str, ty.Any]]:
+) -> ty.Iterable[dict[str, ty.Any]]:
     for source in sources:
         yield dump_object(
             source,
@@ -70,8 +71,8 @@ def dump_export(db: database.DB, user_id: int) -> str:
 
 def fill_object(
     obj: ty.Any,
-    data: ty.Dict[str, ty.Any],
-    attrs: ty.Optional[ty.Iterable[str]] = None,
+    data: dict[str, ty.Any],
+    attrs: ty.Iterable[str] | None = None,
 ) -> None:
     if not attrs:
         attrs = getattr(obj, "__slots__")
@@ -89,7 +90,7 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
     if not data:
         raise RuntimeError("no data")
 
-    groups_map: ty.Dict[int, int] = {}
+    groups_map: dict[int, int] = {}
     for group in data.get("groups") or []:
         try:
             grp = database.groups.find(db, user_id, group["name"])

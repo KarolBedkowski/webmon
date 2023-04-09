@@ -6,6 +6,7 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
 
 import datetime
 import email.utils
@@ -74,12 +75,12 @@ ParentClass2 = ty.Type[ty.Any]
 
 def get_subclasses_with_name(
     base_class: ParentClass2,
-) -> ty.Iterator[ty.Tuple[str, ty.Any]]:
+) -> ty.Iterator[tuple[str, ty.Any]]:
     """Iter over subclasses and yield `name` attribute"""
 
     def find(
         parent_cls: ParentClass2,
-    ) -> ty.Iterator[ty.Tuple[str, ParentClass2]]:
+    ) -> ty.Iterator[tuple[str, ParentClass2]]:
         for rcls in getattr(parent_cls, "__subclasses__")():
             name = getattr(rcls, "name")
             if name:
@@ -168,7 +169,7 @@ def _parse_hour_min(text: str) -> int:
     return hours * 60 + minutes
 
 
-def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
+def parse_hours_range(inp: str) -> ty.Iterable[tuple[int, int]]:
     """Parse hours ranges defined as:
         hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
     Returns iterable: (start_time, end_time) for each valid range
@@ -211,10 +212,10 @@ class SettingDef:
         self,
         name: str,
         description: str,
-        default: ty.Optional[ty.Any] = None,
+        default: ty.Any = None,
         required: bool = False,
-        options: ty.Optional[dict[str, ty.Any]] = None,
-        value_type: ty.Optional[ty.Type[ty.Any]] = None,
+        options: dict[str, ty.Any] | None = None,
+        value_type: ty.Type[ty.Any] | None = None,
         global_param: bool = False,
         **kwargs: ty.Any,
     ):
@@ -278,7 +279,7 @@ def obj2str(obj: ty.Any) -> str:
     return f"<{obj.__class__.__name__} {kvs}>"
 
 
-def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
+def parse_http_date(date: str | None) -> datetime.datetime | None:
     """Parse date in format 'Sat, 03 Aug 2019 21:38:14 GMT' and change
     timezone to local"""
     if not date:

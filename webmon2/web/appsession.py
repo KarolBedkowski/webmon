@@ -68,8 +68,10 @@ class DBSessionInterface(FlaskSessionInterface):
 
         with database.DB.get() as db:
             saved_session = database.system.get_session(db, sid)
-            if saved_session and saved_session.expiry <= datetime.now(
-                timezone.utc
+            if (
+                saved_session
+                and saved_session.expiry
+                and saved_session.expiry <= datetime.now(timezone.utc)
             ):
                 # Delete expired session
                 database.system.delete_session(db, sid)

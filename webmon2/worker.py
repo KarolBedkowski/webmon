@@ -368,7 +368,7 @@ class FetchWorker(threading.Thread):
         entries: model.Entries,
         db: database.DB,
         user_id: int,
-        sys_settings: ty.Dict[str, str],
+        sys_settings: dict[str, str],
     ) -> model.Entries:
         """
         Apply scoring for `entries`. If entry score is below `minimal_score`
@@ -397,8 +397,8 @@ class FetchWorker(threading.Thread):
 
     def _load_scoring(
         self, db: database.DB, user_id: int
-    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:
-        #    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:  # py3.7
+    ) -> ty.Iterator[tuple[re.Pattern[str], int]]:
+        #    ) -> ty.Iterator[tuple[re.Pattern[str], int]]:  # py3.7
         """
         Load scoring rules and compile list of (re pattern, score) rules
         """
@@ -414,8 +414,8 @@ class FetchWorker(threading.Thread):
                 _LOG.warning("compile scoring pattern error: %s %s", scs, err)
 
     def _get_src(
-        self, source: model.Source, sys_settings: ty.Dict[str, str]
-    ) -> ty.Optional[sources.AbstractSource]:
+        self, source: model.Source, sys_settings: dict[str, str]
+    ) -> sources.AbstractSource | None:
         """Create and initialize source object according to `source`
         configuration.
         """
@@ -556,7 +556,7 @@ def _save_state_error(
     db: database.DB,
     source: model.Source,
     err: str,
-    state: ty.Optional[model.SourceState] = None,
+    state: model.SourceState | None = None,
 ) -> None:
     """
     Create and save `SourceState` with state = `ERROR` for `source` and `err`

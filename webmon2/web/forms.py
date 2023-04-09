@@ -21,7 +21,7 @@ from webmon2 import common, model, sources
 _ = ty
 _LOG = logging.getLogger(__name__)
 
-Form = ty.Dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
+Form = dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 
 
 class InvalidValue(RuntimeError):
@@ -43,13 +43,13 @@ class Field:  # pylint: disable=too-many-instance-attributes
     # field value
     value: ty.Any = None
     required: bool = False
-    options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
+    options: list[tuple[ty.Any, ty.Any]] | None = None
     # default value
     default_value: ty.Any = None
     # error messge
-    error: ty.Optional[str] = None
+    error: str | None = None
     # additional setting for field; i.e. multiline
-    parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
+    parameters: dict[str, ty.Any] | None = None
 
     def __str__(self) -> str:
         return common.obj2str(self)
@@ -57,7 +57,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def from_input_params(
         param: common.SettingDef,
-        values: ty.Optional[ty.Dict[str, ty.Any]] = None,
+        values: dict[str, ty.Any] | None = None,
         prefix: str = "",
         sett_value: ty.Any = None,
     ) -> Field:
@@ -86,8 +86,8 @@ class Field:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def from_setting(setting: model.Setting, prefix: str) -> Field:
         field_type_class: ty.Any
-        options: ty.Optional[ty.List[ty.Tuple[ty.Any, ty.Any]]] = None
-        parameters: ty.Optional[ty.Dict[str, ty.Any]] = None
+        options: list[tuple[ty.Any, ty.Any]] | None = None
+        parameters: dict[str, ty.Any] | None = None
 
         if setting.value_type == "int":
             field_type = "number"
@@ -154,7 +154,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
 
 @dataclass
 class SourceForm:  # pylint: disable=too-many-instance-attributes
-    id: ty.Optional[int]
+    id: int | None
     group_id: int
     kind: str
     name: str
@@ -162,10 +162,10 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
     status: int
     mail_report: int
     default_score: int
-    settings: ty.Optional[ty.List[Field]] = None
-    filters: ty.Optional[ty.List[ty.Dict[str, ty.Any]]] = None
+    settings: list[Field] | None = None
+    filters: list[dict[str, ty.Any]] | None = None
 
-    def validate(self) -> ty.Dict[str, str]:
+    def validate(self) -> dict[str, str]:
         result = {}
         if not self.group_id:
             result["group_id"] = gettext("Missing group")
@@ -230,9 +230,9 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
 @dataclass
 class GroupForm:
-    id: ty.Optional[int] = None
-    name: ty.Optional[str] = None
-    feed: ty.Optional[str] = None
+    id: int | None = None
+    name: str | None = None
+    feed: str | None = None
     feed_enabled: bool = True
     mail_report: int = 1
 
@@ -268,7 +268,7 @@ class GroupForm:
         group.mail_report = model.MailReportMode(self.mail_report)
         return group
 
-    def validate(self) -> ty.Dict[str, str]:
+    def validate(self) -> dict[str, str]:
         result = {}
         if not self.name:
             result["name"] = gettext("Missing name")
@@ -281,14 +281,14 @@ class Filter:  # pylint: disable=too-few-public-methods
 
     def __init__(self, name: str) -> None:
         self.name: str = name
-        self.parameters: ty.List[ty.Any] = []
+        self.parameters: list[ty.Any] = []
 
 
 class FieldsForm:
     __slots__ = ("fields",)
 
-    def __init__(self, fields: ty.Optional[ty.List[Field]] = None) -> None:
-        self.fields: ty.List[Field] = fields or []
+    def __init__(self, fields: list[Field] | None = None) -> None:
+        self.fields: list[Field] = fields or []
 
     def update_from_request(self, request_form: Form) -> bool:
         """Update fields from request; return True if no errors"""
@@ -302,24 +302,24 @@ class FieldsForm:
 
         return no_errors
 
-    def values_map(self) -> ty.Dict[str, ty.Any]:
+    def values_map(self) -> dict[str, ty.Any]:
         return {field.name: field.value for field in self.fields}
 
 
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class UserForm:
-    id: ty.Optional[int]
+    id: int | None
     login: str
     active: bool
     admin: bool
     email: str
-    password1: ty.Optional[str] = None
-    password2: ty.Optional[str] = None
+    password1: str | None = None
+    password2: str | None = None
     has_totp: bool = False
     disable_totp: bool = False
 
-    def validate(self) -> ty.Dict[str, str]:
+    def validate(self) -> dict[str, str]:
         result = {}
         if self.password1 and self.password1 != self.password2:
             result["password1"] = gettext("Passwords not match")

@@ -100,3 +100,29 @@ class TestAgeFilter(unittest.TestCase):
         self.assertEqual(
             F._age_filter(datetime(2022, 12, 31, 1, 3, 0, tzinfo=tzone)), "2d"
         )
+
+
+class PostfixPrefix(unittest.TestCase):
+    def test_extract(self):
+        self.assertEqual(F._extract_prefix_postfix(""), ("", 0, 0))
+        self.assertEqual(F._extract_prefix_postfix(" "), ("", 1, 0))
+        self.assertEqual(F._extract_prefix_postfix("a"), ("a", 0, 0))
+        self.assertEqual(F._extract_prefix_postfix("a b c"), ("a b c", 0, 0))
+        self.assertEqual(F._extract_prefix_postfix(" a"), ("a", 1, 0))
+        self.assertEqual(F._extract_prefix_postfix("  abc"), ("abc", 2, 0))
+        self.assertEqual(F._extract_prefix_postfix("  abc "), ("abc", 2, 1))
+        self.assertEqual(
+            F._extract_prefix_postfix("  a b c  "), ("a b c", 2, 2)
+        )
+        self.assertEqual(F._extract_prefix_postfix("a b c  "), ("a b c", 0, 2))
+
+    def test_apply(self):
+        self.assertEqual(F._apply_prefix_postfix("", 0, 0), "")
+        self.assertEqual(F._apply_prefix_postfix("", 1, 0), " ")
+        self.assertEqual(F._apply_prefix_postfix("", 0, 1), " ")
+        self.assertEqual(F._apply_prefix_postfix("", 1, 2), "   ")
+        self.assertEqual(F._apply_prefix_postfix("abc", 0, 0), "abc")
+        self.assertEqual(F._apply_prefix_postfix("abc", 1, 0), " abc")
+        self.assertEqual(F._apply_prefix_postfix("abc", 0, 1), "abc ")
+        self.assertEqual(F._apply_prefix_postfix("abc", 1, 2), " abc  ")
+        self.assertEqual(F._apply_prefix_postfix("abc", 3, 2), "   abc  ")

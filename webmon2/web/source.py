@@ -5,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -64,7 +65,7 @@ def source_new() -> ty.Any:
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])
 @BP.route("/new/<kind>", methods=["POST", "GET"])
 def source_edit(
-    source_id: ty.Optional[int] = None, kind: ty.Optional[str] = None
+    source_id: int | None = None, kind: str | None = None
 ) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
@@ -246,7 +247,7 @@ def source_filter_add(source_id: int) -> ty.Any:
 
 
 @BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])
-def source_filter_edit(source_id: int, idx: ty.Union[int, str]) -> ty.Any:
+def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:
     db = c.get_db()
     user_id = session["user"]
     try:

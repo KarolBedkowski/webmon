@@ -5,6 +5,8 @@
 """
 Inputs related to github
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 from contextlib import suppress
@@ -39,8 +41,8 @@ class GitHubAbstractSource(AbstractSource):
 
     @staticmethod
     def _github_check_repo_updated(
-        repository: Repository, last_updated: ty.Optional[datetime]
-    ) -> ty.Optional[str]:
+        repository: Repository, last_updated: datetime | None
+    ) -> str | None:
         """Verify last repository update date.
         Returns: None when repo is not updated or formatted minimal date
             to load
@@ -82,9 +84,7 @@ class GitHubAbstractSource(AbstractSource):
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
     def _update_source(self) -> None:
@@ -224,9 +224,7 @@ class GithubInput(GitHubAbstractSource):
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -355,9 +353,7 @@ class GithubTagsSource(GitHubAbstractSource):
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -505,9 +501,7 @@ class GithubReleasesSource(GitHubAbstractSource):
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 

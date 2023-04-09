@@ -5,6 +5,8 @@
 """
 Application configuration.
 """
+from __future__ import annotations
+
 import argparse
 import ipaddress
 import logging
@@ -54,7 +56,7 @@ def load_conf(fileobj: ty.Iterable[str]) -> ConfigParser:
     return conf
 
 
-def try_load_user_conf() -> ty.Optional[ConfigParser]:
+def try_load_user_conf() -> ConfigParser | None:
     user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
     if Path(user_conf).is_file():
         try:

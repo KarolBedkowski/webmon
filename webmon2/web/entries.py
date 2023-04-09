@@ -5,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import math
@@ -118,9 +119,7 @@ def entries_history() -> ty.Any:
     )
 
 
-def _get_req_source(
-    db: database.DB, user_id: int
-) -> ty.Optional[model.Source]:
+def _get_req_source(db: database.DB, user_id: int) -> model.Source | None:
     try:
         source_id = int(request.args.get("source_id", "0"))
         if not source_id:
@@ -135,9 +134,7 @@ def _get_req_source(
     )
 
 
-def _get_req_group(
-    db: database.DB, user_id: int
-) -> ty.Optional[model.SourceGroup]:
+def _get_req_group(db: database.DB, user_id: int) -> model.SourceGroup | None:
     try:
         group_id = int(request.args.get("group_id", "0"))
         if not group_id:

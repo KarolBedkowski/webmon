@@ -5,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import datetime
 import logging
@@ -343,7 +344,7 @@ def sett_sys_users() -> ty.Any:
 
 @BP.route("/settings/system/users/new", methods=["GET", "POST"])
 @BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])
-def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
+def sett_sys_user(user_id: int | None = None) -> ty.Any:
     if not session["user_admin"]:
         abort(403)
 

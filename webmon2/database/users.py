@@ -5,6 +5,8 @@
 """
 Access & manage users in db
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 
@@ -71,7 +73,7 @@ WHERE login=%s
 
 
 def get(
-    db: DB, id_: ty.Optional[int] = None, login: ty.Optional[str] = None
+    db: DB, id_: int | None = None, login: str | None = None
 ) -> model.User:
     """Get user by id or login.
 
@@ -170,8 +172,8 @@ def get_state(
     db: DB,
     user_id: int,
     key: str,
-    default: ty.Optional[State] = None,
-    conv: ty.Optional[ty.Callable[[str], State]] = None,
+    default: State | None = None,
+    conv: ty.Callable[[str], State] | None = None,
 ) -> State:
     """Get state value for given user.
 

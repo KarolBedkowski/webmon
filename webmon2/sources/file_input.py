@@ -5,6 +5,8 @@
 """
 Local file source
 """
+from __future__ import annotations
+
 import datetime
 import logging
 import os
@@ -36,7 +38,7 @@ class FileSource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
 
         fname = self._conf["filename"]
@@ -86,7 +88,7 @@ class FileSource(AbstractSource):
             return state.new_error(str(err)), []
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -97,9 +99,7 @@ class FileSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url or not url.startswith("file://"):
             raise ValueError("missing xmlUrl")
