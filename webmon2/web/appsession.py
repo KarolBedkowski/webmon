@@ -100,11 +100,11 @@ class DBSessionInterface(FlaskSessionInterface):
 
             saved_session = database.system.get_session(db, session.sid)
             expires = self.get_expiration_time(app, session)
-            assert expires
             val = pickle.dumps(dict(session))
             if saved_session:
                 saved_session.data = val
-                saved_session.expiry = expires
+                if expires:
+                    saved_session.expiry = expires
             elif not session.modified:
                 db.commit()
                 return
