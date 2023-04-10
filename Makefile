@@ -62,14 +62,25 @@ po:
 mo:
 	pybabel compile -d webmon2/translations
 
-.PHONY: build
-## build packages
-build: clean
+
+requirements-dev.txt: pyproject.toml
+	pip-compile --generate-hashes --extra=dev --output-file=requirements-dev.txt pyproject.toml
+
+requirements-extra.txt: pyproject.toml
 	pip-compile --generate-hashes \
 		--extra=sdnotify --extra=minify --extra=otp \
 		--output-file=requirements-extra.txt pyproject.toml
-	pip-compile --generate-hashes --extra=dev --output-file=requirements-dev.txt pyproject.toml
+
+requirements.txt: pyproject.toml
 	pip-compile --generate-hashes --output-file=requirements.txt pyproject.toml
+
+.PHONY: pip-compile
+## update requirements*txt files
+pip-compile: requirements-extra.txt requirements.txt requirements-dev.txt
+
+.PHONY: build
+## build packages
+build: clean pip-compile
 	hatchling build
 
 
