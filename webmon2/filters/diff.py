@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Text difference filters.
 """
+from __future__ import annotations
+
 import difflib
 import logging
 import typing as ty
@@ -47,7 +45,7 @@ class NDiff(AbstractFilter):
             ),
             default=1,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def validate(self) -> None:
         super().validate()
@@ -127,8 +125,8 @@ class NDiff(AbstractFilter):
 def _check_changes(
     changed_lines: int,
     old_lines: int,
-    changes_th: ty.Optional[float],
-    min_changed: ty.Optional[int],
+    changes_th: float | None,
+    min_changed: int | None,
 ) -> bool:
     if not changed_lines:
         return False

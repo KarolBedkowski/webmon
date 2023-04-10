@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Access & manage users in db
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 
@@ -75,7 +73,7 @@ WHERE login=%s
 
 
 def get(
-    db: DB, id_: ty.Optional[int] = None, login: ty.Optional[str] = None
+    db: DB, id_: int | None = None, login: str | None = None
 ) -> model.User:
     """Get user by id or login.
 
@@ -109,8 +107,8 @@ def get(
 
 _UPDATE_USER_SQL = """
 UPDATE users SET login=%(user__login)s, email=%(user__email)s,
-    password=%(user__password)s, active=%(user__active)s, admin=%(user__admin)s,
-    totp=%(user__totp)s
+    password=%(user__password)s, active=%(user__active)s,
+    admin=%(user__admin)s, totp=%(user__totp)s
 WHERE id=%(user__id)s
 """
 _INSERT_USER_SQL = """
@@ -125,8 +123,8 @@ def save(db: DB, user: model.User) -> model.User:
     """Insert or update user.
 
     Raises:
-        `LoginAlreadyExistsError`: login exist for another user  (check only for
-            new user)
+        `LoginAlreadyExistsError`: login exist for another user  (check only
+            for new user)
 
     Return:
         updated user
@@ -174,8 +172,8 @@ def get_state(
     db: DB,
     user_id: int,
     key: str,
-    default: ty.Optional[State] = None,
-    conv: ty.Optional[ty.Callable[[str], State]] = None,
+    default: State | None = None,
+    conv: ty.Callable[[str], State] | None = None,
 ) -> State:
     """Get state value for given user.
 

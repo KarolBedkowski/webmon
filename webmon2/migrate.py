@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,10 +5,12 @@
 """
 Migration utils
 """
+from __future__ import annotations
+
 import argparse
 import logging
-import os
 import typing as ty
+from pathlib import Path
 
 import yaml
 
@@ -21,10 +19,10 @@ from . import database, model
 _LOG = logging.getLogger(__name__)
 
 
-def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
+def _load_sources(filename: str) -> list[ty.Any] | None:
     """Load sources configuration from `filename`."""
     _LOG.debug("loading sources from %s", filename)
-    if not os.path.isfile(filename):
+    if not Path(filename).is_file():
         _LOG.error("loading sources file error: '%s' not found", filename)
         return None
 
@@ -45,7 +43,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
 
             return inps
 
-    except IOError as err:
+    except OSError as err:
         _LOG.error("loading sources from file %s error: %s", filename, err)
     except yaml.error.YAMLError as err:
         _LOG.error(
@@ -55,7 +53,7 @@ def _load_sources(filename: str) -> ty.Optional[ty.List[ty.Any]]:
     return None
 
 
-def _migrate_url(inp: model.ConfDict) -> ty.Optional[model.Source]:
+def _migrate_url(inp: model.ConfDict) -> model.Source | None:
     source = model.Source(
         kind="url",
         name=inp.get("name", "unknown"),
@@ -67,7 +65,7 @@ def _migrate_url(inp: model.ConfDict) -> ty.Optional[model.Source]:
     return source
 
 
-def _migrate_rss(inp: model.ConfDict) -> ty.Optional[model.Source]:
+def _migrate_rss(inp: model.ConfDict) -> model.Source | None:
     source = model.Source(
         kind="rss",
         name=inp.get("name", "unknown"),
@@ -79,7 +77,7 @@ def _migrate_rss(inp: model.ConfDict) -> ty.Optional[model.Source]:
     return source
 
 
-def _migrate_jamendo(inp: model.ConfDict) -> ty.Optional[model.Source]:
+def _migrate_jamendo(inp: model.ConfDict) -> model.Source | None:
     source = model.Source(
         kind=inp["kind"],
         name=inp.get("name", "unknown"),
@@ -91,7 +89,7 @@ def _migrate_jamendo(inp: model.ConfDict) -> ty.Optional[model.Source]:
     return source
 
 
-def _migrate_github(inp: model.ConfDict) -> ty.Optional[model.Source]:
+def _migrate_github(inp: model.ConfDict) -> model.Source | None:
     source = model.Source(
         kind=inp["kind"],
         name=inp.get("name", "unknown"),

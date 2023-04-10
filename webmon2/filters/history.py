@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -10,15 +6,12 @@
 Filter that remove already visited items.
 """
 
-import typing as ty
 
 from flask_babel import lazy_gettext
 
 from webmon2 import database, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
 
 
 class History(AbstractFilter):
@@ -43,7 +36,7 @@ class History(AbstractFilter):
             return
 
         oids = [entry.calculate_oid() for entry in entries]
-        new_oids = set()  # type: ty.Set[str]
+        new_oids: set[str] = set()
         new_oids = database.entries.check_oids(
             self.db, oids, curr_state.source_id
         )

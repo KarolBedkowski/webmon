@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -11,6 +7,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -41,11 +38,11 @@ def add_subelement_with_text(
 
 # pylint: disable=unused-argument
 def gen_item(
-    title: ty.Optional[str] = None,
-    link: ty.Optional[str] = None,
-    description: ty.Optional[str] = None,
-    comments: ty.Optional[str] = None,
-    args: ty.Optional[ty.Dict[str, ty.Any]] = None,
+    title: str | None = None,
+    link: str | None = None,
+    description: str | None = None,
+    comments: str | None = None,
+    args: dict[str, ty.Any] | None = None,
 ) -> ItemElement:
     args = args or {}
     item = DEFAULT_ETREE.Element("item")
@@ -59,8 +56,8 @@ def start_rss(
     title: str,
     link: str,
     description: str,
-    items: ty.Optional[ty.Iterable[ItemElement]] = None,
-    args: ty.Optional[ty.Dict[str, ty.Any]] = None,
+    items: ty.Iterable[ItemElement] | None = None,
+    args: dict[str, ty.Any] | None = None,
 ) -> DEFAULT_ETREE.Element:
     args = args or {}
     rss = DEFAULT_ETREE.Element("rss", version="2.0")
@@ -118,7 +115,7 @@ def group(key: str) -> Response:
 
         rss_items.append(
             gen_item(
-                title=entry.title or entry.source.group.name,  # type: ignore
+                title=entry.title or entry.source.group.name,
                 link=url,
                 description=body,
                 args={

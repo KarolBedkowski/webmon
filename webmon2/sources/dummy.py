@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Dummy source; generate random data
 """
+from __future__ import annotations
+
 import datetime
 import logging
 import random
@@ -33,8 +31,7 @@ class DymmySource(AbstractSource):
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
-
+    ) -> tuple[model.SourceState, model.Entries]:
         try:
             last_check = int(state.get_prop("last_check"))
         except ValueError:
@@ -47,7 +44,7 @@ class DymmySource(AbstractSource):
         ):
             return state.new_not_modified(), []
 
-        entries = []  # type: ty.List[model.Entry]
+        entries = []  # type: list[model.Entry]
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now(
@@ -79,7 +76,7 @@ class DymmySource(AbstractSource):
         return new_state, entries
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         return {
             "text": source.name,
             "title": source.name,
@@ -89,9 +86,7 @@ class DymmySource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         name = opml_node.get("text") or opml_node["title"]
         if not name:
             raise ValueError("missing text/title")

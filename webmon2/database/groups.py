@@ -1,15 +1,14 @@
-#!/usr/bin/python3
 """
-
 Copyright (c) Karol Będkowski, 2016-2022
 
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
+
 import hashlib
 import logging
 import random
-import typing as ty
 from datetime import datetime
 
 from webmon2 import common, model
@@ -20,7 +19,7 @@ from ._db import DB
 _LOG = logging.getLogger(__name__)
 
 
-def get_names(db: DB, user_id: int) -> ty.List[ty.Tuple[int, str]]:
+def get_names(db: DB, user_id: int) -> list[tuple[int, str]]:
     """
     Get list of id, name all user groups ordered by name.
     """
@@ -54,7 +53,7 @@ ORDER BY sg.name
 """
 
 
-def get_all(db: DB, user_id: int) -> ty.List[model.SourceGroup]:
+def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
     """Get all groups for `user_id` with number of unread entries"""
     if not user_id:
         raise ValueError("missing user_id")
@@ -92,7 +91,8 @@ WHERE id=%s AND user_id=%s
 
 
 def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
-    """Get one group by `group_id`. Optionally check is group belong to `user_id`.
+    """Get one group by `group_id`. Optionally check is group belong
+    to `user_id`.
 
     Raises:
         `NotFound`: group not found
@@ -161,7 +161,7 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
         return model.SourceGroup.from_row(row)
 
 
-def get_last_update(db: DB, group_id: int) -> ty.Optional[datetime]:
+def get_last_update(db: DB, group_id: int) -> datetime | None:
     """Find last update time for entries in group"""
     with db.cursor() as cur:
         cur.execute(
@@ -239,7 +239,7 @@ LIMIT 1
 """
 
 
-def get_next_unread_group(db: DB, user_id: int) -> ty.Optional[int]:
+def get_next_unread_group(db: DB, user_id: int) -> int | None:
     """Find group with unread entries for `user_id`.
 
     Return:
@@ -272,9 +272,9 @@ def mark_read(
     db: DB,
     user_id: int,
     group_id: int,
-    max_id: ty.Optional[int] = None,
-    min_id: ty.Optional[int] = None,
-    ids: ty.Optional[ty.List[int]] = None,
+    max_id: int | None = None,
+    min_id: int | None = None,
+    ids: list[int] | None = None,
 ) -> int:
     """Mark entries in given `group_id` read.
     If `ids` is given mark entries from this list; else if `max_id` is given
@@ -311,7 +311,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
@@ -320,7 +320,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
     Return:
         etag value
     """
-    etag_h = hashlib.md5(str(group_id).encode("ascii"))
+    etag_h = hashlib.md5(str(group_id).encode("ascii"), usedforsecurity=False)
     etag_h.update(str(last_modified).encode("ascii"))
     etag = etag_h.hexdigest()
 
@@ -354,7 +354,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
         return etag
 
 
-def get_state(db: DB, group_id: int) -> ty.Optional[ty.Tuple[datetime, str]]:
+def get_state(db: DB, group_id: int) -> tuple[datetime, str] | None:
     """Get group entries last modified information.
 
     Return:
@@ -445,7 +445,7 @@ def _find_dst_group(db: DB, user_id: int, group_id: int) -> int:
 
 def find_next_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     """Find next entry to given in group.
 
     Args:
@@ -481,7 +481,7 @@ def find_next_entry_id(
 
 def find_prev_entry_id(
     db: DB, group_id: int, entry_id: int, unread: bool = True
-) -> ty.Optional[int]:
+) -> int | None:
     """Find previous entry to given in group.
 
     Args:

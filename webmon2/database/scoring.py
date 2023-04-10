@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright (c) Karol Będkowski, 2016-2021
 #
 # Distributed under terms of the GPLv3 license.
@@ -32,14 +28,14 @@ WHERE user_id = %s
 """
 
 
-def get(db: DB, user_id: int) -> ty.List[model.ScoringSett]:
+def get(db: DB, user_id: int) -> list[model.ScoringSett]:
     """Get scoring settings for user"""
     with db.cursor() as cur:
         cur.execute(_GET_ALL_SQL_FOR_USER, (user_id,))
         return [model.ScoringSett.from_row(row) for row in cur]
 
 
-def get_active(db: DB, user_id: int) -> ty.List[model.ScoringSett]:
+def get_active(db: DB, user_id: int) -> list[model.ScoringSett]:
     """Get active scoring settings for user"""
     sql = _GET_ALL_SQL_FOR_USER + " AND active"
     with db.cursor() as cur:

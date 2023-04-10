@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,11 +5,16 @@
 """
 Web gui
 """
+from __future__ import annotations
 
+import ipaddress
 import logging
+import os
 import typing as ty
+from contextlib import suppress
 
 import prometheus_client
+import psycopg2
 from flask import (
     Blueprint,
     Response,
@@ -24,6 +25,7 @@ from flask import (
     redirect,
     render_template,
     request,
+    send_from_directory,
     session,
     url_for,
 )
@@ -110,22 +112,67 @@ def groups() -> ty.Any:
 
 
 @common.cache
-def _metrics_accesslist() -> ty.List[str]:
+def _metrics_accesslist() -> (
+    list[ipaddress.IPv4Network | ipaddress.IPv6Network]
+):
     conf = current_app.config["app_conf"]
-    return [
-        ip.strip()
-        for ip in conf.get("metrics", "allow_from", fallback="").split(",")
-    ]
+    networks = []
+    for addr in conf.get("metrics", "allow_from", fallback="").split(","):
+        addr = addr.strip()
+        if "/" not in addr:
+            addr = addr + "/32"
+        networks.append(ipaddress.ip_network(addr, strict=False))
+
+    return networks
+
+
+def _is_address_allowed() -> bool:
+    assert request.remote_addr
+    if allowed_nets := _metrics_accesslist():
+        for net in allowed_nets:
+            if ipaddress.ip_address(request.remote_addr) in net:
+                return True
+
+        return False
+
+    return True
 
 
 @BP.route("/metrics")
 def metrics() -> ty.Any:
-    if request.remote_addr not in _metrics_accesslist():
+    if not _is_address_allowed():
         abort(401)
 
     return Response(
-        prometheus_client.generate_latest(),  # type: ignore
+        prometheus_client.generate_latest(),
         mimetype="text/plain; version=0.0.4; charset=utf-8",
+    )
+
+
+@BP.route("/health")
+def health() -> ty.Any:
+    return "ok"
+
+
+@BP.route("/health/live")
+def health_live() -> ty.Any:
+    if not _is_address_allowed():
+        abort(401)
+
+    with suppress(psycopg2.OperationalError):
+        db = c.get_db()
+        if database.system.ping(db):
+            return "ok"
+
+    return abort(500)
+
+
+@BP.route("/favicon.ico")
+def favicon() -> ty.Any:
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"),
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
     )
 
 

@@ -1,14 +1,11 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
-
 """
 Filters
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 
@@ -30,21 +27,21 @@ __all__ = (
 def _load_filters() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
     from . import (
-        diff,
-        fix_urls,
-        grep,
-        history,
-        html2text,
-        join,
-        score,
-        sort,
-        split_re,
-        strip,
-        wrap,
+        diff,  # noqa:F401
+        fix_urls,  # noqa:F401
+        grep,  # noqa:F401
+        history,  # noqa:F401
+        html2text,  # noqa:F401
+        join,  # noqa:F401
+        score,  # noqa:F401
+        sort,  # noqa:F401
+        split_re,  # noqa:F401
+        strip,  # noqa:F401
+        wrap,  # noqa:F401
     )
 
     try:
-        from . import split_text
+        from . import split_text  # noqa:F401
     except ImportError as err:
         _LOG.warning("module not found: %s", err)
 
@@ -56,7 +53,7 @@ class UnknownFilterException(Exception):
     pass
 
 
-def get_filter(conf: ty.Dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
+def get_filter(conf: dict[str, ty.Any]) -> AbstractFilter | None:
     """Get filter object by configuration"""
     name = conf.get("name")
     if not name:
@@ -73,7 +70,7 @@ def get_filter(conf: ty.Dict[str, ty.Any]) -> ty.Optional[AbstractFilter]:
 
 
 def filter_by(
-    filters_conf: ty.List[ty.Dict[str, ty.Any]],
+    filters_conf: list[dict[str, ty.Any]],
     entries: model.Entries,
     prev_state: model.SourceState,
     curr_state: model.SourceState,
@@ -91,13 +88,13 @@ def filter_by(
     return entries
 
 
-def filters_name() -> ty.List[str]:
+def filters_name() -> list[str]:
     return [
         name for name, scls in common.get_subclasses_with_name(AbstractFilter)
     ]
 
 
-def filters_info() -> ty.List[ty.Tuple[str, str, str]]:
+def filters_info() -> list[tuple[str, str, str]]:
     return [
         (name, scls.short_info, scls.long_info)
         for name, scls in common.get_subclasses_with_name(AbstractFilter)

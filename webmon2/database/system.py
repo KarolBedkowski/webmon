@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright (c) Karol Będkowski, 2021
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Database routines to system related objects
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -21,7 +18,8 @@ _LOG = logging.getLogger(__name__)
 
 
 _GET_DB_TAB_SIZESSQL = """
-SELECT relname AS "tables", pg_size_pretty(pg_total_relation_size (c.oid)) AS "size"
+SELECT relname AS "tables",
+    pg_size_pretty(pg_total_relation_size (c.oid)) AS "size"
 FROM pg_class c
 LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE nspname NOT IN ('pg_catalog','information_schema')
@@ -32,7 +30,7 @@ ORDER BY 1
 """
 
 
-def get_sysinfo(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
+def get_sysinfo(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     """Get system info."""
 
     with db.cursor() as cur:
@@ -58,7 +56,7 @@ def get_sysinfo(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
         yield from cur
 
 
-def get_table_sizes(db: DB) -> ty.Iterable[ty.Tuple[str, ty.Any]]:
+def get_table_sizes(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     with db.cursor() as cur:
         cur.execute(_GET_DB_TAB_SIZESSQL)
         yield from cur
@@ -71,7 +69,7 @@ where id = %s
 """
 
 
-def get_session(db: DB, session_id: int) -> ty.Optional[model.Session]:
+def get_session(db: DB, session_id: int) -> model.Session | None:
     with db.cursor() as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
         if row := cur.fetchone():
@@ -104,3 +102,11 @@ def delete_expired_sessions(db: DB) -> int:
     with db.cursor() as cur:
         cur.execute("delete from sessions where expiry <= now()")
         return cur.rowcount
+
+
+def ping(db: DB) -> bool:
+    with db.cursor() as cur:
+        cur.execute("select now()")
+        return bool(cur.fetchone())
+
+    return False

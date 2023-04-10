@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Main functions.
 
@@ -7,6 +6,7 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
 
 import argparse
 import importlib.util
@@ -18,6 +18,7 @@ import sys
 import typing as ty
 from configparser import ConfigParser
 from contextlib import suppress
+from pathlib import Path
 
 from werkzeug.serving import is_running_from_reloader
 
@@ -157,7 +158,7 @@ def _parse_options() -> argparse.Namespace:
         dest="web_app_root",
     )
     parser_serve.add_argument(
-        "--workers", type=int, default=2, help="number of background workers"
+        "--workers", type=int, help="number of background workers"
     )
     parser_serve.add_argument(
         "--address",
@@ -224,13 +225,13 @@ def _parse_options() -> argparse.Namespace:
 
 def _load_user_classes() -> None:
     users_scripts_dir = os.path.expanduser("~/.local/share/" + APP_NAME)
-    if not os.path.isdir(users_scripts_dir):
+    if not Path(users_scripts_dir).is_dir():
         return
 
     for fname in os.listdir(users_scripts_dir):
         fpath = os.path.join(users_scripts_dir, fname)
         if (
-            os.path.isfile(fpath)
+            Path(fpath).is_file()
             and fname.endswith(".py")
             and not fname.startswith("_")
         ):
@@ -314,7 +315,7 @@ def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:
 
 
 def _load_conf(args: argparse.Namespace) -> ConfigParser:
-    app_conf: ty.Optional[ConfigParser]
+    app_conf: ConfigParser | None
     if args.conf:
         app_conf = conf.load_conf(args.conf)
     else:
@@ -372,7 +373,7 @@ def main() -> None:
         signal.alarm(_SDN_WATCHDOG_INTERVAL)
 
     with suppress(locale.Error):
-        locale.setlocale(locale.LC_ALL, locale.getdefaultlocale())  # type: ignore
+        locale.setlocale(locale.LC_ALL, locale.getlocale())
 
     args = _parse_options()
     logging_setup.setup(args.log, args.debug, args.silent)

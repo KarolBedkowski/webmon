@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -35,7 +31,7 @@ class Wrap(AbstractFilter):
         common.SettingDef(
             "max_lines", lazy_gettext("Max number of lines"), value_type=int
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def validate(self) -> None:
         super().validate()

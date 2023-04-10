@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -10,25 +6,25 @@
 Abstract filter definition
 """
 
+from __future__ import annotations
+
 import abc
 import typing as ty
 
 from webmon2 import common, database, model
 
-_ = ty
 
-
-class AbstractFilter:
+class AbstractFilter(metaclass=abc.ABCMeta):
     """Base class for all filters."""
 
     name: str = None  # type: ignore
     short_info = ""
     long_info = ""
-    params = []  # type: ty.List[common.SettingDef]
+    params: list[common.SettingDef] = []
 
     def __init__(self, config: model.ConfDict) -> None:
         super().__init__()
-        self.db: ty.Optional[database.DB] = None
+        self.db: database.DB | None = None
         self._conf: model.ConfDict = common.apply_defaults(
             {param.name: param.default for param in self.params}, config
         )
@@ -46,7 +42,7 @@ class AbstractFilter:
     @classmethod
     def validate_conf(
         cls, *confs: model.ConfDict
-    ) -> ty.Iterable[ty.Tuple[str, str]]:
+    ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """
@@ -80,9 +76,9 @@ class AbstractFilter:
         raise NotImplementedError()
 
     @classmethod
-    def get_param_types(cls) -> ty.Dict[str, ty.Type[ty.Any]]:
+    def get_param_types(cls) -> dict[str, ty.Type[ty.Any]]:
         return {param.name: param.type for param in cls.params}
 
     @classmethod
-    def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
+    def get_param_defaults(cls) -> dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}

@@ -17,7 +17,11 @@ build
 *.egg-info
 dist
 Doxyfile
-Makefile
 /log
 /.gtm/
 poetry.lock
+/htmlcov
+/tmp
+coverage.xml
+/mypy.txt
+/pylint.txt

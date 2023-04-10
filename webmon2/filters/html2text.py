@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -38,7 +34,7 @@ class Html2Text(AbstractFilter):
         common.SettingDef(
             "width", lazy_gettext("Max line width"), default=999999
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def validate(self) -> None:
         super().validate()
@@ -64,7 +60,7 @@ def _convert(content: str, bodywidth: int) -> str:
     return conv.handle(content)
 
 
-_RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.I)
+_RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.IGNORECASE)
 _LINKS_SCHEMA = {"http", "https", "mailto", "ftp"}
 
 

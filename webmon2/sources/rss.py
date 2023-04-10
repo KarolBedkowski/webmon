@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 RSS data loader
 """
+from __future__ import annotations
+
 import datetime
 import logging
 import time
@@ -56,11 +54,11 @@ class RssSource(AbstractSource):
         common.SettingDef(
             "load_article", lazy_gettext("Load article"), default=False
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return rss items as one or many parts; each part is on article."""
         try:
             new_state, entries = self._load(state)
@@ -88,7 +86,7 @@ class RssSource(AbstractSource):
 
     def _load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+    ) -> tuple[model.SourceState, list[model.Entry]]:
         # pylint: disable=too-many-locals
         doc = feedparser.parse(
             self._conf["url"],
@@ -154,12 +152,9 @@ class RssSource(AbstractSource):
             ]
 
         del doc
-        doc = None
         return new_state, items
 
-    def _limit_items(
-        self, entries: ty.List[model.Entry]
-    ) -> ty.List[model.Entry]:
+    def _limit_items(self, entries: list[model.Entry]) -> list[model.Entry]:
         max_items = self._conf.get("max_items")
         if max_items:
             max_items = int(max_items)
@@ -177,10 +172,10 @@ class RssSource(AbstractSource):
     ) -> model.Entry:
         now = datetime.datetime.now(datetime.timezone.utc)
         result = model.Entry.for_source(self._source)
-        result.url = _get_val(entry, "link")
-        result.title = _get_val(entry, "title")
-        result.updated = _get_val(entry, "updated_parsed", now)
-        result.created = _get_val(entry, "published_parsed", now)
+        result.url = _get_val_str(entry, "link")
+        result.title = _get_val_str(entry, "title")
+        result.updated = _get_val_dt(entry, "updated_parsed", now)
+        result.created = _get_val_dt(entry, "published_parsed", now)
         result.status = model.EntryStatus.NEW
         if load_article:
             result = self._load_article(result, sess)
@@ -216,7 +211,8 @@ class RssSource(AbstractSource):
                         entry.set_opt("content-type", content_type)
                     else:
                         entry.content = gettext(
-                            "Article not loaded because of content type: %(type)s",
+                            "Article not loaded because of content type: "
+                            "%(type)s",
                             type=content_type,
                         )
                 else:
@@ -233,7 +229,7 @@ class RssSource(AbstractSource):
         return entry
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -243,9 +239,7 @@ class RssSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         url = opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -260,7 +254,7 @@ class RssSource(AbstractSource):
 
     def _load_image(
         self, doc: feedparser.FeedParserDict
-    ) -> ty.Optional[ty.Tuple[str, bytes]]:
+    ) -> tuple[str, bytes] | None:
         _LOG.debug("source %d load image", self._source.id)
         feed = doc.feed
         image_href = None
@@ -295,9 +289,9 @@ class RssSource(AbstractSource):
 
     def _update_source(
         self,
-        new_url: ty.Optional[str] = None,
-        web_url: ty.Optional[str] = None,
-        interval: ty.Optional[str] = None,
+        new_url: str | None = None,
+        web_url: str | None = None,
+        interval: str | None = None,
     ) -> None:
         assert self._source.settings is not None
 
@@ -319,7 +313,7 @@ class RssSource(AbstractSource):
 
 def _fail_error(
     state: model.SourceState, doc: feedparser.FeedParserDict, status: int
-) -> ty.Tuple[model.SourceState, ty.List[model.Entry]]:
+) -> tuple[model.SourceState, list[model.Entry]]:
     _LOG.error("load document error %r: state: %r %r", status, state, doc)
     summary = gettext("Loading page error: %(status)s", status=status)
     feed = doc.get("feed")
@@ -329,25 +323,32 @@ def _fail_error(
     return state.new_error(summary), []
 
 
-T = ty.Any
+def _get_val_str(
+    entry: dict[str, ty.Any], key: str, default: str | None = None
+) -> str | None:
+    val = entry.get(key)
+    if val is None:
+        return default
+
+    return str(val).strip()
 
 
-def _get_val(
-    entry: ty.Dict[str, ty.Any], key: str, default: ty.Optional[T] = None
-) -> ty.Optional[T]:
+def _get_val_dt(
+    entry: dict[str, ty.Any],
+    key: str,
+    default: datetime.datetime | None = None,
+) -> datetime.datetime | None:
     val = entry.get(key)
     if val is None:
         return default
 
     if isinstance(val, time.struct_time):
-        try:
+        with suppress(ValueError):
             return datetime.datetime.fromtimestamp(
                 time.mktime(val), datetime.timezone.utc
             )
-        except ValueError:
-            return default
 
-    return str(val).strip()
+    return default
 
 
 def _filter_entries_updated(

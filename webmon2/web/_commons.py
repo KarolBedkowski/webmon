@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Common gui api functions
 """
+from __future__ import annotations
+
 import math
 import secrets
 import typing as ty
@@ -22,8 +20,8 @@ PAGE_LIMIT = 25
 
 
 def preprate_entries_list(
-    entries: ty.List[model.Entry], page: int, total_entries: int, order: str
-) -> ty.Dict[str, ty.Any]:
+    entries: list[model.Entry], page: int, total_entries: int, order: str
+) -> dict[str, ty.Any]:
     last_page = math.ceil(total_entries / PAGE_LIMIT) - 1
     info = {
         "min_id": min(entry.id for entry in entries) if entries else None,
@@ -45,7 +43,7 @@ def preprate_entries_list(
 
 
 def get_db() -> DB:
-    database: ty.Optional[DB] = getattr(g, "db", None)
+    database: DB | None = getattr(g, "db", None)
     if database is None:
         database = g.db = DB.get()
 

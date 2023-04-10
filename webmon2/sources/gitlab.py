@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2021 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Inputs related to gitlab
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 from datetime import datetime, timedelta, timezone
@@ -70,8 +68,8 @@ class AbstractGitLabSource(AbstractSource):
 
     @staticmethod
     def _gitlab_check_project_updated(
-        project: gobj.projects.Project, last_updated: ty.Optional[datetime]
-    ) -> ty.Optional[str]:
+        project: gobj.projects.Project, last_updated: datetime | None
+    ) -> str | None:
         """Verify last repository update date.
         Returns: None when repo is not updated or formatted minimal date
             to load
@@ -95,7 +93,7 @@ class AbstractGitLabSource(AbstractSource):
 
         return last_updated.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def _gitlab_get_project(self) -> ty.Optional[gobj.projects.Project]:
+    def _gitlab_get_project(self) -> gobj.projects.Project | None:
         """Create project object according to configuration."""
         conf = self._conf
         url = conf.get("gitlab_url")
@@ -146,13 +144,11 @@ class AbstractGitLabSource(AbstractSource):
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -189,11 +185,11 @@ class GitLabCommits(AbstractGitLabSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
@@ -239,7 +235,6 @@ class GitLabCommits(AbstractGitLabSource):
         entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, [entry]
 
@@ -256,13 +251,11 @@ class GitLabCommits(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -306,11 +299,11 @@ class GitLabTagsSource(AbstractGitLabSource):
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         project = self._gitlab_get_project()
         if not project:
@@ -349,7 +342,6 @@ class GitLabTagsSource(AbstractGitLabSource):
         entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, [entry]
 
@@ -370,13 +362,11 @@ class GitLabTagsSource(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -407,11 +397,11 @@ class GitLabReleasesSource(AbstractGitLabSource):
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return releases."""
 
         project = self._gitlab_get_project()
@@ -455,7 +445,6 @@ class GitLabReleasesSource(AbstractGitLabSource):
             entry.icon = new_state.icon
 
         del project
-        project = None
 
         return new_state, entries
 
@@ -472,13 +461,11 @@ class GitLabReleasesSource(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 

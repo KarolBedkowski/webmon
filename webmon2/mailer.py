@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,11 +5,11 @@
 """
 Sending reports by mail functions
 """
+from __future__ import annotations
 
 import email.message
 import email.utils
 import logging
-import os
 import re
 import smtplib
 import subprocess
@@ -23,6 +19,7 @@ from configparser import ConfigParser
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import html2text as h2t
@@ -37,8 +34,8 @@ _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
 @dataclass
 class Ctx:
     user_id: int
-    conf: ty.Dict[str, ty.Any]
-    timezone: ty.Optional[ZoneInfo] = None
+    conf: dict[str, ty.Any]
+    timezone: ZoneInfo | None = None
 
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
@@ -158,10 +155,10 @@ def _proces_source(
             source_id=source_id,
         )
         if model.MailReportMode.SEND
-        in (entry.source.mail_report, entry.source.group.mail_report)  # type: ignore
+        in (entry.source.mail_report, entry.source.group.mail_report)
         or (
-            entry.source.mail_report  # type: ignore
-            == entry.source.group.mail_report  # type: ignore
+            entry.source.mail_report
+            == entry.source.group.mail_report
             == model.MailReportMode.AS_GROUP_SOURCE
         )
     ]
@@ -196,16 +193,16 @@ def _adjust_header(line: str, prefix: str = "###") -> str:
 
 
 def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
-    """
-    Render entry as markdown document.
-    If entry content type is not plain or markdown try convert it to plain text.
+    """Render entry as markdown document.
+    If entry content type is not plain or markdown try convert it to plain
+    text.
     """
     updated = entry.updated
     assert updated
     if tzone := ctx.timezone:
         updated = updated.astimezone(tzone)
 
-    title = (entry.title or "") + " " + updated.strftime("%x %X")  # type: ignore
+    title = (entry.title or "") + " " + updated.strftime("%x %X")
 
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -232,7 +229,7 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
 
 
 def _prepare_msg(
-    conf: ty.Dict[str, ty.Any], content: str
+    conf: dict[str, ty.Any], content: str
 ) -> email.message.EmailMessage:
     """
     Prepare email message according to `conf` and with `content`.
@@ -273,7 +270,7 @@ def _prepare_msg(
 
 
 def _send_mail(
-    conf: ty.Dict[str, ty.Any],
+    conf: dict[str, ty.Any],
     content: str,
     app_conf: ConfigParser,
     user: model.User,
@@ -322,7 +319,7 @@ def _send_mail(
     return True
 
 
-def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
+def _encrypt(conf: dict[str, ty.Any], message: str) -> str:
     args = ["/usr/bin/env", "gpg", "-e", "-a", "-r", conf["mail_to"]]
 
     if user_key := conf.get("gpg_key"):
@@ -335,17 +332,18 @@ def _encrypt(conf: ty.Dict[str, ty.Any], message: str) -> str:
         try:
             return __do_encrypt(args, message)
         finally:
-            os.unlink(keyfile.name)
+            Path(keyfile.name).unlink()
 
     return __do_encrypt(args, message)
 
 
-def __do_encrypt(args: ty.List[str], message: str) -> str:
+def __do_encrypt(args: list[str], message: str) -> str:
     with subprocess.Popen(
         args,
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        shell=False,  # nosec B603
     ) as subp:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:
@@ -371,7 +369,7 @@ def _get_entry_score_mark(entry: model.Entry) -> str:
     return ""
 
 
-def _is_silent_hour(conf: ty.Dict[str, ty.Any]) -> bool:
+def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     begin = conf.get("silent_hours_from", "")
     end = conf.get("silent_hours_to", "")
 

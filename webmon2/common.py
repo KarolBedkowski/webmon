@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Commons elements - errors etc
 
@@ -7,6 +6,7 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
 
 import datetime
 import email.utils
@@ -17,6 +17,7 @@ import os.path
 import pathlib
 import typing as ty
 from contextlib import suppress
+from pathlib import Path
 
 __author__ = "Karol Będkowski"
 __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
@@ -24,9 +25,9 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 
 _LOG = logging.getLogger("common")
 
-ConfDict = ty.Dict[str, ty.Any]
+ConfDict = dict[str, ty.Any]
 
-Row = ty.Dict[str, ty.Any]
+Row = dict[str, ty.Any]
 
 
 class ParamError(Exception):
@@ -74,12 +75,12 @@ ParentClass2 = ty.Type[ty.Any]
 
 def get_subclasses_with_name(
     base_class: ParentClass2,
-) -> ty.Iterator[ty.Tuple[str, ty.Any]]:
+) -> ty.Iterator[tuple[str, ty.Any]]:
     """Iter over subclasses and yield `name` attribute"""
 
     def find(
         parent_cls: ParentClass2,
-    ) -> ty.Iterator[ty.Tuple[str, ParentClass2]]:
+    ) -> ty.Iterator[tuple[str, ParentClass2]]:
         for rcls in getattr(parent_cls, "__subclasses__")():
             name = getattr(rcls, "name")
             if name:
@@ -136,8 +137,9 @@ def create_missing_dir(path: str) -> None:
     If path exists and is not directory - raise error.
     """
     path = os.path.expanduser(path)
-    if os.path.exists(path):
-        if os.path.isdir(path):
+    pat = Path(path)
+    if pat.exists():
+        if pat.is_dir():
             return
         raise RuntimeError(f"path {path} exists and is not dir")
 
@@ -167,7 +169,7 @@ def _parse_hour_min(text: str) -> int:
     return hours * 60 + minutes
 
 
-def parse_hours_range(inp: str) -> ty.Iterable[ty.Tuple[int, int]]:
+def parse_hours_range(inp: str) -> ty.Iterable[tuple[int, int]]:
     """Parse hours ranges defined as:
         hour1[:minutes1]-hour2[:minutes](,hour1[:minutes1]-hour2[:minutes])+
     Returns iterable: (start_time, end_time) for each valid range
@@ -205,16 +207,15 @@ def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 class SettingDef:
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,
         name: str,
         description: str,
-        default: ty.Optional[ty.Any] = None,
+        default: ty.Any = None,
         required: bool = False,
-        options: ty.Optional[ty.Dict[str, ty.Any]] = None,
-        value_type: ty.Optional[ty.Type[ty.Any]] = None,
+        options: dict[str, ty.Any] | None = None,
+        value_type: ty.Type[ty.Any] | None = None,
         global_param: bool = False,
         **kwargs: ty.Any,
     ):
@@ -226,9 +227,13 @@ class SettingDef:
         self.parameters = kwargs
         self.type: ty.Type[ty.Any]
         if value_type is None:
-            self.type = str if default is None else type(default)  # type: ignore
+            if default is None:
+                self.type = str
+            else:
+                self.type = type(default)
         else:
             self.type = value_type
+
         self.global_param = global_param
 
     def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
@@ -274,7 +279,7 @@ def obj2str(obj: ty.Any) -> str:
     return f"<{obj.__class__.__name__} {kvs}>"
 
 
-def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
+def parse_http_date(date: str | None) -> datetime.datetime | None:
     """Parse date in format 'Sat, 03 Aug 2019 21:38:14 GMT' and change
     timezone to local"""
     if not date:
@@ -291,8 +296,8 @@ def parse_http_date(date: ty.Optional[str]) -> ty.Optional[datetime.datetime]:
 
 
 def parse_form_list_data(
-    form: ty.Dict[str, ty.Any], prefix: str
-) -> ty.Iterable[ty.Dict[str, ty.Any]]:
+    form: dict[str, ty.Any], prefix: str
+) -> ty.Iterable[dict[str, ty.Any]]:
     """Parse form data named <prefix>-<idx>-<name> to
     enumeration[{<name>: <value>}]
     for each idx and matched prefix
@@ -338,6 +343,7 @@ def _cache(
 
 
 # functools.cache is available in 3.9+
+# FIXME: remove
 cache: ty.Callable[[ty.Callable[..., ty.Any]], ty.Any] = (
-    functools.cache if hasattr(functools, "cache") else _cache  # type: ignore
+    functools.cache if hasattr(functools, "cache") else _cache
 )

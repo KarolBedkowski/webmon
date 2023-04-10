@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -10,6 +6,7 @@
 Abstract source definition
 """
 
+import abc
 import logging
 import typing as ty
 
@@ -20,12 +17,12 @@ from webmon2 import common, model
 _LOG = logging.getLogger(__name__)
 
 
-class AbstractSource:
+class AbstractSource(metaclass=abc.ABCMeta):
     """Abstract/Base class for all sources"""
 
     # name used in configuration
     name = None  # type: ty.Optional[str]
-    params = []  # type: ty.List[common.SettingDef]
+    params = []  # type: list[common.SettingDef]
     short_info = ""
     long_info = ""
 
@@ -39,8 +36,8 @@ class AbstractSource:
         super().__init__()
         self._source = source
 
-        # when _updated_source is set, after loading this configuration overwrite
-        # data in database
+        # when _updated_source is set, after loading this configuration
+        # overwrite data in database
         self._updated_source = None  # type: ty.Optional[model.Source]
 
         self._conf: model.ConfDict = common.apply_defaults(
@@ -75,7 +72,7 @@ class AbstractSource:
     @classmethod
     def validate_conf(
         cls, *confs: model.ConfDict
-    ) -> ty.Iterable[ty.Tuple[str, str]]:
+    ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
         """
@@ -105,9 +102,10 @@ class AbstractSource:
         """
         return source
 
+    @abc.abstractmethod
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Load data; return list of items (Result)."""
         raise NotImplementedError()
 
@@ -116,7 +114,7 @@ class AbstractSource:
         url: str,
         only_images: bool = True,
         session: ty.Optional[requests.Session] = None,
-    ) -> ty.Optional[ty.Tuple[str, bytes]]:
+    ) -> ty.Optional[tuple[str, bytes]]:
         """
         Load binary from given url.
 
@@ -168,31 +166,29 @@ class AbstractSource:
         return None
 
     @classmethod
-    def get_param_types(cls) -> ty.Dict[str, str]:
+    def get_param_types(cls) -> dict[str, str]:
         return {param.name: param.type for param in cls.params}  # type: ignore
 
     @classmethod
-    def get_param_defaults(cls) -> ty.Dict[str, ty.Any]:
+    def get_param_defaults(cls) -> dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
     def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
+        cls, opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
         raise NotImplementedError()
 
 
-_IMAGE_TYPES = set(
-    (
-        "image/png",
-        "image/x-icon",
-        "image/vnd.microsoft.icon",
-    )
-)
+_IMAGE_TYPES = {
+    "image/png",
+    "image/x-icon",
+    "image/vnd.microsoft.icon",
+}
 
 
 def _check_content_type(

@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Web gui application
 """
+from __future__ import annotations
 
 import logging
 import os
@@ -44,8 +41,8 @@ except ImportError:
 import webmon2
 from webmon2 import database, worker
 
-from . import _commons as c
 from . import (
+    _commons as c,
     _filters,
     appsession,
     atom,
@@ -125,15 +122,15 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    app.session_interface = appsession.DBSessionInterface(True)  # type: ignore
+    app.session_interface = appsession.DBSessionInterface(True)
     babel = flask_babel.Babel(app)
 
     _register_blueprints(app)
 
     # @app.teardown_appcontext
-    @app.teardown_request  # type: ignore
+    @app.teardown_request
     def teardown_db(  # pylint: disable=unused-variable
-        _exception: ty.Optional[BaseException],
+        _exception: BaseException | None,
     ) -> None:
         db = g.pop("db", None)
         if db is not None:
@@ -145,7 +142,9 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         path = request.path
         # pages that not need valid user and don't need additional data like
         # locale setting
-        if path == "/favicon.ico" or path.startswith(("/metrics", "/atom")):
+        if path == "/favicon.ico" or path.startswith(
+            ("/metrics", "/atom", "/health")
+        ):
             return None
 
         if not _check_csrf_token():
@@ -211,7 +210,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         return resp
 
     @app.context_processor
-    def handle_context() -> ty.Dict[str, ty.Any]:
+    def handle_context() -> dict[str, ty.Any]:
         """Inject object into jinja2 templates."""
         return {"webmon2": webmon2}
 

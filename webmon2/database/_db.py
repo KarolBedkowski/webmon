@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2021 Karol Będkowski <Karol Będkowski@kkomp>
 #
 # Distributed under terms of the GPLv3 license.
@@ -15,6 +11,7 @@ import logging
 import os.path
 import sys
 import typing as ty
+from pathlib import Path
 
 import psycopg2
 from psycopg2 import extensions, extras, pool
@@ -27,23 +24,24 @@ psycopg2.extras.register_default_json(globally=True)
 
 
 class DB:
-
-    INSTANCE = None
-    POOL = None
+    POOL: pool.ThreadedConnectionPool = None  # type: ignore
 
     __slots__ = ("_conn",)
 
     def __init__(self) -> None:
         super().__init__()
-        self._conn: ty.Optional[psycopg2.extensions.connection] = None
+        self._conn: psycopg2.extensions.connection | None = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
     def connect(self) -> None:
         assert DB.POOL
         self._conn = DB.POOL.getconn()
+        if not self._conn:
+            raise RuntimeError("no connection")
+
         self._conn.autocommit = False
-        self._conn.initialize(_LOG)
+        self._conn.initialize(_LOG)  # type: ignore
 
     @classmethod
     def get(cls) -> DB:
@@ -140,13 +138,15 @@ class DB:
             fpath = os.path.join(schema_files, fname)
             try:
                 with self._conn.cursor() as cur:
-                    with open(fpath, encoding="UTF-8") as update_file:
-                        cur.execute(update_file.read())
+                    sql = Path(fpath).read_text(encoding="UTF-8")
+                    _LOG.debug("execute: %s", sql)
+                    cur.execute(sql)
                     cur.execute(
                         "insert into schema_version(version) values(%s)",
                         (version,),
                     )
                 self._conn.commit()
+
             except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
                 _LOG.exception("schema update error: %s", err)
@@ -156,9 +156,9 @@ class DB:
         with self.cursor() as cur:
             try:
                 cur.execute("select max(version) from schema_version")
-                row = cur.fetchone()
-                if row:
+                if row := cur.fetchone():
                     return row[0] or 0
+
             except psycopg2.ProgrammingError:
                 _LOG.info("no schema version")
 

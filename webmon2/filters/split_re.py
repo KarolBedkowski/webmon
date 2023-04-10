@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -10,6 +6,8 @@
 Split entry by regexp
 
 """
+from __future__ import annotations
+
 import logging
 import re
 import typing as ty
@@ -38,7 +36,7 @@ class SelectByRE(AbstractFilter):
         common.SettingDef(
             "re", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def __init__(self, conf: model.ConfDict):
         super().__init__(conf)
@@ -70,7 +68,7 @@ class SelectByRE(AbstractFilter):
 
 
 def _new_entry(
-    entry: model.Entry, content: str, title: ty.Optional[str] = None
+    entry: model.Entry, content: str, title: str | None = None
 ) -> model.Entry:
     new_entry = entry.clone()
     new_entry.status = model.EntryStatus.NEW

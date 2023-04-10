@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -29,7 +25,7 @@ class Strip(AbstractFilter):
     long_info = lazy_gettext(
         "Remove white characters from beginning and end of content"
     )
-    params = []  # type: ty.List[common.SettingDef]
+    params = []  # type: list[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -66,7 +62,7 @@ class Head(AbstractFilter):
             lazy_gettext("Maximum number of lines"),
             default=20,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:

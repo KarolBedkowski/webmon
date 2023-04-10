@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,9 +5,9 @@
 """
 Formating entry content functions
 """
+from __future__ import annotations
 
 import logging
-import typing as ty
 
 import lxml
 import markdown2
@@ -87,7 +83,7 @@ def body_format(body: str, content_type: str) -> str:
     return _clean_html_brutal(format_markdown(body))
 
 
-def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
+def sanitize_content(body: str, content_type: str) -> tuple[str, str]:
     if not body:
         return body, content_type
 
@@ -106,13 +102,13 @@ def sanitize_content(body: str, content_type: str) -> ty.Tuple[str, str]:
 
 
 def cleanup_html(content: str) -> str:
-    """Try to clean html content from scripts, styles and keep only body part"""
+    """Try to clean html content from scripts, styles and keep only body
+    part.
+    """
     return _clean_html_brutal(content)
 
 
-def entry_summary(
-    content: ty.Optional[str], content_type: ty.Optional[str]
-) -> str:
+def entry_summary(content: str | None, content_type: str | None) -> str:
     """Summarize content; try to get max 10 lines and no more than about 300
     characters from content. May be not accurate.
     """
@@ -135,12 +131,13 @@ def entry_summary(
 
     def join():
         total_content = 0
+        line: str
         for idx, line in enumerate(
             filter(None, (line.strip() for line in lines))
         ):
             total_content += len(line)
             if idx == 10 or total_content > 300:
-                yield line + "…"
+                yield f"{line}…"
                 return
 
             yield line

@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -27,8 +24,7 @@ from flask_babel import gettext, ngettext
 
 from webmon2 import common, database, model
 
-from . import _commons as c
-from . import forms
+from . import _commons as c, forms
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -127,7 +123,7 @@ def group_entries(
         return abort(404)
 
     order = request.args.get("order", "updated")
-    offset = (page or 0) * c.PAGE_LIMIT
+    offset = page * c.PAGE_LIMIT
     mode = "all" if mode == "all" else "unread"
     unread = mode != "all"
 
@@ -158,7 +154,7 @@ def group_mark_read(group_id: int) -> ty.Any:
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
     user_id = session["user"]
-    ids: ty.Optional[ty.List[int]] = None
+    ids: list[int] | None = None
     r_ids = request.form.get("ids", "")
     if r_ids:
         ids = list(map(int, r_ids.split(","))) or None

@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
@@ -148,7 +144,11 @@ class CheckWorker(threading.Thread):
 
 class FetchWorker(threading.Thread):
     def __init__(
-        self, idx: str, todo_queue: queue.Queue[int], conf: ConfigParser, app
+        self,
+        idx: str,
+        todo_queue: queue.Queue[int],
+        conf: ConfigParser,
+        app: ty.Any,
     ) -> None:
         threading.Thread.__init__(self)
         # id of thread
@@ -171,6 +171,22 @@ class FetchWorker(threading.Thread):
                         db, id_=source_id, with_state=True
                     )
                     self._process_source(db, source)
+                except common.InputError as err:
+                    _LOG.info(
+                        "[%s] process source %d error: %s",
+                        self._idx,
+                        source_id,
+                        err,
+                    )
+                    db.rollback()
+                    if source:
+                        _save_state_error(db, source, str(err))
+                        database.users.put_log(
+                            db,
+                            source.user_id,
+                            f"process source '{source.name}' error {err}",
+                            source_id=source_id,
+                        )
                 except Exception as err:  # pylint: disable=broad-except
                     _LOG.exception(
                         "[%s] process source %d error", self._idx, source_id
@@ -203,7 +219,7 @@ class FetchWorker(threading.Thread):
         try:
             src = self._get_src(source, sys_settings)
         except sources.UnknownInputException as err:
-            raise Exception(f"unsupported input {source.kind}") from err
+            raise ValueError(f"unsupported input {source.kind}") from err
 
         assert source.state and src
 
@@ -248,10 +264,11 @@ class FetchWorker(threading.Thread):
         self,
         db: database.DB,
         source: model.Source,
-        src,
-        sys_settings: ty.Dict[str, ty.Any],
-    ):
+        src: sources.AbstractSource,
+        sys_settings: dict[str, ty.Any],
+    ) -> tuple[model.SourceState | None, int]:
         # load data
+        assert source.state
         new_state, entries = src.load(source.state)
         if new_state.status == model.SourceStateStatus.ERROR:
             # stop processing source when error occurred
@@ -351,7 +368,7 @@ class FetchWorker(threading.Thread):
         entries: model.Entries,
         db: database.DB,
         user_id: int,
-        sys_settings: ty.Dict[str, str],
+        sys_settings: dict[str, str],
     ) -> model.Entries:
         """
         Apply scoring for `entries`. If entry score is below `minimal_score`
@@ -380,8 +397,8 @@ class FetchWorker(threading.Thread):
 
     def _load_scoring(
         self, db: database.DB, user_id: int
-    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:
-        #    ) -> ty.Iterator[ty.Tuple[re.Pattern[str], int]]:  # py3.7
+    ) -> ty.Iterator[tuple[re.Pattern[str], int]]:
+        #    ) -> ty.Iterator[tuple[re.Pattern[str], int]]:  # py3.7
         """
         Load scoring rules and compile list of (re pattern, score) rules
         """
@@ -397,10 +414,10 @@ class FetchWorker(threading.Thread):
                 _LOG.warning("compile scoring pattern error: %s %s", scs, err)
 
     def _get_src(
-        self, source: model.Source, sys_settings: ty.Dict[str, str]
-    ) -> ty.Optional[sources.AbstractSource]:
-        """
-        Create and initialize source object according to `source` configuration.
+        self, source: model.Source, sys_settings: dict[str, str]
+    ) -> sources.AbstractSource | None:
+        """Create and initialize source object according to `source`
+        configuration.
         """
         if not source.interval:
             interval = sys_settings.get("interval") or "1d"
@@ -539,7 +556,7 @@ def _save_state_error(
     db: database.DB,
     source: model.Source,
     err: str,
-    state: ty.Optional[model.SourceState] = None,
+    state: model.SourceState | None = None,
 ) -> None:
     """
     Create and save `SourceState` with state = `ERROR` for `source` and `err`

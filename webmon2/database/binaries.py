@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 """
 Access to binaries stored in database.
 
@@ -7,8 +6,9 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+from __future__ import annotations
+
 import logging
-import typing as ty
 
 import psycopg2
 
@@ -18,7 +18,7 @@ from ._dbcommon import NotFound
 _LOG = logging.getLogger(__name__)
 
 
-def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
+def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
     """Get binary data from db identified by `datahash` and `userid`.
 
     Args:
@@ -41,7 +41,7 @@ def get(db: DB, datahash: str, user_id: int) -> ty.Tuple[bytes, str]:
                 "WHERE datahash=%s AND user_id=%s",
                 (datahash, user_id),
             )
-            res: ty.Optional[ty.Tuple[bytes, str]] = cur.fetchone()  # type: ignore
+            res: tuple[bytes, str] | None = cur.fetchone()  # type: ignore
             if res:
                 return res
 
@@ -53,7 +53,7 @@ def save(
     user_id: int,
     content_type: str,
     datahash: str,
-    data: ty.Union[None, str, bytes],
+    data: str | bytes | None,
 ) -> None:
     """
     Save binary in database.
@@ -113,7 +113,7 @@ def remove_unused(db: DB, user_id: int) -> int:
 
     with db.cursor() as cur:
         cur.execute(_REMOVE_UNUSED_SQL, {"user_id": user_id})
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 _CLEAN_ENTRIES_SQL = """
@@ -140,7 +140,7 @@ WHERE icon IS NOT NULL
 """
 
 
-def clean_sources_entries(db: DB) -> ty.Tuple[int, int]:
+def clean_sources_entries(db: DB) -> tuple[int, int]:
     """
     Clean old binaries.
 

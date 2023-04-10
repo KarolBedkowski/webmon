@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -20,31 +16,31 @@ from .abstract import AbstractSource
 
 _LOG = logging.getLogger(__name__)
 __all__ = (
+    "AbstractSource",
     "UnknownInputException",
     "get_source",
-    "sources_name",
     "sources_info",
-    "AbstractSource",
+    "sources_name",
 )
 
 
 def _load_plugins() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
 
-    from . import dummy, file_input, jamendo, web
+    from . import dummy, file_input, jamendo, web  # noqa:F401
 
     try:
-        from . import github
+        from . import github  # noqa:F401
     except ImportError:
         _LOG.warning("github3 module not found")
 
     try:
-        from . import rss
+        from . import rss  # noqa:F401
     except ImportError:
         _LOG.warning("feedparser module not found")
 
     try:
-        from . import gitlab
+        from . import gitlab  # noqa:F401
     except ImportError:
         _LOG.warning("gitlab module not found")
 
@@ -68,18 +64,18 @@ def get_source(
     raise UnknownInputException()
 
 
-def get_source_class(kind: str) -> ty.Optional[ty.Type[AbstractSource]]:
+def get_source_class(kind: str) -> ty.Type[AbstractSource] | None:
     scls = common.find_subclass(AbstractSource, kind)
     return scls
 
 
-def sources_name() -> ty.List[str]:
+def sources_name() -> list[str]:
     return [
         name for name, scls in common.get_subclasses_with_name(AbstractSource)
     ]
 
 
-def sources_info() -> ty.List[ty.Tuple[str, str, str]]:
+def sources_info() -> list[tuple[str, str, str]]:
     return [
         (name, scls.short_info, scls.long_info)
         for name, scls in common.get_subclasses_with_name(AbstractSource)

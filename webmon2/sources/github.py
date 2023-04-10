@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Inputs related to github
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 from contextlib import suppress
@@ -43,8 +41,8 @@ class GitHubAbstractSource(AbstractSource):
 
     @staticmethod
     def _github_check_repo_updated(
-        repository: Repository, last_updated: ty.Optional[datetime]
-    ) -> ty.Optional[str]:
+        repository: Repository, last_updated: datetime | None
+    ) -> str | None:
         """Verify last repository update date.
         Returns: None when repo is not updated or formatted minimal date
             to load
@@ -82,13 +80,11 @@ class GitHubAbstractSource(AbstractSource):
         return repository
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
     def _update_source(self) -> None:
@@ -153,11 +149,11 @@ class GithubInput(GitHubAbstractSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         repository = self._github_get_repository(self._conf)
         data_since = self._github_check_repo_updated(
@@ -167,12 +163,18 @@ class GithubInput(GitHubAbstractSource):
             return state.new_not_modified(etag=repository.etag), []
 
         etag = state.get_prop("etag")
-        if hasattr(repository, "commits"):
-            commits = list(repository.commits(since=data_since))
-        else:
-            commits = list(
-                repository.iter_commits(since=data_since, etag=etag)
-            )
+        try:
+            if hasattr(repository, "commits"):
+                commits = list(repository.commits(since=data_since))
+            else:
+                commits = list(
+                    repository.iter_commits(since=data_since, etag=etag)
+                )
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if not commits:
             new_state = state.new_not_modified(etag=repository.etag)
@@ -201,7 +203,6 @@ class GithubInput(GitHubAbstractSource):
         entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, [entry]
 
@@ -219,13 +220,11 @@ class GithubInput(GitHubAbstractSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -285,20 +284,26 @@ class GithubTagsSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return commits."""
         conf = self._conf
         repository = self._github_get_repository(conf)
         if not self._github_check_repo_updated(repository, state.last_update):
             return state.new_not_modified(etag=repository.etag), []
 
-        tags = _load_tags(
-            repository, self._conf["max_items"], state.get_prop("etag")
-        )
+        try:
+            tags = _load_tags(
+                repository, self._conf["max_items"], state.get_prop("etag")
+            )
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if state.last_update:
             tags = _filter_tags(tags, repository, state.last_update)
@@ -323,7 +328,6 @@ class GithubTagsSource(GitHubAbstractSource):
         entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, [entry]
 
@@ -345,13 +349,11 @@ class GithubTagsSource(GitHubAbstractSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 
@@ -421,11 +423,11 @@ class GithubReleasesSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
-    ) -> ty.Tuple[model.SourceState, model.Entries]:
+    ) -> tuple[model.SourceState, model.Entries]:
         """Return releases."""
         repository = self._github_get_repository(self._conf)
         if not self._github_check_repo_updated(repository, state.last_update):
@@ -434,10 +436,16 @@ class GithubReleasesSource(GitHubAbstractSource):
 
         etag = state.get_prop("etag")
         max_items = self._conf["max_items"] or 100
-        if hasattr(repository, "releases"):
-            releases = list(repository.releases(max_items, etag=etag))
-        else:
-            releases = list(repository.iter_releases(max_items, etag=etag))
+        try:
+            if hasattr(repository, "releases"):
+                releases = list(repository.releases(max_items, etag=etag))
+            else:
+                releases = list(repository.iter_releases(max_items, etag=etag))
+        except github3.exceptions.ConnectionError as err:
+            raise common.InputError(
+                self,
+                gettext("Connection error: %(err)s", err=err),
+            ) from err
 
         if state.last_update:
             last_update = state.last_update.replace(tzinfo=tz.tzlocal())
@@ -471,7 +479,6 @@ class GithubReleasesSource(GitHubAbstractSource):
             entry.icon = new_state.icon
 
         del repository
-        repository = None
 
         return new_state, entries
 
@@ -483,19 +490,18 @@ class GithubReleasesSource(GitHubAbstractSource):
 
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/releases"
+            conf["url"] = (
+                "http://github.com/"
+                f"{conf['owner']}/{conf['repository']}/releases"
+            )
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> ty.Dict[str, ty.Any]:
+    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
         raise NotImplementedError()
 
     @classmethod
-    def from_opml(
-        cls, opml_node: ty.Dict[str, ty.Any]
-    ) -> ty.Optional[model.Source]:
+    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
         raise NotImplementedError()
 
 

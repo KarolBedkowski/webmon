@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import datetime
 import logging
@@ -39,8 +36,7 @@ from flask_babel import gettext, ngettext
 
 from webmon2 import VERSION, common, database, imp_exp, model, opml, security
 
-from . import _commons as c
-from . import forms
+from . import _commons as c, forms
 
 _LOG = logging.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")
@@ -348,7 +344,7 @@ def sett_sys_users() -> ty.Any:
 
 @BP.route("/settings/system/users/new", methods=["GET", "POST"])
 @BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])
-def sett_sys_user(user_id: ty.Optional[int] = None) -> ty.Any:
+def sett_sys_user(user_id: int | None = None) -> ty.Any:
     if not session["user_admin"]:
         abort(403)
 

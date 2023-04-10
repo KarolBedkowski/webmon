@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Access to entries in db.
 """
+from __future__ import annotations
+
 import logging
 import typing as ty
 from datetime import date, datetime
@@ -18,8 +16,7 @@ import psycopg2.errors
 
 from webmon2 import model
 
-from . import _dbcommon as dbc
-from . import binaries, sources
+from . import _dbcommon as dbc, binaries, sources
 from ._db import DB
 from ._dbcommon import Cursor
 
@@ -45,7 +42,7 @@ _GET_ENTRIES_SQL_MAIN_COLS = """
 """
 
 
-def _build_find_sql(args: ty.Dict[str, ty.Any]) -> str:
+def _build_find_sql(args: dict[str, ty.Any]) -> str:
     """
     Build sql for fetch entries
 
@@ -103,7 +100,9 @@ def _yield_entries(
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
-        entry.source = user_sources.get(entry.source_id)
+        source = user_sources.get(entry.source_id)
+        assert source
+        entry.source = source
         yield entry
 
 
@@ -124,11 +123,11 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
 def get_history(  # pylint: disable=too-many-arguments
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int],
-    group_id: ty.Optional[int],
+    source_id: int | None,
+    group_id: int | None,
     offset: int = 0,
     limit: int = 20,
-) -> ty.Tuple[model.Entries, int]:
+) -> tuple[model.Entries, int]:
     """
     Get entries manually read (read_mark=2) for given user ordered by id
     Optionally filter by `source_id` and/or `group_id`.
@@ -167,7 +166,7 @@ def get_history(  # pylint: disable=too-many-arguments
 
     # count all
     with db.cursor() as cur:
-        cur.execute(f"select count(1) from ({sql}) subq", params)
+        cur.execute(f"select count(1) from ({sql}) subq", params)  # nosec B608
         res = cur.fetchone()
         assert res
         total = int(res[0])
@@ -188,8 +187,8 @@ def get_history(  # pylint: disable=too-many-arguments
 def get_total_count(
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
+    source_id: int | None = None,
+    group_id: int | None = None,
     unread: bool = True,
 ) -> int:
     """Get number of read/all entries for user/source/group.
@@ -243,7 +242,7 @@ _ORDER_SQL = {
 }
 
 
-def _get_order_sql(order: ty.Optional[str]) -> str:
+def _get_order_sql(order: str | None) -> str:
     """Get sql part for order entries."""
     if not order:
         return "e.updated"
@@ -255,12 +254,12 @@ def _get_order_sql(order: ty.Optional[str]) -> str:
 def find(
     db: DB,
     user_id: int,
-    source_id: ty.Optional[int] = None,
-    group_id: ty.Optional[int] = None,
+    source_id: int | None = None,
+    group_id: int | None = None,
     unread: bool = True,
-    offset: ty.Optional[int] = None,
-    limit: ty.Optional[int] = None,
-    order: ty.Optional[str] = None,
+    offset: int | None = None,
+    limit: int | None = None,
+    order: str | None = None,
 ) -> model.Entries:
     """Find entries for user/source/group unread or all.
     Limit and offset work only for getting all entries.
@@ -302,9 +301,9 @@ def find_fulltext(
     user_id: int,
     query: str,
     title_only: bool,
-    group_id: ty.Optional[int] = None,
-    source_id: ty.Optional[int] = None,
-    order: ty.Optional[str] = None,
+    group_id: int | None = None,
+    source_id: int | None = None,
+    order: str | None = None,
 ) -> model.Entries:
     """Find entries for user by full-text search on title or title and content.
     Search in source (if given source_id) or in group (if given group_id)
@@ -337,7 +336,7 @@ def find_fulltext(
     with db.cursor() as cur:
         try:
             cur.execute(sql, args)
-        except psycopg2.errors.SyntaxError as err:
+        except psycopg2.errors.SyntaxError as err:  # pylint: disable=no-member
             _LOG.error("find_fulltext syntax error: %s", err)
             raise dbc.QuerySyntaxError() from err
         yield from _yield_entries(cur, user_sources)
@@ -382,8 +381,8 @@ FROM entries
 
 def get(
     db: DB,
-    id_: ty.Optional[int] = None,
-    oid: ty.Optional[str] = None,
+    id_: int | None = None,
+    oid: str | None = None,
     with_source: bool = False,
     with_group: bool = False,
 ) -> model.Entry:
@@ -506,7 +505,7 @@ def _save_entry_icon(db: DB, entries: model.Entries) -> None:
 
 def delete_old(
     db: DB, user_id: int, max_datetime: datetime
-) -> ty.Tuple[int, int]:
+) -> tuple[int, int]:
     """
     Delete old entries for given user.
     Keep unread and starred messages.
@@ -542,17 +541,17 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         changed = cur.rowcount
 
     _LOG.debug("changed: %d", changed)
-    return changed  # type: ignore
+    return changed
 
 
-def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
+def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
     """Check is given oids already exists in history table.
     Insert new and its oids;
     """
     if not source_id:
         raise ValueError("missing source_id")
 
-    result = set()  # type: ty.Set[str]
+    result: set[str] = set()
     with db.cursor() as cur:
         for idx in range(0, len(oids), 100):
             part_oids = tuple(oids[idx : idx + 100])
@@ -583,11 +582,11 @@ def check_oids(db: DB, oids: ty.List[str], source_id: int) -> ty.Set[str]:
 def mark_read(
     db: DB,
     user_id: int,
-    entry_id: ty.Optional[int] = None,
-    min_id: ty.Optional[int] = None,
-    max_id: ty.Optional[int] = None,
+    entry_id: int | None = None,
+    min_id: int | None = None,
+    max_id: int | None = None,
     read: model.EntryReadMark = model.EntryReadMark.READ,
-    ids: ty.Optional[ty.List[int]] = None,
+    ids: list[int] | None = None,
 ) -> int:
     """Change read mark for given entry.
     If `entry_id` is given - mark only this one entry; else if `ids` is given -
@@ -639,11 +638,11 @@ def mark_read(
             )
         changed = cur.rowcount
 
-    return changed  # type: ignore
+    return changed
 
 
 def mark_all_read(
-    db: DB, user_id: int, max_date: ty.Union[None, date, datetime] = None
+    db: DB, user_id: int, max_date: date | datetime | None = None
 ) -> int:
     """Mark all entries for given user as read; optionally mark only entries
     older than `max_date`.
@@ -651,7 +650,8 @@ def mark_all_read(
     Args:
         db: database object
         user_id: user id
-        max_date: optional date or datetime to mark entries older than this date
+        max_date: optional date or datetime to mark entries older than
+            this date
     Return:
         number of updated items
     """
@@ -678,18 +678,20 @@ def mark_all_read(
                 ),
             )
 
-        return cur.rowcount  # type: ignore
+        return cur.rowcount
 
 
 _GET_RELATED_RM_ENTRY_SQL = """
 WITH DATA AS (
-	SELECT e.id,
-		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS prev,
-		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order}) AS NEXT
-	FROM entries e
-	WHERE user_id = %(user_id)s
-	    AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
-	ORDER BY {order}
+    SELECT e.id,
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order})
+            AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER BY {order})
+            AS NEXT
+    FROM entries e
+    WHERE user_id = %(user_id)s
+        AND (read_mark = %(read_mark)s or e.id = %(entry_id)s)
+    ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA
@@ -698,12 +700,14 @@ WHERE id = %(entry_id)s
 
 _GET_RELATED_ENTRY_SQL = """
 WITH DATA AS (
-	SELECT e.id,
-		lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS prev,
-		lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order}) AS NEXT
-	FROM entries e
-	WHERE user_id = %(user_id)s
-	ORDER BY {order}
+    SELECT e.id,
+       lag(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order})
+            AS prev,
+       lead(id) OVER (PARTITION BY (user_id, read_mark) ORDER by {order})
+            AS NEXT
+    FROM entries e
+    WHERE user_id = %(user_id)s
+    ORDER BY {order}
 )
 SELECT prev, next
 FROM DATA
@@ -711,7 +715,7 @@ WHERE id=%(entry_id)s
 """
 
 
-def _get_related_sql(unread: bool, order: ty.Optional[str]) -> str:
+def _get_related_sql(unread: bool, order: str | None) -> str:
     order_key = "updated"
     if order in ("title", "updated", "score"):
         order_key = order
@@ -732,8 +736,8 @@ def find_next_entry_id(
     user_id: int,
     entry_id: int,
     unread: bool = True,
-    order: ty.Optional[str] = None,
-) -> ty.Optional[int]:
+    order: str | None = None,
+) -> int | None:
     """Find next entry to given.
 
     Args:
@@ -764,8 +768,8 @@ def find_prev_entry_id(
     user_id: int,
     entry_id: int,
     unread: bool = True,
-    order: ty.Optional[str] = None,
-) -> ty.Optional[int]:
+    order: str | None = None,
+) -> int | None:
     """Find previous entry to given.
 
     Args:

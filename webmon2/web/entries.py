@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Web gui
 """
+from __future__ import annotations
 
 import logging
 import math
@@ -95,7 +92,10 @@ def entries_history() -> ty.Any:
     if not any(1 for id_, _ in sources if id_ == source_id):
         source_id = None
 
-    entries_, total, = database.entries.get_history(
+    (
+        entries_,
+        total,
+    ) = database.entries.get_history(
         db,
         user_id,
         group_id=group_id,
@@ -119,9 +119,7 @@ def entries_history() -> ty.Any:
     )
 
 
-def _get_req_source(
-    db: database.DB, user_id: int
-) -> ty.Optional[model.Source]:
+def _get_req_source(db: database.DB, user_id: int) -> model.Source | None:
     try:
         source_id = int(request.args.get("source_id", "0"))
         if not source_id:
@@ -136,9 +134,7 @@ def _get_req_source(
     )
 
 
-def _get_req_group(
-    db: database.DB, user_id: int
-) -> ty.Optional[model.SourceGroup]:
+def _get_req_group(db: database.DB, user_id: int) -> model.SourceGroup | None:
     try:
         group_id = int(request.args.get("group_id", "0"))
         if not group_id:

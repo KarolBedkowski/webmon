@@ -1,7 +1,3 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2022 Karol Będkowski <Karol Będkowski@kkomp>
 #
 # Distributed under terms of the GPLv3 license.
@@ -12,19 +8,22 @@ Database-based server-side session storage.
 Based on flask-session.
 
 """
-import pickle
+import pickle  # nosec
+import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from flask.sessions import SessionInterface as FlaskSessionInterface
-from flask.sessions import SessionMixin
+from flask.sessions import (
+    SessionInterface as FlaskSessionInterface,
+    SessionMixin,
+)
 from itsdangerous import BadSignature, Signer, want_bytes
 from werkzeug.datastructures import CallbackDict
 
 from webmon2 import database, model
 
 
-class DBSession(CallbackDict, SessionMixin):
+class DBSession(CallbackDict[str, ty.Any], SessionMixin):
     """Server-side sessions."""
 
     def __init__(self, initial=None, sid=None, permanent=None):
@@ -69,8 +68,10 @@ class DBSessionInterface(FlaskSessionInterface):
 
         with database.DB.get() as db:
             saved_session = database.system.get_session(db, sid)
-            if saved_session and saved_session.expiry <= datetime.now(
-                timezone.utc
+            if (
+                saved_session
+                and saved_session.expiry
+                and saved_session.expiry <= datetime.now(timezone.utc)
             ):
                 # Delete expired session
                 database.system.delete_session(db, sid)
@@ -81,7 +82,7 @@ class DBSessionInterface(FlaskSessionInterface):
             return DBSession(sid=sid, permanent=self.permanent)
 
         try:
-            data = pickle.loads(want_bytes(saved_session.data))
+            data = pickle.loads(want_bytes(saved_session.data))  # nosec
             return DBSession(data, sid=sid)
         except pickle.UnpicklingError:
             return DBSession(sid=sid, permanent=self.permanent)
@@ -90,7 +91,6 @@ class DBSessionInterface(FlaskSessionInterface):
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         with database.DB.get() as db:
-
             if not session:
                 if session.modified:
                     database.system.delete_session(db, session.sid)
@@ -105,7 +105,8 @@ class DBSessionInterface(FlaskSessionInterface):
             val = pickle.dumps(dict(session))
             if saved_session:
                 saved_session.data = val
-                saved_session.expiry = expires
+                if expires:
+                    saved_session.expiry = expires
             elif not session.modified:
                 db.commit()
                 return
@@ -134,7 +135,7 @@ class DBSessionInterface(FlaskSessionInterface):
             domain=domain,
             path=path,
             secure=self.get_cookie_secure(app),
-            **conditional_cookie_kwargs
+            **conditional_cookie_kwargs,
         )
 
 

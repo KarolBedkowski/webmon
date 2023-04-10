@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,8 @@
 """
 Select entries by matching text.
 """
+from __future__ import annotations
+
 import logging
 import re
 import typing as ty
@@ -51,7 +49,7 @@ class Score(AbstractFilter):
             lazy_gettext("Change score on match every pattern"),
             default=True,
         ),
-    ]  # type: ty.List[common.SettingDef]
+    ]  # type: list[common.SettingDef]
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
@@ -72,7 +70,7 @@ class Score(AbstractFilter):
         self._match_many = conf.get("match_many")
         self._score = int(conf.get("score_change", 0))
 
-    def _score_for_content(self, *content: ty.Optional[str]) -> int:
+    def _score_for_content(self, *content: str | None) -> int:
         add = 0
         if self._match_many:
             add = sum(

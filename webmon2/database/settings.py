@@ -1,7 +1,3 @@
-#! /usr/bin/env python
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
-#
 # Copyright (c) Karol Będkowski, 2016-2022
 #
 # Distributed under terms of the GPLv3 license.
@@ -9,6 +5,7 @@
 """
 Access to settings in db
 """
+from __future__ import annotations
 
 import logging
 import typing as ty
@@ -30,7 +27,7 @@ LEFT JOIN user_settings us ON us.key = s.key AND us.user_id=%s
 """
 
 
-def get_all(db: DB, user_id: int) -> ty.List[model.Setting]:
+def get_all(db: DB, user_id: int) -> list[model.Setting]:
     """Get all settings for given user."""
     if not user_id:
         raise ValueError("missing user_id")
@@ -51,7 +48,7 @@ WHERE s.key=%s
 """
 
 
-def get(db: DB, key: str, user_id: int) -> ty.Optional[model.Setting]:
+def get(db: DB, key: str, user_id: int) -> model.Setting | None:
     """Get one setting for given user"""
     with db.cursor() as cur:
         cur.execute(_GET_SQL, (user_id, key))
@@ -82,14 +79,14 @@ Value = ty.Any
 
 
 def get_value(
-    db: DB, key: str, user_id: int, default: ty.Optional[Value] = None
+    db: DB, key: str, user_id: int, default: Value | None = None
 ) -> Value:
     """Get value of setting for given user"""
     setting = get(db, key, user_id)
     return setting.value if setting else default
 
 
-def get_dict(db: DB, user_id: int) -> ty.Dict[str, ty.Any]:
+def get_dict(db: DB, user_id: int) -> dict[str, ty.Any]:
     """Get dictionary of all setting for given user.
 
     Args:
@@ -112,7 +109,7 @@ ORDER by s.key
 """
 
 
-def get_global(db: DB) -> ty.List[model.Setting]:
+def get_global(db: DB) -> list[model.Setting]:
     """Get global settings."""
     with db.cursor() as cur:
         cur.execute(_GET_GLOBAL_SQL)
