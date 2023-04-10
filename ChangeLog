@@ -1,5 +1,42 @@
 # Changelog
 
+## 2.8.2 2023-04-10
+
+### Bug Fixes
+
+- Allow to set number of workers to 0 (to disable i.e. for debug)
+- Handle errors on fix url plugin
+- Use lxml.html in split_text filters
+- Fix altering links for proxy
+- Fix create proxy links; add some tests
+- Fix set session expiration
+
+### Features
+
+- Add /health endpoint
+- Add /favicon.ico
+- Allow define networks in metrics.allow_from parameter
+- Add /health/live that check database access
+- Clean loaded content in web source
+- Add example systemd service
+
+### Miscellaneous Tasks
+
+- Update project files
+- Migrate to hatchling
+- Clean code; remov setup.*, update Makefile, .gitignore
+- Update pre-commit, secrets.baseline, makefile
+- Remove shell bang from non-executable files
+- Remove bandit.ini; configuration moved to pyproject
+- Add some more test to web._filters; add/use freezegun
+
+### Refactor
+
+- Migrate to Python 3.9
+- Clean code
+- Use lxml.html to replace links in FixHtmlUrls; simplify code
+- Clean types
+
 
 ## 2.8.1 2022-10-01
 
