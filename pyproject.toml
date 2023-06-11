@@ -21,7 +21,7 @@ license = {text = "GPL-3.0-or-later"}
 name = "webmon2"
 readme = "README.rst"
 dynamic = ["version"]
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
   "Flask>=2.0",
   "PyYAML>=3",
@@ -85,7 +85,7 @@ skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
 
 
 [tool.mypy]
-python_version = 3.9
+python_version = 3.11
 strict = true
 exclude = [
   '.*_test\.py$'

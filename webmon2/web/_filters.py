@@ -29,7 +29,7 @@ def _age_filter(date: datetime.datetime | None) -> str:
         return ""
 
     diff = int(
-        (datetime.datetime.now(datetime.timezone.utc) - date).total_seconds()
+        (datetime.datetime.now(datetime.UTC) - date).total_seconds()
     )
     if diff < 60:
         return "<1m"

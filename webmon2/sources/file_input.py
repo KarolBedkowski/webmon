@@ -65,7 +65,7 @@ class FileSource(AbstractSource):
 
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             )
             entry.status = (
                 model.EntryStatus.UPDATED
@@ -79,7 +79,7 @@ class FileSource(AbstractSource):
             new_state = state.new_ok()
             assert self._source.interval is not None
             new_state.next_update = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             ) + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
