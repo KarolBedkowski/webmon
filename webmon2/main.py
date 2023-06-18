@@ -44,6 +44,12 @@ try:
 except ImportError:
     HAS_SDNOTIFY = False
 
+try:
+    import setproctitle
+
+except ImportError:
+    pass
+
 from . import (
     APP_NAME,
     VERSION,
@@ -366,6 +372,9 @@ def _update_schema(app_conf: ConfigParser) -> None:
 
 def main() -> None:
     """Main function."""
+
+    with suppress(NameError):
+        setproctitle.setproctitle('webmon2')
 
     if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STATUS=starting")

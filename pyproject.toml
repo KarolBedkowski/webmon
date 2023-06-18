@@ -45,6 +45,9 @@ dependencies = [
 
 
 [project.optional-dependencies]
+extra = [
+  "setproctitle",
+]
 sdnotify = [
   "sdnotify",
 ]
