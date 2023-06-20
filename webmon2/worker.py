@@ -17,10 +17,17 @@ import threading
 import time
 import typing as ty
 from configparser import ConfigParser
+from contextlib import suppress
 
 from flask import Flask
 from flask_babel import Babel, force_locale
 from prometheus_client import Counter
+
+try:
+    import setproctitle
+
+except ImportError:
+    pass
 
 from . import common, database, filters, formatters, mailer, model, sources
 
@@ -153,6 +160,7 @@ class FetchWorker(threading.Thread):
         threading.Thread.__init__(self)
         # id of thread
         self._idx: str = idx + ":" + str(id(self))
+
         # queue of sources id to process
         self._todo_queue: queue.Queue[int] = todo_queue
         # app configuration
@@ -160,6 +168,9 @@ class FetchWorker(threading.Thread):
         self._app = app
 
     def run(self) -> None:
+        with suppress(NameError):
+            setproctitle.setthreadtitle("webmon2.worker")
+
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
