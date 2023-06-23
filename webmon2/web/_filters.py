@@ -152,7 +152,14 @@ def _create_proxy_urls_srcset(
 
 def _proxy_links(content: str, entry: model.Entry | None = None) -> str:
     """Replace links to img/other objects to local proxy."""
-    document = lxml.html.document_fromstring(content)
+    if not content:
+        return content
+
+    try:
+        document = lxml.html.document_fromstring(content)
+    except lxml.etree.ParserError:
+        return content
+
     changed = False
     entry_url = entry.url if entry else None
 
