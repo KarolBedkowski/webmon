@@ -399,11 +399,9 @@ WHERE source_id=%s
 
 def get_state(db: DB, source_id: int) -> model.SourceState | None:
     """Get state for given source"""
-    with db.cursor_dict_row() as cur:
+    with db.cursor_obj_row(model.SourceState.from_row) as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
-        row = cur.fetchone()
-
-    return model.SourceState.from_row(row) if row else None
+        return cur.fetchone()
 
 
 _INSERT_STATE_SQL = """

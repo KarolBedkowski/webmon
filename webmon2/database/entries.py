@@ -338,6 +338,7 @@ def find_fulltext(
         except psycopg.errors.SyntaxError as err:  # pylint: disable=no-member
             _LOG.error("find_fulltext syntax error: %s", err)
             raise dbc.QuerySyntaxError() from err
+
         yield from _yield_entries(cur, user_sources)
 
 
@@ -388,19 +389,18 @@ def get(
     if not id_ and oid is None:
         raise ValueError("missing id/oid")
 
-    with db.cursor_dict_row() as cur:
-        if id_ is not None:
-            sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
-        else:
-            sql = _GET_ENTRY_SQL + "WHERE oid=%(oid)s"
+    if id_ is not None:
+        sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
+    else:
+        sql = _GET_ENTRY_SQL + "WHERE oid=%(oid)s"
 
+    with db.cursor_obj_row(model.Entry.from_row) as cur:
         cur.execute(sql, {"oid": oid, "id": id_})
-        row = cur.fetchone()
+        entry = cur.fetchone()
 
-    if not row:
+    if not entry:
         raise dbc.NotFound()
 
-    entry = model.Entry.from_row(row)
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)
 

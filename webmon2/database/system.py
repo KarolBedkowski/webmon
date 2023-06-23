@@ -70,12 +70,9 @@ where id = %s
 
 
 def get_session(db: DB, session_id: int) -> model.Session | None:
-    with db.cursor_dict_row() as cur:
+    with db.cursor_obj_row(model.Session.from_row) as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
-        if row := cur.fetchone():
-            return model.Session.from_row(row)
-
-    return None
+        return cur.fetchone()
 
 
 def delete_session(db: DB, session_id: int) -> None:

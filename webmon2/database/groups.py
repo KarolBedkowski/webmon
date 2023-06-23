@@ -97,13 +97,12 @@ def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
     Raises:
         `NotFound`: group not found
     """
-    with db.cursor_dict_row() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_SQL, (group_id, user_id))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-    return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 _FIND_SQL = """
@@ -123,13 +122,12 @@ def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
     Raises:
         `NotFound`: group not found
     """
-    with db.cursor_dict_row() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_FIND_SQL, (name, user_id))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-        return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 _GET_BY_FEED_SQL = """
@@ -152,13 +150,12 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     if feed == "off":
         raise dbc.NotFound()
 
-    with db.cursor_dict_row() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-        return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 def get_last_update(db: DB, group_id: int) -> datetime | None:

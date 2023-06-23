@@ -19,6 +19,27 @@ import psycopg_pool as pool
 _ = ty
 _LOG = logging.getLogger("db")
 
+T = ty.TypeVar("T")
+
+
+def create_object_row_maker(
+    from_row: ty.Callable[[dict[str, ty.Any]], T]
+) -> psycopg.rows.RowFactory[T]:
+    """create RowMaker for `from_row` callable that create objects."""
+
+    def row_factory(
+        cursor: psycopg.Cursor[ty.Any],
+    ) -> psycopg.rows.RowMaker[T]:
+        fields = [c.name for c in cursor.description or ()]
+
+        def make_row(values: ty.Sequence[ty.Any]) -> T:
+            data = dict(zip(fields, values))
+            return from_row(data)
+
+        return make_row
+
+    return row_factory
+
 
 class DB:
     POOL: pool.ConnectionPool = None  # type: ignore
@@ -37,9 +58,7 @@ class DB:
         if not self._conn:
             raise RuntimeError("no connection")
 
-        # self._conn.row_factory = psycopg.rows.dict_row
         self._conn.autocommit = False
-        # self._conn.initialize(_LOG)
 
     @classmethod
     def get(cls) -> DB:
@@ -60,6 +79,16 @@ class DB:
 
         assert self._conn
         return self._conn.cursor()
+
+    def cursor_obj_row(
+        self, from_row: ty.Callable[[dict[str, ty.Any]], T]
+    ) -> psycopg.Cursor[T]:
+        if not self._conn or self._conn.closed:
+            self.close()
+            self.connect()
+
+        assert self._conn
+        return self._conn.cursor(row_factory=create_object_row_maker(from_row))
 
     def begin(self) -> None:
         pass
