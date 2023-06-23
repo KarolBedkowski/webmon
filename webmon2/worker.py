@@ -68,7 +68,9 @@ class CheckWorker(threading.Thread):
     def __init__(
         self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
     ) -> None:
-        threading.Thread.__init__(self, daemon=True)
+        threading.Thread.__init__(
+            self, daemon=True, name="webmon2.checkworker"
+        )
         # sources id to process
         self._todo_queue: queue.Queue[int] = queue.Queue()
         # application configuration
@@ -157,7 +159,7 @@ class FetchWorker(threading.Thread):
         conf: ConfigParser,
         app: ty.Any,
     ) -> None:
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name=f"webmon2.fetchworker.{idx}")
         # id of thread
         self._idx: str = idx + ":" + str(id(self))
 
