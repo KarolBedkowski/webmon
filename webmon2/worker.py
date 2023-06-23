@@ -551,9 +551,9 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     delta1 = 3600 + pow(2, error_counter) * 3600
     delta2 = common.parse_interval(source.interval or "1d")
     next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
-    next_check = datetime.datetime.now(
-        datetime.UTC
-    ) + datetime.timedelta(seconds=next_check_delta)
+    next_check = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+        seconds=next_check_delta
+    )
     _LOG.debug(
         "calculated next interval for %s: +%s = %s",
         source.id,

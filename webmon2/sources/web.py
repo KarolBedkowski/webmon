@@ -112,9 +112,7 @@ class WebSource(AbstractSource):
 
             url = self._check_redirects(response, new_state) or url
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now(
-                datetime.UTC
-            )
+            entry.updated = entry.created = datetime.datetime.now(datetime.UTC)
             entry.status = (
                 model.EntryStatus.UPDATED
                 if state.last_update

@@ -43,9 +43,9 @@ class JamendoAbstractSource(AbstractSource):
         self._update_source()
 
     def _get_last_update(self, state: model.SourceState) -> datetime.datetime:
-        last_update = datetime.datetime.now(
-            datetime.UTC
-        ) - datetime.timedelta(days=_JAMENDO_MAX_AGE)
+        last_update = datetime.datetime.now(datetime.UTC) - datetime.timedelta(
+            days=_JAMENDO_MAX_AGE
+        )
         if state.last_update and state.last_update > last_update:
             last_update = state.last_update
 

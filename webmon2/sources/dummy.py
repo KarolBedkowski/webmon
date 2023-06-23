@@ -47,9 +47,7 @@ class DymmySource(AbstractSource):
         entries = []  # type: list[model.Entry]
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now(
-                datetime.UTC
-            )
+            entry.updated = entry.created = datetime.datetime.now(datetime.UTC)
             entry.status = model.EntryStatus.NEW
             entry.title = (
                 self._source.name + " " + str(entry.updated) + " " + str(idx)
