@@ -11,14 +11,13 @@ import logging
 import typing as ty
 from datetime import date, datetime
 
-import psycopg2
-import psycopg2.errors
+import psycopg.errors
+from psycopg import Cursor
 
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, sources
 from ._db import DB
-from ._dbcommon import Cursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -96,7 +95,7 @@ def _build_find_sql(args: dict[str, ty.Any]) -> str:
 
 
 def _yield_entries(
-    cur: Cursor, user_sources: model.UserSources
+    cur: Cursor[dict[str, ty.Any]], user_sources: model.UserSources
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
@@ -115,7 +114,7 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
     args = {"user_id": user_id, "star": 1}
     sql = _build_find_sql(args)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -177,7 +176,7 @@ def get_history(  # pylint: disable=too-many-arguments
     sql += " ORDER BY e.id OFFSET %(offset)s LIMIT %(limit)s"
     _LOG.debug("get_history: %s", sql)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, params)
         entries = list(_yield_entries(cur, user_sources))
 
@@ -290,7 +289,7 @@ def find(
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -333,10 +332,10 @@ def find_fulltext(
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         try:
             cur.execute(sql, args)
-        except psycopg2.errors.SyntaxError as err:  # pylint: disable=no-member
+        except psycopg.errors.SyntaxError as err:  # pylint: disable=no-member
             _LOG.error("find_fulltext syntax error: %s", err)
             raise dbc.QuerySyntaxError() from err
         yield from _yield_entries(cur, user_sources)
@@ -353,7 +352,7 @@ def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     }
     sql = _build_find_sql(args)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -389,7 +388,7 @@ def get(
     if not id_ and oid is None:
         raise ValueError("missing id/oid")
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         if id_ is not None:
             sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
         else:

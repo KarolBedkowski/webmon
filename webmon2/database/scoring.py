@@ -30,7 +30,7 @@ WHERE user_id = %s
 
 def get(db: DB, user_id: int) -> list[model.ScoringSett]:
     """Get scoring settings for user"""
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_ALL_SQL_FOR_USER, (user_id,))
         return [model.ScoringSett.from_row(row) for row in cur]
 
@@ -38,7 +38,7 @@ def get(db: DB, user_id: int) -> list[model.ScoringSett]:
 def get_active(db: DB, user_id: int) -> list[model.ScoringSett]:
     """Get active scoring settings for user"""
     sql = _GET_ALL_SQL_FOR_USER + " AND active"
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, (user_id,))
         return [model.ScoringSett.from_row(row) for row in cur]
 

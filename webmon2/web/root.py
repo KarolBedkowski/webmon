@@ -14,7 +14,7 @@ import typing as ty
 from contextlib import suppress
 
 import prometheus_client
-import psycopg2
+import psycopg
 from flask import (
     Blueprint,
     Response,
@@ -159,7 +159,7 @@ def health_live() -> ty.Any:
     if not _is_address_allowed():
         abort(401)
 
-    with suppress(psycopg2.OperationalError):
+    with suppress(psycopg.OperationalError):
         db = c.get_db()
         if database.system.ping(db):
             return "ok"

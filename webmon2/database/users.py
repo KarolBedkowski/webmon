@@ -32,7 +32,7 @@ FROM users
 
 def get_all(db: DB) -> ty.Iterable[model.User]:
     """Get all users"""
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_ALL_SQL)
         for row in cur:
             yield model.User.from_row(row)
@@ -49,7 +49,7 @@ WHERE active
 
 def get_all_active(db: DB) -> ty.Iterable[model.User]:
     """Get all active users"""
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_ACTIVE_SQL)
         for row in cur:
             yield model.User.from_row(row)
@@ -89,7 +89,7 @@ def get(
         `User`
 
     """
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         if id_:
             cur.execute(_GET_BY_ID_SQL, (id_,))
         elif login:
@@ -249,7 +249,7 @@ ORDER BY ts DESC
 
 def get_logs(db: DB, user_id: int) -> ty.Iterable[model.UserLog]:
     """Get all logs for `user_id`."""
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_LOG_SQL, (user_id,))
         for row in cur:
             yield model.UserLog.from_row(row)

@@ -35,31 +35,31 @@ def get_sysinfo(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
 
     with db.cursor() as cur:
         cur.execute("SELECT 'Total entries', count(*) FROM entries")
-        yield from cur
+        yield from cur  # type: ignore
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT 'Entries with read_mark=' || read_mark, count(*) "
             "FROM entries GROUP BY read_mark"
         )
-        yield from cur
+        yield from cur  # type: ignore
 
     with db.cursor() as cur:
         cur.execute("SELECT 'Total sources', count(*) FROM sources")
-        yield from cur
+        yield from cur  # type: ignore
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT 'Sources with status=' || status, count(*) "
             "FROM sources GROUP BY status"
         )
-        yield from cur
+        yield from cur  # type: ignore
 
 
 def get_table_sizes(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     with db.cursor() as cur:
         cur.execute(_GET_DB_TAB_SIZESSQL)
-        yield from cur
+        yield from cur  # type: ignore
 
 
 _GET_SESSION_SQL = """
@@ -70,7 +70,7 @@ where id = %s
 
 
 def get_session(db: DB, session_id: int) -> model.Session | None:
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
         if row := cur.fetchone():
             return model.Session.from_row(row)

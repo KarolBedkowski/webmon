@@ -139,7 +139,7 @@ def get_all(
     sql.extend((_get_status_sql(status), _get_order_sql(order)))
 
     _LOG.debug("get_all %r %s", args, sql)
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute("".join(sql), args)
         return [_build_source(row, user_groups) for row in cur]
 
@@ -206,7 +206,7 @@ def get(
         with_state: load source state
         with_group: load source group info
     """
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_SOURCE_SQL, (id_,))
         row = cur.fetchone()
 
@@ -399,7 +399,7 @@ WHERE source_id=%s
 
 def get_state(db: DB, source_id: int) -> model.SourceState | None:
     """Get state for given source"""
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
         row = cur.fetchone()
 

@@ -9,10 +9,6 @@ from __future__ import annotations
 
 import typing as ty
 
-from psycopg2 import extensions
-
-Cursor = extensions.cursor
-
 
 class NotFound(Exception):
     pass

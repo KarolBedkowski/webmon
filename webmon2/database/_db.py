@@ -13,24 +13,21 @@ import sys
 import typing as ty
 from pathlib import Path
 
-import psycopg2
-from psycopg2 import extensions, extras, pool
+import psycopg
+import psycopg_pool as pool
 
 _ = ty
 _LOG = logging.getLogger("db")
 
-psycopg2.extensions.register_adapter(dict, psycopg2.extras.Json)
-psycopg2.extras.register_default_json(globally=True)
-
 
 class DB:
-    POOL: pool.ThreadedConnectionPool = None  # type: ignore
+    POOL: pool.ConnectionPool = None  # type: ignore
 
     __slots__ = ("_conn",)
 
     def __init__(self) -> None:
         super().__init__()
-        self._conn: psycopg2.extensions.connection | None = None
+        self._conn: psycopg.Connection[ty.Any] | None = None
         if not DB.POOL:
             raise RuntimeError("DB.POOL not initialized")
 
@@ -40,20 +37,29 @@ class DB:
         if not self._conn:
             raise RuntimeError("no connection")
 
+        # self._conn.row_factory = psycopg.rows.dict_row
         self._conn.autocommit = False
-        self._conn.initialize(_LOG)  # type: ignore
+        # self._conn.initialize(_LOG)
 
     @classmethod
     def get(cls) -> DB:
         return DB()
 
-    def cursor(self) -> psycopg2.extensions.cursor:
+    def cursor_dict_row(self) -> psycopg.Cursor[dict[str, ty.Any]]:
         if not self._conn or self._conn.closed:
             self.close()
             self.connect()
 
         assert self._conn
-        return self._conn.cursor(cursor_factory=extras.DictCursor)
+        return self._conn.cursor(row_factory=psycopg.rows.dict_row)
+
+    def cursor(self) -> psycopg.Cursor[tuple[ty.Any, ...]]:
+        if not self._conn or self._conn.closed:
+            self.close()
+            self.connect()
+
+        assert self._conn
+        return self._conn.cursor()
 
     def begin(self) -> None:
         pass
@@ -71,11 +77,10 @@ class DB:
         cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
     ) -> None:
         _LOG.info("initializing database")
-        cls.POOL = pool.ThreadedConnectionPool(
-            min_conn,
-            max_conn,
+        cls.POOL = pool.ConnectionPool(
             conn_str,
-            connection_factory=extras.LoggingConnection,
+            min_size=min_conn,
+            max_size=max_conn,
         )
         # common.create_missing_dir(os.path.dirname(filename))
         with DB() as db:
@@ -101,7 +106,10 @@ class DB:
                 return
 
             _LOG.debug("Closing conn %s", self._conn)
-            if self._conn.status == psycopg2.extensions.STATUS_IN_TRANSACTION:
+            if (
+                self._conn.info.transaction_status
+                == psycopg.pq.TransactionStatus.INTRANS
+            ):
                 # prevent 'idle in transactions' connections
                 self._conn.rollback()
 
@@ -116,7 +124,7 @@ class DB:
 
     def update_schema(self) -> None:
         assert self._conn
-        self._conn.set_isolation_level(extensions.ISOLATION_LEVEL_AUTOCOMMIT)
+        self._conn.autocommit = True
         schema_ver = self._get_schema_version()
         _LOG.debug("current schema version: %r", schema_ver)
         schema_files = os.path.join(os.path.dirname(__file__), "..", "schema")
@@ -159,7 +167,7 @@ class DB:
                 if row := cur.fetchone():
                     return row[0] or 0
 
-            except psycopg2.ProgrammingError:
+            except psycopg.ProgrammingError:
                 _LOG.info("no schema version")
 
         return 0
