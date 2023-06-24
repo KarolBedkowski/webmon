@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 

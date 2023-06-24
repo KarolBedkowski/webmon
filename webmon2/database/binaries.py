@@ -1,10 +1,8 @@
+# Copyright (c) Karol Będkowski, 2016-2023
+# This file is part of webmon. Licence: GPLv3
+
 """
 Access to binaries stored in database.
-
-Copyright (c) Karol Będkowski, 2016-2022
-
-This file is part of webmon.
-Licence: GPLv2+
 """
 from __future__ import annotations
 

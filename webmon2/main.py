@@ -44,11 +44,9 @@ try:
 except ImportError:
     HAS_SDNOTIFY = False
 
-try:
+with suppress(ImportError):
     import setproctitle
 
-except ImportError:
-    pass
 
 from . import (
     APP_NAME,

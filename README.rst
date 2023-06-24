@@ -11,8 +11,9 @@ gui)
 Dependences
 -----------
 
-* Python 3.9+
+* Python 3.11+
 * Postgresql 10+
+* psycopg3 & psycopg_pool
 * requests
 * yaml
 * html2text (for html2text filter)

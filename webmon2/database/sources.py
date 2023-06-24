@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -88,6 +88,7 @@ _ORDER_SQL_PART = {
 def _get_order_sql(order: str | None) -> str:
     if not order:
         return " ORDER BY s.name"
+
     return _ORDER_SQL_PART.get(order, " ORDER BY s.name")
 
 

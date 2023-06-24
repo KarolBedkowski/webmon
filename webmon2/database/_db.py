@@ -1,4 +1,4 @@
-# Copyright © 2021 Karol Będkowski <Karol Będkowski@kkomp>
+# Copyright © 2021-2023 Karol Będkowski <Karol Będkowski@kkomp>
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -11,6 +11,7 @@ import logging
 import os.path
 import sys
 import typing as ty
+from functools import cache
 from pathlib import Path
 
 import psycopg
@@ -22,10 +23,11 @@ _LOG = logging.getLogger("db")
 T = ty.TypeVar("T")
 
 
+@cache
 def create_object_row_maker(
     from_row: ty.Callable[[dict[str, ty.Any]], T]
 ) -> psycopg.rows.RowFactory[T]:
-    """create RowMaker for `from_row` callable that create objects."""
+    """create RowMaker for `from_row` callable that create `T` objects."""
 
     def row_factory(
         cursor: psycopg.Cursor[ty.Any],
@@ -56,9 +58,7 @@ class DB:
         assert DB.POOL
         self._conn = DB.POOL.getconn()
         if not self._conn:
-            raise RuntimeError("no connection")
-
-        self._conn.autocommit = False
+            raise RuntimeError("no database connection")
 
     @classmethod
     def get(cls) -> DB:
@@ -110,6 +110,7 @@ class DB:
             conn_str,
             min_size=min_conn,
             max_size=max_conn,
+            kwargs={"autocommit": False},
         )
         # common.create_missing_dir(os.path.dirname(filename))
         with DB() as db:
@@ -129,21 +130,24 @@ class DB:
 
     def close(self) -> None:
         assert self.POOL
-        if self._conn is not None:
-            if self._conn.closed:
-                self._conn = None
-                return
+        if self._conn is None:
+            return
 
-            _LOG.debug("Closing conn %s", self._conn)
-            if (
-                self._conn.info.transaction_status
-                == psycopg.pq.TransactionStatus.INTRANS
-            ):
-                # prevent 'idle in transactions' connections
-                self._conn.rollback()
-
+        if self._conn.closed:
             self.POOL.putconn(self._conn)
             self._conn = None
+            return
+
+        _LOG.debug("Closing conn %s", self._conn)
+        if (
+            self._conn.info.transaction_status
+            == psycopg.pq.TransactionStatus.INTRANS
+        ):
+            # prevent 'idle in transactions' connections
+            self._conn.rollback()
+
+        self.POOL.putconn(self._conn)
+        self._conn = None
 
     def check(self) -> None:
         with self.cursor() as cur:

@@ -1,4 +1,4 @@
-# Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
 #
 # Distributed under terms of the GPLv3 license.
 # pylint: disable=too-many-arguments
@@ -22,7 +22,7 @@ from webmon2 import common, formatters
 _LOG = logging.getLogger(__name__)
 
 
-Row = ty.Any
+Row = dict[str, ty.Any]
 ConfDict = dict[str, ty.Any]
 
 

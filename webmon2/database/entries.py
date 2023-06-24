@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -716,17 +716,19 @@ WHERE id=%(entry_id)s
 
 def _get_related_sql(unread: bool, order: str | None) -> str:
     order_key = "updated"
-    if order in ("title", "updated", "score"):
-        order_key = order
-    elif order == "title_desc":
-        order_key = "title desc"
-    elif order == "updated_desc":
-        order_key = "updated desc"
-    elif order == "score_desc":
-        order_key = "score desc"
+    match order:
+        case "title" | "updated" | "score":
+            order_key = order
+        case "title_desc":
+            order_key = "title desc"
+        case "updated_desc":
+            order_key = "updated desc"
+        case "score_desc":
+            order_key = "score desc"
 
     if unread:
         return _GET_RELATED_RM_ENTRY_SQL.format(order=order_key)
+
     return _GET_RELATED_ENTRY_SQL.format(order=order_key)
 
 

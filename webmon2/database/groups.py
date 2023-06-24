@@ -1,9 +1,6 @@
-"""
-Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
+# This file is part of webmon. Licence: GPLv2+
 
-This file is part of webmon.
-Licence: GPLv2+
-"""
 from __future__ import annotations
 
 import hashlib
@@ -348,7 +345,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
                 (group_id, last_modified, etag),
             )
 
-        return etag
+    return etag
 
 
 def get_state(db: DB, group_id: int) -> tuple[datetime, str] | None:
@@ -472,8 +469,10 @@ def find_next_entry_id(
                 (entry_id, group_id),
             )
 
-        row = cur.fetchone()
-        return row[0] if row else None
+        if row := cur.fetchone():
+            return row[0]  # type: ignore
+
+    return None
 
 
 def find_prev_entry_id(
@@ -508,5 +507,7 @@ def find_prev_entry_id(
                 (entry_id, group_id),
             )
 
-        row = cur.fetchone()
-        return row[0] if row else None
+        if row := cur.fetchone():
+            return row[0]  # type: ignore
+
+    return None

@@ -1,4 +1,4 @@
-# Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -23,11 +23,8 @@ from flask import Flask
 from flask_babel import Babel, force_locale
 from prometheus_client import Counter
 
-try:
+with suppress(ImportError):
     import setproctitle
-
-except ImportError:
-    pass
 
 from . import common, database, filters, formatters, mailer, model, sources
 
