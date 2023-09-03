@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import datetime
 import email.utils
-import functools
 import itertools
 import logging
 import os.path
@@ -320,30 +319,3 @@ def parse_form_list_data(
 
     for _, val in sorted(values.items()):
         yield val
-
-
-CacheFuncRes = ty.TypeVar("CacheFuncRes")
-
-
-def _cache(
-    func: ty.Callable[..., CacheFuncRes]
-) -> ty.Callable[..., CacheFuncRes]:
-    """Run function once and cache results."""
-
-    def wrapper(*args: ty.Any, **kwargs: ty.Any) -> CacheFuncRes:
-        if not wrapper.has_run:  # type: ignore
-            wrapper.has_run = True  # type: ignore
-
-            wrapper.result = func(*args, **kwargs)  # type: ignore
-
-        return wrapper.result  # type: ignore
-
-    wrapper.has_run = False  # type: ignore
-    return wrapper
-
-
-# functools.cache is available in 3.9+
-# FIXME: remove
-cache: ty.Callable[[ty.Callable[..., ty.Any]], ty.Any] = (
-    functools.cache if hasattr(functools, "cache") else _cache
-)

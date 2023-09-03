@@ -11,8 +11,9 @@ gui)
 Dependences
 -----------
 
-* Python 3.9+
+* Python 3.11+
 * Postgresql 10+
+* psycopg3 & psycopg_pool
 * requests
 * yaml
 * html2text (for html2text filter)
@@ -23,9 +24,10 @@ Dependences
 * cssselect & python3-lxml (for elements filtering)
 * readability-lxml
 * flask, Werkzeug, gevent and optional Flask_Minify
-* python-gitlab (for gitlab api; pip install python-gitlab)
+* python-gitlab (for gitlab api; pip install python3-gitlab)
 * pyotp, pyqrcode for TOTP 2FA
 * sdnotify (optional for systemd service)
+* setproctitle (optional; python3-setproctitle)
 
 
 Installation

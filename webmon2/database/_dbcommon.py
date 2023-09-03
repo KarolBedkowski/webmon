@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -8,10 +8,6 @@ Common functions for db access
 from __future__ import annotations
 
 import typing as ty
-
-from psycopg2 import extensions
-
-Cursor = extensions.cursor
 
 
 class NotFound(Exception):

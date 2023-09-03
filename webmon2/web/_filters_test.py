@@ -1,9 +1,9 @@
 # Copyright © 2023 Karol Będkowski <Karol Będkowski@kkomp>
 #
 # Distributed under terms of the GPLv3 license.
-
+# pylint: disable=protected-access
 """
-
+Test for filters.
 """
 import unittest
 from unittest import mock

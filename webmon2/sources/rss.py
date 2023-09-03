@@ -74,7 +74,7 @@ class RssSource(AbstractSource):
             assert self._source.interval is not None
             # next update is bigger of now + interval or expire (if set)
             next_update = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             ) + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
@@ -170,7 +170,7 @@ class RssSource(AbstractSource):
         load_article: bool,
         sess: requests.Session,
     ) -> model.Entry:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
         result = model.Entry.for_source(self._source)
         result.url = _get_val_str(entry, "link")
         result.title = _get_val_str(entry, "title")
@@ -345,7 +345,7 @@ def _get_val_dt(
     if isinstance(val, time.struct_time):
         with suppress(ValueError):
             return datetime.datetime.fromtimestamp(
-                time.mktime(val), datetime.timezone.utc
+                time.mktime(val), datetime.UTC
             )
 
     return default

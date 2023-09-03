@@ -69,4 +69,4 @@ class Join(AbstractFilter):
             _LOG.debug("join error: %s", err)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        pass
+        raise NotImplementedError()

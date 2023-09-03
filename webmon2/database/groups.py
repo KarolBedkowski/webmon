@@ -1,9 +1,6 @@
-"""
-Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
+# This file is part of webmon. Licence: GPLv2+
 
-This file is part of webmon.
-Licence: GPLv2+
-"""
 from __future__ import annotations
 
 import hashlib
@@ -97,13 +94,12 @@ def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
     Raises:
         `NotFound`: group not found
     """
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_SQL, (group_id, user_id))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-    return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 _FIND_SQL = """
@@ -123,13 +119,12 @@ def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
     Raises:
         `NotFound`: group not found
     """
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_FIND_SQL, (name, user_id))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-        return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 _GET_BY_FEED_SQL = """
@@ -152,13 +147,12 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     if feed == "off":
         raise dbc.NotFound()
 
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
-        row = cur.fetchone()
-        if not row:
-            raise dbc.NotFound()
+        if row := cur.fetchone():
+            return row
 
-        return model.SourceGroup.from_row(row)
+        raise dbc.NotFound()
 
 
 def get_last_update(db: DB, group_id: int) -> datetime | None:
@@ -351,7 +345,7 @@ def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
                 (group_id, last_modified, etag),
             )
 
-        return etag
+    return etag
 
 
 def get_state(db: DB, group_id: int) -> tuple[datetime, str] | None:
@@ -475,8 +469,10 @@ def find_next_entry_id(
                 (entry_id, group_id),
             )
 
-        row = cur.fetchone()
-        return row[0] if row else None
+        if row := cur.fetchone():
+            return row[0]  # type: ignore
+
+    return None
 
 
 def find_prev_entry_id(
@@ -511,5 +507,7 @@ def find_prev_entry_id(
                 (entry_id, group_id),
             )
 
-        row = cur.fetchone()
-        return row[0] if row else None
+        if row := cur.fetchone():
+            return row[0]  # type: ignore
+
+    return None

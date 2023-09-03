@@ -1,4 +1,4 @@
-# Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -17,10 +17,14 @@ import threading
 import time
 import typing as ty
 from configparser import ConfigParser
+from contextlib import suppress
 
 from flask import Flask
 from flask_babel import Babel, force_locale
 from prometheus_client import Counter
+
+with suppress(ImportError):
+    import setproctitle
 
 from . import common, database, filters, formatters, mailer, model, sources
 
@@ -61,7 +65,9 @@ class CheckWorker(threading.Thread):
     def __init__(
         self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
     ) -> None:
-        threading.Thread.__init__(self, daemon=True)
+        threading.Thread.__init__(
+            self, daemon=True, name="webmon2.checkworker"
+        )
         # sources id to process
         self._todo_queue: queue.Queue[int] = queue.Queue()
         # application configuration
@@ -150,9 +156,10 @@ class FetchWorker(threading.Thread):
         conf: ConfigParser,
         app: ty.Any,
     ) -> None:
-        threading.Thread.__init__(self)
+        threading.Thread.__init__(self, name=f"webmon2.fetchworker.{idx}")
         # id of thread
         self._idx: str = idx + ":" + str(id(self))
+
         # queue of sources id to process
         self._todo_queue: queue.Queue[int] = todo_queue
         # app configuration
@@ -160,6 +167,9 @@ class FetchWorker(threading.Thread):
         self._app = app
 
     def run(self) -> None:
+        with suppress(NameError):
+            setproctitle.setthreadtitle("webmon2.worker")
+
         while not self._todo_queue.empty():
             source_id = self._todo_queue.get()
             with database.DB.get() as db:
@@ -233,7 +243,7 @@ class FetchWorker(threading.Thread):
             return
 
         # update source state properties
-        new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
+        new_state.last_check = datetime.datetime.now(datetime.UTC)
         new_state.set_prop(
             "last_update_duration", f"{time.time() - start:0.2f}"
         )
@@ -288,11 +298,11 @@ class FetchWorker(threading.Thread):
         if new_state.last_update:
             last_update = max(
                 new_state.last_update,
-                datetime.datetime.now(datetime.timezone.utc),
+                datetime.datetime.now(datetime.UTC),
             )
         else:
             new_state.last_update = last_update = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             )
 
         next_update = last_update + datetime.timedelta(
@@ -453,7 +463,7 @@ def _delete_old_entries(db: database.DB) -> None:
             if not keep_days:
                 continue
             max_datetime = datetime.datetime.now(
-                datetime.timezone.utc
+                datetime.UTC
             ) - datetime.timedelta(days=keep_days)
             deleted_entries, deleted_oids = database.entries.delete_old(
                 db, user.id, max_datetime
@@ -540,9 +550,9 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
     delta1 = 3600 + pow(2, error_counter) * 3600
     delta2 = common.parse_interval(source.interval or "1d")
     next_check_delta = min(delta1, delta2) + random.randint(500, 1800)
-    next_check = datetime.datetime.now(
-        datetime.timezone.utc
-    ) + datetime.timedelta(seconds=next_check_delta)
+    next_check = datetime.datetime.now(datetime.UTC) + datetime.timedelta(
+        seconds=next_check_delta
+    )
     _LOG.debug(
         "calculated next interval for %s: +%s = %s",
         source.id,
@@ -567,5 +577,5 @@ def _save_state_error(
 
     new_state = state or source.state.new_error(err)
     new_state.next_update = _calc_next_check_on_error(source)
-    new_state.last_check = datetime.datetime.now(datetime.timezone.utc)
+    new_state.last_check = datetime.datetime.now(datetime.UTC)
     database.sources.save_state(db, new_state, source.user_id)

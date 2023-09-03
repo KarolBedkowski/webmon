@@ -1,16 +1,14 @@
+# Copyright (c) Karol Będkowski, 2016-2023
+# This file is part of webmon. Licence: GPLv3
+
 """
 Access to binaries stored in database.
-
-Copyright (c) Karol Będkowski, 2016-2022
-
-This file is part of webmon.
-Licence: GPLv2+
 """
 from __future__ import annotations
 
 import logging
 
-import psycopg2
+import psycopg
 
 from ._db import DB
 from ._dbcommon import NotFound
@@ -81,7 +79,7 @@ def save(
             "INSERT INTO binaries (datahash, user_id, data, content_type) "
             "VALUES (%s, %s, %s, %s) "
             "ON conflict (datahash, user_id) DO NOTHING",
-            (datahash, user_id, psycopg2.Binary(data), content_type),
+            (datahash, user_id, psycopg.Binary(data), content_type),
         )
 
 

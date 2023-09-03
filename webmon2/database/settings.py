@@ -1,4 +1,4 @@
-# Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -32,9 +32,9 @@ def get_all(db: DB, user_id: int) -> list[model.Setting]:
     if not user_id:
         raise ValueError("missing user_id")
 
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.Setting.from_row) as cur:
         cur.execute(_GET_ALL_SQL, (user_id,))
-        return [model.Setting.from_row(row) for row in cur]
+        return list(cur)
 
 
 _GET_SQL = """
@@ -50,11 +50,9 @@ WHERE s.key=%s
 
 def get(db: DB, key: str, user_id: int) -> model.Setting | None:
     """Get one setting for given user"""
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.Setting.from_row) as cur:
         cur.execute(_GET_SQL, (user_id, key))
-        row = cur.fetchone()
-
-    return model.Setting.from_row(row) if row else None
+        return cur.fetchone()
 
 
 _INSERT_SQL = """
@@ -111,9 +109,9 @@ ORDER by s.key
 
 def get_global(db: DB) -> list[model.Setting]:
     """Get global settings."""
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.Setting.from_row) as cur:
         cur.execute(_GET_GLOBAL_SQL)
-        return [model.Setting.from_row(row) for row in cur]
+        return list(cur)
 
 
 def set_value(db: DB, user_id: int, key: str, value: Value) -> None:

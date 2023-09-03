@@ -7,6 +7,7 @@ Web gui
 """
 from __future__ import annotations
 
+import functools
 import ipaddress
 import logging
 import os
@@ -14,7 +15,7 @@ import typing as ty
 from contextlib import suppress
 
 import prometheus_client
-import psycopg2
+import psycopg
 from flask import (
     Blueprint,
     Response,
@@ -31,7 +32,7 @@ from flask import (
 )
 from flask_babel import gettext, ngettext
 
-from webmon2 import common, database
+from webmon2 import database
 
 from . import _commons as c
 
@@ -111,7 +112,7 @@ def groups() -> ty.Any:
     )
 
 
-@common.cache
+@functools.cache
 def _metrics_accesslist() -> (
     list[ipaddress.IPv4Network | ipaddress.IPv6Network]
 ):
@@ -159,7 +160,7 @@ def health_live() -> ty.Any:
     if not _is_address_allowed():
         abort(401)
 
-    with suppress(psycopg2.OperationalError):
+    with suppress(psycopg.OperationalError):
         db = c.get_db()
         if database.system.ping(db):
             return "ok"
@@ -176,7 +177,7 @@ def favicon() -> ty.Any:
     )
 
 
-@common.cache
+@functools.cache
 def _build_manifest() -> str:
     manifest = {
         "name": "Webmon2",

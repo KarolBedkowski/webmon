@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -11,14 +11,13 @@ import logging
 import typing as ty
 from datetime import date, datetime
 
-import psycopg2
-import psycopg2.errors
+import psycopg.errors
+from psycopg import Cursor
 
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, sources
 from ._db import DB
-from ._dbcommon import Cursor
 
 _ = ty
 _LOG = logging.getLogger(__name__)
@@ -96,7 +95,7 @@ def _build_find_sql(args: dict[str, ty.Any]) -> str:
 
 
 def _yield_entries(
-    cur: Cursor, user_sources: model.UserSources
+    cur: Cursor[dict[str, ty.Any]], user_sources: model.UserSources
 ) -> model.Entries:
     for row in cur:
         entry = model.Entry.from_row(row)
@@ -115,7 +114,7 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
     args = {"user_id": user_id, "star": 1}
     sql = _build_find_sql(args)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -177,7 +176,7 @@ def get_history(  # pylint: disable=too-many-arguments
     sql += " ORDER BY e.id OFFSET %(offset)s LIMIT %(limit)s"
     _LOG.debug("get_history: %s", sql)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, params)
         entries = list(_yield_entries(cur, user_sources))
 
@@ -290,7 +289,7 @@ def find(
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -333,12 +332,13 @@ def find_fulltext(
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         try:
             cur.execute(sql, args)
-        except psycopg2.errors.SyntaxError as err:  # pylint: disable=no-member
+        except psycopg.errors.SyntaxError as err:  # pylint: disable=no-member
             _LOG.error("find_fulltext syntax error: %s", err)
             raise dbc.QuerySyntaxError() from err
+
         yield from _yield_entries(cur, user_sources)
 
 
@@ -353,7 +353,7 @@ def find_for_feed(db: DB, user_id: int, group_id: int) -> model.Entries:
     }
     sql = _build_find_sql(args)
 
-    with db.cursor() as cur:
+    with db.cursor_dict_row() as cur:
         cur.execute(sql, args)
         yield from _yield_entries(cur, user_sources)
 
@@ -389,19 +389,18 @@ def get(
     if not id_ and oid is None:
         raise ValueError("missing id/oid")
 
-    with db.cursor() as cur:
-        if id_ is not None:
-            sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
-        else:
-            sql = _GET_ENTRY_SQL + "WHERE oid=%(oid)s"
+    if id_ is not None:
+        sql = _GET_ENTRY_SQL + "WHERE id=%(id)s"
+    else:
+        sql = _GET_ENTRY_SQL + "WHERE oid=%(oid)s"
 
+    with db.cursor_obj_row(model.Entry.from_row) as cur:
         cur.execute(sql, {"oid": oid, "id": id_})
-        row = cur.fetchone()
+        entry = cur.fetchone()
 
-    if not row:
+    if not entry:
         raise dbc.NotFound()
 
-    entry = model.Entry.from_row(row)
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)
 
@@ -554,10 +553,10 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
     result: set[str] = set()
     with db.cursor() as cur:
         for idx in range(0, len(oids), 100):
-            part_oids = tuple(oids[idx : idx + 100])
+            part_oids = list(oids[idx : idx + 100])
             cur.execute(
                 "SELECT oid FROM history_oids "
-                "WHERE source_id=%s AND oid IN %s",
+                "WHERE source_id=%s AND oid = ANY(%s)",
                 (source_id, part_oids),
             )
             result.update(row[0] for row in cur)
@@ -717,17 +716,19 @@ WHERE id=%(entry_id)s
 
 def _get_related_sql(unread: bool, order: str | None) -> str:
     order_key = "updated"
-    if order in ("title", "updated", "score"):
-        order_key = order
-    elif order == "title_desc":
-        order_key = "title desc"
-    elif order == "updated_desc":
-        order_key = "updated desc"
-    elif order == "score_desc":
-        order_key = "score desc"
+    match order:
+        case "title" | "updated" | "score":
+            order_key = order
+        case "title_desc":
+            order_key = "title desc"
+        case "updated_desc":
+            order_key = "updated desc"
+        case "score_desc":
+            order_key = "score desc"
 
     if unread:
         return _GET_RELATED_RM_ENTRY_SQL.format(order=order_key)
+
     return _GET_RELATED_ENTRY_SQL.format(order=order_key)
 
 

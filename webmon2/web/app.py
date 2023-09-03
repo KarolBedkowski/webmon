@@ -1,4 +1,4 @@
-# Copyright © 2019 Karol Będkowski
+# Copyright © 2019-2023, Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -285,12 +285,13 @@ def start_app(args: Namespace, conf: ConfigParser) -> None:
     port = conf.getint("web", "port")
     if args.debug:
         app.run(host=host, port=port, debug=True)
-    else:
-        pool = Pool(conf.getint("web", "pool", fallback=10))
-        http_server = WSGIServer(
-            (host, port),
-            app,
-            spawn=pool,
-            log=LoggingLogAdapter(logging.getLogger("werkzeug")),
-        )
-        http_server.serve_forever()
+        return
+
+    pool = Pool(conf.getint("web", "pool", fallback=10))
+    http_server = WSGIServer(
+        (host, port),
+        app,
+        spawn=pool,
+        log=LoggingLogAdapter(logging.getLogger("werkzeug")),
+    )
+    http_server.serve_forever()

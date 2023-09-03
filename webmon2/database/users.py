@@ -1,4 +1,4 @@
-# Copyright (c) Karol Będkowski, 2016-2022
+# Copyright (c) Karol Będkowski, 2016-2023
 #
 # Distributed under terms of the GPLv3 license.
 
@@ -32,10 +32,9 @@ FROM users
 
 def get_all(db: DB) -> ty.Iterable[model.User]:
     """Get all users"""
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.User.from_row) as cur:
         cur.execute(_GET_ALL_SQL)
-        for row in cur:
-            yield model.User.from_row(row)
+        yield from cur
 
 
 _GET_ACTIVE_SQL = """
@@ -49,10 +48,9 @@ WHERE active
 
 def get_all_active(db: DB) -> ty.Iterable[model.User]:
     """Get all active users"""
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.User.from_row) as cur:
         cur.execute(_GET_ACTIVE_SQL)
-        for row in cur:
-            yield model.User.from_row(row)
+        yield from cur
 
 
 _GET_BY_ID_SQL = """
@@ -89,7 +87,7 @@ def get(
         `User`
 
     """
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.User.from_row) as cur:
         if id_:
             cur.execute(_GET_BY_ID_SQL, (id_,))
         elif login:
@@ -97,12 +95,10 @@ def get(
         else:
             raise AttributeError("missing id or login")
 
-        row = cur.fetchone()
+        if row := cur.fetchone():
+            return row
 
-    if not row:
-        raise dbc.NotFound()
-
-    return model.User.from_row(row)
+    raise dbc.NotFound()
 
 
 _UPDATE_USER_SQL = """
@@ -249,10 +245,9 @@ ORDER BY ts DESC
 
 def get_logs(db: DB, user_id: int) -> ty.Iterable[model.UserLog]:
     """Get all logs for `user_id`."""
-    with db.cursor() as cur:
+    with db.cursor_obj_row(model.UserLog.from_row) as cur:
         cur.execute(_GET_LOG_SQL, (user_id,))
-        for row in cur:
-            yield model.UserLog.from_row(row)
+        yield from cur
 
 
 _DELETE_OLD_LOGS_SQL = """

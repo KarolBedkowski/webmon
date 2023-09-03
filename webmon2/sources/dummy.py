@@ -40,16 +40,14 @@ class DymmySource(AbstractSource):
         if (
             last_check
             and last_check
-            > datetime.datetime.now(datetime.timezone.utc).timestamp() - 120
+            > datetime.datetime.now(datetime.UTC).timestamp() - 120
         ):
             return state.new_not_modified(), []
 
         entries = []  # type: list[model.Entry]
         for idx in range(random.randrange(2, 10)):
             entry = model.Entry.for_source(self._source)
-            entry.updated = entry.created = datetime.datetime.now(
-                datetime.timezone.utc
-            )
+            entry.updated = entry.created = datetime.datetime.now(datetime.UTC)
             entry.status = model.EntryStatus.NEW
             entry.title = (
                 self._source.name + " " + str(entry.updated) + " " + str(idx)
@@ -65,13 +63,13 @@ class DymmySource(AbstractSource):
         new_state = state.new_ok()
         assert self._source.interval is not None
         new_state.next_update = datetime.datetime.now(
-            datetime.timezone.utc
+            datetime.UTC
         ) + datetime.timedelta(
             seconds=common.parse_interval(self._source.interval)
         )
         new_state.set_prop(
             "last_check",
-            datetime.datetime.now(datetime.timezone.utc).timestamp(),
+            datetime.datetime.now(datetime.UTC).timestamp(),
         )
         return new_state, entries
 
