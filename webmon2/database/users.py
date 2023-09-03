@@ -34,7 +34,6 @@ def get_all(db: DB) -> ty.Iterable[model.User]:
     """Get all users"""
     with db.cursor_obj_row(model.User.from_row) as cur:
         cur.execute(_GET_ALL_SQL)
-        # TODO: check; not closing
         yield from cur
 
 
@@ -51,7 +50,6 @@ def get_all_active(db: DB) -> ty.Iterable[model.User]:
     """Get all active users"""
     with db.cursor_obj_row(model.User.from_row) as cur:
         cur.execute(_GET_ACTIVE_SQL)
-        # TODO: check; not closing
         yield from cur
 
 

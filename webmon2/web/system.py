@@ -338,7 +338,7 @@ def sett_sys_users() -> ty.Any:
         abort(403)
 
     db = c.get_db()
-    users = database.users.get_all(db)
+    users = list(database.users.get_all(db))
     return render_template("system/sys_users.html", users=users)
 
 
