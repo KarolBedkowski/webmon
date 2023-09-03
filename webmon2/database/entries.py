@@ -553,10 +553,10 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
     result: set[str] = set()
     with db.cursor() as cur:
         for idx in range(0, len(oids), 100):
-            part_oids = tuple(oids[idx : idx + 100])
+            part_oids = list(oids[idx : idx + 100])
             cur.execute(
                 "SELECT oid FROM history_oids "
-                "WHERE source_id=%s AND oid IN %s",
+                "WHERE source_id=%s AND oid = ANY(%s)",
                 (source_id, part_oids),
             )
             result.update(row[0] for row in cur)
