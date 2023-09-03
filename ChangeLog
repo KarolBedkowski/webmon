@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.9.0 2023-09-03
+
+### Bug Fixes
+
+- Do not crash on bad content when convert links for proxy
+
+### Miscellaneous Tasks
+
+- Set threads title
+- use gevent
+- Make sure that all user are loaded from db and connection is closed
+- Noqa in tests
+
+### Refactor
+
+- Upgrade to py 3.11
+- Migrate to psycopg3
+- Minor code cleanup
+- Drop common.cache; use functools.cache
+
 ## 2.8.2 2023-04-10
 
 ### Bug Fixes
