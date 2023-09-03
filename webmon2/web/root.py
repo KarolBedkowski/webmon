@@ -7,6 +7,7 @@ Web gui
 """
 from __future__ import annotations
 
+import functools
 import ipaddress
 import logging
 import os
@@ -31,7 +32,7 @@ from flask import (
 )
 from flask_babel import gettext, ngettext
 
-from webmon2 import common, database
+from webmon2 import database
 
 from . import _commons as c
 
@@ -111,7 +112,7 @@ def groups() -> ty.Any:
     )
 
 
-@common.cache
+@functools.cache
 def _metrics_accesslist() -> (
     list[ipaddress.IPv4Network | ipaddress.IPv6Network]
 ):
@@ -176,7 +177,7 @@ def favicon() -> ty.Any:
     )
 
 
-@common.cache
+@functools.cache
 def _build_manifest() -> str:
     manifest = {
         "name": "Webmon2",
