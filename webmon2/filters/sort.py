@@ -32,4 +32,4 @@ class Sort(AbstractFilter):
         return sorted(entries, key=lambda e: (e.title, e.content))
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        pass
+        raise NotImplementedError()

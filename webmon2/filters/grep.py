@@ -70,4 +70,4 @@ class Grep(AbstractFilter):
         return filter(lambda x: x.content and rep.match(x.content), entries)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        pass
+        raise NotImplementedError()

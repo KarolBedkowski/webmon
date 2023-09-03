@@ -45,4 +45,4 @@ class History(AbstractFilter):
                 yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        pass
+        raise NotImplementedError()

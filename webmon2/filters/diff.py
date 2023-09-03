@@ -119,7 +119,7 @@ class NDiff(AbstractFilter):
         yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        pass
+        raise NotImplementedError()
 
 
 def _check_changes(
