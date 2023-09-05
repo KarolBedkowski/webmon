@@ -231,7 +231,11 @@ class WebSource(AbstractSource):
 
 
 def _prepare_headers(state: model.SourceState) -> dict[str, str]:
-    headers = {"User-agent": AbstractSource.AGENT, "Connection": "close"}
+    headers = {
+        "User-agent": AbstractSource.AGENT,
+        "DNT": "1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
+    }
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()

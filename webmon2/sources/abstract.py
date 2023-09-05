@@ -27,7 +27,7 @@ class AbstractSource(metaclass=abc.ABCMeta):
     long_info = ""
 
     AGENT = (
-        "Mozilla/5.0 (X11; Linux i686; rv:45.0) Gecko/20100101 Firefox/45.0"
+        "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/117.0"
     )
 
     def __init__(
