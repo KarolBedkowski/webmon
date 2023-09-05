@@ -11,6 +11,7 @@ import datetime
 import email.utils
 import logging
 import typing as ty
+from http.client import HTTPConnection
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
@@ -24,6 +25,12 @@ from .abstract import AbstractSource
 
 _ = ty
 _LOG = logging.getLogger(__name__)
+
+if _LOG.isEnabledFor(logging.DEBUG):
+    requests_log = logging.getLogger("urllib3")
+    requests_log.setLevel(logging.DEBUG)
+    requests_log.propagate = True
+    HTTPConnection.debuglevel = 1
 
 
 class WebSource(AbstractSource):
