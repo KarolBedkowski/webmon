@@ -10,6 +10,9 @@ from __future__ import annotations
 import json
 import logging
 import typing as ty
+from collections import namedtuple
+from datetime import datetime
+from itertools import starmap
 
 from webmon2 import model
 
@@ -694,3 +697,37 @@ def randomize_next_check(db: DB, user_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(_RANDOMIZE_NEXT_CHECK_SQL, (user_id,))
         return cur.rowcount
+
+
+_ERRORS_FOR_USER_SQL = """
+SELECT
+	sg."name" AS group_name,
+	s."name" AS source_name,
+	ss.last_error,
+	ss.error
+FROM
+	sources s
+JOIN source_state ss ON
+	ss.source_id = s.id
+JOIN source_groups sg ON
+	sg.id = s.group_id
+WHERE
+	ss.status = 'error'
+	AND s.user_id = %(user_id)s
+	AND ss.last_error > %(min_ts)s
+"""
+
+ErrorInfo = namedtuple(
+    "ErrorInfo", ["group_name", "name", "last_error", "error"]
+)
+
+
+def get_errors_for_user(
+    db: DB, user_id: int, min_ts: datetime
+) -> list[ErrorInfo]:
+    """Get information about sources with errors for `user_id` since `min_ts`."""
+    with db.cursor() as cur:
+        cur.execute(
+            _ERRORS_FOR_USER_SQL, {"user_id": user_id, "min_ts": min_ts}
+        )
+        return list(starmap(ErrorInfo, cur))

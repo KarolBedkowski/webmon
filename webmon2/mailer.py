@@ -19,6 +19,7 @@ from configparser import ConfigParser
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from itertools import chain
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -52,7 +53,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
         return False
 
     # it is time for send mail?
-    last_send = database.users.get_state(
+    last_send: datetime | None = database.users.get_state(
         db,
         user.id,
         "mail_last_send",
@@ -74,7 +75,11 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
         ctx.timezone = ZoneInfo(tzone)
 
     try:
-        content = "".join(_process_groups(ctx, db))
+        content = "".join(
+            chain(
+                _process_groups(ctx, db), _process_errors(ctx, db, last_send)
+            )
+        )
     except Exception as err:  # pylint: disable=broad-except
         _LOG.error("prepare mail for user %d error: %s", user.id, err)
         return False
@@ -397,3 +402,40 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     _LOG.debug("not in silent hours")
 
     return False
+
+
+def _process_errors(
+    ctx: Ctx, db: database.DB, last_send: datetime | None
+) -> ty.Iterable[str]:
+    if not last_send:
+        last_send = datetime.fromtimestamp(0)
+
+    errors = database.sources.get_errors_for_user(db, ctx.user_id, last_send)
+    _LOG.debug("found %d errors", len(errors))
+    if not errors:
+        return
+
+    title = "Errors"  # TODO: translate
+    yield title
+    yield "\n"
+    yield "==" * len(title)
+    yield "\n\n"
+
+    for error in errors:
+        head = f"{error.group_name} - {error.name}"
+        yield head
+        yield "\n"
+        yield "-" * len(head)
+        yield "\n"
+        yield error.last_error.strftime("%x %X")
+        yield "\n"
+        conv = h2t.HTML2Text(bodywidth=74)
+        conv.protect_links = True
+        content = conv.handle(error.error).strip()
+        if len(content) > 1000:
+            content = content[:1000]
+            if (ridx := content.rfind("\n")) > 100:
+                content = content[:ridx].rstrip()
+
+        yield content
+        yield "\n"
