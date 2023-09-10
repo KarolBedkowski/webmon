@@ -122,8 +122,24 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
+    def get_locale():
+        return request.accept_languages.best_match(app.config["LANGUAGES"])
+
+    def get_timezone():
+        return session.get("_user_tz")
+
     app.session_interface = appsession.DBSessionInterface(True)
-    babel = flask_babel.Babel(app)
+    if hasattr(flask_babel.Babel, "localeselector"):
+        # babel 2x
+        babel = flask_babel.Babel(app)
+        babel.localeselector(get_locale)
+        babel.timezoneselector(get_timezone)
+    else:
+        # babel 3
+        babel = flask_babel.Babel(
+            app, locale_selector=get_locale, timezone_selector=get_timezone
+        )
+    assert babel
 
     _register_blueprints(app)
 
@@ -213,14 +229,6 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     def handle_context() -> dict[str, ty.Any]:
         """Inject object into jinja2 templates."""
         return {"webmon2": webmon2}
-
-    @babel.localeselector
-    def get_locale():
-        return request.accept_languages.best_match(app.config["LANGUAGES"])
-
-    @babel.timezoneselector
-    def get_timezone():
-        return session.get("_user_tz")
 
     return app
 
