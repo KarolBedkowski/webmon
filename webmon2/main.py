@@ -354,6 +354,11 @@ def _serve(args: argparse.Namespace, app_conf: ConfigParser) -> None:
     try:
         web.start_app(args, app_conf)
     except Exception as err:  # pylint: disable=broad-except
+        with suppress(ImportError):
+            import stackprinter
+
+            stackprinter.show()
+
         _LOG.error("start app error: %s", err)
 
     if HAS_SDNOTIFY and _SDN:
