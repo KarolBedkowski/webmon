@@ -42,6 +42,7 @@ dependencies = [
   "readability-lxml>=0.8",
   "requests>=2.21.0",
   "flask-babel",
+  "structlog>=23.1",
 ]
 
 

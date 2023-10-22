@@ -9,7 +9,6 @@ TODO: Python3.10: use slots in dataclass
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 import zoneinfo
 from dataclasses import dataclass
@@ -19,7 +18,6 @@ from flask_babel import gettext
 from webmon2 import common, model, sources
 
 _ = ty
-_LOG = logging.getLogger(__name__)
 
 Form = dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 

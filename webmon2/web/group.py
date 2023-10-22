@@ -7,9 +7,9 @@ Web gui
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 
+import structlog
 from flask import (
     Blueprint,
     abort,
@@ -26,8 +26,7 @@ from webmon2 import common, database, model
 
 from . import _commons as c, forms
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("group", __name__, url_prefix="/group")
 
 
@@ -167,7 +166,11 @@ def group_mark_read(group_id: int) -> ty.Any:
     if request.args.get("go") == "next":
         # go to next unread group
         next_group_id = database.groups.get_next_unread_group(db, user_id)
-        _LOG.debug("next group: %r", next_group_id)
+        _LOG.debug(
+            "web group: mark read found next group: %r",
+            next_group_id,
+            group_id=group_id,
+        )
         if next_group_id:
             return redirect(
                 url_for("group.group_entries", group_id=next_group_id)
@@ -191,7 +194,9 @@ def group_next_unread(group_id: int) -> ty.Any:
     db = c.get_db()
     # go to next unread group
     next_group_id = database.groups.get_next_unread_group(db, session["user"])
-    _LOG.debug("next group: %r -> %r", group_id, next_group_id)
+    _LOG.debug(
+        "web group: next unread found %r", next_group_id, group_id=group_id
+    )
     if next_group_id:
         return redirect(url_for("group.group_entries", group_id=next_group_id))
 

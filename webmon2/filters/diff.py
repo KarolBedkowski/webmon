@@ -8,18 +8,15 @@ Text difference filters.
 from __future__ import annotations
 
 import difflib
-import logging
-import typing as ty
 
+import structlog
 from flask_babel import lazy_gettext
 
 from webmon2 import common, database, model
 
 from ._abstract import AbstractFilter
 
-_LOG = logging.getLogger(__name__)
-
-_ = ty
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 class NDiff(AbstractFilter):
@@ -88,7 +85,7 @@ class NDiff(AbstractFilter):
         )
 
         if not prev_content:
-            _LOG.debug("no prev_content")
+            _LOG.debug("filters: ndiff no prev_content")
             entry = entry.clone()
             entry.status = model.EntryStatus.NEW
             entry.set_opt("preformated", True)
@@ -107,7 +104,7 @@ class NDiff(AbstractFilter):
             self._conf.get("threshold"),
             self._conf.get("min_changed"),
         ):
-            _LOG.debug("no changes")
+            _LOG.debug("filters: ndiff no changes")
             return
 
         entry = entry.clone()
@@ -134,20 +131,21 @@ def _check_changes(
     if changes_th and old_lines:
         changes = float(changed_lines) / old_lines
         _LOG.debug(
-            "changes: %d / %d (%f %%)", changed_lines, old_lines, changes
+            "filters: diff changed_lines: %d, old_lines: %d, changes: %f %%, "
+            "threshold: %f",
+            changed_lines,
+            old_lines,
+            changes,
+            changes_th,
         )
         if changes < changes_th:
-            _LOG.info(
-                "changes not above threshold (%f<%f)", changes, changes_th
-            )
             return False
 
     if min_changed and old_lines:
-        _LOG.debug("changes: %f", changed_lines)
+        _LOG.debug(
+            "filters: diff changes: %d, min: %d", changed_lines, min_changed
+        )
         if changed_lines < min_changed:
-            _LOG.info(
-                "changes not above minimum (%d<%d)", changed_lines, min_changed
-            )
             return False
 
     return True

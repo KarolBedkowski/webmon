@@ -8,24 +8,26 @@ Migration utils
 from __future__ import annotations
 
 import argparse
-import logging
 import typing as ty
 from pathlib import Path
 
+import structlog
 import yaml
 
 from . import database, model
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def _load_sources(filename: str) -> list[ty.Any] | None:
     """Load sources configuration from `filename`."""
-    _LOG.debug("loading sources from %s", filename)
     if not Path(filename).is_file():
-        _LOG.error("loading sources file error: '%s' not found", filename)
+        _LOG.error(
+            "migrate: load sources from %r error - file not found", filename
+        )
         return None
 
+    _LOG.debug("migrate: loading sources from %s", filename)
     try:
         with open(filename, encoding="UTF-8") as fin:
             inps = [
@@ -33,21 +35,20 @@ def _load_sources(filename: str) -> list[ty.Any] | None:
                 for doc in yaml.load_all(fin, Loader=None)
                 if doc and doc.get("enable", True)
             ]
-            _LOG.debug("loading sources - found %d enabled sources", len(inps))
-            if not inps:
-                _LOG.error(
-                    "loading sources error: no valid/enabled sources found"
-                    "file: %s",
-                    filename,
-                )
+            _LOG.debug("migrate: found %d enabled sources", len(inps))
 
             return inps
 
     except OSError as err:
-        _LOG.error("loading sources from file %s error: %s", filename, err)
+        _LOG.error(
+            "migrate: loading source from file %s error", filename, error=err
+        )
+
     except yaml.error.YAMLError as err:
         _LOG.error(
-            "loading sources from file %s - invalid YAML: %s", filename, err
+            "migrate: loading source from file %s error: invalid YAML",
+            filename,
+            error=err,
         )
 
     return None
@@ -118,13 +119,13 @@ _MIGR_FUNCS = {
 def migrate(args: argparse.Namespace) -> None:
     filename = args.migrate_filename
     user_login = args.migrate_user
-    _LOG.info("migration from %s to user %s start", filename, user_login)
+    _LOG.info("migrate: from %s to user %s start", filename, user_login)
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=user_login)
         except database.NotFound:
             _LOG.error(
-                "error migrating - users %s not found in database", user_login
+                "migrate: error: users %r not found in database", user_login
             )
             return
 
@@ -133,28 +134,30 @@ def migrate(args: argparse.Namespace) -> None:
         group_id = database.groups.get_all(db, user_id)[0].id
         assert group_id
 
-        _LOG.debug("migrate to user_id: %d group: %d", user_id, group_id)
+        _LOG.debug("migrate: starting", user_id=user_id, group_id=group_id)
 
         for inp in _load_sources(filename) or []:
-            _LOG.info("migrating %r", inp)
+            _LOG.info("migrate: loading %r", inp)
             mfunc = _MIGR_FUNCS.get(inp.get("kind", "url"))
             if mfunc:
                 try:
                     source = mfunc(inp)
                 except Exception as err:  # pylint: disable=broad-except
-                    _LOG.exception("error migrating %r: %s", inp, err)
+                    _LOG.exception(
+                        "migrate: error migrating %r", inp, error=err
+                    )
                     continue
 
                 if not source:
-                    _LOG.error("wrong source: %s", source)
+                    _LOG.error("migrate: wrong source: %s", source)
                     continue
 
                 source.filters = inp.get("filters")
                 source.group_id = group_id
                 source.user_id = user_id
-                _LOG.info("new source: %r", source)
+                _LOG.info("migrate: new source: %r", source)
                 database.sources.save(db, source)
 
         db.commit()
 
-    _LOG.info("migration %s finished", filename)
+    _LOG.info("migrate: load %s finished", filename)

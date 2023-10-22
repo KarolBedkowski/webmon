@@ -8,7 +8,6 @@ Dummy source; generate random data
 from __future__ import annotations
 
 import datetime
-import logging
 import random
 import typing as ty
 
@@ -17,8 +16,6 @@ from flask_babel import gettext, lazy_gettext
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
-_LOG = logging.getLogger(__name__)
 
 
 class DymmySource(AbstractSource):

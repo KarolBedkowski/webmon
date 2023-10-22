@@ -7,14 +7,15 @@ Data sources
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
+
+import structlog
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 __all__ = (
     "AbstractSource",
     "UnknownInputException",
@@ -32,17 +33,17 @@ def _load_plugins() -> None:
     try:
         from . import github  # noqa:F401
     except ImportError:
-        _LOG.warning("github3 module not found")
+        _LOG.warning("sources: github3 module not found")
 
     try:
         from . import rss  # noqa:F401
     except ImportError:
-        _LOG.warning("feedparser module not found")
+        _LOG.warning("sources: feedparser module not found")
 
     try:
         from . import gitlab  # noqa:F401
     except ImportError:
-        _LOG.warning("gitlab module not found")
+        _LOG.warning("sources: gitlab module not found")
 
 
 _load_plugins()

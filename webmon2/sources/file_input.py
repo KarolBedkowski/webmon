@@ -8,7 +8,6 @@ Local file source
 from __future__ import annotations
 
 import datetime
-import logging
 import os
 import pathlib
 import typing as ty
@@ -18,8 +17,6 @@ from flask_babel import lazy_gettext
 from webmon2 import common, model
 
 from .abstract import AbstractSource
-
-_LOG = logging.getLogger(__name__)
 
 
 class FileSource(AbstractSource):
@@ -42,7 +39,7 @@ class FileSource(AbstractSource):
         """Return one part - page content."""
 
         fname = self._conf["filename"]
-        _LOG.debug("load start source=%d, file=%s", self._source.id, fname)
+        self._log.debug("file source: load start", file=fname)
 
         if not os.path.isfile(fname):
             return state.new_error("no file"), []
@@ -59,9 +56,7 @@ class FileSource(AbstractSource):
         try:
             content = pathlib.Path(fname).read_text(encoding="UTF-8")
 
-            _LOG.debug(
-                "load content source=%d, content=%s", self._source.id, content
-            )
+            self._log.debug("file source: content loaded", content=content)
 
             entry = model.Entry.for_source(self._source)
             entry.updated = entry.created = datetime.datetime.now(datetime.UTC)

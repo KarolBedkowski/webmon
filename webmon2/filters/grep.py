@@ -8,15 +8,12 @@ Select entries by matching text.
 from __future__ import annotations
 
 import re
-import typing as ty
 
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
 
 
 class Grep(AbstractFilter):
@@ -42,7 +39,6 @@ class Grep(AbstractFilter):
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         pattern = conf.get("pattern")
-        # self._re: ty.Optional[re.Pattern[str]]  py3.7
         self._re: re.Pattern | None  # type: ignore
         if pattern:
             self._re = re.compile(

@@ -6,13 +6,13 @@
 Proxy request via webmon application.
 """
 
-import logging
 import typing as ty
 
 import requests
+import structlog
 from flask import Blueprint, Response
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("proxy", __name__, url_prefix="/proxy")
 
 _EXCLUDED_HEADERS = [
@@ -25,7 +25,7 @@ _EXCLUDED_HEADERS = [
 
 @BP.route("/<path:path>", methods=["GET"])
 def proxy(path: str) -> ty.Any:
-    _LOG.debug("proxy request to: %s", path)
+    _LOG.debug("web proxy: proxy request", path=path)
 
     resp = requests.get(path, timeout=30)
     headers = [
@@ -34,5 +34,5 @@ def proxy(path: str) -> ty.Any:
         if name.lower() not in _EXCLUDED_HEADERS
     ]
 
-    _LOG.debug("proxy request result: status: %r", resp.status_code)
+    _LOG.debug("web proxy: request finished", status_code=resp.status_code)
     return Response(resp.content, resp.status_code, headers)

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import datetime
 import gc
-import logging
 import queue
 import random
 import re
@@ -19,6 +18,7 @@ import typing as ty
 from configparser import ConfigParser
 from contextlib import suppress
 
+import structlog
 from flask import Flask
 from flask_babel import Babel, force_locale
 from prometheus_client import Counter
@@ -28,7 +28,7 @@ with suppress(ImportError):
 
 from . import common, database, filters, formatters, mailer, model, sources
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
     "webmon2_sources_processed", "Sources processed count"
 )
@@ -84,6 +84,7 @@ class CheckWorker(threading.Thread):
             15 if self._debug else self._conf.getint("main", "work_interval")
         )
         self._app = _create_app()
+        self._log = structlog.get_logger("CheckWorker")
 
     def _notify(self, msg: str) -> None:
         """
@@ -93,7 +94,7 @@ class CheckWorker(threading.Thread):
             self._sdn.notify(msg)
 
     def run(self) -> None:
-        _LOG.info(
+        self._log.info(
             "CheckWorker started; workers: %d; interval: %d",
             self.num_workers,
             self._work_interval,
@@ -110,7 +111,7 @@ class CheckWorker(threading.Thread):
                         _delete_old_entries(db)
                         self._next_cleanup_start = now + _CLEANUP_INTERVAL
 
-                    _LOG.debug("CheckWorker check start")
+                    self._log.debug("CheckWorker check start")
                     ids = database.sources.get_sources_to_fetch(db)
                     for id_ in ids:
                         self._todo_queue.put(id_)
@@ -125,11 +126,11 @@ class CheckWorker(threading.Thread):
                         for worker in workers:
                             worker.join()
 
-                    _LOG.debug("CheckWorker check done")
+                    self._log.debug("CheckWorker check done")
                     self._notify("STATUS=mailing")
                     _send_mails(db, self._conf)
                 except Exception as err:  # pylint: disable=broad-except
-                    _LOG.exception("CheckWorker thread error: %s", err)
+                    self._log.exception("CheckWorker thread error", error=err)
 
             _WORKER_PROCESSING_TIME.inc(time.time() - start)
 
@@ -144,7 +145,7 @@ class CheckWorker(threading.Thread):
     def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf, self._app)
         worker.start()
-        _LOG.debug("CheckWorker worker %s started", idx)
+        self._log.debug("CheckWorker worker %s started", idx)
         return worker
 
 
@@ -171,7 +172,12 @@ class FetchWorker(threading.Thread):
             setproctitle.setthreadtitle("webmon2.worker")
 
         while not self._todo_queue.empty():
+            structlog.contextvars.clear_contextvars()
+
             source_id = self._todo_queue.get()
+
+            structlog.contextvars.bind_contextvars(source_id=source_id)
+
             with database.DB.get() as db:
                 source = None
                 try:
@@ -181,13 +187,9 @@ class FetchWorker(threading.Thread):
                         db, id_=source_id, with_state=True
                     )
                     self._process_source(db, source)
+
                 except common.InputError as err:
-                    _LOG.info(
-                        "[%s] process source %d error: %s",
-                        self._idx,
-                        source_id,
-                        err,
-                    )
+                    _LOG.info("worker: process source error", error=err)
                     db.rollback()
                     if source:
                         _save_state_error(db, source, str(err))
@@ -197,10 +199,9 @@ class FetchWorker(threading.Thread):
                             f"process source '{source.name}' error {err}",
                             source_id=source_id,
                         )
+
                 except Exception as err:  # pylint: disable=broad-except
-                    _LOG.exception(
-                        "[%s] process source %d error", self._idx, source_id
-                    )
+                    _LOG.info("worker: process source error", error=err)
                     db.rollback()
                     if source:
                         _save_state_error(db, source, str(err))
@@ -213,6 +214,8 @@ class FetchWorker(threading.Thread):
                 finally:
                     db.commit()
 
+            structlog.contextvars.clear_contextvars()
+
     def _process_source(self, db: database.DB, source: model.Source) -> None:
         """
         Process one source.
@@ -221,7 +224,7 @@ class FetchWorker(threading.Thread):
             any exception - according to precessed source type.
         """
         _SOURCES_PROCESSED.inc()
-        _LOG.debug("[%s] processing source %d", self._idx, source.id)
+        _LOG.debug("worker: start processing source")
         start = time.time()
 
         sys_settings = database.settings.get_dict(db, source.user_id)
@@ -251,7 +254,7 @@ class FetchWorker(threading.Thread):
         # if source was updated - save new version
         updated_source = src.updated_source
         if updated_source:
-            _LOG.debug("[%s] source %d updated", self._idx, source.id)
+            _LOG.debug("worker: source updated")
             database.sources.save(db, updated_source)
 
         if loaded:
@@ -263,11 +266,9 @@ class FetchWorker(threading.Thread):
             )
 
         _LOG.debug(
-            "[%s] processing source %d FINISHED, entries=%d, state=%s",
-            self._idx,
-            source.id,
-            loaded,
-            str(new_state),
+            "worker: processing source finished",
+            entries=loaded,
+            state=str(new_state),
         )
 
     def _load_data(
@@ -285,12 +286,7 @@ class FetchWorker(threading.Thread):
             _save_state_error(
                 db, source, new_state.error or "error", new_state
             )
-            _LOG.info(
-                "[%s] process source %d error: %s",
-                self._idx,
-                source.id,
-                new_state.error,
-            )
+            _LOG.info("worker: process source error", error=new_state.error)
             return None, 0
 
         assert source.state and source.interval is not None
@@ -353,7 +349,7 @@ class FetchWorker(threading.Thread):
         for entry in entries:
             entry.calculate_oid()
             if entry.oid in entries_oids:
-                _LOG.debug("[%s] doubled entry %s", self._idx, entry)
+                _LOG.debug("worker: doubled entry", entry=entry)
                 continue
 
             entry.validate()
@@ -361,7 +357,8 @@ class FetchWorker(threading.Thread):
             if entry.content:
                 if not entry.content_type:
                     _LOG.warning(
-                        "[%s] no content type for entry: %r", self._idx, entry
+                        "worker: no content type for entry",
+                        entry=entry,
                     )
                     entry.content_type = "html"
                 (
@@ -413,7 +410,7 @@ class FetchWorker(threading.Thread):
         Load scoring rules and compile list of (re pattern, score) rules
         """
         for scs in database.scoring.get_active(db, user_id):
-            _LOG.debug("[%s] scs: %s", self._idx, scs)
+            _LOG.debug("worker: score loaded", scs=scs)
             try:
                 cre = re.compile(
                     ".*(" + scs.pattern + ").*",
@@ -421,7 +418,11 @@ class FetchWorker(threading.Thread):
                 )
                 yield (cre, scs.score_change)
             except re.error as err:
-                _LOG.warning("compile scoring pattern error: %s %s", scs, err)
+                _LOG.warning(
+                    "worker: compile scoring pattern error: %s",
+                    scs,
+                    error=err,
+                )
 
     def _get_src(
         self, source: model.Source, sys_settings: dict[str, str]
@@ -432,9 +433,7 @@ class FetchWorker(threading.Thread):
         if not source.interval:
             interval = sys_settings.get("interval") or "1d"
             _LOG.debug(
-                "[%s] source %d has no interval; using default: %r",
-                self._idx,
-                source.id,
+                "_get_src: source has no interval; using default: %r",
                 interval,
             )
             source.interval = interval or "1d"
@@ -455,6 +454,8 @@ def _delete_old_entries(db: database.DB) -> None:
     users = list(database.users.get_all(db))
     for user in users:
         assert user.id
+        log = _LOG.bind(user_id=user.id)
+        log.debug("worker: delete old entries start")
         try:
             db.begin()
             keep_days = database.settings.get_value(
@@ -468,43 +469,53 @@ def _delete_old_entries(db: database.DB) -> None:
             deleted_entries, deleted_oids = database.entries.delete_old(
                 db, user.id, max_datetime
             )
-            _LOG.info(
-                "deleted %d old entries and %d oids for user %d",
+            log.info(
+                "worker: deleted %d old entries and %d oids",
                 deleted_entries,
                 deleted_oids,
-                user.id,
             )
             _CLEAN_COUNTER.labels(user.id, "entries").inc(deleted_entries)
             _CLEAN_COUNTER.labels(user.id, "oids").inc(deleted_oids)
 
             removed = database.binaries.remove_unused(db, user.id)
-            _LOG.info("removed %d binaries for user %d", removed, user.id)
+            log.info(
+                "worker: removed %d binaries",
+                removed,
+            )
             _CLEAN_COUNTER.labels(user.id, "binaries").inc(removed)
 
             removed = database.users.delete_old_log(db, user.id)
-            _LOG.info("removed %d logs for user %d", removed, user.id)
+            log.info(
+                "worker: removed %d logs",
+                removed,
+            )
             _CLEAN_COUNTER.labels(user.id, "logs").inc(removed)
 
             db.commit()
+
         except Exception as err:  # pylint: disable=broad-except
             db.rollback()
-            _LOG.warning("_delete_old_entries error: %s", err)
+            log.warning("worker: delete old entries error", error=err)
 
     db.begin()
     try:
         states, entries = database.binaries.clean_sources_entries(db)
-        _LOG.info("cleaned %d source states and %d entries", states, entries)
+        _LOG.info(
+            "worker: cleaned %d source states and %d entries",
+            states,
+            entries,
+        )
         _CLEAN_COUNTER.labels("", "bin_states").inc(states)
         _CLEAN_COUNTER.labels("", "bin_entries").inc(entries)
         db.commit()
     except Exception as err:  # pylint: disable=broad-except
         db.rollback()
-        _LOG.warning("_delete_old_entries error: %s", err)
+        _LOG.warning("worker: clean binaries error", error=err)
 
     # delete expired sessions
     db.begin()
     cnt = database.system.delete_expired_sessions(db)
-    _LOG.info("deleted %d expired sessions", cnt)
+    _LOG.info("worker: deleted %d expired sessions", cnt)
     db.commit()
 
 
@@ -514,25 +525,27 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
 
     """
     if not conf.getboolean("smtp", "enabled", fallback=False):
-        _LOG.debug("_send_mails disabled")
+        _LOG.debug("worker: smtp not active")
         return
 
-    _LOG.debug("_send_mails start")
     users = list(database.users.get_all_active(db))
     for user in users:
         assert user.id
+        _LOG.debug("worker: send mail for user %d: start", user.id)
         db.begin()
         try:
             if mailer.process(db, user, conf):
                 database.users.put_log(db, user.id, "send mail success")
+
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("send mail error")
+            _LOG.exception("worker send mails error", error=err)
             db.rollback()
             database.users.put_log(db, user.id, f"send mail error {err}")
+
         else:
             db.commit()
 
-    _LOG.debug("_send_mails end")
+    _LOG.debug("worker: _send_mails end")
 
 
 def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
@@ -554,10 +567,10 @@ def _calc_next_check_on_error(source: model.Source) -> datetime.datetime:
         seconds=next_check_delta
     )
     _LOG.debug(
-        "calculated next interval for %s: +%s = %s",
-        source.id,
+        "worker: next interval: +%s = %s",
         next_check_delta,
         next_check,
+        source_id=source.id,
     )
     return next_check
 

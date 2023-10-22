@@ -8,7 +8,6 @@ Template filters
 from __future__ import annotations
 
 import datetime
-import logging
 import typing as ty
 import urllib
 from urllib.parse import urljoin
@@ -20,8 +19,6 @@ from flask import Flask, request, session, url_for
 from flask_babel import format_datetime, gettext
 
 from webmon2 import formatters, model
-
-_LOG = logging.getLogger(__name__)
 
 
 def _age_filter(date: datetime.datetime | None) -> str:

@@ -6,15 +6,12 @@
 Wrap entry content lines
 """
 import textwrap
-import typing as ty
 
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
 
 
 class Wrap(AbstractFilter):

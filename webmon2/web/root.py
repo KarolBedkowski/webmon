@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import functools
 import ipaddress
-import logging
 import os
 import typing as ty
 from contextlib import suppress
@@ -37,7 +36,6 @@ from webmon2 import database
 from . import _commons as c
 
 _ = ty
-_LOG = logging.getLogger(__name__)
 BP = Blueprint("root", __name__, url_prefix="/")
 
 

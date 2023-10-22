@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import email.message
 import email.utils
-import logging
 import re
 import smtplib
 import subprocess
@@ -24,11 +23,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import html2text as h2t
+import structlog
 from prometheus_client import Counter
 
-from webmon2 import common, database, formatters, model
+from webmon2 import common, database, formatters, logging_setup, model
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
 
 
@@ -41,12 +41,16 @@ class Ctx:
 
 def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
     """Process unread entries for user and send report via mail"""
+    structlog.contextvars.clear_contextvars()
+
     if not user.id:
         raise ValueError("require existing user")
 
+    structlog.contextvars.bind_contextvars(user_id=user.id)
+
     conf = database.settings.get_dict(db, user.id)
     if not conf.get("mail_enabled"):
-        _LOG.debug("mail not enabled for user %d", user.id)
+        _LOG.debug("mailer: mail not enabled for user")
         return False
 
     if _is_silent_hour(conf):
@@ -64,7 +68,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
             seconds=common.parse_interval(conf.get("mail_interval", "1h"))
         )
         if last_send + interval > datetime.now(timezone.utc):
-            _LOG.debug("still waiting for send mail")
+            _LOG.debug("mailer: still waiting for send mail")
             return False
 
     ctx = Ctx(
@@ -81,7 +85,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
             )
         )
     except Exception as err:  # pylint: disable=broad-except
-        _LOG.error("prepare mail for user %d error: %s", user.id, err)
+        _LOG.error("mailer: prepare mail error", error=err)
         return False
 
     if content and not _send_mail(conf, content, app_conf, user):
@@ -103,16 +107,20 @@ def _process_groups(ctx: Ctx, db: database.DB) -> ty.Iterable[str]:
     Iterate over source groups for `user_id` and build mail body.
     """
     for group in database.groups.get_all(db, ctx.user_id):
+        structlog.contextvars.bind_contextvars(group_id=group.id)
+
         if group.mail_report == model.MailReportMode.NO_SEND:
-            _LOG.debug("group %s skipped", group.name)
+            _LOG.debug("mailer: group %s skipped", group.name)
             continue
 
         if not group.unread:
-            _LOG.debug("no unread entries in group %s", group.name)
+            _LOG.debug("mailer: no unread entries in group %s", group.name)
             continue
 
         assert group.id
         yield from _process_group(ctx, db, group.id)
+
+    structlog.contextvars.unbind_contextvars("group_id")
 
 
 def _process_group(
@@ -121,14 +129,14 @@ def _process_group(
     """
     Process sources in `group_id` and build mail body part.
     """
-    _LOG.debug("processing group %d", group_id)
+    _LOG.debug("mailer: start processing group")
     sources = [
         source
         for source in database.sources.get_all(db, ctx.user_id, group_id)
         if source.unread and source.mail_report != model.MailReportMode.NO_SEND
     ]
     if not sources:
-        _LOG.debug("no unread sources in group %d", group_id)
+        _LOG.debug("mailer: no unread sources in group")
         return
 
     assert sources[0].group
@@ -139,7 +147,10 @@ def _process_group(
     yield "\n\n"
 
     for source in sources:
+        structlog.contextvars.bind_contextvars(source_id=source.id)
         yield from _proces_source(ctx, db, source.id)
+
+    structlog.contextvars.unbind_contextvars("source_id")
 
     yield "\n\n\n"
 
@@ -150,7 +161,7 @@ def _proces_source(
     """
     Build mail content for `source_id`.
     """
-    _LOG.debug("processing source %d", source_id)
+    _LOG.debug("mailer: start processing source")
 
     entries = [
         entry
@@ -169,7 +180,7 @@ def _proces_source(
     ]
 
     if not entries:
-        _LOG.debug("no entries to send in source %d", source_id)
+        _LOG.debug("mailer: no entries to send in source")
         return
 
     assert entries[0].source
@@ -180,8 +191,11 @@ def _proces_source(
     yield "\n\n"
 
     for entry in entries:
-        _LOG.debug("processing entry id %dd", entry.id)
+        structlog.contextvars.bind_contextvars(entry_id=entry.id)
+        _LOG.debug("mailer: processing source start")
         yield from _render_entry_plain(ctx, entry)
+
+    structlog.contextvars.unbind_contextvars("entry_id")
 
     if ctx.conf.get("mail_mark_read"):
         ids = [entry.id for entry in entries]
@@ -280,11 +294,12 @@ def _send_mail(
     app_conf: ConfigParser,
     user: model.User,
 ) -> bool:
-    _LOG.debug("send mail: %r", conf)
+    log = _LOG.bind(user_id=user.id)
+    log.debug("mailer: send main", conf=conf)
     mail_to = conf["mail_to"] or user.email
 
     if not mail_to:
-        _LOG.error("email enabled for user %d but no email defined ", user.id)
+        log.error("_send_mail: email enabled for user but no email defined ")
         return False
 
     try:
@@ -295,12 +310,12 @@ def _send_mail(
         msg["Date"] = email.utils.formatdate()
         ssl = app_conf.getboolean("smtp", "ssl")
         smtp = smtplib.SMTP_SSL() if ssl else smtplib.SMTP()
-        if _LOG.isEnabledFor(logging.DEBUG):
+        if logging_setup.DEBUG:
             smtp.set_debuglevel(True)
 
         host = app_conf.get("smtp", "address")
         port = app_conf.getint("smtp", "port")
-        _LOG.debug("host, port: %r, %r", host, port)
+        log.debug("_send_mail: host: %r, port: %r", host, port)
         smtp.connect(host, port)
         smtp.ehlo()
         if app_conf.getboolean("smtp", "starttls") and not ssl:
@@ -311,16 +326,20 @@ def _send_mail(
             smtp.login(login, app_conf.get("smtp", "password"))
 
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
-        _LOG.debug("mail send")
+        log.debug("_send_mail: mail send")
+
     except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
-        _LOG.error("smtp connection error: %s; user %d", err, user.id)
+        log.error("_send_mail: smtp connection error", error=err)
         return False
-    except Exception:  # pylint: disable=broad-except
-        _LOG.exception("send mail error")
+
+    except Exception as err:  # pylint: disable=broad-except
+        log.exception("_send_mail: send error", error=err)
         return False
+
     finally:
         with suppress():
             smtp.quit()
+
     return True
 
 
@@ -353,9 +372,9 @@ def __do_encrypt(args: list[str], message: str) -> str:
         stdout, stderr = subp.communicate(message.encode("utf-8"))
         if subp.wait(60) != 0:
             _LOG.error(
-                "EMailOutput: encrypt error: %s; args: %r",
-                stderr,
+                "mailer: encrypt error: %r",
                 args,
+                error=stderr,
             )
             return stderr.decode("ascii")
 
@@ -378,7 +397,7 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     begin = conf.get("silent_hours_from", "")
     end = conf.get("silent_hours_to", "")
 
-    _LOG.debug("check silent hours %r", (begin, end))
+    _LOG.debug("mailer: check silent hours %r - %r", begin, end)
 
     if not begin or not end:
         return False
@@ -386,8 +405,8 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     try:
         begin = int(begin)
         end = int(end)
-    except ValueError:
-        _LOG.exception("parse silent hours%r  error", (begin, end))
+    except ValueError as err:
+        _LOG.exception("mailer: parse %r - %r error", begin, end, error=err)
         return False
 
     hour = datetime.now().hour
@@ -399,7 +418,7 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
         if begin <= hour <= end:
             return True
 
-    _LOG.debug("not in silent hours")
+    _LOG.debug("mailer: not in silent hours")
 
     return False
 
@@ -411,7 +430,7 @@ def _process_errors(
         last_send = datetime.fromtimestamp(0)
 
     errors = database.sources.get_errors_for_user(db, ctx.user_id, last_send)
-    _LOG.debug("found %d errors", len(errors))
+    _LOG.debug("mailer: found %d errors", len(errors))
     if not errors:
         return
 

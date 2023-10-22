@@ -5,17 +5,17 @@
 """
 Convert html to text.
 """
-import logging
 
 import lxml
 import lxml.html
+import structlog
 from flask_babel import lazy_gettext
 
 from webmon2 import model
 
 from ._abstract import AbstractFilter
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 class FixHtmlUrls(AbstractFilter):
@@ -35,7 +35,11 @@ class FixHtmlUrls(AbstractFilter):
         try:
             document = lxml.html.fromstring(entry.content, base_url=entry.url)
         except lxml.etree.ParserError as err:
-            _LOG.warning("parse error: %s", err)
+            _LOG.warning(
+                "filters: fix_urls error parsing content",
+                content=entry.content,
+                error=err,
+            )
             yield entry
             return
 
@@ -46,6 +50,10 @@ class FixHtmlUrls(AbstractFilter):
                 document, encoding="UTF-8"
             ).decode("utf-8")
         except lxml.etree.SerialisationError as err:
-            _LOG.warning("serialize error: %s", err)
+            _LOG.warning(
+                "filterx: fix_urls error serializing",
+                document=document,
+                error=err,
+            )
 
         yield entry

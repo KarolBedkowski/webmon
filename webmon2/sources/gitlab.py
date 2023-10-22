@@ -7,7 +7,6 @@ Inputs related to gitlab
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 from datetime import datetime, timedelta, timezone
 
@@ -19,11 +18,9 @@ from webmon2 import common, model
 
 from .abstract import AbstractSource
 
-_LOG = logging.getLogger(__name__)
 _GITLAB_MAX_AGE = 90  # 90 days
 _GITLAB_DEFAULT_URL = "https://gitlab.com/"
 _FAVICON = "favicon.ico"
-_ = ty
 
 
 def _get_gitlab_url(source: model.Source) -> str:
@@ -101,7 +98,6 @@ class AbstractGitLabSource(AbstractSource):
         if url and token:
             try:
                 gitl = gitlab.Gitlab(url, token)  # type: ignore
-                _LOG.debug("gitlab: %r", gitl)
                 return gitl.projects.get(conf["project"])  # type: ignore
 
             except Exception as err:
@@ -204,7 +200,7 @@ class GitLabCommits(AbstractGitLabSource):
             return state.new_not_modified(), []
 
         commits = project.commits.list(since=data_since)
-        _LOG.debug("commits: %r", commits)
+        self._log.debug("gilab commits: loaded", commits=commits)
         if not commits:
             new_state = state.new_not_modified()
             if not new_state.icon:
@@ -224,7 +220,7 @@ class GitLabCommits(AbstractGitLabSource):
                 form_fun(commit, full_message) for commit in commits
             )
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("gitlab load error: %s", err)
+            self._log.exception("gitlab commits: load error", error=err)
             return state.new_error(str(err)), []
 
         new_state = state.new_ok()
@@ -318,7 +314,7 @@ class GitLabTagsSource(AbstractGitLabSource):
         tags = project.tags.list(
             since=data_since, per_page=self._conf["max_items"]
         )
-        _LOG.debug("tags: %r", tags)
+        self._log.debug("gitlab tags: loaded", tags=tags)
         if not tags:
             new_state = state.new_not_modified()
             if not new_state.icon:
@@ -332,7 +328,7 @@ class GitLabTagsSource(AbstractGitLabSource):
         try:
             content = "\n\n".join(filter(None, map(_format_gl_tag, tags)))
         except Exception as err:
-            _LOG.exception("gitlab load error: %s", err)
+            self._log.exception("gitlab tags: load error", error=err)
             raise common.InputError(self, str(err))
 
         new_state = state.new_ok()
@@ -420,7 +416,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
         releases = project.releases.list(
             since=data_since, per_page=self._conf["max_items"]
         )
-        _LOG.debug("releases: %r", releases)
+        self._log.debug("gitlab releases: loaded", releases=releases)
 
         if not releases:
             new_state = state.new_not_modified()

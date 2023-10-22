@@ -7,18 +7,16 @@ Select entries by matching text.
 """
 from __future__ import annotations
 
-import logging
 import re
-import typing as ty
 
+import structlog
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 class Score(AbstractFilter):
@@ -62,10 +60,10 @@ class Score(AbstractFilter):
                 )
                 for pattern in patterns.split(";")
             ]
-            _LOG.debug("patterns count: %s", len(self._re))
+            _LOG.debug("filters: score has %d patterns", len(self._re))
         else:
             self._re = []
-            _LOG.warning("no patterns!")
+            _LOG.warning("filters: score with no patterns!", conf=conf)
 
         self._match_many = conf.get("match_many")
         self._score = int(conf.get("score_change", 0))
@@ -90,13 +88,15 @@ class Score(AbstractFilter):
         try:
             add = self._score_for_content(entry.content, entry.title)
             _LOG.debug(
-                "apply score %s for entry %s (%r)",
+                "filters: apply score %s for entry title: %s, score: %r",
                 add,
                 entry.title,
                 entry.score,
             )
             entry.score += add
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.error("apply score error: %s; entry %s", err, entry)
+            _LOG.exception(
+                "filters: apply score for entry %r error", error=err
+            )
 
         return [entry]

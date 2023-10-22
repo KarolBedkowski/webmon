@@ -5,9 +5,7 @@
 """
 Convert html to text.
 """
-import logging
 import re
-import typing as ty
 from urllib.parse import urljoin
 
 import html2text as h2t
@@ -16,9 +14,6 @@ from flask_babel import lazy_gettext
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
-_LOG = logging.getLogger(__name__)
 
 
 class Html2Text(AbstractFilter):

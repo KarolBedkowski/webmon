@@ -7,17 +7,17 @@ Import/export data in opml format.
 """
 
 import itertools
-import logging
 import typing as ty
 from contextlib import suppress
 from xml.etree.ElementTree import Element
 
+import structlog
 from defusedxml import ElementTree as etree
 from lxml.builder import E  # pylint: disable=no-name-in-module
 
 from webmon2 import database, model, sources
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 class InvalidFile(RuntimeError):
@@ -43,7 +43,7 @@ def load_data(db: database.DB, content: bytes, user_id: int) -> None:
         except database.NotFound:
             group = model.SourceGroup(name=group_name, user_id=user_id)
             group = database.groups.save(db, group)
-            _LOG.debug("import opml - new group: %s", group)
+            _LOG.debug("opml: new group: %s", group)
 
         assert group.id
         group_id: int = group.id
@@ -51,7 +51,7 @@ def load_data(db: database.DB, content: bytes, user_id: int) -> None:
             source.group_id = group_id
             source.user_id = user_id
             source = database.sources.save(db, source)
-            _LOG.debug("import opml - new source: %s", source)
+            _LOG.debug("opml: new source: %s", source)
 
 
 def dump_data(db: database.DB, user_id: int) -> str:
@@ -94,11 +94,19 @@ def _load(
                     source = scls.from_opml(snode.attrib)
                     if source:
                         yield (group or "", source)
+
                 except NotImplementedError:
                     pass
+
                 except ValueError as err:
-                    _LOG.info("import error %s for %s", err, snode.attrib)
+                    _LOG.info(
+                        "opml: import error from attrib",
+                        attrib=snode.attrib,
+                        error=err,
+                    )
+
             continue
+
         ntitle = snode.attrib.get("title")
         if ntitle:
             yield from _load(snode, ntitle)

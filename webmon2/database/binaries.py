@@ -6,14 +6,13 @@ Access to binaries stored in database.
 """
 from __future__ import annotations
 
-import logging
-
 import psycopg
+import structlog
 
 from ._db import DB
 from ._dbcommon import NotFound
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
@@ -27,7 +26,7 @@ def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
     Return:
         (binary data, content type)
     """
-    _LOG.debug("get: %r, %r", datahash, user_id)
+    _LOG.debug("db: get binary", datahash=datahash, user_id=user_id)
 
     if not user_id:
         raise ValueError("missing user_id")
@@ -64,11 +63,11 @@ def save(
         data: binary data
     """
     _LOG.debug(
-        "save binary: %r, %r, %r, %s",
-        user_id,
+        "db: save binary content_type: %r, type: %s",
         content_type,
-        datahash,
         type(data),
+        user_id=user_id,
+        datahash=datahash,
     )
 
     if not user_id:

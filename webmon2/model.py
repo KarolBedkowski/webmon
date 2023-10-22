@@ -11,15 +11,16 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import logging
 import typing as ty
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import Enum, IntEnum
 
+import structlog
+
 from webmon2 import common, formatters
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 Row = dict[str, ty.Any]
@@ -612,13 +613,25 @@ class Entry:  # pylint: disable=too-many-instance-attributes
 
     def validate(self) -> None:
         if not isinstance(self.updated, datetime):
-            _LOG.error("wrong entry.updated:  %r (%r)", self.updated, self)
+            _LOG.error(
+                "model: validate entry error: invalid `updated`: %r",
+                self.updated,
+                entry_id=self.id,
+            )
 
         if not isinstance(self.created, datetime):
-            _LOG.error("wrong entry.created:  %r (%r)", self.created, self)
+            _LOG.error(
+                "model: validate entry error: invalid `created`: %r",
+                self.created,
+                entry_id=self.id,
+            )
 
         if not self.title:
-            _LOG.error("missing title %s", self)
+            _LOG.error(
+                "model: validate entry error: missing title",
+                entry=self,
+                entry_id=self.id,
+            )
 
     def calculate_icon_hash(self) -> str | None:
         """
@@ -632,7 +645,12 @@ class Entry:  # pylint: disable=too-many-instance-attributes
                 self.icon_data[1], usedforsecurity=False
             ).hexdigest()
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.error("hasing %r error: %s", self.icon_data, err)
+            _LOG.error(
+                "model: calculate_icon_hash error",
+                entry_id=self.id,
+                data=self.icon_data,
+                error=err,
+            )
 
         return self.icon
 

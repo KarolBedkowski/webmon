@@ -6,7 +6,6 @@
 Filter that remove already visited items.
 """
 
-
 from flask_babel import lazy_gettext
 
 from webmon2 import database, model

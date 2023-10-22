@@ -6,56 +6,13 @@ Licence: GPLv2+
 """
 
 import logging
-import os.path
 import sys
-import tempfile
-import time
-import typing as ty
-from pathlib import Path
+from http.client import HTTPConnection
 
-__author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
+import structlog
 
-_ = ty
-
-
-class ColorFormatter(logging.Formatter):
-    """Formatter for logs that color messages according to level."""
-
-    FORMAT_MAP = {
-        levelno: f"\033[1;{color}m{level:<8}\033[0m"
-        for levelno, level, color in (
-            (logging.DEBUG, "DEBUG", 34),
-            (logging.INFO, "INFO", 37),
-            (logging.WARNING, "WARNING", 33),
-            (logging.ERROR, "ERROR", 31),
-            (logging.CRITICAL, "CRITICAL", 31),
-        )
-    }
-
-    def format(self, record: logging.LogRecord) -> str:
-        record.levelname = self.FORMAT_MAP.get(
-            record.levelno, record.levelname
-        )
-        return logging.Formatter.format(self, record)
-
-
-def _create_dirs_for_log(filename: str) -> str:
-    log_fullpath = os.path.abspath(filename)
-    log_dir = os.path.dirname(log_fullpath)
-    log_dir_access = os.access(log_dir, os.W_OK)
-
-    create_temp = False
-    if Path(filename).is_absolute():
-        if not log_dir_access:
-            create_temp = True
-
-    if create_temp:
-        basename = os.path.basename(filename)
-        spfname = os.path.splitext(basename)
-        filename = spfname[0] + "_" + str(int(time.time())) + spfname[1]
-        log_fullpath = os.path.join(tempfile.gettempdir(), filename)
-    return log_fullpath
+DEBUG = False
+SILENT = False
 
 
 class NoMetricsLogFilter(
@@ -70,7 +27,7 @@ class NoMetricsLogFilter(
         )
 
 
-def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
+def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
     """Setup logging.
 
     Args:
@@ -78,25 +35,35 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
     :param debug: (bool) run in debug mode (all messages)
     :param silent: (bool) show only warnings/errors
     """
+    global SILENT, DEBUG
+    SILENT = silent
+    DEBUG = debug
+
     logger = logging.getLogger()
     log_req = logging.getLogger("requests")
     log_github3 = logging.getLogger("github3")
     log_werkzeug = logging.getLogger("werkzeug")
+    structlog_level = logging.INFO
 
-    msg_format = (
-        "%(levelname)-8s %(name)s [%(filename)s:%(lineno)d] %(message)s"
-    )
     if debug:
         logger.setLevel(logging.DEBUG)
         log_req.setLevel(logging.DEBUG)
         log_github3.setLevel(logging.DEBUG)
         log_werkzeug.setLevel(logging.DEBUG)
+        structlog_level = logging.DEBUG
+
+        # enable debug in utllib3
+        requests_log = logging.getLogger("urllib3")
+        requests_log.setLevel(logging.DEBUG)
+        requests_log.propagate = True
+        HTTPConnection.debuglevel = 1
     elif silent:
         logger.setLevel(logging.WARN)
         log_req.setLevel(logging.WARN)
         log_github3.setLevel(logging.WARN)
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
+        structlog_level = logging.WARN
     else:
         logger.setLevel(logging.INFO)
         log_req.setLevel(logging.WARN)
@@ -104,19 +71,74 @@ def setup(filename: str, debug: bool = False, silent: bool = False) -> None:
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
 
-    if filename:
-        log_fullpath = _create_dirs_for_log(filename)
-        fileh = logging.FileHandler(log_fullpath)
-        fileh.setFormatter(logging.Formatter("%(asctime)s " + msg_format))
-        logger.addHandler(fileh)
+    shared_processors = [
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.CallsiteParameterAdder(
+            {
+                # structlog.processors.CallsiteParameter.FILENAME,
+                # structlog.processors.CallsiteParameter.FUNC_NAME,
+                # structlog.processors.CallsiteParameter.LINENO,
+                # structlog.processors.CallsiteParameter.PATHNAME,
+                # structlog.processors.CallsiteParameter.THREAD,
+                structlog.processors.CallsiteParameter.THREAD_NAME,
+            }
+        ),
+        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
+        structlog.processors.StackInfoRenderer(),
+    ]
+
+    if sys.stderr.isatty():
+        # console
+        if log_fmt == "logfmt":
+            processors = [
+                structlog.processors.format_exc_info,
+                structlog.processors.dict_tracebacks,
+                structlog.processors.LogfmtRenderer(),
+            ]
+        else:
+            processors = [structlog.dev.ConsoleRenderer(colors=True)]
+
+    else:
+        if log_fmt == "console":
+            processors = [structlog.dev.ConsoleRenderer(colors=False)]
+        else:
+            processors = [
+                structlog.processors.dict_tracebacks,
+                structlog.processors.LogfmtRenderer(),
+            ]
+
+    structlog.configure(
+        processors=shared_processors  # type: ignore
+        + [
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+        wrapper_class=structlog.make_filtering_bound_logger(structlog_level),
+    )
+
+    formatter = structlog.stdlib.ProcessorFormatter(
+        # These run ONLY on `logging` entries that do NOT originate within
+        # structlog.
+        foreign_pre_chain=shared_processors,  # type: ignore
+        # These run on ALL entries after the pre_chain is done.
+        processors=[
+            # Remove _record & _from_structlog.
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+        ]
+        + processors,  # type: ignore
+    )
 
     console = logging.StreamHandler()
-    fmtr = logging.Formatter
-    if sys.platform != "win32" and debug:
-        fmtr = ColorFormatter
-
-    console.setFormatter(fmtr(msg_format))
+    console.setFormatter(formatter)
     logger.addHandler(console)
 
     log = logging.getLogger("logging")
     log.debug("logging_setup() finished")
+    structlog.get_logger("structlog").debug(
+        "setup finished", log_fmt=log_fmt, debug=debug, silent=silent
+    )

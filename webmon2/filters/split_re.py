@@ -8,18 +8,13 @@ Split entry by regexp
 """
 from __future__ import annotations
 
-import logging
 import re
-import typing as ty
 
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
-_LOG = logging.getLogger(__name__)
 
 
 class SelectByRE(AbstractFilter):

@@ -5,14 +5,11 @@
 """
 Access & manage users in db
 """
-import logging
 import typing as ty
 
 from webmon2 import model
 
 from ._db import DB
-
-_LOG = logging.getLogger(__name__)
 
 
 class LoginAlreadyExistsError(Exception):

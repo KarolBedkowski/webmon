@@ -7,15 +7,12 @@ Access & manage users in db
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 
 from webmon2 import model
 
 from . import _dbcommon as dbc
 from ._db import DB
-
-_LOG = logging.getLogger(__name__)
 
 
 class LoginAlreadyExistsError(Exception):

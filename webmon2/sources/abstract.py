@@ -7,14 +7,12 @@ Abstract source definition
 """
 
 import abc
-import logging
 import typing as ty
 
 import requests
+import structlog
 
 from webmon2 import common, model
-
-_LOG = logging.getLogger(__name__)
 
 
 class AbstractSource(abc.ABC):
@@ -35,6 +33,7 @@ class AbstractSource(abc.ABC):
     ) -> None:
         super().__init__()
         self._source = source
+        self._log = structlog.get_logger(__name__).bind(source_id=source.id)
 
         # when _updated_source is set, after loading this configuration
         # overwrite data in database
@@ -45,7 +44,7 @@ class AbstractSource(abc.ABC):
             sys_settings,
             source.settings,
         )
-        _LOG.debug("Source %s: conf: %r", source.id, self._conf)
+        self._log.debug("source: configuration", conf=self._conf)
 
     def __str__(self) -> str:
         return " ".join(
@@ -127,7 +126,8 @@ class AbstractSource(abc.ABC):
             None on error
             (<content type>, <binary data>) on success
         """
-        _LOG.debug("loading binary %s", url)
+        log = self._log.bind(url=url)
+        log.debug("source: load_binary: loading")
         # reuse requests.session if available
         req = session.request if session else requests.request
 
@@ -153,24 +153,26 @@ class AbstractSource(abc.ABC):
                     if only_images and not _check_content_type(
                         response, _IMAGE_TYPES
                     ):
-                        _LOG.info(
-                            "load binary from %s skipped due not "
-                            "acceptable content type: %s",
-                            url,
+                        log.debug(
+                            "source: load_binary: load skipped due "
+                            "unacceptable content type: %s",
                             response.headers["Content-Type"],
+                            url=url,
                         )
                         return None
 
                     return response.headers["Content-Type"], response.content
 
-                _LOG.info(
-                    "load binary from %s status %s error: %s",
-                    url,
-                    response.status_code,
-                    response.text,
+                log.debug(
+                    "source: load_binary: invalid response",
+                    url=url,
+                    status=response.status_code,
+                    error=response.text,
                 )
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("load binary from %s error: %s", url, err)
+            log.exception(
+                "source: load_binary: load error", url=url, error=err
+            )
 
         return None
 

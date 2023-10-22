@@ -7,15 +7,11 @@ Database routines to system related objects
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 
 from webmon2 import model
 
 from ._db import DB
-
-_LOG = logging.getLogger(__name__)
-
 
 _GET_DB_TAB_SIZESSQL = """
 SELECT relname AS "tables",

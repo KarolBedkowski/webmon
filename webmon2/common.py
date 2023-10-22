@@ -11,18 +11,15 @@ from __future__ import annotations
 import datetime
 import email.utils
 import itertools
-import logging
 import os.path
 import pathlib
 import typing as ty
 from contextlib import suppress
 from pathlib import Path
 
-__author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
+import structlog
 
-
-_LOG = logging.getLogger("common")
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger("common")
 
 ConfDict = dict[str, ty.Any]
 
@@ -289,7 +286,7 @@ def parse_http_date(date: str | None) -> datetime.datetime | None:
     except TypeError:
         pass
     except ValueError as err:
-        _LOG.debug("parse_http_date '%s' error: %s", date, err)
+        _LOG.debug("common: parse_http_date: date: %r, error", date, error=err)
 
     return None
 

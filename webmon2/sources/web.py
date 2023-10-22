@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import datetime
 import email.utils
-import logging
 import typing as ty
-from http.client import HTTPConnection
 from urllib.parse import urlsplit, urlunsplit
 
 import requests
@@ -22,15 +20,6 @@ from webmon2 import common, model
 from webmon2.filters.fix_urls import FixHtmlUrls
 
 from .abstract import AbstractSource
-
-_ = ty
-_LOG = logging.getLogger(__name__)
-
-if _LOG.isEnabledFor(logging.DEBUG):
-    requests_log = logging.getLogger("urllib3")
-    requests_log.setLevel(logging.DEBUG)
-    requests_log.propagate = True
-    HTTPConnection.debuglevel = 1
 
 
 class WebSource(AbstractSource):
@@ -61,6 +50,7 @@ class WebSource(AbstractSource):
         self, state: model.SourceState
     ) -> tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
+
         with requests.Session() as session:
             new_state, entries = self._load(state, session)
 
@@ -87,7 +77,7 @@ class WebSource(AbstractSource):
     ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
         headers = _prepare_headers(state, self._conf)
-        _LOG.debug("WebInput headers %r", headers)
+        self._log.debug("web source: load start", headers=headers)
         response = None
         try:
             response = session.request(
@@ -147,9 +137,11 @@ class WebSource(AbstractSource):
 
         except requests.exceptions.RequestException as err:
             return state.new_error(f"request error: {err}"), []
+
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("WebInput error %s", err)
+            self._log.exception("web source: load error", error=err)
             return state.new_error(str(err)), []
+
         finally:
             if response:
                 response.close()

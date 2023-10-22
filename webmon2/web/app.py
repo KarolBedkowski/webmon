@@ -7,14 +7,15 @@ Web gui application
 """
 from __future__ import annotations
 
-import logging
-import os
 import time
 import typing as ty
+import uuid
 from argparse import Namespace
 from configparser import ConfigParser
+from pathlib import Path
 
 import flask_babel
+import structlog
 from flask import (
     Flask,
     Response,
@@ -58,7 +59,7 @@ from . import (
 
 __all__ = ("create_app", "start_app")
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def _register_blueprints(app: Flask) -> None:
@@ -93,7 +94,7 @@ _CSP = (
 
 
 def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
-    template_folder = os.path.join(os.path.dirname(__file__), "templates")
+    template_folder = Path(__file__).parent.joinpath("templates")
     # create and configure the app
     app = Flask(
         __name__,
@@ -105,7 +106,9 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         if minify:
             minify(app=app, html=True, js=True, cssless=True)
         else:
-            _LOG.warning("minifi enabled but flask_minifi is not installed!")
+            _LOG.warning(
+                "web: minifi enabled but flask_minifi is not installed!"
+            )
 
     app.config.from_mapping(
         ENV="debug" if debug else "production",
@@ -163,12 +166,21 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         ):
             return None
 
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=str(uuid.uuid4()),
+        )
+
+        log = _LOG.bind()
+        log.debug("web: start request", path=path, method=request.method)
+
         if not _check_csrf_token():
             return abort(400)
 
         user_id = session.get("user")
         if user_id is not None:
             # user is logged
+            structlog.contextvars.bind_contextvars(req_user_id=user_id)
             # path that not need load additional data
             if (
                 path.startswith(("/binary/", "/static", "/entry/mark/"))
@@ -243,7 +255,11 @@ def _check_csrf_token() -> bool:
         req_token = request.form.get("_csrf_token")
         sess_token = session.get("_csrf_token")
         if req_token != sess_token:
-            _LOG.info("bad csrf token")
+            _LOG.info(
+                "web: check csrf token failed",
+                request_token=req_token,
+                session_token=sess_token,
+            )
             return False
 
     elif "_csrf_token" not in session:
@@ -281,7 +297,7 @@ def create_app(args: Namespace, conf: ConfigParser) -> Flask:
         )
 
     app.wsgi_app = ProxyFix(  # type: ignore
-        app.wsgi_app, x_proto=1, x_host=1, x_port=1, x_prefix=1
+        app.wsgi_app, x_host=1, x_port=1, x_prefix=1
     )
 
     return app
@@ -300,6 +316,6 @@ def start_app(args: Namespace, conf: ConfigParser) -> None:
         (host, port),
         app,
         spawn=pool,
-        log=LoggingLogAdapter(logging.getLogger("werkzeug")),
+        log=LoggingLogAdapter(structlog.getLogger("werkzeug")),
     )
     http_server.serve_forever()

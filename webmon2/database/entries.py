@@ -7,11 +7,11 @@ Access to entries in db.
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 from datetime import date, datetime
 
 import psycopg.errors
+import structlog
 from psycopg import Cursor
 
 from webmon2 import model
@@ -19,8 +19,7 @@ from webmon2 import model
 from . import _dbcommon as dbc, binaries, sources
 from ._db import DB
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 _GET_ENTRIES_SQL_MAIN_COLS = """
     e.id AS entry__id,
@@ -136,11 +135,9 @@ def get_history(  # pylint: disable=too-many-arguments
         (list of entries, number of all entries)
 
     """
-    _LOG.debug(
-        "get_history: %r, %r, %r, %r, %r",
-        user_id,
-        source_id,
-        group_id,
+    log = _LOG.bind(user_id=user_id, source_id=source_id, group_id=group_id)
+    log.debug(
+        "db: get entries history; offset: %r, limit: %r",
         offset,
         limit,
     )
@@ -161,7 +158,7 @@ def get_history(  # pylint: disable=too-many-arguments
     }
 
     sql = _build_find_sql(params)
-    _LOG.debug("get_history: %s", sql)
+    log.debug("db: get entries history sql: %r, params: %r", sql, params)
 
     # count all
     with db.cursor() as cur:
@@ -174,7 +171,7 @@ def get_history(  # pylint: disable=too-many-arguments
     params["offset"] = offset
 
     sql += " ORDER BY e.id OFFSET %(offset)s LIMIT %(limit)s"
-    _LOG.debug("get_history: %s", sql)
+    log.debug("db: get entries history sql: %r, params: %r", sql, params)
 
     with db.cursor_dict_row() as cur:
         cur.execute(sql, params)
@@ -224,7 +221,14 @@ def get_total_count(
     if unread:
         sql += f" AND read_mark={model.EntryReadMark.UNREAD}"
 
-    _LOG.debug("get_total_count(%r): %s", args, sql)
+    _LOG.debug(
+        "db: get entries total count query",
+        sql=sql,
+        args=args,
+        user_id=user_id,
+        group_id=group_id,
+        source_id=source_id,
+    )
 
     with db.cursor() as cur:
         cur.execute(sql, args)
@@ -285,7 +289,14 @@ def find(
         args["read"] = model.EntryReadMark.UNREAD
 
     sql = _build_find_sql(args)
-    _LOG.debug("find(%r): %s", args, sql)
+    _LOG.debug(
+        "db: find entries query",
+        sql=sql,
+        args=args,
+        user_id=user_id,
+        source_id=source_id,
+        group_id=group_id,
+    )
 
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
@@ -328,15 +339,20 @@ def find_fulltext(
         args["query"] = query.replace(" ", "+") + ":*"
 
     sql = _build_find_sql(args)
-    _LOG.debug("find_fulltext: %s", sql)
-
     user_sources = sources.get_all_dict(db, user_id, group_id=group_id)
 
     with db.cursor_dict_row() as cur:
         try:
             cur.execute(sql, args)
         except psycopg.errors.SyntaxError as err:  # pylint: disable=no-member
-            _LOG.error("find_fulltext syntax error: %s", err)
+            _LOG.error(
+                "db: find entries fulltext syntax error",
+                sql=sql,
+                args=args,
+                error=err,
+                user_id=user_id,
+                group_id=group_id,
+            )
             raise dbc.QuerySyntaxError() from err
 
         yield from _yield_entries(cur, user_sources)
@@ -475,7 +491,9 @@ def save_many(db: DB, entries: model.Entries) -> None:
         with db.cursor() as cur:
             cur.executemany("DELETE FROM entries WHERE oid=%s", oids_to_delete)
             _LOG.debug(
-                "to del %d, deleted: %d", len(oids_to_delete), cur.rowcount
+                "db: save many entries; to del %d, deleted: %d",
+                len(oids_to_delete),
+                cur.rowcount,
             )
             # set star mark for updated entries
             if marked_oids:
@@ -529,9 +547,8 @@ def delete_old(
 def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
     """Change star mark for given entry"""
     db_star = 1 if star else 0
-    _LOG.info(
-        "mark_star user_id=%d, entry_id=%r,star=%r", user_id, entry_id, db_star
-    )
+    log = _LOG.bind(user_id=user_id, entry_id=entry_id)
+    log.info("db: mark entries star; star: %r", db_star)
     with db.cursor() as cur:
         cur.execute(
             "UPDATE entries SET star_mark=%s WHERE id=%s AND star_mark=%s",
@@ -539,7 +556,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         )
         changed = cur.rowcount
 
-    _LOG.debug("changed: %d", changed)
+    log.debug("db: mark entries star finished; changed: %d", changed)
     return changed
 
 
@@ -563,10 +580,11 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
 
     new_oids = [oid for oid in oids if oid not in result]
     _LOG.debug(
-        "check_oids: check=%r, found=%d new=%d",
+        "db: check entries oids result: check=%r, found=%d new=%d",
         len(oids),
         len(result),
         len(new_oids),
+        source_id=source_id,
     )
     with db.cursor() as cur:
         cur.executemany(
@@ -610,12 +628,12 @@ def mark_read(
         raise ValueError("missing entry_id/max_id/ids")
 
     _LOG.debug(
-        "mark_read entry_id=%r, min_id=%r, max_id=%r, read=%r, user_id=%r",
-        entry_id,
+        "db: mark entries read; min_id: %r, max_id: %r, read: %r",
         min_id,
         max_id,
         read,
-        user_id,
+        entry_id=entry_id,
+        user_id=user_id,
     )
     with db.cursor() as cur:
         if entry_id:
@@ -758,7 +776,13 @@ def find_next_entry_id(
         }
 
         sql = _get_related_sql(unread, order)
-        _LOG.debug("find_next_entry_id(%r): %s", args, sql)
+        _LOG.debug(
+            "db: find next entry id query",
+            sql=sql,
+            args=args,
+            user_id=user_id,
+            entry_id=entry_id,
+        )
         cur.execute(sql, args)
         row = cur.fetchone()
         return row[1] if row else None
@@ -789,7 +813,13 @@ def find_prev_entry_id(
             "read_mark": model.EntryReadMark.UNREAD,
         }
         sql = _get_related_sql(unread, order)
-        _LOG.debug("find_prev_entry_id(%r): %s", args, sql)
+        _LOG.debug(
+            "db: find prev entry id query",
+            sql=sql,
+            args=args,
+            user_id=user_id,
+            entry_id=entry_id,
+        )
         cur.execute(sql, args)
         row = cur.fetchone()
         return row[0] if row else None

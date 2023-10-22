@@ -8,12 +8,9 @@ Import/Export sources & groups.
 from __future__ import annotations
 
 import json
-import logging
 import typing as ty
 
 from webmon2 import database, model
-
-_LOG = logging.getLogger(__name__)
 
 
 def dump_object(

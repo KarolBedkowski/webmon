@@ -6,14 +6,15 @@ Filters
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
+
+import structlog
 
 from webmon2 import common, database, model
 
 from ._abstract import AbstractFilter
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 __all__ = (
     "UnknownFilterException",
     "get_filter",
@@ -43,7 +44,7 @@ def _load_filters() -> None:
     try:
         from . import split_text  # noqa:F401
     except ImportError as err:
-        _LOG.warning("module not found: %s", err)
+        _LOG.warning("filters: module split_text not found", error=err)
 
 
 _load_filters()
@@ -57,15 +58,15 @@ def get_filter(conf: dict[str, ty.Any]) -> AbstractFilter | None:
     """Get filter object by configuration"""
     name = conf.get("name")
     if not name:
-        _LOG.error("missing filter name: %r", conf)
+        _LOG.error("filters: get filter error; missing name in conf: %r", conf)
         return None
 
-    rcls = common.find_subclass(AbstractFilter, name)
-    _LOG.debug("found filter %r for %s", rcls, name)
-    if rcls:
+    if rcls := common.find_subclass(AbstractFilter, name):
+        _LOG.debug("filters: get filter: found %r for %s", rcls, name)
         fltr: AbstractFilter = rcls(conf)
         return fltr
 
+    _LOG.warning("filters: get filter error: %r not found", name)
     raise UnknownFilterException()
 
 

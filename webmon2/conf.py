@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import argparse
 import ipaddress
-import logging
 import os
 import typing as ty
 from configparser import ConfigParser
 from pathlib import Path
 
-_LOG = logging.getLogger("conf")
+import structlog
+
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger("conf")
 
 _DEFAULTS = """
 [main]
@@ -60,11 +61,12 @@ def try_load_user_conf() -> ConfigParser | None:
     user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
     if Path(user_conf).is_file():
         try:
-            _LOG.info("loading %s", user_conf)
+            _LOG.info("conf: loading from %s", user_conf)
             with open(user_conf, encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
-        except:  # noqa: E722; pylint: disable=bare-except
-            _LOG.exception("load file %s error", user_conf)
+
+        except Exception as err:  # noqa: E722; pylint: disable=bare-except
+            _LOG.exception("conf: load file %s error", user_conf, error=err)
 
     return None
 
@@ -133,22 +135,22 @@ def _validate_web(conf: ConfigParser) -> bool:
     valid = True
 
     if not conf.get("web", "root"):
-        _LOG.error("Missing web root")
+        _LOG.error("conf: missing web root")
         valid = False
 
     web_address = conf.get("web", "address")
     if not web_address:
-        _LOG.error("Missing web address")
+        _LOG.error("conf: missing web address")
         valid = False
 
     try:
         web_port = int(conf.get("web", "port"))
-    except ValueError:
-        _LOG.error("Invalid or missing web port")
+    except ValueError as err:
+        _LOG.error("conf: invalid or missing web port", error=err)
         valid = False
     else:
         if web_port < 1 or web_port > 65535:
-            _LOG.error("Invalid web port")
+            _LOG.error("conf: invalid web port: %r", web_port)
             valid = False
 
     return valid
@@ -158,26 +160,29 @@ def _validate_main(conf: ConfigParser) -> bool:
     valid = True
 
     if not conf.get("main", "database"):
-        _LOG.error("Missing database configuration")
+        _LOG.error("conf: missing database configuration")
         valid = False
 
     try:
         workers = int(conf.get("main", "workers"))
-    except ValueError:
-        _LOG.error("Invalid workers parameter")
+    except ValueError as err:
+        _LOG.error("conf: invalid workers parameter", error=err)
         valid = False
     else:
         if workers < 1:
-            _LOG.warning("number of workers is %s", workers)
+            _LOG.warning("conf: number of workers: %r", workers)
 
     try:
         work_interval = int(conf.get("main", "work_interval"))
-    except ValueError:
-        _LOG.error("Invalid work_interval parameter")
+    except ValueError as err:
+        _LOG.error("conf: invalid work_interval", error=err)
         valid = False
     else:
         if work_interval < 1:
-            _LOG.error("Invalid work_interval parameter")
+            _LOG.error(
+                "conf: invalid work_interval parameter: %r",
+                work_interval,
+            )
             valid = False
 
     return valid
@@ -188,21 +193,21 @@ def _validate_smtp(conf: ConfigParser) -> bool:
 
     if conf.getboolean("smtp", "enabled"):
         if not conf.get("smtp", "address"):
-            _LOG.error("SMTP enabled but SMTP address is missing")
+            _LOG.error("conf: missing smtp address")
             valid = False
 
         try:
             port = int(conf.get("smtp", "port"))
-        except ValueError:
-            _LOG.error("Invalid SMTP port")
+        except ValueError as err:
+            _LOG.error("conf: invalid SMTP port", error=err)
             valid = False
         else:
             if port < 1 or port > 65535:
-                _LOG.error("Invalid SMTP port")
+                _LOG.error("conf: invalid SMTP port: %r", port)
                 valid = False
 
         if not conf.get("smtp", "from"):
-            _LOG.error("Missing SMTP 'from' address")
+            _LOG.error("conf: missing SMTP 'from' address")
             valid = False
 
     return valid
@@ -218,8 +223,13 @@ def _validate_metrics(conf: ConfigParser) -> bool:
                     ipaddress.ip_network(addr, strict=False)
                 else:
                     ipaddress.ip_address(addr)
-            except ValueError:
-                _LOG.error("Invalid IP or network: %s", addr)
+
+            except ValueError as err:
+                _LOG.error(
+                    "conf: metrics has invalid IP or network: %r",
+                    addr,
+                    error=err,
+                )
                 valid = False
 
     return valid
