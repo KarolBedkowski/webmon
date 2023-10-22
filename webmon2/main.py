@@ -27,6 +27,8 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
+    stackprinter = None
+
     with suppress(ImportError):
         from rich.traceback import install
 
@@ -233,9 +235,9 @@ def _load_user_classes() -> None:
         return
 
     for fname in os.listdir(users_scripts_dir):
-        fpath = os.path.join(users_scripts_dir, fname)
+        fpath = Path(users_scripts_dir, fname)
         if (
-            Path(fpath).is_file()
+            fpath.is_file()
             and fname.endswith(".py")
             and not fname.startswith("_")
         ):
@@ -368,9 +370,7 @@ def _serve(args: argparse.Namespace, app_conf: ConfigParser) -> None:
     try:
         web.start_app(args, app_conf)
     except Exception as err:  # pylint: disable=broad-except
-        with suppress(ImportError):
-            import stackprinter
-
+        if stackprinter:
             stackprinter.show()
 
         _LOG.error("main: start app error: %s", error=err)

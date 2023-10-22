@@ -17,8 +17,6 @@ from flask_babel import gettext
 
 from webmon2 import common, model, sources
 
-_ = ty
-
 Form = dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 
 

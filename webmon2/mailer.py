@@ -369,7 +369,7 @@ def __do_encrypt(args: list[str], message: str) -> str:
         stderr=subprocess.PIPE,
         shell=False,  # nosec B603
     ) as subp:
-        stdout, stderr = subp.communicate(message.encode("utf-8"))
+        stdout, stderr = subp.communicate(message.encode())
         if subp.wait(60) != 0:
             _LOG.error(
                 "mailer: encrypt error: %r",

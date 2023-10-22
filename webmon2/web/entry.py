@@ -15,7 +15,6 @@ from webmon2 import database, model
 
 from . import _commons as c
 
-_ = ty
 BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 

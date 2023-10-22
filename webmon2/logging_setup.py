@@ -35,7 +35,7 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
     :param debug: (bool) run in debug mode (all messages)
     :param silent: (bool) show only warnings/errors
     """
-    global SILENT, DEBUG
+    global SILENT, DEBUG  # pylint: disable=global-statement
     SILENT = silent
     DEBUG = debug
 

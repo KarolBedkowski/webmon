@@ -542,7 +542,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         data = "".join(
             map(str, (self.source_id, self.title, self.url, self.content))
         )
-        csum = hashlib.sha1(data.encode("utf-8"), usedforsecurity=False)
+        csum = hashlib.sha1(data.encode(), usedforsecurity=False)
         self.oid = base64.b64encode(csum.digest()).decode("ascii")
         return self.oid
 

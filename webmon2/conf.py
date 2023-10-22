@@ -65,7 +65,8 @@ def try_load_user_conf() -> ConfigParser | None:
             with open(user_conf, encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
 
-        except Exception as err:  # noqa: E722; pylint: disable=bare-except
+        # pylint: disable=broad-except
+        except Exception as err:  # noqa: E722
             _LOG.exception("conf: load file %s error", user_conf, error=err)
 
     return None

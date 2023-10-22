@@ -93,6 +93,101 @@ _CSP = (
 )
 
 
+def _teardown_db(  # pylint: disable=unused-variable
+    _exception: BaseException | None,
+) -> None:
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+def _before_request() -> ty.Any:  # pylint: disable=unused-variable
+    request.req_start_time = time.time()  # type: ignore
+    path = request.path
+    # pages that not need valid user and don't need additional data like
+    # locale setting
+    if path == "/favicon.ico" or path.startswith(
+        ("/metrics", "/atom", "/health")
+    ):
+        return None
+
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        request_id=str(uuid.uuid4()),
+    )
+
+    log = _LOG.bind()
+    log.debug("web: start request", path=path, method=request.method)
+
+    if not _check_csrf_token():
+        return abort(400)
+
+    user_id = session.get("user")
+    if user_id is not None:
+        # user is logged
+        structlog.contextvars.bind_contextvars(req_user_id=user_id)
+        # path that not need load additional data
+        if (
+            path.startswith(("/binary/", "/static", "/entry/mark/"))
+            or path == "/manifest.json"
+        ):
+            return None
+
+        if request.method == "GET":
+            _count_unread(user_id)
+
+        g.locale = str(flask_babel.get_locale())
+
+        return None
+
+    # pages that not need valid user
+    if path.startswith("/sec/login"):
+        return None
+
+    # login is requred; redirect to login page
+
+    # back url is registered only for get request to prevent bad request
+    if request.method == "GET":
+        session["_back_url"] = request.url
+        session.modified = True
+
+    return redirect(url_for("sec.login"))
+
+
+def _after_request(  # pylint: disable=unused-variable
+    resp: Response,
+) -> Response:
+    cont_type = (resp.content_type or "").partition(";")[0]
+    if cont_type in (
+        "application/json",
+        "application/atom+xml",
+        "text/plain",
+    ):
+        _set_cache_contol_no_cache(resp)
+
+    if cont_type == "text/html":
+        _set_cache_contol_no_cache(resp)
+        resp.headers["Content-Security-Policy"] = _CSP
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+    elif not resp.headers.get("Cache-Control"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000"
+
+    resp_time = time.time() - request.req_start_time  # type: ignore
+    _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
+        resp_time
+    )
+    _REQUEST_COUNT.labels(
+        request.method, request.endpoint, resp.status_code
+    ).inc()
+    return resp
+
+
+def _handle_context() -> dict[str, ty.Any]:
+    """Inject object into jinja2 templates."""
+    return {"webmon2": webmon2}
+
+
 def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     template_folder = Path(__file__).parent.joinpath("templates")
     # create and configure the app
@@ -146,101 +241,10 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
     _register_blueprints(app)
 
-    # @app.teardown_appcontext
-    @app.teardown_request
-    def teardown_db(  # pylint: disable=unused-variable
-        _exception: BaseException | None,
-    ) -> None:
-        db = g.pop("db", None)
-        if db is not None:
-            db.close()
-
-    @app.before_request
-    def before_request() -> ty.Any:  # pylint: disable=unused-variable
-        request.req_start_time = time.time()  # type: ignore
-        path = request.path
-        # pages that not need valid user and don't need additional data like
-        # locale setting
-        if path == "/favicon.ico" or path.startswith(
-            ("/metrics", "/atom", "/health")
-        ):
-            return None
-
-        structlog.contextvars.clear_contextvars()
-        structlog.contextvars.bind_contextvars(
-            request_id=str(uuid.uuid4()),
-        )
-
-        log = _LOG.bind()
-        log.debug("web: start request", path=path, method=request.method)
-
-        if not _check_csrf_token():
-            return abort(400)
-
-        user_id = session.get("user")
-        if user_id is not None:
-            # user is logged
-            structlog.contextvars.bind_contextvars(req_user_id=user_id)
-            # path that not need load additional data
-            if (
-                path.startswith(("/binary/", "/static", "/entry/mark/"))
-                or path == "/manifest.json"
-            ):
-                return None
-
-            if request.method == "GET":
-                _count_unread(user_id)
-
-            g.locale = str(flask_babel.get_locale())
-
-            return None
-
-        # pages that not need valid user
-        if path.startswith("/sec/login"):
-            return None
-
-        # login is requred; redirect to login page
-
-        # back url is registered only for get request to prevent bad request
-        if request.method == "GET":
-            session["_back_url"] = request.url
-            session.modified = True
-
-        return redirect(url_for("sec.login"))
-
-    @app.after_request
-    def after_request(  # pylint: disable=unused-variable
-        resp: Response,
-    ) -> Response:
-        cont_type = (resp.content_type or "").partition(";")[0]
-        if cont_type in (
-            "application/json",
-            "application/atom+xml",
-            "text/plain",
-        ):
-            _set_cache_contol_no_cache(resp)
-
-        if cont_type == "text/html":
-            _set_cache_contol_no_cache(resp)
-            resp.headers["Content-Security-Policy"] = _CSP
-            resp.headers["X-Content-Type-Options"] = "nosniff"
-            resp.headers["X-Frame-Options"] = "DENY"
-        elif not resp.headers.get("Cache-Control"):
-            resp.headers["Cache-Control"] = "public, max-age=31536000"
-
-        resp_time = time.time() - request.req_start_time  # type: ignore
-        _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
-            resp_time
-        )
-        _REQUEST_COUNT.labels(
-            request.method, request.endpoint, resp.status_code
-        ).inc()
-        return resp
-
-    @app.context_processor
-    def handle_context() -> dict[str, ty.Any]:
-        """Inject object into jinja2 templates."""
-        return {"webmon2": webmon2}
+    app.teardown_request(_teardown_db)
+    app.before_request(_before_request)
+    app.after_request(_after_request)
+    app.context_processor(_handle_context)
 
     return app
 

@@ -287,7 +287,7 @@ class RssSource(AbstractSource):
                 self._update_source(interval=interval)
         except ValueError:
             self._log.debug(
-                "rss source. wrong sy_ params period: %r, " "freq: %r",
+                "rss source. wrong sy_ params period: %r, freq: %r",
                 sy_updateperiod,
                 sy_updatefrequency,
             )
