@@ -17,7 +17,7 @@ from webmon2 import common, model
 _LOG = logging.getLogger(__name__)
 
 
-class AbstractSource(metaclass=abc.ABCMeta):
+class AbstractSource(abc.ABC):
     """Abstract/Base class for all sources"""
 
     # name used in configuration
