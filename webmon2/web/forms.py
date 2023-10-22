@@ -80,6 +80,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             options=[(val, val) for val in param.options or []],
             value=values.get(param.name, param.default) if values else None,
             default_value=sett_value or param.default or "",
+            parameters=param.parameters,
         )
         return field
 
