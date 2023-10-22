@@ -319,3 +319,22 @@ def parse_form_list_data(
 
     for _, val in sorted(values.items()):
         yield val
+
+
+def parse_str_to_headers(instr: str | None) -> ty.Iterator[tuple[str, str]]:
+    """Parse text to headers.
+    `instr` contains one header per line; header name is separated from
+    value by `:`.
+    """
+    if not instr:
+        return
+
+    for header in instr.split("\n"):
+        if not header:
+            continue
+
+        key, sep, val = header.partition(":")
+        key = key.strip()
+        val = val.strip()
+        if key and sep:
+            yield key, val

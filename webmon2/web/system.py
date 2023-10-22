@@ -493,6 +493,7 @@ def _translate_sett_descr(
         "timezone": gettext("User: default timezone"),
         "locale": gettext("User: language"),
         "gpg_key": gettext("User GPG public key"),
+        "http_headers": gettext("Default HTTP headers"),
     }
     for sett in settings:
         sett.description = translations.get(sett.key, sett.key)

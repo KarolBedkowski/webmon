@@ -86,7 +86,7 @@ class TestApplyDefaults(unittest.TestCase):
         self.assertEqual(res["c"]["c2"], 234)
         self.assertEqual(res["c"]["c3"], [1, 2, 3, 4, 5])
         self.assertEqual(res["c"]["c5"]["a1"], "a1")
-        self.assertTrue("c6" not in res["c"])
+        self.assertNotIn("c6", res["c"])
         self.assertEqual(res["d"], 12)
 
 
@@ -256,6 +256,21 @@ class TestParseFormListData(unittest.TestCase):
         self.assertEqual(1, len(values))
         self.assertEqual(values[0]["f3"], 12)
         self.assertEqual(values[0]["__idx"], 3)
+
+
+class TestParseStrToheaders(unittest.TestCase):
+    def test_simple_parse(self):
+        self.assertEqual(
+            list(common.parse_str_to_headers("Head: test")), [("Head", "test")]
+        )
+        self.assertEqual(
+            list(
+                common.parse_str_to_headers(
+                    "Head: test\nTest\nTest2:\ntest3:test33\n"
+                )
+            ),
+            [("Head", "test"), ("Test2", ""), ("test3", "test33")],
+        )
 
 
 if __name__ == "__main__":

@@ -49,6 +49,12 @@ class WebSource(AbstractSource):
             lazy_gettext("Fix URL-s"),
             default=True,
         ),
+        common.SettingDef(
+            "http_headers",
+            lazy_gettext("HTTP Headers"),
+            default="",
+            multiline=True,
+        ),
     ]  # type: list[common.SettingDef]
 
     def load(
@@ -80,7 +86,8 @@ class WebSource(AbstractSource):
         self, state: model.SourceState, session: requests.Session
     ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
-        headers = _prepare_headers(state)
+        headers = _prepare_headers(state, self._conf)
+        _LOG.debug("WebInput headers %r", headers)
         response = None
         try:
             response = session.request(
@@ -237,20 +244,31 @@ class WebSource(AbstractSource):
         return content
 
 
-def _prepare_headers(state: model.SourceState) -> dict[str, str]:
+def _prepare_headers(
+    state: model.SourceState, conf: model.ConfDict
+) -> dict[str, str]:
     headers = {
         "User-agent": AbstractSource.AGENT,
-        "DNT": "1",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9",
     }
+
+    headers.update(
+        common.parse_str_to_headers(conf.get("default_http_headers"))
+    )
+
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()
         )
 
     if state.props:
-        etag = state.props.get("etag")
-        if etag:
+        if etag := state.props.get("etag"):
             headers["If-None-Match"] = etag
+
+    headers.update(common.parse_str_to_headers(conf.get("http_headers")))
+
+    if not headers.get("Accept"):
+        headers[
+            "Accept"
+        ] = "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
 
     return headers

@@ -130,11 +130,20 @@ class AbstractSource(metaclass=abc.ABCMeta):
         _LOG.debug("loading binary %s", url)
         # reuse requests.session if available
         req = session.request if session else requests.request
+
+        headers = {
+            "User-agent": self.AGENT,
+            "Accept-Language": "en-US;q=0.7,en;q=0.3",
+        }
+        headers.update(
+            common.parse_str_to_headers(self._conf.get("http_headers"))
+        )
+
         try:
             response = req(
                 url=url,
                 method="GET",
-                headers={"User-agent": self.AGENT},
+                headers=headers,
                 allow_redirects=True,
                 timeout=30,
             )
