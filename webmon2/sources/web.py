@@ -271,4 +271,13 @@ def _prepare_headers(
             "Accept"
         ] = "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
 
+    # if not already, set accept-language locale to user locale
+    if not headers.get("Accept-Language"):
+        # fallback value
+        acc_lang = "en-US;q=0.7,en;q=0.3"
+        if user_locale := conf.get("locale"):
+            acc_lang = f"{user_locale},en-US;q=0.7,en;q=0.3"
+
+        headers["Accept-Language"] = acc_lang
+
     return headers
