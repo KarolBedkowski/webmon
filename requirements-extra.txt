@@ -508,20 +508,13 @@ prometheus-client==0.16.0 \
     --hash=sha256:0836af6eb2c8f4fed712b2f279f6c0a8bbab29f9f4aa15276b91c7cb0d1616ab \
     --hash=sha256:a03e35b359f14dd1630898543e2120addfdeacd1a6069c1367ae90fd93ad3f48
     # via webmon2 (pyproject.toml)
-psycopg2==2.9.5 \
-    --hash=sha256:093e3894d2d3c592ab0945d9eba9d139c139664dcf83a1c440b8a7aa9bb21955 \
-    --hash=sha256:190d51e8c1b25a47484e52a79638a8182451d6f6dff99f26ad9bd81e5359a0fa \
-    --hash=sha256:1a5c7d7d577e0eabfcf15eb87d1e19314c8c4f0e722a301f98e0e3a65e238b4e \
-    --hash=sha256:1e5a38aa85bd660c53947bd28aeaafb6a97d70423606f1ccb044a03a1203fe4a \
-    --hash=sha256:322fd5fca0b1113677089d4ebd5222c964b1760e361f151cbb2706c4912112c5 \
-    --hash=sha256:4cb9936316d88bfab614666eb9e32995e794ed0f8f6b3b718666c22819c1d7ee \
-    --hash=sha256:920bf418000dd17669d2904472efeab2b20546efd0548139618f8fa305d1d7ad \
-    --hash=sha256:922cc5f0b98a5f2b1ff481f5551b95cd04580fd6f0c72d9b22e6c0145a4840e0 \
-    --hash=sha256:a5246d2e683a972e2187a8714b5c2cf8156c064629f9a9b1a873c1730d9e245a \
-    --hash=sha256:b9ac1b0d8ecc49e05e4e182694f418d27f3aedcfca854ebd6c05bb1cffa10d6d \
-    --hash=sha256:d3ef67e630b0de0779c42912fe2cbae3805ebaba30cda27fea2a3de650a9414f \
-    --hash=sha256:f5b6320dbc3cf6cfb9f25308286f9f7ab464e65cfb105b64cc9c52831748ced2 \
-    --hash=sha256:fc04dd5189b90d825509caa510f20d1d504761e78b8dfb95a0ede180f71d50e5
+psycopg==3.1.12 \
+    --hash=sha256:8ec5230d6a7eb654b4fb3cf2d3eda8871d68f24807b934790504467f1deee9f8 \
+    --hash=sha256:cec7ad2bc6a8510e56c45746c631cf9394148bdc8a9a11fd8cf8554ce129ae78
+    # via webmon2 (pyproject.toml)
+psycopg-pool==3.1.8 \
+    --hash=sha256:53d9691503b538d419bf147359028633780294976743b1654dbf5f3a85b675db \
+    --hash=sha256:dc9b177e749aae4ad155d22f9d02ccb14fe2bf30792227fb02317361b446ee39
     # via webmon2 (pyproject.toml)
 pycparser==2.21 \
     --hash=sha256:8ee45429555515e1f6b185e78100aea234072576aa43ab53aefcae078162fca9 \
@@ -530,7 +523,9 @@ pycparser==2.21 \
 pyjwt[crypto]==2.6.0 \
     --hash=sha256:69285c7e31fc44f68a1feb309e948e0df53259d579295e6cfe2b1792329f05fd \
     --hash=sha256:d83c3d892a77bbb74d3e1a2cfa90afaadb60945205d1095d9221f04466f64c14
-    # via github3-py
+    # via
+    #   github3-py
+    #   pyjwt
 pyotp==2.8.0 \
     --hash=sha256:889d037fdde6accad28531fc62a790f089e5dfd5b638773e9ee004cce074a2e5 \
     --hash=sha256:c2f5e17d9da92d8ec1f7de6331ab08116b9115adbabcba6e208d46fc49a98c5a
@@ -648,6 +643,16 @@ six==1.16.0 \
     # via
     #   flask-minify
     #   python-dateutil
+structlog==23.2.0 \
+    --hash=sha256:16a167e87b9fa7fae9a972d5d12805ef90e04857a93eba479d4be3801a6a1482 \
+    --hash=sha256:334666b94707f89dbc4c81a22a8ccd34449f0201d5b1ee097a030b577fa8c858
+    # via webmon2 (pyproject.toml)
+typing-extensions==4.8.0 \
+    --hash=sha256:8f92fc8806f9a6b641eaa5318da32b44d401efaac0f6678c9bc448ba3605faa0 \
+    --hash=sha256:df8e4339e9cb77357558cbdbceca33c303714cf861d1eef15e1070055ae8b7ef
+    # via
+    #   psycopg
+    #   psycopg-pool
 uritemplate==4.1.1 \
     --hash=sha256:4346edfc5c3b79f694bccd6d6099a322bbeb628dbf2cd86eea55a456ce5124f0 \
     --hash=sha256:830c08b8d99bdd312ea4ead05994a38e8936266f84b9a7878232db50b044e02e
@@ -800,5 +805,6 @@ zope-interface==6.0 \
     # via gevent
 
 # WARNING: The following packages were not pinned, but pip requires them to be
-# pinned when the requirements file includes hashes. Consider using the --allow-unsafe flag.
+# pinned when the requirements file includes hashes and the requirement is not
+# satisfied by a package already installed. Consider using the --allow-unsafe flag.
 # setuptools

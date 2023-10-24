@@ -63,7 +63,8 @@ otp = [
 dev = [
   "pre-commit>=2.15.0",
   "stackprinter",
-  "freezegun"
+  "freezegun",
+  "pip-tools>=7.0.0",
 ]
 
 [project.scripts]
