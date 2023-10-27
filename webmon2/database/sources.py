@@ -8,15 +8,19 @@ Access & manage sources
 from __future__ import annotations
 
 import json
-import logging
 import typing as ty
+from collections import namedtuple
+from datetime import datetime
+from itertools import starmap
+
+import structlog
 
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, groups
 from ._db import DB
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def get_names(
@@ -26,7 +30,7 @@ def get_names(
     Get list of id, name all user sources optionally filtered by `group_id`
     and ordered by name;
     """
-    _LOG.debug("get_names %r, %r", user_id, group_id)
+    _LOG.debug("db: get sources names", user_id=user_id, group_id=group_id)
     if not user_id:
         raise ValueError("missing user_id")
 
@@ -124,7 +128,12 @@ def get_all(
         status: optional status filter
         order: optional sorting
     """
-    _LOG.debug("get_all (%r, %r, %r, %r)", user_id, group_id, status, order)
+    log = _LOG.bind(user_id=user_id, group_id=group_id)
+    log.debug(
+        "db: get all sources: status: %r, order: %r",
+        status,
+        order,
+    )
     if group_id:
         user_groups = {group_id: groups.get(db, group_id, user_id)}
     else:
@@ -139,7 +148,7 @@ def get_all(
 
     sql.extend((_get_status_sql(status), _get_order_sql(order)))
 
-    _LOG.debug("get_all %r %s", args, sql)
+    log.debug("db: get all sources query", sql=sql, args=args)
     with db.cursor_dict_row() as cur:
         cur.execute("".join(sql), args)
         return [_build_source(row, user_groups) for row in cur]
@@ -297,7 +306,9 @@ def update_filter(
     try:
         source = get(db, source_id, with_group=False)
     except dbc.NotFound:
-        _LOG.warning("update_filter: source %d not found", source_id)
+        _LOG.warning(
+            "db: update filter error: source not found", source_id=source_id
+        )
         return
 
     if not source.filters:
@@ -322,16 +333,24 @@ def delete_filter(
         filter_idx: filter index to delete
 
     """
+    log = _LOG.bind(user_id=user_id, source_id=source_id)
     source = get(db, source_id, with_group=False)
     if not source or source.user_id != user_id:
-        _LOG.warning("invalid source (%r, %r) %r", user_id, source_id, source)
+        log.warning(
+            "db: delete filter: invalid source",
+            source=source,
+        )
         return
 
     if source.filters and filter_idx < len(source.filters):
         del source.filters[filter_idx]
         save(db, source)
     else:
-        _LOG.warning("invalid filter index %r in %r", filter_idx, source)
+        log.warning(
+            "db: delete filter: invalid filter idx: %r in source",
+            filter_idx,
+            source=source,
+        )
 
 
 def move_filter(
@@ -435,7 +454,7 @@ def save_state(
     db: DB, state: model.SourceState, user_id: int
 ) -> model.SourceState:
     """Save (replace) source state and binaries if set"""
-    _LOG.debug("save_state: %s", state)
+    _LOG.debug("db: save source state", state=state, user_id=user_id)
     row = model.SourceState.to_row(state)
     with db.cursor() as cur:
         cur.execute(
@@ -694,3 +713,39 @@ def randomize_next_check(db: DB, user_id: int) -> int:
     with db.cursor() as cur:
         cur.execute(_RANDOMIZE_NEXT_CHECK_SQL, (user_id,))
         return cur.rowcount
+
+
+_ERRORS_FOR_USER_SQL = """
+SELECT
+	sg."name" AS group_name,
+	s."name" AS source_name,
+	ss.last_error,
+	ss.error
+FROM
+	sources s
+JOIN source_state ss ON
+	ss.source_id = s.id
+JOIN source_groups sg ON
+	sg.id = s.group_id
+WHERE
+	ss.status = 'error'
+	AND s.user_id = %(user_id)s
+	AND ss.last_error > %(min_ts)s
+"""
+
+ErrorInfo = namedtuple(
+    "ErrorInfo", ["group_name", "name", "last_error", "error"]
+)
+
+
+def get_errors_for_user(
+    db: DB, user_id: int, min_ts: datetime
+) -> list[ErrorInfo]:
+    """Get information about sources with errors for `user_id` since
+    `min_ts`.
+    """
+    with db.cursor() as cur:
+        cur.execute(
+            _ERRORS_FOR_USER_SQL, {"user_id": user_id, "min_ts": min_ts}
+        )
+        return list(starmap(ErrorInfo, cur))

@@ -7,9 +7,9 @@ Web gui
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 
+import structlog
 from flask import (
     Blueprint,
     abort,
@@ -26,8 +26,7 @@ from webmon2 import common, database, filters, model, sources
 
 from . import _commons as c, forms
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("source", __name__, url_prefix="/source")
 
 
@@ -229,7 +228,11 @@ def source_filters(source_id: int) -> ty.Any:
     if not source:
         return abort(404)
 
-    _LOG.debug("source.filters: %s", source.filters)
+    _LOG.debug(
+        "web source: filters loaded",
+        filters=source.filters,
+        source_id=source_id,
+    )
     filter_fields = [
         forms.Filter(fltr["name"]) for fltr in source.filters or []
     ]
@@ -273,7 +276,10 @@ def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:
     fltr = filters.get_filter(conf)
     if not fltr:
         _LOG.warning(
-            "invalid filter for source %d [%d]: %r", source_id, sfidx, conf
+            "web source: edit - invalid filter idx: %d",
+            sfidx,
+            conf=conf,
+            source_id=source_id,
         )
         return abort(400)
 

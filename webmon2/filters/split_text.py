@@ -6,8 +6,6 @@
 Filters for splitting input text into many entries
 
 """
-import logging
-import typing as ty
 
 import lxml.html
 from cssselect import GenericTranslator, SelectorError
@@ -17,9 +15,6 @@ from lxml import etree
 from webmon2 import common, model
 
 from ._abstract import AbstractFilter
-
-_ = ty
-_LOG = logging.getLogger(__name__)
 
 
 def _get_elements_by_xpath(

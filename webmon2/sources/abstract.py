@@ -7,17 +7,15 @@ Abstract source definition
 """
 
 import abc
-import logging
 import typing as ty
 
 import requests
+import structlog
 
 from webmon2 import common, model
 
-_LOG = logging.getLogger(__name__)
 
-
-class AbstractSource(metaclass=abc.ABCMeta):
+class AbstractSource(abc.ABC):
     """Abstract/Base class for all sources"""
 
     # name used in configuration
@@ -27,7 +25,7 @@ class AbstractSource(metaclass=abc.ABCMeta):
     long_info = ""
 
     AGENT = (
-        "Mozilla/5.0 (X11; Linux i686; rv:45.0) Gecko/20100101 Firefox/45.0"
+        "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/117.0"
     )
 
     def __init__(
@@ -35,6 +33,7 @@ class AbstractSource(metaclass=abc.ABCMeta):
     ) -> None:
         super().__init__()
         self._source = source
+        self._log = structlog.get_logger(__name__).bind(source_id=source.id)
 
         # when _updated_source is set, after loading this configuration
         # overwrite data in database
@@ -45,7 +44,7 @@ class AbstractSource(metaclass=abc.ABCMeta):
             sys_settings,
             source.settings,
         )
-        _LOG.debug("Source %s: conf: %r", source.id, self._conf)
+        self._log.debug("source: configuration", conf=self._conf)
 
     def __str__(self) -> str:
         return " ".join(
@@ -127,14 +126,24 @@ class AbstractSource(metaclass=abc.ABCMeta):
             None on error
             (<content type>, <binary data>) on success
         """
-        _LOG.debug("loading binary %s", url)
+        log = self._log.bind(url=url)
+        log.debug("source: load_binary: loading")
         # reuse requests.session if available
         req = session.request if session else requests.request
+
+        headers = {
+            "User-agent": self.AGENT,
+            "Accept-Language": "en-US;q=0.7,en;q=0.3",
+        }
+        headers.update(
+            common.parse_str_to_headers(self._conf.get("http_headers"))
+        )
+
         try:
             response = req(
                 url=url,
                 method="GET",
-                headers={"User-agent": self.AGENT},
+                headers=headers,
                 allow_redirects=True,
                 timeout=30,
             )
@@ -144,24 +153,29 @@ class AbstractSource(metaclass=abc.ABCMeta):
                     if only_images and not _check_content_type(
                         response, _IMAGE_TYPES
                     ):
-                        _LOG.info(
-                            "load binary from %s skipped due not "
-                            "acceptable content type: %s",
-                            url,
+                        log.debug(
+                            "source: load_binary: load skipped due "
+                            "unacceptable content type: %s",
                             response.headers["Content-Type"],
+                            url=url,
                         )
                         return None
 
                     return response.headers["Content-Type"], response.content
 
-                _LOG.info(
-                    "load binary from %s status %s error: %s",
-                    url,
-                    response.status_code,
-                    response.text,
+                log.debug(
+                    "source: load_binary: invalid response",
+                    url=url,
+                    status=response.status_code,
+                    error=response.text,
                 )
+        except requests.exceptions.RequestException as err:
+            log.debug("source: load_binary: load error", url=url, error=err)
+
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("load binary from %s error: %s", url, err)
+            log.exception(
+                "source: load_binary: load error", url=url, error=err
+            )
 
         return None
 

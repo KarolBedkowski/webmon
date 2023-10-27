@@ -7,14 +7,15 @@ Web gui application
 """
 from __future__ import annotations
 
-import logging
-import os
 import time
 import typing as ty
+import uuid
 from argparse import Namespace
 from configparser import ConfigParser
+from pathlib import Path
 
 import flask_babel
+import structlog
 from flask import (
     Flask,
     Response,
@@ -58,7 +59,7 @@ from . import (
 
 __all__ = ("create_app", "start_app")
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def _register_blueprints(app: Flask) -> None:
@@ -92,8 +93,103 @@ _CSP = (
 )
 
 
+def _teardown_db(  # pylint: disable=unused-variable
+    _exception: BaseException | None,
+) -> None:
+    db = g.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+def _before_request() -> ty.Any:  # pylint: disable=unused-variable
+    request.req_start_time = time.time()  # type: ignore
+    path = request.path
+    # pages that not need valid user and don't need additional data like
+    # locale setting
+    if path == "/favicon.ico" or path.startswith(
+        ("/metrics", "/atom", "/health")
+    ):
+        return None
+
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(
+        request_id=str(uuid.uuid4()),
+    )
+
+    log = _LOG.bind()
+    log.debug("web: start request", path=path, method=request.method)
+
+    if not _check_csrf_token():
+        return abort(400)
+
+    user_id = session.get("user")
+    if user_id is not None:
+        # user is logged
+        structlog.contextvars.bind_contextvars(req_user_id=user_id)
+        # path that not need load additional data
+        if (
+            path.startswith(("/binary/", "/static", "/entry/mark/"))
+            or path == "/manifest.json"
+        ):
+            return None
+
+        if request.method == "GET":
+            _count_unread(user_id)
+
+        g.locale = str(flask_babel.get_locale())
+
+        return None
+
+    # pages that not need valid user
+    if path.startswith("/sec/login"):
+        return None
+
+    # login is requred; redirect to login page
+
+    # back url is registered only for get request to prevent bad request
+    if request.method == "GET":
+        session["_back_url"] = request.url
+        session.modified = True
+
+    return redirect(url_for("sec.login"))
+
+
+def _after_request(  # pylint: disable=unused-variable
+    resp: Response,
+) -> Response:
+    cont_type = (resp.content_type or "").partition(";")[0]
+    if cont_type in (
+        "application/json",
+        "application/atom+xml",
+        "text/plain",
+    ):
+        _set_cache_contol_no_cache(resp)
+
+    if cont_type == "text/html":
+        _set_cache_contol_no_cache(resp)
+        resp.headers["Content-Security-Policy"] = _CSP
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["X-Frame-Options"] = "DENY"
+    elif not resp.headers.get("Cache-Control"):
+        resp.headers["Cache-Control"] = "public, max-age=31536000"
+
+    resp_time = time.time() - request.req_start_time  # type: ignore
+    _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
+        resp_time
+    )
+    _REQUEST_COUNT.labels(
+        request.method, request.endpoint, resp.status_code
+    ).inc()
+    return resp
+
+
+def _handle_context() -> dict[str, ty.Any]:
+    """Inject object into jinja2 templates."""
+    return {"webmon2": webmon2}
+
+
 def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
-    template_folder = os.path.join(os.path.dirname(__file__), "templates")
+    template_folder = Path(__file__).parent.joinpath("templates")
     # create and configure the app
     app = Flask(
         __name__,
@@ -105,7 +201,9 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
         if minify:
             minify(app=app, html=True, js=True, cssless=True)
         else:
-            _LOG.warning("minifi enabled but flask_minifi is not installed!")
+            _LOG.warning(
+                "web: minifi enabled but flask_minifi is not installed!"
+            )
 
     app.config.from_mapping(
         ENV="debug" if debug else "production",
@@ -122,105 +220,31 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    app.session_interface = appsession.DBSessionInterface(True)
-    babel = flask_babel.Babel(app)
-
-    _register_blueprints(app)
-
-    # @app.teardown_appcontext
-    @app.teardown_request
-    def teardown_db(  # pylint: disable=unused-variable
-        _exception: BaseException | None,
-    ) -> None:
-        db = g.pop("db", None)
-        if db is not None:
-            db.close()
-
-    @app.before_request
-    def before_request() -> ty.Any:  # pylint: disable=unused-variable
-        request.req_start_time = time.time()  # type: ignore
-        path = request.path
-        # pages that not need valid user and don't need additional data like
-        # locale setting
-        if path == "/favicon.ico" or path.startswith(
-            ("/metrics", "/atom", "/health")
-        ):
-            return None
-
-        if not _check_csrf_token():
-            return abort(400)
-
-        user_id = session.get("user")
-        if user_id is not None:
-            # user is logged
-            # path that not need load additional data
-            if (
-                path.startswith(("/binary/", "/static", "/entry/mark/"))
-                or path == "/manifest.json"
-            ):
-                return None
-
-            if request.method == "GET":
-                _count_unread(user_id)
-
-            g.locale = str(flask_babel.get_locale())
-
-            return None
-
-        # pages that not need valid user
-        if path.startswith("/sec/login"):
-            return None
-
-        # login is requred; redirect to login page
-
-        # back url is registered only for get request to prevent bad request
-        if request.method == "GET":
-            session["_back_url"] = request.url
-            session.modified = True
-
-        return redirect(url_for("sec.login"))
-
-    @app.after_request
-    def after_request(  # pylint: disable=unused-variable
-        resp: Response,
-    ) -> Response:
-        cont_type = (resp.content_type or "").partition(";")[0]
-        if cont_type in (
-            "application/json",
-            "application/atom+xml",
-            "text/plain",
-        ):
-            _set_cache_contol_no_cache(resp)
-
-        if cont_type == "text/html":
-            _set_cache_contol_no_cache(resp)
-            resp.headers["Content-Security-Policy"] = _CSP
-            resp.headers["X-Content-Type-Options"] = "nosniff"
-            resp.headers["X-Frame-Options"] = "DENY"
-        elif not resp.headers.get("Cache-Control"):
-            resp.headers["Cache-Control"] = "public, max-age=31536000"
-
-        resp_time = time.time() - request.req_start_time  # type: ignore
-        _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
-            resp_time
-        )
-        _REQUEST_COUNT.labels(
-            request.method, request.endpoint, resp.status_code
-        ).inc()
-        return resp
-
-    @app.context_processor
-    def handle_context() -> dict[str, ty.Any]:
-        """Inject object into jinja2 templates."""
-        return {"webmon2": webmon2}
-
-    @babel.localeselector
     def get_locale():
         return request.accept_languages.best_match(app.config["LANGUAGES"])
 
-    @babel.timezoneselector
     def get_timezone():
         return session.get("_user_tz")
+
+    app.session_interface = appsession.DBSessionInterface(True)
+    if hasattr(flask_babel.Babel, "localeselector"):
+        # babel 2x
+        babel = flask_babel.Babel(app)
+        babel.localeselector(get_locale)
+        babel.timezoneselector(get_timezone)
+    else:
+        # babel 3
+        babel = flask_babel.Babel(
+            app, locale_selector=get_locale, timezone_selector=get_timezone
+        )
+    assert babel
+
+    _register_blueprints(app)
+
+    app.teardown_request(_teardown_db)
+    app.before_request(_before_request)
+    app.after_request(_after_request)
+    app.context_processor(_handle_context)
 
     return app
 
@@ -235,7 +259,11 @@ def _check_csrf_token() -> bool:
         req_token = request.form.get("_csrf_token")
         sess_token = session.get("_csrf_token")
         if req_token != sess_token:
-            _LOG.info("bad csrf token")
+            _LOG.debug(
+                "web: check csrf token failed",
+                request_token=req_token,
+                session_token=sess_token,
+            )
             return False
 
     elif "_csrf_token" not in session:
@@ -273,7 +301,7 @@ def create_app(args: Namespace, conf: ConfigParser) -> Flask:
         )
 
     app.wsgi_app = ProxyFix(  # type: ignore
-        app.wsgi_app, x_proto=1, x_host=1, x_port=1, x_prefix=1
+        app.wsgi_app, x_host=1, x_port=1, x_prefix=1
     )
 
     return app
@@ -292,6 +320,6 @@ def start_app(args: Namespace, conf: ConfigParser) -> None:
         (host, port),
         app,
         spawn=pool,
-        log=LoggingLogAdapter(logging.getLogger("werkzeug")),
+        log=LoggingLogAdapter(structlog.getLogger("werkzeug")),
     )
     http_server.serve_forever()

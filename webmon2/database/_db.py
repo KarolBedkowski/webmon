@@ -7,7 +7,6 @@ Definition of DB object
 """
 from __future__ import annotations
 
-import logging
 import os.path
 import sys
 import typing as ty
@@ -16,11 +15,11 @@ from pathlib import Path
 
 import psycopg
 import psycopg_pool as pool
-
-_ = ty
-_LOG = logging.getLogger("db")
+import structlog
 
 T = ty.TypeVar("T")
+
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 @cache
@@ -46,7 +45,7 @@ def create_object_row_maker(
 class DB:
     POOL: pool.ConnectionPool = None  # type: ignore
 
-    __slots__ = ("_conn",)
+    __slots__ = ("_conn", "_log")
 
     def __init__(self) -> None:
         super().__init__()
@@ -56,6 +55,7 @@ class DB:
 
     def connect(self) -> None:
         assert DB.POOL
+        _LOG.debug("db: connect")
         self._conn = DB.POOL.getconn()
         if not self._conn:
             raise RuntimeError("no database connection")
@@ -105,21 +105,19 @@ class DB:
     def initialize(
         cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
     ) -> None:
-        _LOG.info("initializing database")
         cls.POOL = pool.ConnectionPool(
             conn_str,
             min_size=min_conn,
             max_size=max_conn,
             kwargs={"autocommit": False},
         )
-        # common.create_missing_dir(os.path.dirname(filename))
+
         with DB() as db:
             db.check()
             if update_schema:
                 db.update_schema()
 
     def __enter__(self) -> DB:
-        # _LOG.debug("Enter conn %s", self._conn)
         return self
 
     def __exit__(
@@ -138,7 +136,7 @@ class DB:
             self._conn = None
             return
 
-        _LOG.debug("Closing conn %s", self._conn)
+        _LOG.debug("db: closing connection")
         if (
             self._conn.info.transaction_status
             == psycopg.pq.TransactionStatus.INTRANS
@@ -152,35 +150,41 @@ class DB:
     def check(self) -> None:
         with self.cursor() as cur:
             cur.execute("select now()")
-            _LOG.debug("check: %s", cur.fetchone())
+            _dummy = cur.fetchone()
             self.rollback()
 
     def update_schema(self) -> None:
         assert self._conn
         self._conn.autocommit = True
+        log = _LOG.bind()
+
         schema_ver = self._get_schema_version()
-        _LOG.debug("current schema version: %r", schema_ver)
-        schema_files = os.path.join(os.path.dirname(__file__), "..", "schema")
+        log.debug("db.update_schema: current version: %r", schema_ver)
+
+        schema_files = Path(__file__).parent.joinpath("..", "schema")
+        log.debug("db.update_schema: schema_dir: %s", schema_files)
         for fname in sorted(os.listdir(schema_files)):
             if not fname.endswith(".sql"):
                 continue
 
             try:
                 version = int(os.path.splitext(fname)[0])
-                _LOG.debug("found update: %r", version)
+                log.debug("db.update_schema: found update %r", version)
                 if version <= schema_ver:
                     continue
 
-            except ValueError:
-                _LOG.warning("skipping schema update file %s", fname)
+            except ValueError as err:
+                log.warning(
+                    "db.update_schema: skipping file %r", fname, error=err
+                )
                 continue
 
-            _LOG.info("apply update: %s", fname)
-            fpath = os.path.join(schema_files, fname)
+            log.info("db.update_schema: apply update from file %r", fname)
+            fpath = Path(schema_files, fname)
             try:
                 with self._conn.cursor() as cur:
-                    sql = Path(fpath).read_text(encoding="UTF-8")
-                    _LOG.debug("execute: %s", sql)
+                    sql = fpath.read_text(encoding="UTF-8")
+                    log.debug("db.update_schema: execute query", sql=sql)
                     cur.execute(sql)
                     cur.execute(
                         "insert into schema_version(version) values(%s)",
@@ -190,7 +194,9 @@ class DB:
 
             except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
-                _LOG.exception("schema update error: %s", err)
+                log.exception(
+                    "db.update_schema: execute file %r error", fpath, error=err
+                )
                 sys.exit(-1)
 
     def _get_schema_version(self) -> int:
@@ -201,6 +207,6 @@ class DB:
                     return row[0] or 0
 
             except psycopg.ProgrammingError:
-                _LOG.info("no schema version")
+                _LOG.info("db: no schema version found")
 
         return 0

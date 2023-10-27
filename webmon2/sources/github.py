@@ -7,7 +7,6 @@ Inputs related to github
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
@@ -24,10 +23,8 @@ from webmon2 import common, model
 
 from .abstract import AbstractSource
 
-_LOG = logging.getLogger(__name__)
 _GITHUB_MAX_AGE = 90  # 90 days
 _GITHUB_ICON = "https://github.com/favicon.ico"
-_ = ty
 
 
 class GitHubAbstractSource(AbstractSource):
@@ -192,7 +189,7 @@ class GithubInput(GitHubAbstractSource):
                 form_fun(commit, full_message) for commit in commits
             )
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("github load error: %s", err)
+            self._log.exception("github source: load error", error=err)
             return state.new_error(str(err)), []
 
         new_state = state.new_ok(etag=repository.etag)
@@ -318,7 +315,7 @@ class GithubTagsSource(GitHubAbstractSource):
         try:
             content = "\n\n".join(filter(None, map(_format_gh_tag, tags)))
         except Exception as err:
-            _LOG.exception("github load error: %s", err)
+            self._log.exception("github tags source: load error", error=err)
             raise common.InputError(self, str(err))
 
         new_state = state.new_ok(etag=repository.etag)
@@ -468,7 +465,9 @@ class GithubReleasesSource(GitHubAbstractSource):
                 for release in releases
             ]
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("github load error %s", err)
+            self._log.exception(
+                "github releases source: load error", error=err
+            )
             return state.new_error(str(err)), []
 
         new_state = state.new_ok(etag=repository.etag)

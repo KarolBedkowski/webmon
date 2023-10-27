@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import functools
 import ipaddress
-import logging
-import os
 import typing as ty
 from contextlib import suppress
+from pathlib import Path
 
 import prometheus_client
 import psycopg
@@ -36,8 +35,6 @@ from webmon2 import database
 
 from . import _commons as c
 
-_ = ty
-_LOG = logging.getLogger(__name__)
 BP = Blueprint("root", __name__, url_prefix="/")
 
 
@@ -171,7 +168,7 @@ def health_live() -> ty.Any:
 @BP.route("/favicon.ico")
 def favicon() -> ty.Any:
     return send_from_directory(
-        os.path.join(current_app.root_path, "static"),
+        Path(current_app.root_path, "static"),
         "favicon.ico",
         mimetype="image/vnd.microsoft.icon",
     )

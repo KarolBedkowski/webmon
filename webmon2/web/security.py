@@ -5,7 +5,6 @@
 """
 App security
 """
-import logging
 import typing as ty
 
 from flask import (
@@ -24,7 +23,6 @@ from webmon2 import database, model, security
 
 from . import _commons as c
 
-_LOG = logging.getLogger(__name__)
 BP = Blueprint("sec", __name__, url_prefix="/sec")
 
 

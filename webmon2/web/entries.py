@@ -7,10 +7,10 @@ Web gui
 """
 from __future__ import annotations
 
-import logging
 import math
 import typing as ty
 
+import structlog
 from flask import (
     Blueprint,
     g,
@@ -25,8 +25,7 @@ from webmon2 import database, model
 
 from . import _commons as c
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("entries", __name__, url_prefix="/entries")
 
 
@@ -126,7 +125,12 @@ def _get_req_source(db: database.DB, user_id: int) -> model.Source | None:
             return None
 
     except (ValueError, TypeError, KeyError) as err:
-        _LOG.debug("req source error: %s", err)
+        _LOG.debug(
+            "web entries: get req source_id error",
+            error=err,
+            user_id=user_id,
+            args=request.args,
+        )
         return None
 
     return database.sources.get(
@@ -141,7 +145,12 @@ def _get_req_group(db: database.DB, user_id: int) -> model.SourceGroup | None:
             return None
 
     except (ValueError, TypeError, KeyError) as err:
-        _LOG.debug("req group error: %s", err)
+        _LOG.debug(
+            "web entries: get req group_id error",
+            error=err,
+            user_id=user_id,
+            args=request.args,
+        )
         return None
 
     return database.groups.get(db, group_id, user_id)

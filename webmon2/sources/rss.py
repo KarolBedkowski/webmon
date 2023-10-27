@@ -8,7 +8,6 @@ RSS data loader
 from __future__ import annotations
 
 import datetime
-import logging
 import time
 import typing as ty
 from contextlib import suppress
@@ -22,8 +21,6 @@ from webmon2 import common, model
 
 from .abstract import AbstractSource
 
-_LOG = logging.getLogger(__name__)
-_ = ty
 _RSS_DEFAULT_FIELDS = "title, updated_parsed, published_parsed, link, author"
 
 
@@ -63,7 +60,7 @@ class RssSource(AbstractSource):
         try:
             new_state, entries = self._load(state)
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("source %d load error: %s", state.source_id, err)
+            self._log.debug("rss source: load error", error=err)
             new_state, entries = state.new_error(str(err)), []
 
         if new_state.status != model.SourceStateStatus.ERROR:
@@ -95,6 +92,12 @@ class RssSource(AbstractSource):
         )
         status = doc.get("status") if doc else 400
         if status not in (200, 301, 302, 304):
+            self._log.debug(
+                "rss source: get document error",
+                state=state,
+                doc=doc,
+                status=status,
+            )
             res = _fail_error(state, doc, status)
             del doc
             doc = None
@@ -255,7 +258,7 @@ class RssSource(AbstractSource):
     def _load_image(
         self, doc: feedparser.FeedParserDict
     ) -> tuple[str, bytes] | None:
-        _LOG.debug("source %d load image", self._source.id)
+        self._log.debug("rss source: load image: start")
         feed = doc.feed
         image_href = None
         image = feed.get("image")
@@ -283,8 +286,10 @@ class RssSource(AbstractSource):
             if common.parse_interval(interval):
                 self._update_source(interval=interval)
         except ValueError:
-            _LOG.debug(
-                "wrong sy_update*: %r %r", sy_updateperiod, sy_updatefrequency
+            self._log.debug(
+                "rss source. wrong sy_ params period: %r, freq: %r",
+                sy_updateperiod,
+                sy_updatefrequency,
             )
 
     def _update_source(
@@ -301,7 +306,9 @@ class RssSource(AbstractSource):
             self._updated_source.settings["url"] = new_url
 
         if interval and interval != self._source.interval:
-            _LOG.debug("interval updated: %s", interval)
+            self._log.debug(
+                "rss source: interval updated; interval: %r", interval
+            )
             self._updated_source = self._updated_source or self._source.clone()
             self._updated_source.interval = interval
 
@@ -314,10 +321,8 @@ class RssSource(AbstractSource):
 def _fail_error(
     state: model.SourceState, doc: feedparser.FeedParserDict, status: int
 ) -> tuple[model.SourceState, list[model.Entry]]:
-    _LOG.error("load document error %r: state: %r %r", status, state, doc)
     summary = gettext("Loading page error: %(status)s", status=status)
-    feed = doc.get("feed")
-    if feed:
+    if feed := doc.get("feed"):
         summary = feed.get("summary") or summary
 
     return state.new_error(summary), []

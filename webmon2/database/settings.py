@@ -7,15 +7,11 @@ Access to settings in db
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 
 from webmon2 import model
 
 from ._db import DB
-
-_LOG = logging.getLogger(__name__)
-
 
 _GET_ALL_SQL = """
 SELECT s.key AS setting__key,

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import datetime
 import email.utils
-import logging
 import typing as ty
 from urllib.parse import urlsplit, urlunsplit
 
@@ -21,9 +20,6 @@ from webmon2 import common, model
 from webmon2.filters.fix_urls import FixHtmlUrls
 
 from .abstract import AbstractSource
-
-_ = ty
-_LOG = logging.getLogger(__name__)
 
 
 class WebSource(AbstractSource):
@@ -42,12 +38,19 @@ class WebSource(AbstractSource):
             lazy_gettext("Fix URL-s"),
             default=True,
         ),
+        common.SettingDef(
+            "http_headers",
+            lazy_gettext("HTTP Headers"),
+            default="",
+            multiline=True,
+        ),
     ]  # type: list[common.SettingDef]
 
     def load(
         self, state: model.SourceState
     ) -> tuple[model.SourceState, model.Entries]:
         """Return one part - page content."""
+
         with requests.Session() as session:
             new_state, entries = self._load(state, session)
 
@@ -73,7 +76,8 @@ class WebSource(AbstractSource):
         self, state: model.SourceState, session: requests.Session
     ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
-        headers = _prepare_headers(state)
+        headers = _prepare_headers(state, self._conf)
+        self._log.debug("web source: load start", headers=headers)
         response = None
         try:
             response = session.request(
@@ -133,9 +137,11 @@ class WebSource(AbstractSource):
 
         except requests.exceptions.RequestException as err:
             return state.new_error(f"request error: {err}"), []
+
         except Exception as err:  # pylint: disable=broad-except
-            _LOG.exception("WebInput error %s", err)
+            self._log.exception("web source: load error", error=err)
             return state.new_error(str(err)), []
+
         finally:
             if response:
                 response.close()
@@ -230,16 +236,40 @@ class WebSource(AbstractSource):
         return content
 
 
-def _prepare_headers(state: model.SourceState) -> dict[str, str]:
-    headers = {"User-agent": AbstractSource.AGENT, "Connection": "close"}
+def _prepare_headers(
+    state: model.SourceState, conf: model.ConfDict
+) -> dict[str, str]:
+    headers = {
+        "User-agent": AbstractSource.AGENT,
+    }
+
+    headers.update(
+        common.parse_str_to_headers(conf.get("default_http_headers"))
+    )
+
     if state.last_update:
         headers["If-Modified-Since"] = email.utils.formatdate(
             state.last_update.timestamp()
         )
 
     if state.props:
-        etag = state.props.get("etag")
-        if etag:
+        if etag := state.props.get("etag"):
             headers["If-None-Match"] = etag
+
+    headers.update(common.parse_str_to_headers(conf.get("http_headers")))
+
+    if not headers.get("Accept"):
+        headers[
+            "Accept"
+        ] = "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
+
+    # if not already, set accept-language locale to user locale
+    if not headers.get("Accept-Language"):
+        # fallback value
+        acc_lang = "en-US;q=0.7,en;q=0.3"
+        if user_locale := conf.get("locale"):
+            acc_lang = f"{user_locale},en-US;q=0.7,en;q=0.3"
+
+        headers["Accept-Language"] = acc_lang
 
     return headers

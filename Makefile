@@ -16,10 +16,12 @@ pylint:
 .PHONY: check
 ## Lint using ruff, bandit, mypy
 check:
-	ruff .
+	ruff check .
+	black --check .
 	bandit -c pyproject.toml  -r webmon2
+	refurb --enable-all --python-version 3.11 webmon2
 	mypy webmon2
-	refurb webmon2
+
 
 .PHONY: clean
 ## Delete all temporary files
@@ -39,7 +41,7 @@ clean:
 .PHONY: format
 ## Format files using black & isort
 format:
-	ruff . --fix-only
+	ruff --fix-only --exit-zero .
 	black .
 
 .PHONY: test

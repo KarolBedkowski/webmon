@@ -5,15 +5,12 @@
 """
 Select entries by matching text.
 """
-import typing as ty
 
 from flask_babel import lazy_gettext
 
 from webmon2 import model
 
 from ._abstract import AbstractFilter
-
-_ = ty
 
 
 class Sort(AbstractFilter):

@@ -15,11 +15,13 @@ try:
     import stackprinter
 
     stackprinter.set_excepthook(style="color")
+    print("stackprinter enabled")
 except ImportError:
     try:
         from rich.traceback import install
 
         install()
+        print("rich.trackback enabled")
     except ImportError:
         pass
 try:

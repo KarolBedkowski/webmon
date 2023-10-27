@@ -4,16 +4,17 @@
 from __future__ import annotations
 
 import hashlib
-import logging
 import random
 from datetime import datetime
+
+import structlog
 
 from webmon2 import common, model
 
 from . import _dbcommon as dbc
 from ._db import DB
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def get_names(db: DB, user_id: int) -> list[tuple[int, str]]:
@@ -193,7 +194,7 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     Return:
         updated group object
     """
-    _LOG.debug("save: %r", group)
+    _LOG.debug("db: save group", group=group, group_id=group.id)
 
     if not group.feed:
         group.feed = _generate_group_feed(db)
@@ -375,6 +376,8 @@ def get_state(db: DB, group_id: int) -> tuple[datetime, str] | None:
 
 def delete(db: DB, user_id: int, group_id: int) -> None:
     """Delete group; move existing sources to main (or first) group."""
+    log = _LOG.bind(group_id=group_id, user_id=user_id)
+    log.debug("db: delete group")
     with db.cursor() as cur:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
@@ -393,7 +396,10 @@ def delete(db: DB, user_id: int, group_id: int) -> None:
                 "UPDATE sources set group_id= %s WHERE group_id=%s",
                 (dst_group_id, group_id),
             )
-            _LOG.debug("moved %d sources", cur.rowcount)
+            log.debug(
+                "db: delete group: moved %d sources",
+                cur.rowcount,
+            )
 
     with db.cursor() as cur:
         cur.execute("DELETE FROM source_groups WHERE id= %s", (group_id,))

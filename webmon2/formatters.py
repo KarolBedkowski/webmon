@@ -7,13 +7,12 @@ Formating entry content functions
 """
 from __future__ import annotations
 
-import logging
-
 import lxml
 import markdown2
 import readability
+import structlog
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def format_markdown(body: str) -> str:
@@ -38,8 +37,7 @@ def format_html(body: str) -> str:
         content = doc.summary(html_partial=True)
         return _clean_html_brutal(content)
     except TypeError as err:
-        _LOG.warning("_readable_html summary error: %s", err)
-        _LOG.debug("body: %r", body)
+        _LOG.debug("formatters: format html error", body=body, error=err)
 
     return _clean_html_brutal(body)
 

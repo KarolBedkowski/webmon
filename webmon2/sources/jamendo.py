@@ -8,7 +8,6 @@ Jamendo input.
 from __future__ import annotations
 
 import datetime
-import logging
 
 # import ssl
 import time
@@ -16,6 +15,7 @@ import typing as ty
 import urllib.parse
 
 import requests
+import structlog
 from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
@@ -26,7 +26,6 @@ from .abstract import AbstractSource
 
 JsonResult = list[dict[str, ty.Any]]
 
-_LOG = logging.getLogger(__name__)
 _JAMENDO_MAX_AGE = 90  # 90 days
 _JAMENDO_ICON = (
     "https://cdn-www.jamendo.com/Client/assets/toolkit/images/"
@@ -53,7 +52,7 @@ class JamendoAbstractSource(AbstractSource):
 
     # pylint: disable=too-many-return-statements
     def _make_request(self, url: str) -> tuple[int, ty.Any]:
-        _LOG.debug("make request: %s", url)
+        self._log.debug("jamendo: make request", url=url)
         headers = {
             "User-agent": "Mozilla/5.0 (X11; Linux i686; rv:45.0) "
             "Gecko/20100101 Firefox/45.0",
@@ -203,7 +202,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             + time.strftime("%Y-%m-%d"),
         )
 
-        _LOG.debug("load url=%s", url)
+        self._log.debug("jamendo albums: load", url=url)
 
         status, res = self._make_request(url)
         if status == 304:
@@ -218,11 +217,13 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_JAMENDO_ICON))
 
-        entries = list(_jamendo_format_long_list(self._source, res["results"]))
+        entries = list(
+            _jamendo_format_long_list(self._source, res["results"], self._log)
+        )
         for entry in entries:
             entry.icon = new_state.icon
 
-        _LOG.debug("JamendoAlbumsSource: load done")
+        self._log.debug("jamendo albums: load done")
         return new_state, entries
 
     @classmethod
@@ -246,7 +247,9 @@ class JamendoAlbumsSource(JamendoAbstractSource):
 
 
 def _jamendo_format_long_list(
-    source: model.Source, results: JsonResult
+    source: model.Source,
+    results: JsonResult,
+    log: structlog.stdlib.BoundLogger,
 ) -> model.Entries:
     for result in results:
         for album in result.get("albums") or []:
@@ -259,7 +262,7 @@ def _jamendo_format_long_list(
                         _jamendo_album_to_url(album["id"]),
                     )
                 ),
-                _get_release_date(album),
+                _get_release_date(album, log),
             )
 
 
@@ -317,11 +320,13 @@ class JamendoTracksSource(JamendoAbstractSource):
         if not new_state.icon:
             new_state.set_icon(self._load_binary(_JAMENDO_ICON))
 
-        entries = list(_jamendo_track_format(self._source, res["results"]))
+        entries = list(
+            _jamendo_track_format(self._source, res["results"], self._log)
+        )
         for entry in entries:
             entry.icon = new_state.icon
 
-        _LOG.debug("JamendoTracksSource: load done")
+        self._log.debug("jamendo tracks: load done")
         return new_state, entries
 
     @classmethod
@@ -345,7 +350,9 @@ class JamendoTracksSource(JamendoAbstractSource):
 
 
 def _jamendo_track_format(
-    source: model.Source, results: JsonResult
+    source: model.Source,
+    results: JsonResult,
+    log: structlog.stdlib.BoundLogger,
 ) -> model.Entries:
     for result in results:
         tracks = result.get("tracks")
@@ -362,21 +369,26 @@ def _jamendo_track_format(
                     )
                     for track in tracks
                 ),
-                max(_get_release_date(trc) for trc in tracks),
+                max(_get_release_date(trc, log) for trc in tracks),
             )
 
 
-def _get_release_date(data: dict[str, str]) -> datetime.datetime:
+def _get_release_date(
+    data: dict[str, str], log: structlog.stdlib.BoundLogger
+) -> datetime.datetime:
     try:
         releasedate = datetime.datetime.fromisoformat(data["releasedate"])
         if not releasedate.tzinfo:
             releasedate = releasedate.replace(tzinfo=datetime.UTC)
+
         return releasedate
+
     except ValueError:
-        _LOG.debug("wrong releasedate in %s", data)
+        log.debug("jamendo: wrong releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
+
     except KeyError:
-        _LOG.debug("missing releasedate in %s", data)
+        log.debug("jamendo: missing releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
 
 

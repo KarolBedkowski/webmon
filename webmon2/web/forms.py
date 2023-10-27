@@ -9,7 +9,6 @@ TODO: Python3.10: use slots in dataclass
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 import zoneinfo
 from dataclasses import dataclass
@@ -17,9 +16,6 @@ from dataclasses import dataclass
 from flask_babel import gettext
 
 from webmon2 import common, model, sources
-
-_ = ty
-_LOG = logging.getLogger(__name__)
 
 Form = dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 
@@ -80,6 +76,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             options=[(val, val) for val in param.options or []],
             value=values.get(param.name, param.default) if values else None,
             default_value=sett_value or param.default or "",
+            parameters=param.parameters,
         )
         return field
 

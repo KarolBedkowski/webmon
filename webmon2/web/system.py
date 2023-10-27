@@ -8,9 +8,10 @@ Web gui
 from __future__ import annotations
 
 import datetime
-import logging
 import typing as ty
 from io import BytesIO
+
+import structlog
 
 try:
     import pyqrcode
@@ -38,7 +39,7 @@ from webmon2 import VERSION, common, database, imp_exp, model, opml, security
 
 from . import _commons as c, forms
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")
 
 
@@ -215,9 +216,11 @@ def sett_data_import() -> ty.Any:
         imp_exp.dump_import(db, user_id, data)
         db.commit()
         flash(gettext("Import completed"))
+
     except Exception as err:  # pylint: disable=broad-except
-        flash("Error importing file: " + str(err), "error")
-        _LOG.exception("import file error")
+        flash(f"Error importing file: {err}", "error")
+        _LOG.exception("web system: data import error", error=err)
+
     return redirect(url_for("system.sett_data"))
 
 
@@ -239,9 +242,11 @@ def sett_data_import_opml() -> ty.Any:
         opml.load_data(db, data, user_id)
         db.commit()
         flash(gettext("Import completed"))
+
     except Exception as err:  # pylint: disable=broad-except
-        flash("Error importing file: " + str(err), "error")
-        _LOG.exception("import file error")
+        flash(f"Error importing file: {err!s}", "error")
+        _LOG.exception("web system: import opml error", error=err)
+
     return redirect(url_for("system.sett_data"))
 
 
@@ -375,7 +380,9 @@ def sett_sys_user(user_id: int | None = None) -> ty.Any:
                 if form.password1:
                     uuser.password = security.hash_password(form.password1)
 
-                _LOG.info("save user: %r", uuser)
+                _LOG.info(
+                    "web system: save user", user=uuser, user_id=uuser.id
+                )
                 try:
                     database.users.save(db, uuser)
                 except database.users.LoginAlreadyExistsError:
@@ -410,12 +417,13 @@ def sett_sys_user_delete(user_id: int) -> ty.Any:
 
     db = c.get_db()
     try:
-        user = database.users.get(db, user_id)
+        # check is user exists
+        database.users.get(db, user_id)
     except database.NotFound:
         flash(gettext("User not found"))
         return redirect(url_for("system.sett_sys_users"))
 
-    _LOG.info("delete user: %r", user)
+    _LOG.info("web system: delete user", user_id=user_id)
     database.users.delete(db, user_id)
     db.commit()
     flash(gettext("User deleted"))
@@ -493,6 +501,7 @@ def _translate_sett_descr(
         "timezone": gettext("User: default timezone"),
         "locale": gettext("User: language"),
         "gpg_key": gettext("User GPG public key"),
+        "http_headers": gettext("Default HTTP headers"),
     }
     for sett in settings:
         sett.description = translations.get(sett.key, sett.key)

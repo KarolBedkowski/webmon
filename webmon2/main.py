@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import locale
-import logging
 import os.path
 import signal
 import sys
@@ -20,6 +19,7 @@ from configparser import ConfigParser
 from contextlib import suppress
 from pathlib import Path
 
+import structlog
 from werkzeug.serving import is_running_from_reloader
 
 try:
@@ -27,6 +27,8 @@ try:
 
     stackprinter.set_excepthook(style="color")
 except ImportError:
+    stackprinter = None
+
     with suppress(ImportError):
         from rich.traceback import install
 
@@ -64,7 +66,7 @@ __copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
 _ = ty
 
 
-_LOG = logging.getLogger("main")
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger("main")
 _DEFAULT_DB_FILE = "~/.local/share/" + APP_NAME + "/" + APP_NAME + ".db"
 _SDN = sdnotify.SystemdNotifier() if HAS_SDNOTIFY else None
 _SDN_WATCHDOG_INTERVAL = 15
@@ -87,7 +89,7 @@ def _parse_options() -> argparse.Namespace:
     parser.add_argument(
         "-d", "--debug", action="store_true", help="print debug information"
     )
-    parser.add_argument("--log", help="log file name")
+    parser.add_argument("--log-fmt", help="log format (console, logfmt)")
 
     parser.add_argument(
         "-c",
@@ -233,13 +235,13 @@ def _load_user_classes() -> None:
         return
 
     for fname in os.listdir(users_scripts_dir):
-        fpath = os.path.join(users_scripts_dir, fname)
+        fpath = Path(users_scripts_dir, fname)
         if (
-            Path(fpath).is_file()
+            fpath.is_file()
             and fname.endswith(".py")
             and not fname.startswith("_")
         ):
-            _LOG.debug("loading %r", fpath)
+            _LOG.info("main: loading user classes from %r", fpath)
             modname = fname[:-3]
             try:
                 spec = importlib.util.spec_from_file_location(modname, fpath)
@@ -249,7 +251,11 @@ def _load_user_classes() -> None:
                     spec.loader.exec_module(module)  # type: ignore
 
             except ImportError as err:
-                _LOG.error("Importing '%s' error %s", fpath, err)
+                _LOG.error(
+                    "main: importing user classes from file '%s' error",
+                    fpath,
+                    error=err,
+                )
 
 
 def _check_libraries() -> None:
@@ -258,58 +264,68 @@ def _check_libraries() -> None:
     try:
         from lxml import etree
 
-        _LOG.debug("etree version: %s", etree.__version__)
+        _LOG.debug("main: etree version: %s", etree.__version__)
     except ImportError:
-        _LOG.warning("missing lxml library")
+        _LOG.info("main: missing lxml library")
+
     try:
         import cssselect
 
-        _LOG.debug("cssselect version: %s", cssselect.__version__)
+        _LOG.debug("main: cssselect version: %s", cssselect.__version__)
     except ImportError:
-        _LOG.warning("missing cssselect library")
+        _LOG.info("main: missing cssselect library")
+
     try:
         import html2text
 
-        _LOG.debug("html2text version: %s", html2text.__version__)
+        _LOG.debug("main: html2text version: %s", html2text.__version__)
     except ImportError:
-        _LOG.warning("missing html2text library")
+        _LOG.info("main: missing html2text library")
+
     try:
         import markdown2
 
-        _LOG.debug("markdown2 version: %s", markdown2.__version__)
+        _LOG.debug("main: markdown2 version: %s", markdown2.__version__)
     except ImportError:
-        _LOG.warning("missing markdown2 library")
+        _LOG.info("main: missing markdown2 library")
+
     try:
         import yaml
 
-        _LOG.debug("yaml version: %s", yaml.__version__)
+        _LOG.debug("main: yaml version: %s", yaml.__version__)
     except ImportError:
-        _LOG.warning("missing yaml library")
+        _LOG.info("main: missing yaml library")
+
     try:
         import requests
 
-        _LOG.debug("requests version: %s", requests.__version__)
+        _LOG.debug("main: requests version: %s", requests.__version__)
     except ImportError:
-        _LOG.warning("missing requests library")
+        _LOG.info("main: missing requests library")
+
     try:
         import feedparser
 
-        _LOG.debug("feedparser version: %s", feedparser.__version__)
+        _LOG.debug("main: feedparser version: %s", feedparser.__version__)
     except ImportError:
-        _LOG.warning("missing feedparser library")
+        _LOG.info("main: missing feedparser library")
+
     try:
         import github3
 
-        _LOG.debug("github3.py version: %s", github3.__version__)
+        _LOG.debug("main: github3.py version: %s", github3.__version__)
     except ImportError:
-        _LOG.warning("missing github3 library")
+        _LOG.info("main: missing github3 library")
 
     try:
         import flask_minify
 
-        _LOG.debug("flask_minify version: %s", flask_minify.__version__)
+        _LOG.debug(
+            "main: flask_minify version: %s",
+            flask_minify.__version__,
+        )
     except ImportError:
-        _LOG.warning("missing optional flask_minify library")
+        _LOG.info("main: missing optional flask_minify library")
 
 
 def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:
@@ -326,11 +342,11 @@ def _load_conf(args: argparse.Namespace) -> ConfigParser:
         app_conf = conf.try_load_user_conf()
 
     if not app_conf:
-        _LOG.debug("loading default conf")
+        _LOG.debug("main: loading default conf")
         app_conf = conf.default_conf()
 
     app_conf = conf.update_from_args(app_conf, args)
-    _LOG.debug("app_conf: %r", "  ".join(conf.conf_items(app_conf)))
+    _LOG.debug("main: app_conf", conf=conf.conf_items(app_conf))
     return app_conf
 
 
@@ -354,7 +370,10 @@ def _serve(args: argparse.Namespace, app_conf: ConfigParser) -> None:
     try:
         web.start_app(args, app_conf)
     except Exception as err:  # pylint: disable=broad-except
-        _LOG.error("start app error: %s", err)
+        if stackprinter:
+            stackprinter.show()
+
+        _LOG.error("main: start app error: %s", error=err)
 
     if HAS_SDNOTIFY and _SDN:
         _SDN.notify("STOPPING=1")
@@ -362,9 +381,9 @@ def _serve(args: argparse.Namespace, app_conf: ConfigParser) -> None:
 
 def _update_schema(app_conf: ConfigParser) -> None:
     if is_running_from_reloader():
-        _LOG.error("cannot update schema when running from reloader")
+        _LOG.error("main: cannot update schema when running from reloader")
     else:
-        _LOG.info("update schema...")
+        _LOG.info("main: update schema starting...")
         database.DB.initialize(app_conf.get("main", "database"), True, 1, 5)
 
 
@@ -383,7 +402,7 @@ def main() -> None:
         locale.setlocale(locale.LC_ALL, locale.getlocale())
 
     args = _parse_options()
-    logging_setup.setup(args.log, args.debug, args.silent)
+    logging_setup.setup(args.log_fmt, args.debug, args.silent)
 
     _check_libraries()
     _load_user_classes()
@@ -394,7 +413,7 @@ def main() -> None:
 
     app_conf = _load_conf(args)
     if not conf.validate(app_conf):
-        _LOG.error("app_conf validation error")
+        _LOG.error("main: app_conf validation error")
         return
 
     if args.cmd == "update-schema":
@@ -418,7 +437,7 @@ def main() -> None:
         _serve(args, app_conf)
         return
 
-    _LOG.error("missing command")
+    _LOG.error("main: missing command")
 
 
 if __name__ == "__main__":

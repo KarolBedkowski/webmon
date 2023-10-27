@@ -9,19 +9,19 @@ Web gui
 """
 from __future__ import annotations
 
-import logging
 import typing as ty
 import urllib
 import xml.etree.ElementTree
 from datetime import datetime, timezone
 
+import structlog
 from flask import Blueprint, Response, abort, request, url_for
 
 from webmon2 import database
 
 from . import _commons as c
 
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("atom", __name__, url_prefix="/atom")
 
 DEFAULT_ETREE = xml.etree.ElementTree
@@ -90,19 +90,25 @@ def group(key: str) -> Response:
 
     assert grp and grp.id
     updated_etag = database.groups.get_state(db, grp.id)
-    _LOG.debug("updated_etag %r", updated_etag)
     if not updated_etag:
+        _LOG.debug("web atom: group not modified by etag", etag=updated_etag)
         return Response("Not modified", 304)
 
     db.commit()
     updated, etag = updated_etag
 
     if request.if_modified_since and request.if_modified_since >= updated:
-        _LOG.debug("if_modified_since: %s", request.if_modified_since)
+        _LOG.debug(
+            "web atom: get group not modified by if_modified_since",
+            if_modified_since=request.if_modified_since,
+        )
         return Response("Not modified", 304)
 
     if request.if_match and request.if_match.contains(etag):
-        _LOG.debug("if_matche: %s", request.if_match)
+        _LOG.debug(
+            "web atom: get group not modified by if_match",
+            if_match=request.if_match,
+        )
         return Response("Not modified", 304)
 
     rss_items = []

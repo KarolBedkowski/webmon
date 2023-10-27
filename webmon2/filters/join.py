@@ -6,18 +6,16 @@
 Filter that join many entries into one.
 """
 
-import logging
-import typing as ty
 from functools import reduce
 
+import structlog
 from flask_babel import lazy_gettext
 
 from webmon2 import model
 
 from ._abstract import AbstractFilter
 
-_ = ty
-_LOG = logging.getLogger(__name__)
+_LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def _join_entries(
@@ -66,7 +64,7 @@ class Join(AbstractFilter):
             yield reduce(_join_entries, entries)
         except TypeError as err:
             # empty collection
-            _LOG.debug("join error: %s", err)
+            _LOG.debug("filters: error joining", entries=entries, error=err)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         raise NotImplementedError()
