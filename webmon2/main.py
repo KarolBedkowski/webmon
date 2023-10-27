@@ -241,7 +241,7 @@ def _load_user_classes() -> None:
             and fname.endswith(".py")
             and not fname.startswith("_")
         ):
-            _LOG.debug("main: loading user classes from %r", fpath)
+            _LOG.info("main: loading user classes from %r", fpath)
             modname = fname[:-3]
             try:
                 spec = importlib.util.spec_from_file_location(modname, fpath)
@@ -266,56 +266,56 @@ def _check_libraries() -> None:
 
         _LOG.debug("main: etree version: %s", etree.__version__)
     except ImportError:
-        _LOG.warning("main: missing lxml library")
+        _LOG.info("main: missing lxml library")
 
     try:
         import cssselect
 
         _LOG.debug("main: cssselect version: %s", cssselect.__version__)
     except ImportError:
-        _LOG.warning("main: missing cssselect library")
+        _LOG.info("main: missing cssselect library")
 
     try:
         import html2text
 
         _LOG.debug("main: html2text version: %s", html2text.__version__)
     except ImportError:
-        _LOG.warning("main: missing html2text library")
+        _LOG.info("main: missing html2text library")
 
     try:
         import markdown2
 
         _LOG.debug("main: markdown2 version: %s", markdown2.__version__)
     except ImportError:
-        _LOG.warning("main: missing markdown2 library")
+        _LOG.info("main: missing markdown2 library")
 
     try:
         import yaml
 
         _LOG.debug("main: yaml version: %s", yaml.__version__)
     except ImportError:
-        _LOG.warning("main: missing yaml library")
+        _LOG.info("main: missing yaml library")
 
     try:
         import requests
 
         _LOG.debug("main: requests version: %s", requests.__version__)
     except ImportError:
-        _LOG.warning("main: missing requests library")
+        _LOG.info("main: missing requests library")
 
     try:
         import feedparser
 
         _LOG.debug("main: feedparser version: %s", feedparser.__version__)
     except ImportError:
-        _LOG.warning("main: missing feedparser library")
+        _LOG.info("main: missing feedparser library")
 
     try:
         import github3
 
         _LOG.debug("main: github3.py version: %s", github3.__version__)
     except ImportError:
-        _LOG.warning("main: missing github3 library")
+        _LOG.info("main: missing github3 library")
 
     try:
         import flask_minify
@@ -325,7 +325,7 @@ def _check_libraries() -> None:
             flask_minify.__version__,
         )
     except ImportError:
-        _LOG.warning("main: missing optional flask_minify library")
+        _LOG.info("main: missing optional flask_minify library")
 
 
 def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:

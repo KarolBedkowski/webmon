@@ -166,12 +166,11 @@ def _validate_main(conf: ConfigParser) -> bool:
 
     try:
         workers = int(conf.get("main", "workers"))
+        if workers < 1:
+            _LOG.warning("conf: number of workers: %r", workers)
     except ValueError as err:
         _LOG.error("conf: invalid workers parameter", error=err)
         valid = False
-    else:
-        if workers < 1:
-            _LOG.warning("conf: number of workers: %r", workers)
 
     try:
         work_interval = int(conf.get("main", "work_interval"))

@@ -6,6 +6,8 @@
 Import/export data in opml format.
 """
 
+# TODO: propagate errors to user
+
 import itertools
 import typing as ty
 from contextlib import suppress

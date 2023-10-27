@@ -259,7 +259,7 @@ def _check_csrf_token() -> bool:
         req_token = request.form.get("_csrf_token")
         sess_token = session.get("_csrf_token")
         if req_token != sess_token:
-            _LOG.info(
+            _LOG.debug(
                 "web: check csrf token failed",
                 request_token=req_token,
                 session_token=sess_token,

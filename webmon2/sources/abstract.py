@@ -169,6 +169,9 @@ class AbstractSource(abc.ABC):
                     status=response.status_code,
                     error=response.text,
                 )
+        except requests.exceptions.RequestException as err:
+            log.debug("source: load_binary: load error", url=url, error=err)
+
         except Exception as err:  # pylint: disable=broad-except
             log.exception(
                 "source: load_binary: load error", url=url, error=err

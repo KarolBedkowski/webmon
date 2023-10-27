@@ -60,7 +60,7 @@ class RssSource(AbstractSource):
         try:
             new_state, entries = self._load(state)
         except Exception as err:  # pylint: disable=broad-except
-            self._log.exception("rss source: load error", error=err)
+            self._log.debug("rss source: load error", error=err)
             new_state, entries = state.new_error(str(err)), []
 
         if new_state.status != model.SourceStateStatus.ERROR:
@@ -92,7 +92,7 @@ class RssSource(AbstractSource):
         )
         status = doc.get("status") if doc else 400
         if status not in (200, 301, 302, 304):
-            self._log.error(
+            self._log.debug(
                 "rss source: get document error",
                 state=state,
                 doc=doc,

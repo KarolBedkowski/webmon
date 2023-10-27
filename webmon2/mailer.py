@@ -315,7 +315,6 @@ def _send_mail(
 
         host = app_conf.get("smtp", "address")
         port = app_conf.getint("smtp", "port")
-        log.debug("_send_mail: host: %r, port: %r", host, port)
         smtp.connect(host, port)
         smtp.ehlo()
         if app_conf.getboolean("smtp", "starttls") and not ssl:
@@ -326,14 +325,14 @@ def _send_mail(
             smtp.login(login, app_conf.get("smtp", "password"))
 
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
-        log.debug("_send_mail: mail send")
+        log.debug("mailer: mail send")
 
     except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
-        log.error("_send_mail: smtp connection error", error=err)
+        log.error("mailer: smtp connection error", error=err)
         return False
 
     except Exception as err:  # pylint: disable=broad-except
-        log.exception("_send_mail: send error", error=err)
+        log.exception("mailer: send error", error=err)
         return False
 
     finally:
