@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.9.1 2023-10-27
+
+### Bug Fixes
+
+- Update user-agent; add Accept-Language header
+- Web source: allow user to configure HTTP headers; add global HTTP Headers
+  configuration.
+- GUI: fix configuration pages - add fields missing properties
+- Support flask-babel 3.x
+
+### Features
+
+- Attach errors in mailed reports.
+
+### Refactor
+
+- Use structlog for logging; fix logging levels, messages
+- Log raw http requests in debug mode
+
+
 ## 2.9.0 2023-09-03
 
 ### Bug Fixes
