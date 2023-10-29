@@ -7,6 +7,7 @@ Web gui application
 """
 from __future__ import annotations
 
+import secrets
 import time
 import typing as ty
 import uuid
@@ -101,6 +102,10 @@ def _teardown_db(  # pylint: disable=unused-variable
         db.close()
 
 
+def _generate_request_id() -> str:
+    return secrets.token_urlsafe(16)
+
+
 def _before_request() -> ty.Any:  # pylint: disable=unused-variable
     request.req_start_time = time.time()  # type: ignore
     path = request.path
@@ -112,9 +117,7 @@ def _before_request() -> ty.Any:  # pylint: disable=unused-variable
         return None
 
     structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(
-        request_id=str(uuid.uuid4()),
-    )
+    structlog.contextvars.bind_contextvars(request_id=_generate_request_id())
 
     log = _LOG.bind()
     log.debug("web: start request", path=path, method=request.method)
