@@ -440,7 +440,7 @@ def _process_errors(
     yield "\n\n"
 
     for error in errors:
-        head = f"{error.group_name} - {error.name}"
+        head = f"{error.group_name} - {error.source_name}"
         yield head
         yield "\n"
         yield "-" * len(head)

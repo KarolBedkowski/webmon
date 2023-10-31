@@ -734,7 +734,7 @@ WHERE
 """
 
 ErrorInfo = namedtuple(
-    "ErrorInfo", ["group_name", "name", "last_error", "error"]
+    "ErrorInfo", ["group_name", "source_name", "last_error", "error"]
 )
 
 
