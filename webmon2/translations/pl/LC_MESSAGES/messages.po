@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: 2.x\n"
+"Project-Id-Version:  2.x\n"
 "Report-Msgid-Bugs-To: karol.bedkowski@gmail.com\n"
-"POT-Creation-Date: 2023-10-29 08:50+0100\n"
-"PO-Revision-Date: 2023-10-29 08:53+0100\n"
+"POT-Creation-Date: 2023-10-31 20:50+0100\n"
+"PO-Revision-Date: 2023-10-31 20:50+0100\n"
 "Last-Translator: Karol Będkowski <karol.bedkowski@gmail.com>\n"
 "Language: pl\n"
 "Language-Team: pl <->\n"
@@ -19,6 +19,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.10.3\n"
 "X-Generator: Gtranslator 42.0\n"
+
+#: webmon2/mailer.py:441
+msgid "Errors"
+msgstr "Błędy"
+
+#: webmon2/mailer.py:458 webmon2/sources/github.py:516
+#: webmon2/sources/gitlab.py:479
+msgid "Date: "
+msgstr "Data: "
 
 #: webmon2/filters/diff.py:26
 msgid "Diff with previous content"
@@ -316,10 +325,6 @@ msgid ""
 msgstr ""
 "Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta Github z tokenem."
-
-#: webmon2/sources/github.py:516 webmon2/sources/gitlab.py:479
-msgid "Date: "
-msgstr "Data: "
 
 #: webmon2/sources/gitlab.py:44
 msgid "Project ID; i.e. user/project"

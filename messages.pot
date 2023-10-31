@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-10-29 08:50+0100\n"
+"POT-Creation-Date: 2023-10-31 20:50+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,6 +16,15 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.10.3\n"
+
+#: webmon2/mailer.py:441
+msgid "Errors"
+msgstr ""
+
+#: webmon2/mailer.py:458 webmon2/sources/github.py:516
+#: webmon2/sources/gitlab.py:479
+msgid "Date: "
+msgstr ""
 
 #: webmon2/filters/diff.py:26
 msgid "Diff with previous content"
@@ -289,10 +298,6 @@ msgstr ""
 msgid ""
 "Source load releases history from configured repository. For work "
 "required configured GitHub account with token."
-msgstr ""
-
-#: webmon2/sources/github.py:516 webmon2/sources/gitlab.py:479
-msgid "Date: "
 msgstr ""
 
 #: webmon2/sources/gitlab.py:44

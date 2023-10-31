@@ -128,7 +128,7 @@ class CheckWorker(threading.Thread):
 
                     self._log.debug("CheckWorker check done")
                     self._notify("STATUS=mailing")
-                    _send_mails(db, self._conf)
+                    _send_mails(db, self._conf, self._app)
                 except Exception as err:  # pylint: disable=broad-except
                     self._log.exception("CheckWorker thread error", error=err)
 
@@ -237,7 +237,7 @@ class FetchWorker(threading.Thread):
         assert source.state and src
 
         with self._app.test_request_context():
-            with force_locale(sys_settings.get("locale", "en")):
+            with force_locale(sys_settings.get("locale", "en") or "en"):
                 new_state, loaded = self._load_data(
                     db, source, src, sys_settings
                 )
@@ -519,7 +519,7 @@ def _delete_old_entries(db: database.DB) -> None:
     db.commit()
 
 
-def _send_mails(db: database.DB, conf: ConfigParser) -> None:
+def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
     """
     For each user search and send reports by mail.
 
@@ -534,7 +534,12 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
         _LOG.debug("worker: send mail for user %d: start", user.id)
         db.begin()
         try:
-            if mailer.process(db, user, conf):
+            sys_settings = database.settings.get_dict(db, user.id)
+            with app.test_request_context():
+                with force_locale(sys_settings.get("locale", "en") or "en"):
+                    send_ok = mailer.process(db, user, conf)
+
+            if send_ok:
                 database.users.put_log(db, user.id, "send mail success")
 
         except Exception as err:  # pylint: disable=broad-except

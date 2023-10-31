@@ -24,6 +24,7 @@ from zoneinfo import ZoneInfo
 
 import html2text as h2t
 import structlog
+from flask_babel import format_datetime, gettext
 from prometheus_client import Counter
 
 from webmon2 import common, database, formatters, logging_setup, model
@@ -221,7 +222,11 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
     if tzone := ctx.timezone:
         updated = updated.astimezone(tzone)
 
-    title = (entry.title or "") + " " + updated.strftime("%x %X")
+    title = (
+        (entry.title or "")
+        + " "
+        + format_datetime(updated, format="medium", rebase=False)
+    )
 
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -433,20 +438,26 @@ def _process_errors(
     if not errors:
         return
 
-    title = "Errors"  # TODO: translate
+    title = gettext("Errors")
     yield title
     yield "\n"
     yield "==" * len(title)
     yield "\n\n"
 
     for error in errors:
-        head = f"{error.group_name} - {error.source_name}"
+        head = f"{error.group_name} / {error.source_name}"
         yield head
         yield "\n"
         yield "-" * len(head)
         yield "\n"
-        yield error.last_error.strftime("%x %X")
-        yield "\n"
+
+        last_error_ts = error.last_error
+        if tzone := ctx.timezone:
+            last_error_ts = last_error_ts.astimezone(tzone)
+
+        yield gettext("Date: ")
+        yield format_datetime(last_error_ts, format="medium")
+        yield "\n\n"
         conv = h2t.HTML2Text(bodywidth=74)
         conv.protect_links = True
         content = conv.handle(error.error).strip()
