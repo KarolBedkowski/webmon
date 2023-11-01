@@ -185,11 +185,8 @@ def _proces_source(
         return
 
     assert entries[0].source
-    source_name = entries[0].source.name
-    yield source_name
+    yield from _gen_header(entries[0].source.name)
     yield "\n"
-    yield "-" * len(source_name)
-    yield "\n\n"
 
     for entry in entries:
         structlog.contextvars.bind_contextvars(entry_id=entry.id)
@@ -217,16 +214,7 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
     If entry content type is not plain or markdown try convert it to plain
     text.
     """
-    updated = entry.updated
-    assert updated
-    if tzone := ctx.timezone:
-        updated = updated.astimezone(tzone)
-
-    title = (
-        (entry.title or "")
-        + " "
-        + format_datetime(updated, format="medium", rebase=False)
-    )
+    title = entry.title or gettext("<no title>")
 
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -240,6 +228,8 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
         yield title
 
     yield "\n"
+    yield from _gen_dt_header(ctx, entry.updated)
+
     if entry.content:
         content_type = entry.content_type
         if content_type in ("plain", "markdown"):
@@ -438,26 +428,14 @@ def _process_errors(
     if not errors:
         return
 
-    title = gettext("Errors")
-    yield title
+    yield from _gen_header(gettext("Errors"), "=")
     yield "\n"
-    yield "==" * len(title)
-    yield "\n\n"
 
     for error in errors:
-        head = f"{error.group_name} / {error.source_name}"
-        yield head
-        yield "\n"
-        yield "-" * len(head)
-        yield "\n"
+        yield from _gen_header(f"{error.group_name} / {error.source_name}")
 
-        last_error_ts = error.last_error
-        if tzone := ctx.timezone:
-            last_error_ts = last_error_ts.astimezone(tzone)
-
-        yield gettext("Date: ")
-        yield format_datetime(last_error_ts, format="medium")
-        yield "\n\n"
+        yield from _gen_dt_header(ctx, error.last_error)
+        yield "\n"
         conv = h2t.HTML2Text(bodywidth=74)
         conv.protect_links = True
         content = conv.handle(error.error).strip()
@@ -468,3 +446,20 @@ def _process_errors(
 
         yield content
         yield "\n"
+
+
+def _gen_dt_header(ctx: Ctx, ts: datetime | None) -> ty.Iterator[str]:
+    if ts:
+        if tzone := ctx.timezone:
+            ts = ts.astimezone(tzone)
+
+        yield "@ "
+        yield format_datetime(ts, format="medium")
+        yield "\n"
+
+
+def _gen_header(instr: str, character: str = "-") -> ty.Iterator[str]:
+    yield instr
+    yield "\n"
+    yield character * len(instr)
+    yield "\n"
