@@ -10,7 +10,6 @@ from __future__ import annotations
 import secrets
 import time
 import typing as ty
-import uuid
 from argparse import Namespace
 from configparser import ConfigParser
 from pathlib import Path
