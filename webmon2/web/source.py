@@ -361,7 +361,7 @@ def source_filter_delete(source_id: int, idx: int) -> ty.Any:
     return redirect(url_for("source.source_filters", source_id=source_id))
 
 
-@BP.route("/source/<int:source_id>/entry/<mode>/<int:entry_id>")
+@BP.route("/<int:source_id>/entry/<mode>/<int:entry_id>")
 def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:
     """Display entry with marking as read."""
     db = c.get_db()
@@ -405,7 +405,7 @@ def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:
     )
 
 
-@BP.route("/source/<int:source_id>/next_unread")
+@BP.route("/<int:source_id>/next_unread")
 def source_next_unread(
     source_id: int,  # pylint: disable=unused-argument
 ) -> ty.Any:
