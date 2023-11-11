@@ -119,8 +119,12 @@ def entries_history() -> ty.Any:
 
 
 def _get_req_source(db: database.DB, user_id: int) -> model.Source | None:
+    r_source_id = request.args.get("source_id", "")
+    if not r_source_id:
+        return None
+
     try:
-        source_id = int(request.args.get("source_id", "0"))
+        source_id = int(r_source_id)
         if not source_id:
             return None
 
@@ -139,8 +143,12 @@ def _get_req_source(db: database.DB, user_id: int) -> model.Source | None:
 
 
 def _get_req_group(db: database.DB, user_id: int) -> model.SourceGroup | None:
+    r_group_id = request.args.get("group_id", "")
+    if not r_group_id:
+        return None
+
     try:
-        group_id = int(request.args.get("group_id", "0"))
+        group_id = int(r_group_id)
         if not group_id:
             return None
 
