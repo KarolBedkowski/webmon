@@ -231,8 +231,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        content = cleaner.clean_html(content)
-        content = clean.autolink_html(content)
+        content = clean.autolink_html(cleaner.clean_html(content))
         return content
 
 

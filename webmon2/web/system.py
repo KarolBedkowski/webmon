@@ -204,8 +204,7 @@ def sett_data_import() -> ty.Any:
         flash("No file to import")
         return redirect(url_for("system.sett_data"))
 
-    file = request.files["file"]
-    data = file.read()
+    data = request.files["file"].read()
     if not data:
         flash(gettext("No file to import"), "error")
         return redirect(url_for("system.sett_data"))
@@ -230,8 +229,7 @@ def sett_data_import_opml() -> ty.Any:
         flash(gettext("No file to import"))
         return redirect(url_for("system.sett_data"))
 
-    file = request.files["file"]
-    data = file.read()
+    data = request.files["file"].file.read()
     if not data:
         flash(gettext("No file to import"), "error")
         return redirect(url_for("system.sett_data"))

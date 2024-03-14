@@ -9,6 +9,7 @@ Import/export data in opml format.
 # TODO: propagate errors to user
 
 import itertools
+import operator
 import typing as ty
 from contextlib import suppress
 from xml.etree.ElementTree import Element
@@ -35,7 +36,7 @@ def load_opml(
 
     body = root.find("body")
     data = sorted(_load(body), key=lambda x: x[0] or "")
-    return itertools.groupby(data, lambda x: x[0])
+    return itertools.groupby(data, operator.itemgetter(0))
 
 
 def load_data(db: database.DB, content: bytes, user_id: int) -> None:
