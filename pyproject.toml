@@ -43,6 +43,7 @@ dependencies = [
   "requests>=2.21.0",
   "flask-babel",
   "structlog>=23.1",
+  "itsdangerous>=2.1.0",
 ]
 
 
