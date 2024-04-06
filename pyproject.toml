@@ -135,11 +135,27 @@ additional-builtins = ["_", "ngettext", "ic"]
 [tool.ruff]
 builtins = ["_", "ic", "ic_stack", "ngettext"]
 extend-exclude = ["*_test.py"]
-show-source = true
-select = ["E", "F", "I", "W"]
+output-format = "full"
 line-length = 79
-fixable = ["I"]
+[tool.ruff.lint]
+  select = ["E", "F", "I", "W"]
+  fixable = ["I"]
 
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
+
+
+[tool.deptry]
+pep621_dev_dependency_groups = ["dev"]
+extend_exclude = ["lint", ".+_test.py"]
+
+[tool.deptry.per_rule_ignores]
+DEP004 = ["stackprinter"]
+DEP001 = ["rich", "icecream", "IPython"]
+
+[tool.deptry.package_module_name_map]
+PyYAML = "yaml"
+python-dateutil = "dateutil"
+python-gitlab = "gitlab"
+readability-lxml = "readability"
