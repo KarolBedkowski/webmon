@@ -51,7 +51,7 @@ class DBSessionInterface(FlaskSessionInterface):
         self.has_same_site_capability = hasattr(self, "get_cookie_samesite")
 
     def open_session(self, app, request):
-        sid = request.cookies.get(app.session_cookie_name)
+        sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
         if not sid:
             return DBSession(sid=_generate_sid(), permanent=self.permanent)
 
@@ -96,7 +96,9 @@ class DBSessionInterface(FlaskSessionInterface):
                     database.system.delete_session(db, session.sid)
                     db.commit()
                     response.delete_cookie(
-                        app.session_cookie_name, domain=domain, path=path
+                        app.config["SESSION_COOKIE_NAME"],
+                        domain=domain,
+                        path=path,
                     )
                 return
 
@@ -128,8 +130,8 @@ class DBSessionInterface(FlaskSessionInterface):
             )
 
         response.set_cookie(
-            app.session_cookie_name,
-            session_id,
+            app.config["SESSION_COOKIE_NAME"],
+            session_id.decode(),
             expires=expires,
             httponly=self.get_cookie_httponly(app),
             domain=domain,
