@@ -17,6 +17,9 @@ import psycopg
 import psycopg_pool as pool
 import structlog
 
+if ty.TYPE_CHECKING:
+    import types
+
 T = ty.TypeVar("T")
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
@@ -121,14 +124,17 @@ class DB:
             if update_schema:
                 db.update_schema()
 
-    def __enter__(self) -> DB:
+    def __enter__(self) -> ty.Self:
         return self
 
     def __exit__(
-        self, type_: ty.Any, value: ty.Any, traceback: ty.Any
-    ) -> bool:
+        self,
+        exc_type: ty.Type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
         self.close()
-        return isinstance(value, TypeError)
+        return isinstance(exc, TypeError)
 
     def close(self) -> None:
         assert self.POOL

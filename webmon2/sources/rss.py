@@ -36,7 +36,7 @@ class RssSource(AbstractSource):
     long_info = lazy_gettext(
         "Load data form RSS/Atom channel. Require define URL."
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("url", lazy_gettext("RSS XML URL"), required=True),
         common.SettingDef(
             "max_items",
@@ -51,7 +51,7 @@ class RssSource(AbstractSource):
         common.SettingDef(
             "load_article", lazy_gettext("Load article"), default=False
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -115,7 +115,7 @@ class RssSource(AbstractSource):
                 _filter_entries_updated(entries, state.last_update.timestamp())
             )
 
-        if status == 304 or not entries:
+        if status == 304 or not entries:  # noqa:PLR2004
             new_state = state.new_not_modified(etag=doc.get("etag"))
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
@@ -133,12 +133,12 @@ class RssSource(AbstractSource):
             new_state.next_update = expires
             new_state.set_prop("expires", str(expires))
 
-        if status == 301:  # permanent redirects
+        if status == 301:  # permanent redirects # noqa:PLR2004
             new_state.set_prop(
                 "info", gettext("Permanently redirects: %(url)s", url=doc.href)
             )
             self._update_source(new_url=doc.href)
-        elif status == 302:
+        elif status == 302:  # noqa:PLR2004
             new_state.set_prop(
                 "info", gettext("Temporary redirects: %(url)s", url=doc.href)
             )
@@ -207,7 +207,7 @@ class RssSource(AbstractSource):
             )
             if response:
                 response.raise_for_status()
-                if response.status_code == 200:
+                if response.status_code == 200:  # noqa:PLR2004
                     content_type = response.headers["content-type"]
                     if content_type.startswith("text/"):
                         entry.content = response.text

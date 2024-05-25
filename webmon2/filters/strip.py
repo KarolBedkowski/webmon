@@ -52,13 +52,13 @@ class Head(AbstractFilter):
     name = "head"
     short_info = lazy_gettext("Get only first lines")
     long_info = lazy_gettext("Get defined number top lines from content")
-    params = [
+    params = (
         common.SettingDef(
             "count",
             lazy_gettext("Maximum number of lines"),
             default=20,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:

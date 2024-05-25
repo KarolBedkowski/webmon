@@ -345,6 +345,36 @@ def sett_sys_users() -> ty.Any:  # noqa: ANN401
     return render_template("system/sys_users.html", users=users)
 
 
+def _sett_sys_user_post(
+    db: database.DB,
+    form: forms.UserForm,
+    user: model.User,
+    user_id: int | None,
+) -> tuple[str, dict[str, str]]:
+    form.update_from_request(request.form)
+    errors = form.validate()
+
+    if session["user"] == user_id and not form.active and user.active:
+        errors["active"] = "Can't deactivate current user"
+
+    if not errors:
+        uuser = form.update_model(user)  # type: model.User
+        if form.password1:
+            uuser.password = security.hash_password(form.password1)
+
+        _LOG.info("web system: save user", user=uuser, user_id=uuser.id)
+        try:
+            database.users.save(db, uuser)
+        except database.users.LoginAlreadyExistsError:
+            errors["login"] = "Login already exists"
+        else:
+            db.commit()
+            flash("User saved")
+            return redirect(url_for("system.sett_sys_users")), {}
+
+    return "", errors
+
+
 @BP.route("/settings/system/users/new", methods=["GET", "POST"])  # type:ignore
 @BP.route(
     "/settings/system/users/<int:user_id>", methods=["GET", "POST"]
@@ -363,34 +393,15 @@ def sett_sys_user(user_id: int | None = None) -> ty.Any:  # noqa: ANN401
     else:
         user = model.User(active=True)
 
-    errors = {}
+    errors: dict[str, str] = {}
     form = forms.UserForm.from_model(user)
     entity_hash = str(hash(user))
 
     if request.method == "POST":
         if entity_hash == request.form["_entity_hash"]:
-            form.update_from_request(request.form)
-            errors = form.validate()
-
-            if session["user"] == user_id and not form.active and user.active:
-                errors["active"] = "Can't deactivate current user"
-
-            if not errors:
-                uuser = form.update_model(user)  # type: model.User
-                if form.password1:
-                    uuser.password = security.hash_password(form.password1)
-
-                _LOG.info(
-                    "web system: save user", user=uuser, user_id=uuser.id
-                )
-                try:
-                    database.users.save(db, uuser)
-                except database.users.LoginAlreadyExistsError:
-                    errors["login"] = "Login already exists"
-                else:
-                    db.commit()
-                    flash("User saved")
-                    return redirect(url_for("system.sett_sys_users"))
+            res, errors = _sett_sys_user_post(db, form, user, user_id)
+            if res:
+                return res
 
             flash(gettext("There are errors in form"), "error")
         else:

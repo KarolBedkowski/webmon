@@ -27,7 +27,7 @@ class NDiff(AbstractFilter):
     long_info = lazy_gettext(
         "Compare current and previous content; show changed elements"
     )
-    params = [
+    params = (
         common.SettingDef(
             "threshold",
             lazy_gettext(
@@ -42,7 +42,7 @@ class NDiff(AbstractFilter):
             ),
             default=1,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def validate(self) -> None:
         super().validate()

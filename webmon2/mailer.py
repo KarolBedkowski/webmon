@@ -14,7 +14,6 @@ import smtplib
 import subprocess
 import tempfile
 import typing as ty
-from configparser import ConfigParser
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -28,6 +27,9 @@ from flask_babel import format_datetime, gettext
 from prometheus_client import Counter
 
 from webmon2 import common, database, formatters, logging_setup, model
+
+if ty.TYPE_CHECKING:
+    from configparser import ConfigParser
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")

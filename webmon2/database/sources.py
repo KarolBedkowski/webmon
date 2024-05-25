@@ -179,7 +179,7 @@ def get_all_dict(
 
 
 def _build_source(
-    row: ty.Any, user_groups: dict[int, model.SourceGroup]
+    row: ty.Any, user_groups: dict[int, model.SourceGroup]  # noqa:ANN401
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
@@ -737,7 +737,7 @@ WHERE
 class ErrorInfo(ty.NamedTuple):
     group_name: str
     source_name: str
-    last_error: str
+    last_error: datetime
     error: str
 
 

@@ -59,16 +59,16 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         requests_log.propagate = True
         HTTPConnection.debuglevel = 1
     elif silent:
-        logger.setLevel(logging.WARN)
-        log_req.setLevel(logging.WARN)
-        log_github3.setLevel(logging.WARN)
+        logger.setLevel(logging.WARNING)
+        log_req.setLevel(logging.WARNING)
+        log_github3.setLevel(logging.WARNING)
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
-        structlog_level = logging.WARN
+        structlog_level = logging.WARNING
     else:
         logger.setLevel(logging.INFO)
-        log_req.setLevel(logging.WARN)
-        log_github3.setLevel(logging.WARN)
+        log_req.setLevel(logging.WARNING)
+        log_github3.setLevel(logging.WARNING)
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
 
@@ -112,8 +112,8 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         ]
 
     structlog.configure(
-        processors=shared_processors
-        + [
+        processors=[
+            *shared_processors,
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
         logger_factory=structlog.stdlib.LoggerFactory(),
@@ -129,8 +129,8 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         processors=[
             # Remove _record & _from_structlog.
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-        ]
-        + processors,
+            *processors,
+        ],
     )
 
     console = logging.StreamHandler()

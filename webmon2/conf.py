@@ -8,7 +8,6 @@ Application configuration.
 from __future__ import annotations
 
 import ipaddress
-import os
 import typing as ty
 from configparser import ConfigParser
 from pathlib import Path

@@ -26,11 +26,11 @@ class Html2Text(AbstractFilter):
         "Try convert html content do plain text; remove all "
         "formatting, images etc."
     )
-    params = [
+    params = (
         common.SettingDef(
             "width", lazy_gettext("Max line width"), default=999999
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def validate(self) -> None:
         super().validate()

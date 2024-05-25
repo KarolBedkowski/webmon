@@ -23,12 +23,12 @@ class Wrap(AbstractFilter):
         "Wrap long content lines to given width; also allow limit "
         "total number of lines"
     )
-    params = [
+    params = (
         common.SettingDef("width", lazy_gettext("Max line width"), default=76),
         common.SettingDef(
             "max_lines", lazy_gettext("Max number of lines"), value_type=int
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def validate(self) -> None:
         super().validate()

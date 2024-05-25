@@ -27,11 +27,11 @@ class SelectByRE(AbstractFilter):
         "expression. Expression must contain at least one group; can also "
         "contain groups 'title' and 'content'."
     )
-    params = [
+    params = (
         common.SettingDef(
             "re", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)

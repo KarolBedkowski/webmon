@@ -26,13 +26,13 @@ def _age_filter(date: datetime.datetime | None) -> str:
         return ""
 
     diff = int((datetime.datetime.now(datetime.UTC) - date).total_seconds())
-    if diff < 60:
+    if diff < 60:  # noqa: PLR2004
         return "<1m"
 
-    if diff < 3_600:  # < 1h
+    if diff < 3_600:  # < 1h  # noqa: PLR2004
         return str(int(diff // 60)) + "m"
 
-    if diff < 86_400:  # < 1d
+    if diff < 86_400:  # < 1d # noqa: PLR2004
         return str(int(diff // 3600)) + "h"
 
     return str(int(diff // 86400)) + "d"
@@ -57,13 +57,13 @@ def _absoute_url(url: str) -> str:
 
 def _entry_score_class(score: int) -> str:
     """Get class name for entry score."""
-    if score < -5:
+    if score < -5:  # noqa: PLR2004
         return "prio-lowest"
 
     if score < 0:
         return "prio-low"
 
-    if score > 5:
+    if score > 5:  # noqa: PLR2004
         return "prio-highest"
 
     if score > 0:

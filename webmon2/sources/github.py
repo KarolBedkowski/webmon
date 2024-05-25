@@ -72,19 +72,20 @@ class GitHubAbstractSource(AbstractSource):
 
         except Exception as err:
             errmsg = gettext("Connection error: %(err)s", err=err)
-            raise common.InputError(
-                self,
-                errmsg,
-            )
+            raise common.InputError(self, errmsg) from err
 
         return repository
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         raise NotImplementedError
 
     def _update_source(self) -> None:
@@ -120,7 +121,7 @@ class GithubInput(GitHubAbstractSource):
         "Source load commits history from configured repository."
         " For work required configured GitHub account with token."
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "owner", lazy_gettext("Repository owner"), required=True
         ),
@@ -149,7 +150,7 @@ class GithubInput(GitHubAbstractSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -266,7 +267,7 @@ class GithubTagsSource(GitHubAbstractSource):
         "Source load tags from configured repository."
         " For work required configured GitHub account with token."
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "owner", lazy_gettext("Repository owner"), required=True
         ),
@@ -290,7 +291,7 @@ class GithubTagsSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -411,7 +412,7 @@ class GithubReleasesSource(GitHubAbstractSource):
         "Source load releases history from configured repository."
         " For work required configured GitHub account with token."
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "owner", lazy_gettext("Repository owner"), required=True
         ),
@@ -435,7 +436,7 @@ class GithubReleasesSource(GitHubAbstractSource):
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState

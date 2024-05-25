@@ -27,11 +27,11 @@ class FileSource(AbstractSource):
     long_info = lazy_gettext(
         'Source check local, text file defined by "Full file patch" setting'
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "filename", lazy_gettext("Full file patch"), required=True
         ),
-    ]
+    )
 
     def load(
         self, state: model.SourceState
@@ -40,12 +40,13 @@ class FileSource(AbstractSource):
 
         fname = self._conf["filename"]
         self._log.debug("file source: load start", file=fname)
+        ifile = pathlib.Path(fname)
 
-        if not os.path.isfile(fname):
+        if not ifile.is_file():
             return state.new_error("no file"), []
 
         if state.last_update:
-            fid = os.open(fname, os.O_RDONLY)
+            fid = os.open(ifile, os.O_RDONLY)
             stat = os.fstat(fid)
             file_change = stat.st_mtime
             os.close(fid)
@@ -54,7 +55,7 @@ class FileSource(AbstractSource):
                 return state.new_not_modified(), []
 
         try:
-            content = pathlib.Path(fname).read_text(encoding="UTF-8")
+            content = ifile.read_text(encoding="UTF-8")
 
             self._log.debug("file source: content loaded", content=content)
 

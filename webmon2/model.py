@@ -597,7 +597,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if self.content:
             lines = self.content.count("\n")
             characters = len(self.content)
-            return lines > 10 or characters > 400
+            return lines > 10 or characters > 400  # noqa: PLR2004
 
         return False
 

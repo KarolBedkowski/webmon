@@ -38,7 +38,7 @@ class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
 
     # pylint: disable=too-few-public-methods
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "project",
             lazy_gettext("Project ID; i.e. user/project"),
@@ -55,7 +55,7 @@ class AbstractGitLabSource(AbstractSource):
             required=True,
             global_param=True,
         ),
-    ]
+    )
 
     def __init__(
         self, source: model.Source, sys_settings: model.ConfDict
@@ -172,7 +172,7 @@ class GitLabCommits(AbstractGitLabSource):
         "Source load commits history from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
         common.SettingDef(
             "short_list",
             lazy_gettext("Show commits as short list"),
@@ -183,7 +183,7 @@ class GitLabCommits(AbstractGitLabSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -297,13 +297,13 @@ class GitLabTagsSource(AbstractGitLabSource):
         "Source load tags from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -401,13 +401,13 @@ class GitLabReleasesSource(AbstractGitLabSource):
         "Source load releases history from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState

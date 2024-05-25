@@ -19,8 +19,8 @@ class AbstractSource(abc.ABC):
     """Abstract/Base class for all sources"""
 
     # name used in configuration
-    name = None  # type: ty.Optional[str]
-    params = []  # type: list[common.SettingDef]
+    name: str | None = None
+    params: tuple[common.SettingDef, ...] = ()
     short_info = ""
     long_info = ""
 

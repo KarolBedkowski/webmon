@@ -61,6 +61,55 @@ def source_new() -> ty.Any:  # noqa: ANN401
     return render_template("source_new.html", sources=sources.sources_info())
 
 
+def _source_edit_post(
+    db: database.DB,
+    source_form: forms.SourceForm,
+    source: model.Source,
+    src: sources.AbstractSource,
+    source_id: int | None,
+    user_id: int,
+    user_settings: dict[str, ty.Any],
+) -> tuple[str, dict[str, str]]:
+    source_form.update_from_request(request.form)
+    errors = source_form.validate()
+    u_source = source_form.update_model(source)
+    assert u_source.settings is not None
+    errors.update(src.validate_conf(u_source.settings, user_settings))
+
+    if not errors:
+        next_action = request.form.get("next_action")
+        if next_action == "save_activate":
+            u_source.status = model.SourceStatus.ACTIVE
+
+        u_source = src.upgrade_conf(u_source)
+        u_source = database.sources.save(db, u_source)
+
+        # adjust next check time when interval changed
+        if (
+            source_id
+            and source.interval != u_source.interval
+            and u_source.interval
+        ):
+            interval = common.parse_interval(u_source.interval)
+            assert source.state
+            source.state.adjust_next_update(interval)
+            database.sources.save_state(db, source.state, user_id)
+
+        db.commit()
+        flash(gettext("Source saved"))
+        if next_action == "edit_filters":
+            return (
+                redirect(
+                    url_for("source.source_filters", source_id=u_source.id)
+                ),
+                errors,
+            )
+
+        return redirect(url_for("root.sources")), errors
+
+    return "", errors
+
+
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])  # type:ignore
 @BP.route("/new/<kind>", methods=["POST", "GET"])  # type:ignore
 def source_edit(
@@ -93,44 +142,17 @@ def source_edit(
         )
         for param in src.params
     ]
-    errors = {}
+    errors: dict[str, str] = {}
     user_id = session["user"]
     entity_hash = str(hash(source))
 
     if request.method == "POST":
         if entity_hash == request.form["_entity_hash"]:
-            source_form.update_from_request(request.form)
-            errors = source_form.validate()
-            u_source = source_form.update_model(source)
-            assert u_source.settings is not None
-            errors.update(src.validate_conf(u_source.settings, user_settings))
-            if not errors:
-                next_action = request.form.get("next_action")
-                if next_action == "save_activate":
-                    u_source.status = model.SourceStatus.ACTIVE
-
-                u_source = src.upgrade_conf(u_source)
-                u_source = database.sources.save(db, u_source)
-
-                # adjust next check time when interval changed
-                if (
-                    source_id
-                    and source.interval != u_source.interval
-                    and u_source.interval
-                ):
-                    interval = common.parse_interval(u_source.interval)
-                    assert source.state
-                    source.state.adjust_next_update(interval)
-                    database.sources.save_state(db, source.state, user_id)
-
-                db.commit()
-                flash(gettext("Source saved"))
-                if next_action == "edit_filters":
-                    return redirect(
-                        url_for("source.source_filters", source_id=u_source.id)
-                    )
-
-                return redirect(url_for("root.sources"))
+            res, errors = _source_edit_post(
+                db, source_form, source, src, source_id, user_id, user_settings
+            )
+            if res:
+                return res
         else:
             flash(gettext("Source changed somewhere else; reloading..."))
 

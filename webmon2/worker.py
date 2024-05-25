@@ -236,7 +236,7 @@ class FetchWorker(threading.Thread):
         # get source object; errors are propagated upwards
         try:
             src = self._get_src(source, sys_settings)
-        except sources.UnknownInputException as err:
+        except sources.UnknownInputError as err:
             errmsg = f"unsupported input {source.kind}"
             raise ValueError(errmsg) from err
 

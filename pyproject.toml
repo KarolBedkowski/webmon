@@ -140,7 +140,7 @@ line-length = 79
 lint.select = ["E", "F", "I", "W", "C"]
 lint.fixable = ["I"]
 lint.extend-select = [
-  "N", "ANN", "FBT", "B","A","COM","C4","EM","ISC","ICN","LOG","G","PIE","PYI","Q","RSE","RET","SLF", "SLOT","SIM",  "TID","TCH","ARG","PTH","TD","FIX","PL","R","TRY","PERF","FURB","RUF"
+  "N", "ANN", "FBT", "B","A","COM","C4","EM","ISC","ICN","LOG","G","PIE","PYI","Q","RSE","RET","SLF", "SLOT","SIM",  "TID","TCH","ARG","PTH","FIX","PL","R","TRY","PERF","FURB","RUF"
 ]
 lint.ignore = ["ANN101", "COM812", "EM101", "TRY003", "FBT001", "FBT002", "FBT003"]
 

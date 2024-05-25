@@ -28,7 +28,7 @@ class WebSource(AbstractSource):
     name = "url"
     short_info = lazy_gettext("Web page")
     long_info = lazy_gettext("Load data form web page pointed by URL.")
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
         common.SettingDef(
             "timeout", lazy_gettext("Loading timeout"), default=30
@@ -44,7 +44,7 @@ class WebSource(AbstractSource):
             default="",
             multiline=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -72,40 +72,50 @@ class WebSource(AbstractSource):
 
         return new_state, entries
 
+    def _load_data(
+        self, state: model.SourceState, session: requests.Session
+    ) -> tuple[requests.Response, None] | tuple[None, model.SourceState]:
+        url = self._conf["url"]
+        headers = _prepare_headers(state, self._conf)
+        response = session.request(
+            url=url,
+            method="GET",
+            headers=headers,
+            timeout=self._conf["timeout"],
+            allow_redirects=True,
+        )
+
+        if response is None:
+            return None, state.new_error("no result")
+
+        if response.status_code == 304:  # noqa: PLR2004
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_image(url, session))
+
+            return None, new_state
+
+        if response.status_code != 200:  # noqa: PLR2004
+            msg = gettext("Response code: %(code)s", code=response.status_code)
+            if response.text:
+                msg += "\n" + self._clean_content(response.text)
+
+            return None, state.new_error(msg)
+
+        return response, None
+
     def _load(
         self, state: model.SourceState, session: requests.Session
     ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
-        headers = _prepare_headers(state, self._conf)
-        self._log.debug("web source: load start", headers=headers)
+        self._log.debug("web source: load start")
         response = None
         try:
-            response = session.request(
-                url=url,
-                method="GET",
-                headers=headers,
-                timeout=self._conf["timeout"],
-                allow_redirects=True,
-            )
-
-            if response is None:
-                return state.new_error("no result"), []
-
-            if response.status_code == 304:
-                new_state = state.new_not_modified()
-                if not new_state.icon:
-                    new_state.set_icon(self._load_image(url, session))
-
+            response, new_state = self._load_data(state, session)
+            if not response:
+                # failed load data
+                assert new_state
                 return new_state, []
-
-            if response.status_code != 200:
-                msg = gettext(
-                    "Response code: %(code)s", code=response.status_code
-                )
-                if response.text:
-                    msg += "\n" + self._clean_content(response.text)
-
-                return state.new_error(msg), []
 
             new_state = state.new_ok(
                 etag=response.headers.get("ETag"),
@@ -133,14 +143,15 @@ class WebSource(AbstractSource):
                 new_state.next_update = expires
                 new_state.set_prop("expires", str(expires))
 
-            return new_state, [entry]
-
         except requests.exceptions.RequestException as err:
             return state.new_error(f"request error: {err}"), []
 
         except Exception as err:  # pylint: disable=broad-except
             self._log.exception("web source: load error", error=err)
             return state.new_error(str(err)), []
+
+        else:
+            return new_state, [entry]
 
         finally:
             if response:
@@ -233,7 +244,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        return clean.autolink_html(cleaner.clean_html(content))
+        return ty.cast(str, clean.autolink_html(cleaner.clean_html(content)))
 
 
 def _prepare_headers(

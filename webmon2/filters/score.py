@@ -29,7 +29,7 @@ class Score(AbstractFilter):
     long_info = lazy_gettext(
         "Change element score according to matched patterns."
     )
-    params = [
+    params = (
         common.SettingDef(
             "patterns",
             lazy_gettext("Regular expressions separated by ';'"),
@@ -47,7 +47,7 @@ class Score(AbstractFilter):
             lazy_gettext("Change score on match every pattern"),
             default=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)

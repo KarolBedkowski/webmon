@@ -134,7 +134,7 @@ class DBSessionInterface(FlaskSessionInterface):
 
         assert session.sid
         if self.use_signer:
-            signer = self._get_signer(app)
+            signer = _get_signer(app)
             assert signer
             session_id = signer.sign(want_bytes(session.sid))
         else:

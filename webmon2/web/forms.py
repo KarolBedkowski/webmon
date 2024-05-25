@@ -20,10 +20,6 @@ from webmon2 import common, model, sources
 Form = dict[str, str]  # werkzeug.datastructures.ImmutableMultiDict
 
 
-class InvalidValue(RuntimeError):
-    pass
-
-
 @dataclass()
 class Field:  # pylint: disable=too-many-instance-attributes
     # internal (system) field name

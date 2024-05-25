@@ -18,7 +18,7 @@ from .abstract import AbstractSource
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 __all__ = (
     "AbstractSource",
-    "UnknownInputException",
+    "UnknownInputError",
     "get_source",
     "sources_info",
     "sources_name",
@@ -49,7 +49,7 @@ def _load_plugins() -> None:
 _load_plugins()
 
 
-class UnknownInputException(Exception):
+class UnknownInputError(Exception):
     pass
 
 
@@ -60,7 +60,7 @@ def get_source(
     if scls := common.find_subclass(AbstractSource, source.kind):
         return scls(source, sys_settings)  # type: ignore
 
-    raise UnknownInputException
+    raise UnknownInputError
 
 
 def get_source_class(kind: str) -> ty.Type[AbstractSource] | None:

@@ -42,11 +42,11 @@ class GetElementsByCss(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract element from content by given CSS query"
     )
-    params = [
+    params = (
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, config: model.ConfDict) -> None:
         super().__init__(config)
@@ -72,11 +72,11 @@ class GetElementsByXpath(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract elements from html/xml content by given xpath"
     )
-    params = [
+    params = (
         common.SettingDef(
             "xpath", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -91,11 +91,11 @@ class GetElementsById(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract element from html content by given ID"
     )
-    params = [
+    params = (
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:

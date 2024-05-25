@@ -16,7 +16,7 @@ from ._abstract import AbstractFilter
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 __all__ = (
-    "UnknownFilterException",
+    "UnknownFilterError",
     "get_filter",
     "filter_by",
     "filters_name",
@@ -50,7 +50,7 @@ def _load_filters() -> None:
 _load_filters()
 
 
-class UnknownFilterException(Exception):
+class UnknownFilterError(Exception):
     pass
 
 
@@ -67,7 +67,7 @@ def get_filter(conf: dict[str, ty.Any]) -> AbstractFilter | None:
         return fltr
 
     _LOG.warning("filters: get filter error: %r not found", name)
-    raise UnknownFilterException
+    raise UnknownFilterError
 
 
 def filter_by(

@@ -22,7 +22,7 @@ class DymmySource(AbstractSource):
     """Dummy data generator"""
 
     name = "dummy"
-    params = AbstractSource.params + []
+    params = AbstractSource.params
     short_info = lazy_gettext("Dummy source for development")
     long_info = ""
 

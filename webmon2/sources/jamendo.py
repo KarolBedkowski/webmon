@@ -70,10 +70,10 @@ class JamendoAbstractSource(AbstractSource):
                 if not response:
                     return 500, "No response"
 
-                if response.status_code == 304:
+                if response.status_code == 304:  # noqa:PLR2004
                     return 304, None
 
-                if response.status_code != 200:
+                if response.status_code != 200:  # noqa:PLR2004
                     msg = f"Response code: {response.status_code}"
                     if response.text:
                         msg += "\n" + response.text
@@ -91,11 +91,12 @@ class JamendoAbstractSource(AbstractSource):
                 if not res["results"]:
                     return 304, None
 
-                return 200, res
             except requests.exceptions.ReadTimeout:
                 return 500, "timeout"
             except Exception as err:  # pylint: disable=broad-except
                 return 500, str(err)
+            else:
+                return 200, res
             finally:
                 if response:
                     response.close()
@@ -181,7 +182,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         "Either artist ID or name must be configured; also source "
         "require configured 'Jamendo client ID'"
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("artist_id", lazy_gettext("Artist ID")),
         common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
@@ -190,7 +191,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -213,12 +214,12 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         self._log.debug("jamendo albums: load", url=url)
 
         status, res = self._make_request(url)
-        if status == 304:
+        if status == 304:  # noqa:PLR2004
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_JAMENDO_ICON))
             return new_state, []
-        if status != 200:
+        if status != 200:  # noqa:PLR2004
             return state.new_error(res), []
 
         new_state = state.new_ok()
@@ -288,7 +289,7 @@ class JamendoTracksSource(JamendoAbstractSource):
         "Either artist ID or name must be configured; also source "
         "require configured 'Jamendo client ID'"
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("artist_id", lazy_gettext("Artist ID")),
         common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
@@ -297,7 +298,7 @@ class JamendoTracksSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -318,14 +319,14 @@ class JamendoTracksSource(JamendoAbstractSource):
         )
 
         status, res = self._make_request(url)
-        if status == 304:
+        if status == 304:  # noqa:PLR2004
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_JAMENDO_ICON))
 
             return new_state, []
 
-        if status != 200:
+        if status != 200:  # noqa:PLR2004
             return state.new_error(res), []
 
         new_state = state.new_ok()

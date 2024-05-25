@@ -24,7 +24,7 @@ class Grep(AbstractFilter):
     long_info = lazy_gettext(
         "Select elements matching or not matching to given pattern."
     )
-    params = [
+    params = (
         common.SettingDef(
             "pattern",
             lazy_gettext("Regular expression"),
@@ -34,7 +34,7 @@ class Grep(AbstractFilter):
         common.SettingDef(
             "invert", lazy_gettext("Accept items not matching"), default=False
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
