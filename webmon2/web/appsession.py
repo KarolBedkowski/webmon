@@ -8,6 +8,7 @@ Database-based server-side session storage.
 Based on flask-session.
 
 """
+
 import pickle  # nosec
 import typing as ty
 from datetime import datetime, timezone
@@ -33,7 +34,6 @@ class DBSession(CallbackDict[str, ty.Any], SessionMixin):  # type: ignore
         sid: str | None = None,
         permanent: bool | None = None,
     ) -> None:
-
         def on_update(obj: DBSession) -> None:
             obj.modified = True
 
@@ -98,23 +98,32 @@ class DBSessionInterface(FlaskSessionInterface):  # type: ignore
         except pickle.UnpicklingError:
             return DBSession(sid=sid, permanent=self.permanent)
 
+    def _delete_session(
+        self,
+        db: database.DB,
+        app: flask.Flask,
+        session: DBSession,
+        response: flask.Response,
+    ) -> None:
+        if session.modified and session.sid:
+            database.system.delete_session(db, session.sid)
+            response.delete_cookie(
+                app.config["SESSION_COOKIE_NAME"],
+                domain=self.get_cookie_domain(app),
+                path=self.get_cookie_path(app),
+            )
+
     def save_session(
         self, app: flask.Flask, session: DBSession, response: flask.Response
     ) -> None:
-        domain = self.get_cookie_domain(app)
-        path = self.get_cookie_path(app)
         with database.DB.get() as db:
-            # TODO: check
-            if not session or not session.sid:
-                if session.modified and session.sid:
-                    database.system.delete_session(db, session.sid)
-                    db.commit()
-                    response.delete_cookie(
-                        app.config["SESSION_COOKIE_NAME"],
-                        domain=domain,
-                        path=path,
-                    )
+            if not session:
+                self._delete_session(db, app, session, response)
+                db.commit()
                 return
+
+            if not session.sid:
+                session.sid = _generate_sid()
 
             saved_session = database.system.get_session(db, session.sid)
             expires = self.get_expiration_time(app, session)
@@ -123,6 +132,7 @@ class DBSessionInterface(FlaskSessionInterface):  # type: ignore
                 saved_session.data = val
                 if expires:
                     saved_session.expiry = expires
+
             elif not session.modified:
                 db.commit()
                 return
@@ -132,7 +142,6 @@ class DBSessionInterface(FlaskSessionInterface):  # type: ignore
             database.system.save_session(db, saved_session)
             db.commit()
 
-        assert session.sid
         if self.use_signer:
             signer = _get_signer(app)
             assert signer
@@ -151,8 +160,8 @@ class DBSessionInterface(FlaskSessionInterface):  # type: ignore
             session_id.decode(),
             expires=expires,
             httponly=self.get_cookie_httponly(app),
-            domain=domain,
-            path=path,
+            domain=self.get_cookie_domain(app),
+            path=self.get_cookie_path(app),
             secure=self.get_cookie_secure(app),
             **conditional_cookie_kwargs,
         )
