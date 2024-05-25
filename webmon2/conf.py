@@ -147,8 +147,7 @@ def _validate_web(conf: ConfigParser) -> bool:
         _LOG.error("conf: missing web root")
         valid = False
 
-    web_address = conf.get("web", "address")
-    if not web_address:
+    if not conf.get("web", "address"):
         _LOG.error("conf: missing web address")
         valid = False
 
@@ -173,9 +172,9 @@ def _validate_main(conf: ConfigParser) -> bool:
         valid = False
 
     try:
-        workers = int(conf.get("main", "workers"))
-        if workers < 1:
+        if (workers := int(conf.get("main", "workers"))) < 1:
             _LOG.warning("conf: number of workers: %r", workers)
+
     except ValueError as err:
         _LOG.error("conf: invalid workers parameter", error=err)
         valid = False
@@ -247,7 +246,8 @@ def conf_items(conf: ConfigParser) -> ty.Iterator[str]:
     for sec in conf.sections():
         yield "[" + sec + "]"
         for key, val in conf.items(sec):
-            yield key + " = '" + val + "'"
+            yield f"{key} = '{val}'"
+
         yield ""
 
 

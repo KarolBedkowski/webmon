@@ -101,7 +101,6 @@ def _extract_prefix_postfix(instr: str) -> tuple[str, int, int]:
     prefix = len(instr)
 
     for num, char in enumerate(instr):
-        print(2, num, repr(char))
         if char != " ":
             prefix = num
             break

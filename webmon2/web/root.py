@@ -49,7 +49,9 @@ def index() -> ty.Any:  # noqa: ANN401
         group_id = database.groups.get_next_unread_group(db, user_id)
         if group_id:
             return redirect(url_for("group.group_entries", group_id=group_id))
+
         flash(gettext("No more unread groups..."))
+
     return redirect(url_for("entries.entries", mode="unread"))
 
 
@@ -234,6 +236,7 @@ def binary(datahash: str) -> ty.Any:  # noqa: ANN401
         )
     except database.NotFoundError:
         return abort(404)
+
     data, content_type = data_content_type
     resp = Response(data, mimetype=content_type)
     resp.headers["Cache-Control"] = "max-age=31536000, public, immutable"

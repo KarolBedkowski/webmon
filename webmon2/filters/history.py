@@ -35,8 +35,7 @@ class History(AbstractFilter):
             return
 
         oids = [entry.calculate_oid() for entry in entries]
-        new_oids: set[str] = set()
-        new_oids = database.entries.check_oids(
+        new_oids: set[str] = database.entries.check_oids(
             self.db, oids, curr_state.source_id
         )
         for entry in entries:

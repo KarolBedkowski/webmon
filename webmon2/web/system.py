@@ -55,19 +55,21 @@ def sett_globals() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     settings = database.settings.get_all(db, user_id)
     settings = list(_translate_sett_descr(settings))
-    form = forms.FieldsForm([
-        forms.Field.from_setting(sett, "sett-") for sett in settings
-    ])
+    form = forms.FieldsForm(
+        [forms.Field.from_setting(sett, "sett-") for sett in settings]
+    )
     if request.method == "POST":
         if form.update_from_request(request.form):
             values = form.values_map()
             for sett in settings:
                 sett.value = values[sett.key]
                 sett.user_id = user_id
+
             database.settings.save_all(db, settings)
             db.commit()
             flash("Settings saved")
             return redirect(url_for("system.sett_globals"))
+
         flash(gettext("There are errors in form"), "error")
 
     return render_template("system/globals.html", form=form)

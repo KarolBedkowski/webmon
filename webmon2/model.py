@@ -907,11 +907,12 @@ def try_load_json(
     If value is None - return default; if value is not string - return as is,
     otherwise parse value via json parser.
     """
-    value = row.get(column)
-    if value is None:
-        return default
+    match value := row.get(column):
+        case None:
+            return default
 
-    if not isinstance(value, str):
-        return value
+        case str():
+            return json.loads(value) if value else default
 
-    return json.loads(value) if value else default
+        case _:
+            return value

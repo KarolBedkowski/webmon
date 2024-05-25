@@ -259,8 +259,7 @@ class FetchWorker(threading.Thread):
         )
         database.sources.save_state(db, new_state, source.user_id)
         # if source was updated - save new version
-        updated_source = src.updated_source
-        if updated_source:
+        if updated_source := src.updated_source:
             _LOG.debug("worker: source updated")
             database.sources.save(db, updated_source)
 
@@ -424,6 +423,7 @@ class FetchWorker(threading.Thread):
                     re.IGNORECASE | re.MULTILINE | re.DOTALL,
                 )
                 yield (cre, scs.score_change)
+
             except re.error as err:
                 _LOG.warning(
                     "worker: compile scoring pattern error: %s",
@@ -470,6 +470,7 @@ def _delete_old_entries(db: database.DB) -> None:
             )
             if not keep_days:
                 continue
+
             max_datetime = datetime.datetime.now(
                 datetime.UTC
             ) - datetime.timedelta(days=keep_days)
@@ -515,6 +516,7 @@ def _delete_old_entries(db: database.DB) -> None:
         _CLEAN_COUNTER.labels("", "bin_states").inc(states)
         _CLEAN_COUNTER.labels("", "bin_entries").inc(entries)
         db.commit()
+
     except Exception as err:  # pylint: disable=broad-except
         db.rollback()
         _LOG.warning("worker: clean binaries error", error=err)

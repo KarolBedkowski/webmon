@@ -62,6 +62,7 @@ class Score(AbstractFilter):
                 for pattern in patterns.split(";")
             ]
             _LOG.debug("filters: score has %d patterns", len(self._re))
+
         else:
             self._re = []
             _LOG.warning("filters: score with no patterns!", conf=conf)
@@ -95,6 +96,7 @@ class Score(AbstractFilter):
                 entry.score,
             )
             entry.score += add
+
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception(
                 "filters: apply score for entry %r error", error=err

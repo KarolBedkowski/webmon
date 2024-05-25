@@ -159,11 +159,10 @@ class RssSource(AbstractSource):
         return new_state, items
 
     def _limit_items(self, entries: list[model.Entry]) -> list[model.Entry]:
-        max_items = self._conf.get("max_items")
-        if max_items:
-            max_items = int(max_items)
-            if max_items and len(entries) > max_items:
-                entries = entries[:max_items]
+        if (max_items := int(self._conf.get("max_items") or "0")) and len(
+            entries
+        ) > max_items:
+            entries = entries[:max_items]
 
         return entries
 
@@ -181,6 +180,7 @@ class RssSource(AbstractSource):
         result.updated = _get_val_dt(entry, "updated_parsed", now)
         result.created = _get_val_dt(entry, "published_parsed", now)
         result.status = model.EntryStatus.NEW
+
         if load_article:
             result = self._load_article(result, sess)
         elif load_content:
@@ -198,6 +198,7 @@ class RssSource(AbstractSource):
     ) -> model.Entry:
         if not entry.url:
             return entry
+
         response = None
         try:
             response = sess.request(
@@ -266,14 +267,11 @@ class RssSource(AbstractSource):
         self._log.debug("rss source: load image: start")
         feed = doc.feed
         image_href = None
-        image = feed.get("image")
-        if image:
+        if image := feed.get("image"):
             image_href = image.get("href") or image.get("url")
 
-        if not image_href:
-            link = feed.get("link")
-            if link:
-                image_href = urljoin(link, "favicon.ico")
+        if (not image_href) and (link := feed.get("link")):
+            image_href = urljoin(link, "favicon.ico")
 
         return self._load_binary(image_href) if image_href else None
 
@@ -336,11 +334,10 @@ def _fail_error(
 def _get_val_str(
     entry: dict[str, ty.Any], key: str, default: str | None = None
 ) -> str | None:
-    val = entry.get(key)
-    if val is None:
-        return default
+    if (val := entry.get(key)) is not None:
+        return str(val).strip()
 
-    return str(val).strip()
+    return default
 
 
 def _get_val_dt(

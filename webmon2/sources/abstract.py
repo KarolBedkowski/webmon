@@ -47,13 +47,7 @@ class AbstractSource(abc.ABC):
         self._log.debug("source: configuration", conf=self._conf)
 
     def __str__(self) -> str:
-        return " ".join((
-            "<",
-            self.__class__.__name__,
-            str(self._source),
-            repr(self._conf),
-            ">",
-        ))
+        return f"<{self.__class__.__name__} {self._source} {self._conf!r}>"
 
     def validate(self) -> None:
         for name, error in self.validate_conf(self._conf):

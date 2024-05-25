@@ -155,15 +155,11 @@ def _build_request_url(url: str, **params: ty.Any) -> str:  # noqa: ANN401
 
 
 def _jamendo_track_to_url(track_id: int) -> str:
-    if not track_id:
-        return ""
-    return f"https://www.jamendo.com/track/{track_id}/"
+    return f"https://www.jamendo.com/track/{track_id}/" if track_id else ""
 
 
 def _jamendo_album_to_url(album_id: int) -> str:
-    if not album_id:
-        return ""
-    return f"https://www.jamendo.com/album/{album_id}/"
+    return f"https://www.jamendo.com/album/{album_id}/" if album_id else ""
 
 
 def _create_entry(
@@ -274,11 +270,8 @@ def _jamendo_format_long_list(
         for album in result.get("albums") or []:
             yield _create_entry(
                 source,
-                " ".join((
-                    album["releasedate"],
-                    album["name"],
-                    _jamendo_album_to_url(album["id"]),
-                )),
+                f'{album["releasedate"]} {album["name"]} '
+                f'{_jamendo_album_to_url(album["id"])}',
                 _get_release_date(album, log),
             )
 
@@ -370,24 +363,23 @@ class JamendoTracksSource(JamendoAbstractSource):
         raise NotImplementedError
 
 
+def _track_to_content_line(track: dict[str, ty.Any]) -> str:
+    return (
+        f"{track['releasedate']} {track['name']} "
+        f"{_jamendo_track_to_url(track['id'])}"
+    )
+
+
 def _jamendo_track_format(
     source: model.Source,
     results: JsonResult,
     log: structlog.stdlib.BoundLogger,
 ) -> model.Entries:
     for result in results:
-        tracks = result.get("tracks")
-        if tracks:
+        if tracks := result.get("tracks"):
             yield _create_entry(
                 source,
-                "\n".join(
-                    " ".join((
-                        track["releasedate"],
-                        track["name"],
-                        _jamendo_track_to_url(track["id"]),
-                    ))
-                    for track in tracks
-                ),
+                "\n".join(map(_track_to_content_line, tracks)),
                 max(_get_release_date(trc, log) for trc in tracks),
             )
 

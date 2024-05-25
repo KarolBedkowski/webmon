@@ -384,8 +384,7 @@ class GitLabTagsSource(AbstractGitLabSource):
 
 def _format_gl_tag(tag: gobj.tags.ProjectTag) -> str:
     res: str = tag.name
-    commit_date = tag.commit.get("committed_date")
-    if commit_date:
+    if commit_date := tag.commit.get("committed_date"):
         res += " " + commit_date
 
     if tag.message:
@@ -502,11 +501,11 @@ def _build_gl_release_entry(
         gettext("Date: "),
         release.created_at,
     ]
-    links = release.attributes.get("_links")
-    if links:
-        slink = links.get("self")
-        if slink:
-            res.extend(("\n", slink))
+
+    if (links := release.attributes.get("_links")) and (
+        slink := links.get("self")
+    ):
+        res.extend(("\n", slink))
 
     if release.description:
         res.append("\n")

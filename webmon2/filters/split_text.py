@@ -105,9 +105,9 @@ class GetElementsById(AbstractFilter):
         for elem in document.xpath(".//*[@id=$id]", id=self._conf["sel"]):
             # pylint: disable=protected-access
             if isinstance(elem, etree._Element):  # noqa: SLF001
-                text = etree.tostring(elem).decode("utf-8")
-                if text:
+                if text := etree.tostring(elem).decode("utf-8"):
                     yield _new_entry(entry, text)
+
             else:
                 yield _new_entry(entry, str(elem))
 

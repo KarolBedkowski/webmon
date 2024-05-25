@@ -99,8 +99,7 @@ _CSP = (
 def _teardown_db(  # pylint: disable=unused-variable
     _exception: BaseException | None,
 ) -> None:
-    db = g.pop("db", None)
-    if db is not None:
+    if (db := g.pop("db", None)) is not None:
         db.close()
 
 
@@ -113,11 +112,13 @@ def _before_request() -> ty.Any:  # noqa:ANN401
     path = request.path
     # pages that not need valid user and don't need additional data like
     # locale setting
-    if path == "/favicon.ico" or path.startswith((
-        "/metrics",
-        "/atom",
-        "/health",
-    )):
+    if path == "/favicon.ico" or path.startswith(
+        (
+            "/metrics",
+            "/atom",
+            "/health",
+        )
+    ):
         return None
 
     structlog.contextvars.clear_contextvars()
@@ -187,6 +188,7 @@ def _after_request(  # pylint: disable=unused-variable
     _REQUEST_COUNT.labels(
         request.method, request.endpoint, resp.status_code
     ).inc()
+
     return resp
 
 

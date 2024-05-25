@@ -88,6 +88,7 @@ def remove_user_totp(args: argparse.Namespace) -> None:
     if not login:
         print("missing login arguments for remove totp")
         return
+
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=login)
@@ -150,30 +151,31 @@ def shell(
 def process_cli(
     args: argparse.Namespace, app_conf: configparser.ConfigParser
 ) -> bool:
-    if args.cmd == "users":
-        if args.subcmd == "add":
-            add_user(args)
-        elif args.subcmd == "passwd":
-            change_user_pass(args)
-        elif args.subcmd == "remove_totp":
-            remove_user_totp(args)
+    match args.cmd:
+        case "users":
+            match args.subcmd:
+                case "add":
+                    add_user(args)
+                case "passwd":
+                    change_user_pass(args)
+                case "remove_totp":
+                    remove_user_totp(args)
+                case _:
+                    print("unknown sub command", file=sys.stderr)
 
-        print("unknown sub command", file=sys.stderr)
-        return True
+        case "migrate":
+            # pylint: disable=import-outside-toplevel
+            from . import migrate
 
-    if args.cmd == "migrate":
-        # pylint: disable=import-outside-toplevel
-        from . import migrate
+            migrate.migrate(args)
 
-        migrate.migrate(args)
-        return True
+        case "write-config":
+            write_config_file(args, app_conf)
 
-    if args.cmd == "write-config":
-        write_config_file(args, app_conf)
-        return True
+        case "shell":
+            shell(args, app_conf)
 
-    if args.cmd == "shell":
-        shell(args, app_conf)
-        return True
+        case _:
+            return False
 
-    return False
+    return True

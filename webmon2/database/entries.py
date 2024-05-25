@@ -75,7 +75,7 @@ def _build_find_sql(args: dict[str, ty.Any]) -> str:
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    if (read:= args.get("read")) is not None:
+    if (read := args.get("read")) is not None:
         query.add_where(f"AND read_mark = {read}")
 
     if args.get("star") is not None:
@@ -309,7 +309,7 @@ def find(  # noqa: PLR0913
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def find_fulltext( # noqa:PLR0913
+def find_fulltext(  # noqa:PLR0913
     db: DB,
     user_id: int,
     query: str,
@@ -599,7 +599,7 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
 
 
 # pylint: disable=too-many-arguments
-def mark_read( # noqa: PLR0913
+def mark_read(  # noqa: PLR0913
     db: DB,
     user_id: int,
     entry_id: int | None = None,

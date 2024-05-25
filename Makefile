@@ -47,7 +47,7 @@ format:
 .PHONY: test
 ## Run tests
 test:
-	pytest --cov=webmon2 --cov-report=html --log-level=WARNING --disable-pytest-warnings
+	pytest --cov=webmon2 --cov-report=html --log-level=WARNING --disable-pytest-warnings -x --ff
 
 .PHONY: pot
 ## Generate pot files

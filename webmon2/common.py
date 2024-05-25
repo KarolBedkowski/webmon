@@ -97,19 +97,22 @@ def parse_interval(instr: str | float) -> int:
 
         return int(instr)
 
-    instr = instr.lower().strip()
+    instr = instr.strip()
+    if not instr:
+        raise ValueError("invalid interval")
+
     mplt = 1
-    if instr.endswith("m"):
-        mplt = 60
-        instr = instr[:-1]
-    elif instr.endswith("h"):
-        mplt = 3_600
-        instr = instr[:-1]
-    elif instr.endswith("d"):
-        mplt = 86_400
-        instr = instr[:-1]
-    elif instr.endswith("w"):
-        mplt = 604_800
+    match instr[-1].lower():
+        case "m":
+            mplt = 60
+        case "h":
+            mplt = 3_600
+        case "d":
+            mplt = 86_400
+        case "w":
+            mplt = 604_800
+
+    if mplt != 1:
         instr = instr[:-1]
 
     try:
@@ -132,6 +135,7 @@ def apply_defaults(*confs: ty.Optional[ConfDict]) -> ConfDict:
             result.update(
                 (key, val) for key, val in conf.items() if val or idx == 0
             )
+
     return result
 
 
@@ -160,17 +164,14 @@ def get_whitespace_prefix(text: str) -> str:
 
 
 def _parse_hour_min(text: str) -> int:
-    hours = 0  # type: int
-    minutes = 0  # type: int
-    text = text.strip()
-    if ":" in text:
-        hours_str, minutes_str, *_ = text.split(":", 3)
-        hours = int(hours_str) % 24
-        minutes = int(minutes_str) % 60
-    else:
-        hours = int(text) % 24
+    match text.strip().split(":", 3):
+        case [h]:
+            return (int(h) % 24) * 60
+        case [h, m] | [h, m, _]:
+            # we ignore seconds
+            return (int(h) % 24) * 60 + int(m) % 60
 
-    return hours * 60 + minutes
+    return 0
 
 
 def parse_hours_range(inp: str) -> ty.Iterable[tuple[int, int]]:
@@ -190,19 +191,17 @@ def parse_hours_range(inp: str) -> ty.Iterable[tuple[int, int]]:
             continue
 
         with suppress(ValueError):
-            start_hm = _parse_hour_min(start)
-            stop_hm = _parse_hour_min(stop)
-            yield (start_hm, stop_hm)
+            yield _parse_hour_min(start), _parse_hour_min(stop)
 
 
 def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
     """Check is `hour`:`minutes` is in any time ranges defined in `tsrange`"""
     tshm = hour * 60 + minutes
     for rstart, rstop in parse_hours_range(tsrange):
-        print((rstart, rstop, tshm))
         if rstart < rstop:
             if rstart <= tshm <= rstop:
                 return True
+
         elif not rstop < tshm < rstart:
             return True
 
@@ -230,11 +229,9 @@ class SettingDef:
         self.options = options
         self.parameters = kwargs
         self.type: ty.Type[ty.Any]
+
         if value_type is None:
-            if default is None:
-                self.type = str
-            else:
-                self.type = type(default)
+            self.type = str if default is None else type(default)  # type:ignore
         else:
             self.type = value_type
 
@@ -280,9 +277,9 @@ def obj2str(obj: ty.Any) -> str:  # noqa: ANN401
     else:
         values = ((key, getattr(obj, key)) for key in obj.__slots__)
 
-    kvs = ", ".join([
-        f"{key}={_val2str(val)}" for key, val in values if key[0] != "_"
-    ])
+    kvs = ", ".join(
+        [f"{key}={_val2str(val)}" for key, val in values if key[0] != "_"]
+    )
 
     return f"<{obj.__class__.__name__} {kvs}>"
 
@@ -343,7 +340,5 @@ def parse_str_to_headers(instr: str | None) -> ty.Iterator[tuple[str, str]]:
             continue
 
         key, sep, val = header.partition(":")
-        key = key.strip()
-        val = val.strip()
-        if key and sep:
-            yield key, val
+        if sep and (key := key.strip()):
+            yield key, val.strip()

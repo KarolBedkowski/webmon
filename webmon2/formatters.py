@@ -93,6 +93,7 @@ def sanitize_content(body: str, content_type: str) -> tuple[str, str]:
         body = format_html(body)
         body = _clean_html_brutal(body)
         result_type = "safe"
+
     elif content_type == "safe":
         body = _clean_html_brutal(body)
 
@@ -125,6 +126,7 @@ def entry_summary(content: str | None, content_type: str | None) -> str:
         document = lxml.html.document_fromstring(content)
         # pylint: disable=c-extension-no-member
         lines = lxml.etree.XPath("//text()")(document)[:50]
+
     else:
         content = (
             content[:400]

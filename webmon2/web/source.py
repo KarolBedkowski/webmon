@@ -293,10 +293,12 @@ def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:  # noqa: ANN40
         return _save_filter(db, source_id, sfidx, conf)
 
     errors = {}
-    form = forms.FieldsForm([
-        forms.Field.from_input_params(param, conf, prefix="sett-")
-        for param in fltr.params
-    ])
+    form = forms.FieldsForm(
+        [
+            forms.Field.from_input_params(param, conf, prefix="sett-")
+            for param in fltr.params
+        ]
+    )
 
     entity_hash = str(hash(source))
 
@@ -413,8 +415,7 @@ def source_next_unread(
     source_id: int,  # pylint: disable=unused-argument # noqa:ARG001
 ) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
-    n_source_id = database.sources.find_next_unread(db, session["user"])
-    if n_source_id:
+    if n_source_id := database.sources.find_next_unread(db, session["user"]):
         return redirect(
             url_for("source.source_entries", source_id=n_source_id)
         )

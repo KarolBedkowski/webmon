@@ -65,21 +65,19 @@ def dump_data(db: database.DB, user_id: int) -> str:
             _dump_source(source)
             for source in database.sources.get_all(db, user_id, group.id)
         )
-        items_filtered = list(filter(lambda x: x is not None, items))
-        if items_filtered:
+        if items_filtered := list(filter(lambda x: x is not None, items)):
             gnodes.append(
                 E.outline(*items_filtered, text=group.name, title=group.name)
             )
+
     root = E.opml(E.head(E.title("subscriptions")), E.body(*gnodes))
     return etree.tostring(root)  # type: ignore
 
 
 def _dump_source(source: model.Source) -> ty.Optional[Element]:
-    scls = sources.get_source_class(source.kind)
-    if scls:
+    if scls := sources.get_source_class(source.kind):
         with suppress(NotImplementedError):
-            data = scls.to_opml(source)
-            if data:
+            if data := scls.to_opml(source):
                 return E.outline(**data)  # type: ignore
 
     return None
@@ -89,13 +87,10 @@ def _load(
     node: Element, group: ty.Optional[str] = None
 ) -> ty.Iterator[ty.Tuple[str, model.Source]]:
     for snode in node.findall("outline"):
-        ntype = snode.attrib.get("type")
-        if ntype:
-            scls = sources.get_source_class(ntype)
-            if scls:
+        if ntype := snode.attrib.get("type"):
+            if scls := sources.get_source_class(ntype):
                 try:
-                    source = scls.from_opml(snode.attrib)
-                    if source:
+                    if source := scls.from_opml(snode.attrib):
                         yield (group or "", source)
 
                 except NotImplementedError:
@@ -110,6 +105,5 @@ def _load(
 
             continue
 
-        ntitle = snode.attrib.get("title")
-        if ntitle:
+        if ntitle := snode.attrib.get("title"):
             yield from _load(snode, ntitle)

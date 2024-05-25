@@ -75,10 +75,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
             _LOG.debug("mailer: still waiting for send mail")
             return False
 
-    ctx = Ctx(
-        user_id=user.id,
-        conf=conf,
-    )
+    ctx = Ctx(user_id=user.id, conf=conf)
     if tzone := conf.get("timezone"):
         ctx.timezone = ZoneInfo(tzone)
 
@@ -318,8 +315,7 @@ def _send_mail(
         if app_conf.getboolean("smtp", "starttls") and not ssl:
             smtp.starttls()
 
-        login = app_conf.get("smtp", "login")
-        if login:
+        if login := app_conf.get("smtp", "login"):
             smtp.login(login, app_conf.get("smtp", "password"))
 
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
@@ -381,12 +377,16 @@ def __do_encrypt(args: list[str], message: str) -> str:
 def _get_entry_score_mark(entry: model.Entry) -> str:
     if entry.score < -5:  # noqa: PLR2004
         return "▼▼ "
+
     if entry.score < 0:
         return "▼ "
+
     if entry.score > 5:  # noqa: PLR2004
         return "▲▲ "
+
     if entry.score > 0:
         return "▲ "
+
     return ""
 
 
@@ -411,6 +411,7 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     if begin > end:  # ie 22 - 6
         if hour >= begin or hour < end:
             return True
+
         # ie 0-6
     elif begin <= hour <= end:
         return True
@@ -455,13 +456,15 @@ def _process_errors(
 
 
 def _gen_dt_header(ctx: Ctx, ts: datetime | None) -> ty.Iterator[str]:
-    if ts:
-        if tzone := ctx.timezone:
-            ts = ts.astimezone(tzone)
+    if not ts:
+        return
 
-        yield "@ "
-        yield format_datetime(ts, format="medium")
-        yield "\n"
+    if tzone := ctx.timezone:
+        ts = ts.astimezone(tzone)
+
+    yield "@ "
+    yield format_datetime(ts, format="medium")
+    yield "\n"
 
 
 def _gen_header(instr: str, character: str = "-") -> ty.Iterator[str]:
