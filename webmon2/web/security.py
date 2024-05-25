@@ -26,8 +26,8 @@ from . import _commons as c
 BP = Blueprint("sec", __name__, url_prefix="/sec")
 
 
-@BP.route("/login", methods=["POST", "GET"])
-def login() -> ty.Any:
+@BP.route("/login", methods=["POST", "GET"])  # type:ignore
+def login() -> ty.Any:  # noqa: ANN401
     if "temp_user_id" in session:
         del session["temp_user_id"]
 
@@ -69,8 +69,8 @@ def login() -> ty.Any:
     return render_template("login.html")
 
 
-@BP.route("/login/totp", methods=["POST", "GET"])
-def login_totp() -> ty.Any:
+@BP.route("/login/totp", methods=["POST", "GET"])  # type:ignore
+def login_totp() -> ty.Any:  # noqa: ANN401
     # regenerate new csrf token
     c.generate_csrf_token()
 
@@ -97,8 +97,8 @@ def login_totp() -> ty.Any:
     return render_template("login.totp.html")
 
 
-@BP.route("/logout")
-def logout() -> ty.Any:
+@BP.route("/logout")  # type:ignore
+def logout() -> ty.Any:  # noqa: ANN401
     session.clear()
     session.modified = True
     return redirect(url_for("root.index"))

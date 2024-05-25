@@ -7,7 +7,6 @@ Application configuration.
 """
 from __future__ import annotations
 
-import argparse
 import ipaddress
 import os
 import typing as ty
@@ -15,6 +14,9 @@ from configparser import ConfigParser
 from pathlib import Path
 
 import structlog
+
+if ty.TYPE_CHECKING:
+    import argparse
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger("conf")
 
@@ -58,15 +60,15 @@ def load_conf(fileobj: ty.Iterable[str]) -> ConfigParser:
 
 
 def try_load_user_conf() -> ConfigParser | None:
-    user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
+    user_conf = Path("~/.config/webmon2/webmon2.ini").expanduser()
     if Path(user_conf).is_file():
         try:
             _LOG.info("conf: loading from %s", user_conf)
-            with open(user_conf, encoding="UTF-8") as fileobj:
+            with user_conf.open(encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
 
         # pylint: disable=broad-except
-        except Exception as err:  # noqa: E722
+        except Exception as err:
             _LOG.exception("conf: load file %s error", user_conf, error=err)
 
     return None
@@ -150,7 +152,7 @@ def _validate_web(conf: ConfigParser) -> bool:
         _LOG.error("conf: invalid or missing web port", error=err)
         valid = False
     else:
-        if web_port < 1 or web_port > 65535:
+        if web_port < 1 or web_port > 65535:  # noqa:PLR2004
             _LOG.error("conf: invalid web port: %r", web_port)
             valid = False
 
@@ -202,7 +204,7 @@ def _validate_smtp(conf: ConfigParser) -> bool:
             _LOG.error("conf: invalid SMTP port", error=err)
             valid = False
         else:
-            if port < 1 or port > 65535:
+            if port < 1 or port > 65535:  # noqa:PLR2004
                 _LOG.error("conf: invalid SMTP port: %r", port)
                 valid = False
 
@@ -216,8 +218,8 @@ def _validate_smtp(conf: ConfigParser) -> bool:
 def _validate_metrics(conf: ConfigParser) -> bool:
     valid = True
     if allow_from := conf.get("metrics", "allow_from"):
-        for addr in allow_from.split(","):
-            addr = addr.strip()
+        for a in allow_from.split(","):
+            addr = a.strip()
             try:
                 if "/" in addr:
                     ipaddress.ip_network(addr, strict=False)
@@ -243,6 +245,6 @@ def conf_items(conf: ConfigParser) -> ty.Iterator[str]:
         yield ""
 
 
-def save_conf(conf: ConfigParser, filename: str) -> None:
-    with open(filename, "w", encoding="UTF-8") as ofile:
+def save_conf(conf: ConfigParser, cfgfile: Path) -> None:
+    with cfgfile.open(mode="w", encoding="UTF-8") as ofile:
         conf.write(ofile)

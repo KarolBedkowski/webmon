@@ -29,14 +29,14 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("entries", __name__, url_prefix="/entries")
 
 
-@BP.route("/")
-def index() -> ty.Any:
+@BP.route("/")  # type:ignore
+def index() -> ty.Any:  # noqa: ANN401
     return redirect(url_for("entries.entries", mode="unread"))
 
 
-@BP.route("/<mode>/", defaults={"page": 0})
-@BP.route("/<mode>/<int:page>")
-def entries(mode: str, page: int) -> ty.Any:
+@BP.route("/<mode>/", defaults={"page": 0})  # type:ignore
+@BP.route("/<mode>/<int:page>")  # type:ignore
+def entries(mode: str, page: int) -> ty.Any:  # noqa: ANN401
     if mode not in ("unread", "all"):
         raise ValueError("invalid mode")
 
@@ -60,16 +60,16 @@ def entries(mode: str, page: int) -> ty.Any:
     return render_template("entries.html", showed=mode, **data)
 
 
-@BP.route("/starred")
-def entries_starred() -> ty.Any:
+@BP.route("/starred")  # type:ignore
+def entries_starred() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     entries_ = list(database.entries.get_starred(db, user_id))
     return render_template("starred.html", entries=entries_)
 
 
-@BP.route("/history")
-def entries_history() -> ty.Any:
+@BP.route("/history")  # type:ignore
+def entries_history() -> ty.Any:  # noqa: ANN401
     """
     Present history of read entries.
     Entries are paginated.
@@ -164,7 +164,7 @@ def _get_req_group(db: database.DB, user_id: int) -> model.SourceGroup | None:
     return database.groups.get(db, group_id, user_id)
 
 
-@BP.route("/search")
+@BP.route("/search")  # type:ignore
 def entries_search() -> str:
     db = c.get_db()
     user_id = session["user"]  # type: int
@@ -194,20 +194,23 @@ def entries_search() -> str:
         except database.QuerySyntaxError:
             error = "Invalid query"
 
-    return render_template(
-        "entries_search.html",
-        entries=entries_,
-        query=query,
-        error=error,
-        title_only=title_only,
-        group_id=group_id or "",
-        source_id=source_id or "",
-        search_ctx=search_ctx,
+    return ty.cast(
+        str,
+        render_template(
+            "entries_search.html",
+            entries=entries_,
+            query=query,
+            error=error,
+            title_only=title_only,
+            group_id=group_id or "",
+            source_id=source_id or "",
+            search_ctx=search_ctx,
+        ),
     )
 
 
-@BP.route("/<mode>/mark/read", methods=["POST"])
-def entries_mark_read(mode: str) -> ty.Any:  # pylint: disable=unused-argument
+@BP.route("/<mode>/mark/read", methods=["POST"])  # type:ignore
+def entries_mark_read(mode: str) -> ty.Any:  # noqa: ANN401,ARG001
     db = c.get_db()
     user_id = session["user"]  # type: int
     ids = [int(id_) for id_ in request.form.get("ids", "").split(",")] or None

@@ -323,7 +323,7 @@ def _send_mail(
         log.debug("mailer: mail send")
 
     except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
-        log.error("mailer: smtp connection error", error=err)
+        log.exception("mailer: smtp connection error", error=err)
         return False
 
     except Exception as err:  # pylint: disable=broad-except
@@ -331,7 +331,7 @@ def _send_mail(
         return False
 
     finally:
-        with suppress():
+        with suppress(Exception):
             smtp.quit()
 
     return True
@@ -376,11 +376,11 @@ def __do_encrypt(args: list[str], message: str) -> str:
 
 
 def _get_entry_score_mark(entry: model.Entry) -> str:
-    if entry.score < -5:
+    if entry.score < -5:  # noqa: PLR2004
         return "▼▼ "
     if entry.score < 0:
         return "▼ "
-    if entry.score > 5:
+    if entry.score > 5:  # noqa: PLR2004
         return "▲▲ "
     if entry.score > 0:
         return "▲ "
@@ -408,13 +408,16 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     if begin > end:  # ie 22 - 6
         if hour >= begin or hour < end:
             return True
-    else:  # ie 0-6
-        if begin <= hour <= end:
-            return True
+        # ie 0-6
+    elif begin <= hour <= end:
+        return True
 
     _LOG.debug("mailer: not in silent hours")
 
     return False
+
+
+_MAX_ERROR_LEN: ty.Final[int] = 1000
 
 
 def _process_errors(
@@ -439,9 +442,9 @@ def _process_errors(
         conv = h2t.HTML2Text(bodywidth=74)
         conv.protect_links = True
         content = conv.handle(error.error).strip()
-        if len(content) > 1000:
-            content = content[:1000]
-            if (ridx := content.rfind("\n")) > 100:
+        if len(content) > _MAX_ERROR_LEN:
+            content = content[:_MAX_ERROR_LEN]
+            if (ridx := content.rfind("\n")) > 100:  # noqa: PLR2004
                 content = content[:ridx].rstrip()
 
         yield content

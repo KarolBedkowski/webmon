@@ -18,8 +18,8 @@ from . import _commons as c
 BP = Blueprint("entry", __name__, url_prefix="/entry")
 
 
-@BP.route("/<int:entry_id>")
-def entry(entry_id: int) -> ty.Any:
+@BP.route("/<int:entry_id>")  # type:ignore
+def entry(entry_id: int) -> ty.Any:  # noqa: ANN401
     """Display entry and mark it as read."""
     db = c.get_db()
     user_id = session["user"]  # type: int
@@ -58,8 +58,8 @@ def entry(entry_id: int) -> ty.Any:
     )
 
 
-@BP.route("/mark/read", methods=["POST"])
-def entry_mark_read_api() -> ty.Any:
+@BP.route("/mark/read", methods=["POST"])  # type:ignore
+def entry_mark_read_api() -> ty.Any:  # noqa: ANN401
     """Mark entry read (by clicking on read mark)"""
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
@@ -81,17 +81,15 @@ def entry_mark_read_api() -> ty.Any:
     if updated:
         read_state = not read_state
 
-    res = {
+    return {
         "result": state if updated else "",
         "unread": database.entries.get_total_count(db, user_id, unread=True),
         "title": gettext("Read") if read_state else gettext("Unread"),
     }
 
-    return res
 
-
-@BP.route("/mark/star", methods=["POST"])
-def entry_mark_star_api() -> ty.Any:
+@BP.route("/mark/star", methods=["POST"])  # type:ignore
+def entry_mark_star_api() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     entry_id = int(request.form["entry_id"])
     user_id = session["user"]

@@ -6,18 +6,20 @@ Copyright (c) Karol Będkowski, 2016-2022
 This file is part of webmon.
 Licence: GPLv2+
 """
+
 from __future__ import annotations
 
-import datetime
 import email.utils
 import itertools
-import os.path
 import pathlib
 import typing as ty
 from contextlib import suppress
 from pathlib import Path
 
 import structlog
+
+if ty.TYPE_CHECKING:
+    import datetime
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger("common")
 
@@ -33,7 +35,7 @@ class ParamError(Exception):
 class InputError(Exception):
     """Exception raised on command error"""
 
-    def __init__(self, input_: ty.Any, msg: str):
+    def __init__(self, input_: ty.Any, msg: str) -> None:  # noqa:ANN401
         super().__init__(msg)
         self.input = input_
 
@@ -41,7 +43,7 @@ class InputError(Exception):
 class FilterError(Exception):
     """Exception raised on command error"""
 
-    def __init__(self, filter_: ty.Any, msg: str):
+    def __init__(self, filter_: ty.Any, msg: str) -> None:  # noqa:ANN401
         super().__init__(msg)
         self.filter = filter_
 
@@ -77,9 +79,8 @@ def get_subclasses_with_name(
     def find(
         parent_cls: ParentClass2,
     ) -> ty.Iterator[tuple[str, ParentClass2]]:
-        for rcls in getattr(parent_cls, "__subclasses__")():
-            name = getattr(rcls, "name")
-            if name:
+        for rcls in parent_cls.__subclasses__():
+            if name := getattr(rcls, "name", None):
                 yield name, rcls
 
             yield from find(rcls)
@@ -87,11 +88,13 @@ def get_subclasses_with_name(
     yield from find(base_class)
 
 
-def parse_interval(instr: ty.Union[str, float, int]) -> int:
+def parse_interval(instr: str | float) -> int:
     """Parse interval in human readable format and return interval in sec."""
     if isinstance(instr, (int, float)):
         if instr < 1:
-            raise ValueError(f"invalid interval '{instr!s}'")
+            errmsg = f"invalid interval '{instr!s}'"
+            raise ValueError(errmsg)
+
         return int(instr)
 
     instr = instr.lower().strip()
@@ -100,21 +103,25 @@ def parse_interval(instr: ty.Union[str, float, int]) -> int:
         mplt = 60
         instr = instr[:-1]
     elif instr.endswith("h"):
-        mplt = 3600
+        mplt = 3_600
         instr = instr[:-1]
     elif instr.endswith("d"):
-        mplt = 86400
+        mplt = 86_400
         instr = instr[:-1]
     elif instr.endswith("w"):
-        mplt = 604800
+        mplt = 604_800
         instr = instr[:-1]
+
     try:
-        val = int(instr) * mplt
-        if val < 1:
-            raise ValueError("invalid interval - <1")
-        return val
+        val = int(instr)
     except ValueError as err:
-        raise ValueError(f"invalid interval '{instr!s}'") from err
+        errmsg = f"invalid interval '{instr!s}'"
+        raise ValueError(errmsg) from err
+
+    if val < 1:
+        raise ValueError("invalid interval - <1")
+
+    return val * mplt
 
 
 def apply_defaults(*confs: ty.Optional[ConfDict]) -> ConfDict:
@@ -132,12 +139,13 @@ def create_missing_dir(path: str) -> None:
     """Check path and if not exists create directory.
     If path exists and is not directory - raise error.
     """
-    path = os.path.expanduser(path)
-    pat = Path(path)
+    pat = Path(path).expanduser()
     if pat.exists():
         if pat.is_dir():
             return
-        raise RuntimeError(f"path {path} exists and is not dir")
+
+        errmsg = f"path {path} exists and is not dir"
+        raise RuntimeError(errmsg)
 
     pathlib.Path(path).mkdir(parents=True)
 
@@ -195,26 +203,26 @@ def check_date_in_timerange(tsrange: str, hour: int, minutes: int) -> bool:
         if rstart < rstop:
             if rstart <= tshm <= rstop:
                 return True
-        else:
-            if not rstop < tshm < rstart:
-                return True
+        elif not rstop < tshm < rstart:
+            return True
+
     return False
 
 
 # pylint: disable=too-few-public-methods,too-many-instance-attributes
 class SettingDef:
     # pylint: disable=too-many-arguments
-    def __init__(
+    def __init__(  # noqa:PLR0913
         self,
         name: str,
         description: str,
-        default: ty.Any = None,
+        default: ty.Any = None,  # noqa: ANN401
         required: bool = False,
         options: dict[str, ty.Any] | None = None,
         value_type: ty.Type[ty.Any] | None = None,
         global_param: bool = False,
-        **kwargs: ty.Any,
-    ):
+        **kwargs: ty.Any,  # noqa: ANN401
+    ) -> None:
         self.name = name
         self.description = description
         self.default = default
@@ -232,13 +240,16 @@ class SettingDef:
 
         self.global_param = global_param
 
-    def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
+    def get_parameter(
+        self, key: str, default: ty.Any = None  # noqa: ANN401
+    ) -> ty.Any:  # noqa: ANN401
+
         if self.parameters:
             return self.parameters.get(key, default)
 
         return default
 
-    def validate_value(self, value: ty.Any) -> bool:
+    def validate_value(self, value: ty.Any) -> bool:  # noqa: ANN401
         if (
             self.required
             and self.default is None
@@ -254,24 +265,24 @@ class SettingDef:
         return True
 
 
-def _val2str(raw_value: ty.Any) -> str:
+def _val2str(raw_value: ty.Any) -> str:  # noqa: ANN401
     value = str(raw_value)
-    if len(value) > 64:
+    if len(value) > 64:  # noqa:PLR2004
         return value[:64] + "..."
 
     return value
 
 
-def obj2str(obj: ty.Any) -> str:
+def obj2str(obj: ty.Any) -> str:  # noqa: ANN401
     if hasattr(obj, "__dict__"):
         values = obj.__dict__.items()
     else:
-        values = (
-            (key, getattr(obj, key)) for key in getattr(obj, "__slots__")
-        )
+        values = ((key, getattr(obj, key)) for key in obj.__slots__)
+
     kvs = ", ".join(
-        [key + "=" + _val2str(val) for key, val in values if key[0] != "_"]
+        [f"{key}={_val2str(val)}" for key, val in values if key[0] != "_"]
     )
+
     return f"<{obj.__class__.__name__} {kvs}>"
 
 

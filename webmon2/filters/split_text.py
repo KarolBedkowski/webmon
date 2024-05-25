@@ -26,7 +26,7 @@ def _get_elements_by_xpath(
     document = lxml.html.fromstring(entry.content)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
-        if isinstance(elem, etree._Element):
+        if isinstance(elem, etree._Element):  # noqa:SLF001
             content = etree.tostring(elem).decode("utf-8")
         else:
             content = str(elem)
@@ -48,7 +48,7 @@ class GetElementsByCss(AbstractFilter):
         ),
     ]  # type: list[common.SettingDef]
 
-    def __init__(self, config: model.ConfDict):
+    def __init__(self, config: model.ConfDict) -> None:
         super().__init__(config)
         self._expression: str = ""
 
@@ -104,7 +104,7 @@ class GetElementsById(AbstractFilter):
         document = lxml.html.fromstring(entry.content)
         for elem in document.xpath(".//*[@id=$id]", id=self._conf["sel"]):
             # pylint: disable=protected-access
-            if isinstance(elem, etree._Element):
+            if isinstance(elem, etree._Element):  # noqa: SLF001
                 text = etree.tostring(elem).decode("utf-8")
                 if text:
                     yield _new_entry(entry, text)

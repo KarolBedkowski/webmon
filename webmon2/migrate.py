@@ -7,7 +7,6 @@ Migration utils
 """
 from __future__ import annotations
 
-import argparse
 import typing as ty
 from pathlib import Path
 
@@ -16,12 +15,16 @@ import yaml
 
 from . import database, model
 
+if ty.TYPE_CHECKING:
+    import argparse
+
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
 def _load_sources(filename: str) -> list[ty.Any] | None:
     """Load sources configuration from `filename`."""
-    if not Path(filename).is_file():
+    sfile = Path(filename)
+    if not sfile.is_file():
         _LOG.error(
             "migrate: load sources from %r error - file not found", filename
         )
@@ -29,7 +32,7 @@ def _load_sources(filename: str) -> list[ty.Any] | None:
 
     _LOG.debug("migrate: loading sources from %s", filename)
     try:
-        with open(filename, encoding="UTF-8") as fin:
+        with sfile.open(encoding="UTF-8") as fin:
             inps = [
                 doc
                 for doc in yaml.load_all(fin, Loader=None)

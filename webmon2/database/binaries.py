@@ -6,11 +6,15 @@ Access to binaries stored in database.
 """
 from __future__ import annotations
 
+import typing as ty
+
 import psycopg
 import structlog
 
-from ._db import DB
 from ._dbcommon import NotFound
+
+if ty.TYPE_CHECKING:
+    from ._db import DB
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
@@ -38,11 +42,11 @@ def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
                 "WHERE datahash=%s AND user_id=%s",
                 (datahash, user_id),
             )
-            res: tuple[bytes, str] | None = cur.fetchone()  # type: ignore
+            res: tuple[bytes, str] | None = cur.fetchone()
             if res:
                 return res
 
-    raise NotFound()
+    raise NotFound
 
 
 def save(
@@ -110,7 +114,7 @@ def remove_unused(db: DB, user_id: int) -> int:
 
     with db.cursor() as cur:
         cur.execute(_REMOVE_UNUSED_SQL, {"user_id": user_id})
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 _CLEAN_ENTRIES_SQL = """

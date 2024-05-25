@@ -15,12 +15,14 @@ import typing as ty
 import urllib.parse
 
 import requests
-import structlog
 from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
+
+if ty.TYPE_CHECKING:
+    import structlog
 
 # from urllib3 import poolmanager
 
@@ -66,7 +68,7 @@ class JamendoAbstractSource(AbstractSource):
                 response.raise_for_status()
 
                 if not response:
-                    raise ConnectionError("No response")
+                    return 500, "No response"
 
                 if response.status_code == 304:
                     return 304, None
@@ -111,27 +113,33 @@ class JamendoAbstractSource(AbstractSource):
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"https://www.jamendo.com/artist/{conf['artist_id']}/"
+            conf["url"] = (
+                f"https://www.jamendo.com/artist/{conf['artist_id']}/"
+            )
         return source
 
 
-def _build_request_url(url: str, **params: ty.Any) -> str:
+def _build_request_url(url: str, **params: ty.Any) -> str:  # noqa: ANN401
     return url + "&".join(
         key + "=" + urllib.parse.quote_plus(str(val))
         for key, val in params.items()
@@ -228,7 +236,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
@@ -238,12 +246,16 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             yield ("artist_id", "artist name or id is required")
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _jamendo_format_long_list(
@@ -331,7 +343,7 @@ class JamendoTracksSource(JamendoAbstractSource):
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
@@ -341,12 +353,16 @@ class JamendoTracksSource(JamendoAbstractSource):
             yield ("artist_id", gettext("artist name or id is required"))
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _jamendo_track_format(
@@ -381,8 +397,6 @@ def _get_release_date(
         if not releasedate.tzinfo:
             releasedate = releasedate.replace(tzinfo=datetime.UTC)
 
-        return releasedate
-
     except ValueError:
         log.debug("jamendo: wrong releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
@@ -390,6 +404,9 @@ def _get_release_date(
     except KeyError:
         log.debug("jamendo: missing releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
+
+    else:
+        return releasedate
 
 
 # class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

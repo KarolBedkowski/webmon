@@ -15,7 +15,7 @@ from contextlib import suppress
 from xml.etree.ElementTree import Element
 
 import structlog
-from defusedxml import ElementTree as etree
+from defusedxml import ElementTree as etree  # noqa: N813
 from lxml.builder import E  # pylint: disable=no-name-in-module
 
 from webmon2 import database, model, sources
@@ -23,7 +23,7 @@ from webmon2 import database, model, sources
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
-class InvalidFile(RuntimeError):
+class InvalidFileError(RuntimeError):
     pass
 
 
@@ -32,7 +32,7 @@ def load_opml(
 ) -> ty.Iterable[ty.Tuple[str, ty.Iterable[ty.Tuple[str, model.Source]]]]:
     root = etree.XML(content)
     if root.tag != "opml":
-        raise InvalidFile("content is not opml")
+        raise InvalidFileError("content is not opml")
 
     body = root.find("body")
     data = sorted(_load(body), key=lambda x: x[0] or "")
@@ -53,8 +53,8 @@ def load_data(db: database.DB, content: bytes, user_id: int) -> None:
         for _, source in items:
             source.group_id = group_id
             source.user_id = user_id
-            source = database.sources.save(db, source)
-            _LOG.debug("opml: new source: %s", source)
+            src = database.sources.save(db, source)
+            _LOG.debug("opml: new source: %s", src)
 
 
 def dump_data(db: database.DB, user_id: int) -> str:

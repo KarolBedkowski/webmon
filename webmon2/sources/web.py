@@ -156,26 +156,24 @@ class WebSource(AbstractSource):
             return None
 
         for hist in response.history:
-            if hist.is_permanent_redirect:
-                href = hist.headers.get("Location")
-                if href:
-                    new_state.set_prop(
-                        "info",
-                        gettext("Permanently redirects: %(url)s", url=href),
-                    )
-                    self._update_source(new_url=href)
-                    return href
+            if hist.is_permanent_redirect and (
+                href := hist.headers.get("Location")
+            ):
+                new_state.set_prop(
+                    "info",
+                    gettext("Permanently redirects: %(url)s", url=href),
+                )
+                self._update_source(new_url=href)
+                return ty.cast(str, href)
 
         for hist in response.history:
-            if hist.is_redirect:
-                href = hist.headers.get("Location")
-                if href:
-                    self._update_source(new_url=href)
-                    new_state.set_prop(
-                        "info",
-                        gettext("Temporary redirects: %(url)s", url=href),
-                    )
-                    return href
+            if hist.is_redirect and (href := hist.headers.get("Location")):
+                self._update_source(new_url=href)
+                new_state.set_prop(
+                    "info",
+                    gettext("Temporary redirects: %(url)s", url=href),
+                )
+                return ty.cast(str, href)
 
         new_state.del_prop("info")
         return None
@@ -199,7 +197,9 @@ class WebSource(AbstractSource):
         return None
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -210,7 +210,9 @@ class WebSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -231,8 +233,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        content = clean.autolink_html(cleaner.clean_html(content))
-        return content
+        return clean.autolink_html(cleaner.clean_html(content))
 
 
 def _prepare_headers(
@@ -251,16 +252,15 @@ def _prepare_headers(
             state.last_update.timestamp()
         )
 
-    if state.props:
-        if etag := state.props.get("etag"):
-            headers["If-None-Match"] = etag
+    if state.props and (etag := state.props.get("etag")):
+        headers["If-None-Match"] = etag
 
     headers.update(common.parse_str_to_headers(conf.get("http_headers")))
 
     if not headers.get("Accept"):
-        headers[
-            "Accept"
-        ] = "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
+        headers["Accept"] = (
+            "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
+        )
 
     # if not already, set accept-language locale to user locale
     if not headers.get("Accept-Language"):

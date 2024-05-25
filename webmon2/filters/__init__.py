@@ -67,7 +67,7 @@ def get_filter(conf: dict[str, ty.Any]) -> AbstractFilter | None:
         return fltr
 
     _LOG.warning("filters: get filter error: %r not found", name)
-    raise UnknownFilterException()
+    raise UnknownFilterException
 
 
 def filter_by(

@@ -34,11 +34,13 @@ class Wrap(AbstractFilter):
         super().validate()
         width = self._conf.get("width")
         if not isinstance(width, int) or width < 1:
-            raise common.ParamError(f"invalid width: {width!r}")
+            errmsg = f"invalid width: {width!r}"
+            raise common.ParamError(errmsg)
 
         max_lines = self._conf.get("max_lines")
         if not isinstance(width, int) or width < 1:
-            raise common.ParamError(f"invalid max_lines: {max_lines!r}")
+            errmsg = f"invalid max_lines: {max_lines!r}"
+            raise common.ParamError(errmsg)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:

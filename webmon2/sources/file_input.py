@@ -76,12 +76,15 @@ class FileSource(AbstractSource):
             ) + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
-            return new_state, [entry]
         except OSError as err:
             return state.new_error(str(err)), []
+        else:
+            return new_state, [entry]
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -92,7 +95,9 @@ class FileSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url or not url.startswith("file://"):
             raise ValueError("missing xmlUrl")

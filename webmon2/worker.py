@@ -15,7 +15,6 @@ import re
 import threading
 import time
 import typing as ty
-from configparser import ConfigParser
 from contextlib import suppress
 
 import structlog
@@ -27,6 +26,9 @@ with suppress(ImportError):
     import setproctitle
 
 from . import common, database, filters, formatters, mailer, model, sources
+
+if ty.TYPE_CHECKING:
+    from configparser import ConfigParser
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
@@ -63,7 +65,10 @@ def _create_app() -> Flask:
 
 class CheckWorker(threading.Thread):
     def __init__(
-        self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
+        self,
+        conf: ConfigParser,
+        debug: bool = False,
+        sdn: ty.Any = None,  # noqa: ANN401
     ) -> None:
         threading.Thread.__init__(
             self, daemon=True, name="webmon2.checkworker"
@@ -135,7 +140,7 @@ class CheckWorker(threading.Thread):
             _WORKER_PROCESSING_TIME.inc(time.time() - start)
 
             gc_cntr += 1
-            if gc_cntr == 30:
+            if gc_cntr == 30:  # noqa:PLR2004
                 gc.collect()
                 gc_cntr = 0
 
@@ -155,7 +160,7 @@ class FetchWorker(threading.Thread):
         idx: str,
         todo_queue: queue.Queue[int],
         conf: ConfigParser,
-        app: ty.Any,
+        app: ty.Any,  # noqa: ANN401
     ) -> None:
         threading.Thread.__init__(self, name=f"webmon2.fetchworker.{idx}")
         # id of thread
@@ -232,15 +237,16 @@ class FetchWorker(threading.Thread):
         try:
             src = self._get_src(source, sys_settings)
         except sources.UnknownInputException as err:
-            raise ValueError(f"unsupported input {source.kind}") from err
+            errmsg = f"unsupported input {source.kind}"
+            raise ValueError(errmsg) from err
 
         assert source.state and src
 
-        with self._app.test_request_context():
-            with force_locale(sys_settings.get("locale", "en") or "en"):
-                new_state, loaded = self._load_data(
-                    db, source, src, sys_settings
-                )
+        with (
+            self._app.test_request_context(),
+            force_locale(sys_settings.get("locale", "en") or "en"),
+        ):
+            new_state, loaded = self._load_data(db, source, src, sys_settings)
 
         if not new_state:
             return
@@ -535,9 +541,11 @@ def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
         db.begin()
         try:
             sys_settings = database.settings.get_dict(db, user.id)
-            with app.test_request_context():
-                with force_locale(sys_settings.get("locale", "en") or "en"):
-                    send_ok = mailer.process(db, user, conf)
+            with (
+                app.test_request_context(),
+                force_locale(sys_settings.get("locale", "en") or "en"),
+            ):
+                send_ok = mailer.process(db, user, conf)
 
             if send_ok:
                 database.users.put_log(db, user.id, "send mail success")

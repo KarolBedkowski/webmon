@@ -7,6 +7,8 @@ Formating entry content functions
 """
 from __future__ import annotations
 
+import typing as ty
+
 import lxml
 import markdown2
 import readability
@@ -106,6 +108,10 @@ def cleanup_html(content: str) -> str:
     return _clean_html_brutal(content)
 
 
+_MAX_LINES: ty.Final[int] = 10
+_MAX_CONTENT_LEN: ty.Final[int] = 300
+
+
 def entry_summary(content: str | None, content_type: str | None) -> str:
     """Summarize content; try to get max 10 lines and no more than about 300
     characters from content. May be not accurate.
@@ -127,14 +133,14 @@ def entry_summary(content: str | None, content_type: str | None) -> str:
         )
         lines = content.split("\n", 50)
 
-    def join():
+    def join() -> ty.Iterator[str]:
         total_content = 0
         line: str
         for idx, line in enumerate(
             filter(None, (line.strip() for line in lines))
         ):
             total_content += len(line)
-            if idx == 10 or total_content > 300:
+            if idx == _MAX_LINES or total_content > _MAX_CONTENT_LEN:
                 yield f"{line}…"
                 return
 

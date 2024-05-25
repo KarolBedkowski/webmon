@@ -6,6 +6,7 @@
 Filter that join many entries into one.
 """
 
+import typing as ty
 from functools import reduce
 
 import structlog
@@ -16,6 +17,8 @@ from webmon2 import model
 from ._abstract import AbstractFilter
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
+
+_MAX_TITLE_WIDTH: ty.Final[int] = 80
 
 
 def _join_entries(
@@ -29,15 +32,15 @@ def _join_entries(
         if not first_entry.title:
             title = "… | " + next_entry.title
         elif (
-            len(first_entry.title) < 80
+            len(first_entry.title) < _MAX_TITLE_WIDTH
             and first_entry.title != next_entry.title
         ):
             title = first_entry.title + " | " + next_entry.title
         else:
             title = first_entry.title
 
-        if len(title) > 80:
-            title = title[:80] + "…"
+        if len(title) > _MAX_TITLE_WIDTH:
+            title = title[:_MAX_TITLE_WIDTH] + "…"
 
         first_entry.title = title
 
@@ -57,8 +60,8 @@ class Join(AbstractFilter):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
-        curr_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
+        curr_state: model.SourceState,  # noqa:ARG002
     ) -> model.Entries:
         try:
             yield reduce(_join_entries, entries)
@@ -67,4 +70,4 @@ class Join(AbstractFilter):
             _LOG.debug("filters: error joining", entries=entries, error=err)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError

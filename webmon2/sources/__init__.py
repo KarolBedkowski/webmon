@@ -57,17 +57,14 @@ def get_source(
     source: model.Source, sys_settings: model.ConfDict
 ) -> AbstractSource:
     """Get input class according to configuration"""
-    scls = common.find_subclass(AbstractSource, source.kind)
-    if scls:
-        src = scls(source, sys_settings)
-        return src  # type: ignore
+    if scls := common.find_subclass(AbstractSource, source.kind):
+        return scls(source, sys_settings)  # type: ignore
 
-    raise UnknownInputException()
+    raise UnknownInputException
 
 
 def get_source_class(kind: str) -> ty.Type[AbstractSource] | None:
-    scls = common.find_subclass(AbstractSource, kind)
-    return scls
+    return common.find_subclass(AbstractSource, kind)
 
 
 def sources_name() -> list[str]:

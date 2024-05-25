@@ -52,12 +52,13 @@ class NDiff(AbstractFilter):
             or threshold < 0
             or threshold > 1
         ):
-            raise common.ParamError(f"invalid threshold : {threshold!r}")
+            errmsg = f"invalid threshold : {threshold!r}"
+            raise common.ParamError(errmsg)
 
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
         curr_state: model.SourceState,
     ) -> model.Entries:
         assert self.db
@@ -116,7 +117,7 @@ class NDiff(AbstractFilter):
         yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def _check_changes(

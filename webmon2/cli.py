@@ -8,16 +8,19 @@ command line commands
 
 import argparse
 import configparser
-import os
 import sys
 import typing as ty
+from pathlib import Path
 
 from webmon2 import model
 
 from . import common, conf, database, filters, security, sources
 
 
-def _show_abilities_cls(title: str, base_cls: ty.Any) -> None:
+def _show_abilities_cls(
+    title: str,
+    base_cls: ty.Type[sources.AbstractSource | filters.AbstractFilter],
+) -> None:
     print(title)
     for name, cls in common.get_subclasses_with_name(base_cls):
         print("  -", name)
@@ -106,17 +109,17 @@ def write_config_file(
         print("missing destination filename", file=sys.stderr)
         return
 
-    filename = os.path.expanduser(filename)
+    cfgfile = Path(filename).expanduser()
 
-    if os.path.isfile(filename):
+    if cfgfile.is_file():
         print(f"missing file '{filename}' already exists", file=sys.stderr)
         return
 
     try:
-        conf.save_conf(app_conf, filename)
+        conf.save_conf(app_conf, cfgfile)
     except Exception as err:  # pylint: disable=broad-except
         print(
-            f"write config file to '{filename}' error: {err}", file=sys.stderr
+            f"write config file to '{cfgfile}' error: {err}", file=sys.stderr
         )
     else:
         print("Done")

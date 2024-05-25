@@ -6,7 +6,7 @@
 .PHONY: run
 ## Run application
 run:
-	./run_webmon2.py -d -c webmon2.ini serve --workers 1
+	./run_webmon2.py -d -c webmon2.ini serve --workers -1
 
 .PHONY: pylint
 ## Lint using pylint

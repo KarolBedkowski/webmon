@@ -25,7 +25,7 @@ class History(AbstractFilter):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
         curr_state: model.SourceState,
     ) -> model.Entries:
         assert self.db
@@ -44,4 +44,4 @@ class History(AbstractFilter):
                 yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError

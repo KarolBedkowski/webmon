@@ -10,8 +10,6 @@ from __future__ import annotations
 import secrets
 import time
 import typing as ty
-from argparse import Namespace
-from configparser import ConfigParser
 from pathlib import Path
 
 import flask_babel
@@ -56,6 +54,10 @@ from . import (
     source,
     system,
 )
+
+if ty.TYPE_CHECKING:
+    from argparse import Namespace
+    from configparser import ConfigParser
 
 __all__ = ("create_app", "start_app")
 
@@ -105,8 +107,8 @@ def _generate_request_id() -> str:
     return secrets.token_urlsafe(16)
 
 
-def _before_request() -> ty.Any:  # pylint: disable=unused-variable
-    request.req_start_time = time.time()  # type: ignore
+def _before_request() -> ty.Any:  # noqa:ANN401
+    request.req_start_time = time.time()
     path = request.path
     # pages that not need valid user and don't need additional data like
     # locale setting
@@ -175,7 +177,7 @@ def _after_request(  # pylint: disable=unused-variable
     elif not resp.headers.get("Cache-Control"):
         resp.headers["Cache-Control"] = "public, max-age=31536000"
 
-    resp_time = time.time() - request.req_start_time  # type: ignore
+    resp_time = time.time() - request.req_start_time
     _REQUEST_LATENCY.labels(request.endpoint, request.method).observe(
         resp_time
     )
@@ -222,11 +224,14 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     app.config["app_conf"] = conf
     app.app_context().push()
 
-    def get_locale():
-        return request.accept_languages.best_match(app.config["LANGUAGES"])
+    def get_locale() -> str | None:
+        return ty.cast(
+            str | None,
+            request.accept_languages.best_match(app.config["LANGUAGES"]),
+        )
 
-    def get_timezone():
-        return session.get("_user_tz")
+    def get_timezone() -> str | None:
+        return ty.cast(str | None, session.get("_user_tz"))
 
     app.session_interface = appsession.DBSessionInterface(True)
     if hasattr(flask_babel.Babel, "localeselector"):
@@ -298,13 +303,11 @@ def create_app(args: Namespace, conf: ConfigParser) -> Flask:
     app = _create_app(args.debug, web_root, conf)
 
     if web_root != "/":
-        app.wsgi_app = DispatcherMiddleware(  # type: ignore
+        app.wsgi_app = DispatcherMiddleware(
             NotFound(), {web_root: app.wsgi_app}
         )
 
-    app.wsgi_app = ProxyFix(  # type: ignore
-        app.wsgi_app, x_host=1, x_port=1, x_prefix=1
-    )
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_host=1, x_port=1, x_prefix=1)
 
     return app
 

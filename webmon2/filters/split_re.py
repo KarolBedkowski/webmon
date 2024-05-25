@@ -33,7 +33,7 @@ class SelectByRE(AbstractFilter):
         ),
     ]  # type: list[common.SettingDef]
 
-    def __init__(self, conf: model.ConfDict):
+    def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
         self._re = re.compile(
             conf["re"], re.IGNORECASE | re.LOCALE | re.MULTILINE

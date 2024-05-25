@@ -23,8 +23,8 @@ _EXCLUDED_HEADERS = [
 ]
 
 
-@BP.route("/<path:path>", methods=["GET"])
-def proxy(path: str) -> ty.Any:
+@BP.route("/<path:path>", methods=["GET"])  # type:ignore
+def proxy(path: str) -> ty.Any:  # noqa: ANN401
     _LOG.debug("web proxy: proxy request", path=path)
 
     resp = requests.get(path, timeout=30)

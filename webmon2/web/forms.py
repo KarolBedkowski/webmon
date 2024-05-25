@@ -55,7 +55,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         param: common.SettingDef,
         values: dict[str, ty.Any] | None = None,
         prefix: str = "",
-        sett_value: ty.Any = None,
+        sett_value: ty.Any = None,  # noqa: ANN401
     ) -> Field:
         if param.options:
             field_type = "select"
@@ -66,7 +66,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         else:
             field_type = "str"
 
-        field = Field(
+        return Field(
             name=param.name,
             description=param.description,
             type=field_type,
@@ -78,7 +78,6 @@ class Field:  # pylint: disable=too-many-instance-attributes
             default_value=sett_value or param.default or "",
             parameters=param.parameters,
         )
-        return field
 
     @staticmethod
     def from_setting(setting: model.Setting, prefix: str) -> Field:
@@ -108,7 +107,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             field_type = "str"
             field_type_class = str
 
-        field = Field(
+        return Field(
             name=setting.key,
             description=setting.description,
             value=setting.value,
@@ -119,7 +118,6 @@ class Field:  # pylint: disable=too-many-instance-attributes
             options=options,
             parameters=parameters,
         )
-        return field
 
     def update_from_request(self, form: Form) -> None:
         form_value = form.get(self.fieldname)
@@ -132,17 +130,18 @@ class Field:  # pylint: disable=too-many-instance-attributes
                 raise ValueError("missing value")
             return
 
-        if self.type == "number":
-            if form_value == "":
-                self.value = None
-                return
+        if self.type == "number" and form_value == "":
+            self.value = None
+            return
 
         if self.type_class:
             form_value = self.type_class(form_value)
 
         self.value = form_value
 
-    def get_parameter(self, key: str, default: ty.Any = None) -> ty.Any:
+    def get_parameter(
+        self, key: str, default: ty.Any = None  # noqa: ANN401
+    ) -> ty.Any:  # noqa: ANN401
         if self.parameters:
             return self.parameters.get(key, default)
 
@@ -172,9 +171,8 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
         if not self.kind:
             result["kind"] = gettext("Missing source kind")
-        else:
-            if self.kind not in sources.sources_name():
-                result["kind"] = gettext("Unknown kind")
+        elif self.kind not in sources.sources_name():
+            result["kind"] = gettext("Unknown kind")
 
         if self.interval:
             try:
@@ -186,7 +184,7 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def from_model(source: model.Source) -> SourceForm:
-        form = SourceForm(
+        return SourceForm(
             id=source.id,
             group_id=source.group_id,
             kind=source.kind,
@@ -197,7 +195,6 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
             mail_report=source.mail_report.value,
             default_score=source.default_score or 0,
         )
-        return form
 
     def update_from_request(self, form: Form) -> None:
         group_id = form["group_id"].strip()
@@ -238,14 +235,13 @@ class GroupForm:
 
     @staticmethod
     def from_model(group: model.SourceGroup) -> GroupForm:
-        form = GroupForm(
+        return GroupForm(
             id=group.id,
             name=group.name,
             feed=group.feed,
             feed_enabled=bool(group.feed) and group.feed != "off",
             mail_report=group.mail_report.value,
         )
-        return form
 
     def update_from_request(self, form: Form) -> None:
         self.name = form["name"].strip()
@@ -331,7 +327,7 @@ class UserForm:
 
     @staticmethod
     def from_model(user: model.User) -> UserForm:
-        form = UserForm(
+        return UserForm(
             id=user.id,
             login=user.login or "",
             email=user.email or "",
@@ -339,7 +335,6 @@ class UserForm:
             admin=user.admin,
             has_totp=bool(user.totp),
         )
-        return form
 
     def update_from_request(self, form: Form) -> None:
         self.login = form["login"].strip()

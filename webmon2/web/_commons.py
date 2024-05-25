@@ -13,8 +13,10 @@ import typing as ty
 
 from flask import g, session
 
-from webmon2 import model
 from webmon2.database import DB
+
+if ty.TYPE_CHECKING:
+    from webmon2 import model
 
 PAGE_LIMIT = 25
 
@@ -23,7 +25,7 @@ def preprate_entries_list(
     entries: list[model.Entry], page: int, total_entries: int, order: str
 ) -> dict[str, ty.Any]:
     last_page = math.ceil(total_entries / PAGE_LIMIT) - 1
-    info = {
+    return {
         "min_id": min(entry.id for entry in entries) if entries else None,
         "max_id": max(entry.id for entry in entries) if entries else None,
         "more": page is not None and (page + 1) * PAGE_LIMIT < total_entries,
@@ -39,7 +41,6 @@ def preprate_entries_list(
         "last_page": last_page,
         "order": order,
     }
-    return info
 
 
 def get_db() -> DB:

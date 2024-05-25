@@ -13,6 +13,7 @@ import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4
 
+import flask
 from flask.sessions import (
     SessionInterface as FlaskSessionInterface,
     SessionMixin,
@@ -26,9 +27,15 @@ from webmon2 import database, model
 class DBSession(CallbackDict[str, ty.Any], SessionMixin):
     """Server-side sessions."""
 
-    def __init__(self, initial=None, sid=None, permanent=None):
-        def on_update(self):
-            self.modified = True
+    def __init__(
+        self,
+        initial: str | None = None,
+        sid: int | None = None,
+        permanent: bool | None = None,
+    ) -> None:
+
+        def on_update(obj: DBSession) -> None:
+            obj.modified = True
 
         self.sid = sid
         self.modified = False
@@ -45,12 +52,16 @@ class DBSessionInterface(FlaskSessionInterface):
     :param permanent: Whether to use permanent session or not.
     """
 
-    def __init__(self, use_signer=False, permanent=True):
+    def __init__(
+        self, use_signer: bool = False, permanent: bool = True
+    ) -> None:
         self.use_signer = use_signer
         self.permanent = permanent
         self.has_same_site_capability = hasattr(self, "get_cookie_samesite")
 
-    def open_session(self, app, request):
+    def open_session(
+        self, app: flask.Flask, request: flask.request
+    ) -> DBSession | None:
         sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
         if not sid:
             return DBSession(sid=_generate_sid(), permanent=self.permanent)
@@ -87,12 +98,15 @@ class DBSessionInterface(FlaskSessionInterface):
         except pickle.UnpicklingError:
             return DBSession(sid=sid, permanent=self.permanent)
 
-    def save_session(self, app, session, response):
+    def save_session(
+        self, app: flask.Flask, session: DBSession, response: flask.Response
+    ) -> None:
         domain = self.get_cookie_domain(app)
         path = self.get_cookie_path(app)
         with database.DB.get() as db:
-            if not session:
-                if session.modified:
+            # TODO: check
+            if not session or not session.sid:
+                if session.modified and session.sid:
                     database.system.delete_session(db, session.sid)
                     db.commit()
                     response.delete_cookie(
@@ -118,8 +132,11 @@ class DBSessionInterface(FlaskSessionInterface):
             database.system.save_session(db, saved_session)
             db.commit()
 
+        assert session.sid
         if self.use_signer:
-            session_id = _get_signer(app).sign(want_bytes(session.sid))
+            signer = self._get_signer(app)
+            assert signer
+            session_id = signer.sign(want_bytes(session.sid))
         else:
             session_id = session.sid
 
@@ -141,11 +158,11 @@ class DBSessionInterface(FlaskSessionInterface):
         )
 
 
-def _generate_sid():
+def _generate_sid() -> str:
     return str(uuid4())
 
 
-def _get_signer(app):
+def _get_signer(app: flask.Flask) -> Signer | None:
     if not app.secret_key:
         return None
 

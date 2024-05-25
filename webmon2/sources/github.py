@@ -14,14 +14,16 @@ from datetime import datetime, timedelta, timezone
 import github3
 from dateutil import tz
 from flask_babel import gettext, lazy_gettext
-from github3.repos.commit import RepoCommit
-from github3.repos.release import Release
-from github3.repos.repo import Repository
-from github3.repos.tag import RepoTag
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
+
+if ty.TYPE_CHECKING:
+    from github3.repos.commit import RepoCommit
+    from github3.repos.release import Release
+    from github3.repos.repo import Repository
+    from github3.repos.tag import RepoTag
 
 _GITHUB_MAX_AGE = 90  # 90 days
 _GITHUB_ICON = "https://github.com/favicon.ico"
@@ -69,20 +71,21 @@ class GitHubAbstractSource(AbstractSource):
             repository = github.repository(conf["owner"], conf["repository"])
 
         except Exception as err:
+            errmsg = gettext("Connection error: %(err)s", err=err)
             raise common.InputError(
                 self,
-                gettext("Connection error: %(err)s", err=err),
+                errmsg,
             )
 
         return repository
 
     @classmethod
     def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
     def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _update_source(self) -> None:
         """
@@ -204,25 +207,31 @@ class GithubInput(GitHubAbstractSource):
         return new_state, [entry]
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
 
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"http://github.com/{conf['owner']}/{conf['repository']}"
+            conf["url"] = (
+                f"http://github.com/{conf['owner']}/{conf['repository']}"
+            )
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _format_gh_commit_short(commit: RepoCommit, _full_message: bool) -> str:
@@ -316,7 +325,7 @@ class GithubTagsSource(GitHubAbstractSource):
             content = "\n\n".join(filter(None, map(_format_gh_tag, tags)))
         except Exception as err:
             self._log.exception("github tags source: load error", error=err)
-            raise common.InputError(self, str(err))
+            raise common.InputError(self, str(err)) from err
 
         new_state = state.new_ok(etag=repository.etag)
         self._state_update_icon(new_state)
@@ -333,25 +342,31 @@ class GithubTagsSource(GitHubAbstractSource):
             new_state.set_icon(self._load_binary(_GITHUB_ICON))
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
 
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"http://github.com/{conf['owner']}/{conf['repository']}/tags"
+            conf["url"] = (
+                f"http://github.com/{conf['owner']}/{conf['repository']}/tags"
+            )
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _filter_tags(
@@ -482,7 +497,9 @@ class GithubReleasesSource(GitHubAbstractSource):
         return new_state, entries
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -496,12 +513,16 @@ class GithubReleasesSource(GitHubAbstractSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _build_gh_release_entry(

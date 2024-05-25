@@ -1,3 +1,4 @@
+# ruff:  noqa: PLW0603
 """Logging setup.
 Copyright (c) Karol Będkowski, 2014-2022
 
@@ -35,7 +36,7 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
     :param debug: (bool) run in debug mode (all messages)
     :param silent: (bool) show only warnings/errors
     """
-    global SILENT, DEBUG  # pylint: disable=global-statement
+    global SILENT, DEBUG  # pylint: disable=global-statement;
     SILENT = silent
     DEBUG = debug
 
@@ -102,17 +103,16 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         else:
             processors = [structlog.dev.ConsoleRenderer(colors=True)]
 
+    elif log_fmt == "console":
+        processors = [structlog.dev.ConsoleRenderer(colors=False)]
     else:
-        if log_fmt == "console":
-            processors = [structlog.dev.ConsoleRenderer(colors=False)]
-        else:
-            processors = [
-                structlog.processors.dict_tracebacks,
-                structlog.processors.LogfmtRenderer(),
-            ]
+        processors = [
+            structlog.processors.dict_tracebacks,
+            structlog.processors.LogfmtRenderer(),
+        ]
 
     structlog.configure(
-        processors=shared_processors  # type: ignore
+        processors=shared_processors
         + [
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
@@ -124,13 +124,13 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
     formatter = structlog.stdlib.ProcessorFormatter(
         # These run ONLY on `logging` entries that do NOT originate within
         # structlog.
-        foreign_pre_chain=shared_processors,  # type: ignore
+        foreign_pre_chain=shared_processors,
         # These run on ALL entries after the pre_chain is done.
         processors=[
             # Remove _record & _from_structlog.
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
         ]
-        + processors,  # type: ignore
+        + processors,
     )
 
     console = logging.StreamHandler()

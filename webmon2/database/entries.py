@@ -8,7 +8,6 @@ Access to entries in db.
 from __future__ import annotations
 
 import typing as ty
-from datetime import date, datetime
 
 import psycopg.errors
 import structlog
@@ -17,7 +16,11 @@ from psycopg import Cursor
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, sources
-from ._db import DB
+
+if ty.TYPE_CHECKING:
+    from datetime import date, datetime
+
+    from ._db import DB
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
@@ -353,7 +356,7 @@ def find_fulltext(
                 user_id=user_id,
                 group_id=group_id,
             )
-            raise dbc.QuerySyntaxError() from err
+            raise dbc.QuerySyntaxError from err
 
         yield from _yield_entries(cur, user_sources)
 
@@ -415,12 +418,12 @@ def get(
         entry = cur.fetchone()
 
     if not entry:
-        raise dbc.NotFound()
+        raise dbc.NotFound
 
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)
 
-    return entry
+    return ty.cast(model.Entry, entry)
 
 
 _INSERT_ENTRY_SQL = """
@@ -557,7 +560,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         changed = cur.rowcount
 
     log.debug("db: mark entries star finished; changed: %d", changed)
-    return changed
+    return ty.cast(int, changed)
 
 
 def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
@@ -653,9 +656,7 @@ def mark_read(
                 "WHERE id<=%s AND id>=%s AND user_id=%s",
                 (read.value, max_id, min_id or 0, user_id),
             )
-        changed = cur.rowcount
-
-    return changed
+        return ty.cast(int, cur.rowcount)
 
 
 def mark_all_read(
@@ -695,7 +696,7 @@ def mark_all_read(
                 ),
             )
 
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 _GET_RELATED_RM_ENTRY_SQL = """

@@ -22,7 +22,6 @@ class Strip(AbstractFilter):
     long_info = lazy_gettext(
         "Remove white characters from beginning and end of content"
     )
-    params = []  # type: list[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:

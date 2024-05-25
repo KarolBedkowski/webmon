@@ -6,6 +6,7 @@
 Convert html to text.
 """
 import re
+import typing as ty
 from urllib.parse import urljoin
 
 import html2text as h2t
@@ -52,7 +53,7 @@ class Html2Text(AbstractFilter):
 def _convert(content: str, bodywidth: int) -> str:
     conv = h2t.HTML2Text(bodywidth=bodywidth)
     conv.protect_links = True
-    return conv.handle(content)
+    return ty.cast(str, conv.handle(content))
 
 
 _RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.IGNORECASE)

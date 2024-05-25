@@ -56,7 +56,7 @@ class SourceGroup:
         return hash(tuple(map(str, self.__dict__.values())))
 
     def clone(self) -> SourceGroup:
-        sgr = SourceGroup(
+        return SourceGroup(
             id=self.id,
             name=self.name,
             user_id=self.user_id,
@@ -64,10 +64,9 @@ class SourceGroup:
             mail_report=self.mail_report,
             sources_count=self.sources_count,
         )
-        return sgr
 
     @classmethod
-    def from_row(cls, row: Row) -> SourceGroup:
+    def from_row(cls: ty.Type[SourceGroup], row: Row) -> SourceGroup:
         return SourceGroup(
             id=row["source_group__id"],
             name=row["source_group__name"],
@@ -113,7 +112,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
         "default_score",
     )
 
-    def __init__(self, user_id: int, name: str, kind: str, group_id: int):
+    def __init__(
+        self, user_id: int, name: str, kind: str, group_id: int
+    ) -> None:
         self.id: int = 0
         self.group_id: int = group_id
         # source kind name - using to select class supported this source
@@ -145,11 +146,8 @@ class Source:  # pylint: disable=too-many-instance-attributes
     def __hash__(self) -> int:
         return hash(tuple(str(getattr(self, key)) for key in self.__slots__))
 
-    def get_setting(self, key: str) -> ty.Any:
-        if self.settings:
-            return self.settings.get(key)
-
-        return None
+    def get_setting(self, key: str) -> ty.Any:  # noqa: ANN401
+        return self.settings.get(key) if self.settings else None
 
     def clone(self) -> Source:
         src = Source(
@@ -168,7 +166,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         return src
 
     @classmethod
-    def from_row(cls, row: Row) -> Source:
+    def from_row(cls: ty.Type[Source], row: Row) -> Source:
         source = Source(
             user_id=row["source__user_id"],
             kind=row["source__kind"],
@@ -203,9 +201,9 @@ class Source:  # pylint: disable=too-many-instance-attributes
             "source__user_id": self.user_id,
             "source__status": self.status.value,
             "source__id": self.id,
-            "source__mail_report": self.mail_report.value
-            if self.mail_report
-            else None,
+            "source__mail_report": (
+                self.mail_report.value if self.mail_report else None
+            ),
             "source__default_score": self.default_score,
         }
 
@@ -282,7 +280,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return source
 
     def create_new(
-        self, status: SourceStateStatus | None = None, **props: ty.Any
+        self,
+        status: SourceStateStatus | None = None,
+        **props: ty.Any,  # noqa:ANN401
     ) -> SourceState:
         """
         Create new `SourceState` and copy basic data from current object.
@@ -297,7 +297,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         new_state.update_props(props)
         return new_state
 
-    def new_ok(self, **props: ty.Any) -> SourceState:
+    def new_ok(self, **props: ty.Any) -> SourceState:  # noqa:ANN401
         """
         Create new `SourceState` with statue = `OK` and copy basic data from
         current object. Reset error and increment success counters.
@@ -307,7 +307,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.error_counter = 0
         return state
 
-    def new_error(self, error: str, **props: ty.Any) -> SourceState:
+    def new_error(
+        self, error: str, **props: ty.Any  # noqa:ANN401
+    ) -> SourceState:
         """
         Create new `SourceState` with statue = `ERROR` and copy basic data from
         current object. Increment error counter.
@@ -318,7 +320,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.last_error = datetime.now(timezone.utc)
         return state
 
-    def new_not_modified(self, **props: ty.Any) -> SourceState:
+    def new_not_modified(self, **props: ty.Any) -> SourceState:  # noqa:ANN401
         """
         Create new `SourceState` with statue = `NOT_MODIFIED`,copy basic data
         from current object. Reset error and increment success counters.
@@ -329,7 +331,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         state.success_counter += 1
         return state
 
-    def set_prop(self, key: str, value: ty.Any) -> None:
+    def set_prop(self, key: str, value: ty.Any) -> None:  # noqa:ANN401
         """
         Update props`value` for `key`.
         """
@@ -338,7 +340,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         else:
             self.props[key] = value
 
-    def get_prop(self, key: str, default: ty.Any = None) -> ty.Any:
+    def get_prop(
+        self, key: str, default: ty.Any = None  # noqa:ANN401
+    ) -> ty.Any:  # noqa:ANN401
         """
         Get props value for `key`, return `default` if `key` is not found.
         """
@@ -421,7 +425,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: Row) -> SourceState:
+    def from_row(cls: ty.Type[SourceState], row: Row) -> SourceState:
         state = SourceState()
         state.source_id = row["source_state__source_id"]
         state.next_update = row["source_state__next_update"]
@@ -477,7 +481,9 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         "score",
     )
 
-    def __init__(self, id_: int | None = None, source_id: int | None = None):
+    def __init__(
+        self, id_: int | None = None, source_id: int | None = None
+    ) -> None:
         self.id: int = id_  # type: ignore
         self.source_id: int = source_id  # type: ignore
         # time of entry updated
@@ -555,7 +561,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         """
         return self.opts.get(key, default) if self.opts else default
 
-    def set_opt(self, key: str, value: ty.Any) -> None:
+    def set_opt(self, key: str, value: ty.Any) -> None:  # noqa:ANN401
         """
         Set additional information for entry using `key`.
         """
@@ -563,6 +569,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
             self.opts = {}
 
         self.opts[key] = value
+
+    _MAX_HUMAN_TITLE_LEN: ty.Final[int] = 50
 
     def human_title(self) -> str:
         """
@@ -575,8 +583,8 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         if not self.content:
             return "<no title>"
 
-        if len(self.content) > 50:
-            return self.content[:50] + "…"
+        if len(self.content) > self._MAX_HUMAN_TITLE_LEN:
+            return self.content[: self._MAX_HUMAN_TITLE_LEN] + "…"
 
         return self.content
 
@@ -674,7 +682,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
         }
 
     @classmethod
-    def from_row(cls, row: Row) -> Entry:
+    def from_row(cls: ty.Type[Entry], row: Row) -> Entry:
         entry = Entry(row["entry__id"])
         entry.source_id = row["entry__source_id"]
         entry.updated = row["entry__updated"]
@@ -711,7 +719,7 @@ class Setting:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: Row) -> Setting:
+    def from_row(cls: ty.Type[Setting], row: Row) -> Setting:
         value = row["setting__value"]
         if value and isinstance(value, str):
             value = json.loads(value)
@@ -745,7 +753,7 @@ class User:
     totp: str | None = None
 
     @classmethod
-    def from_row(cls, row: Row) -> User:
+    def from_row(cls: ty.Type[User], row: Row) -> User:
         return User(
             id=row["user__id"],
             login=row["user__login"],
@@ -768,7 +776,7 @@ class User:
         }
 
     def clone(self) -> User:
-        user = User(
+        return User(
             id=self.id,
             login=self.login,
             email=self.email,
@@ -777,7 +785,6 @@ class User:
             admin=self.admin,
             totp=self.totp,
         )
-        return user
 
     def __hash__(self) -> int:
         return hash(tuple(map(str, self.__dict__.values())))
@@ -798,7 +805,7 @@ class ScoringSett:
         return bool(self.user_id and self.pattern and self.pattern.strip())
 
     @classmethod
-    def from_row(cls, row: Row) -> ScoringSett:
+    def from_row(cls: ty.Type[ScoringSett], row: Row) -> ScoringSett:
         return ScoringSett(
             id=row["scoring_sett__id"],
             user_id=row["scoring_sett__user_id"],
@@ -827,7 +834,7 @@ class Session:
         return common.obj2str(self)
 
     @classmethod
-    def from_row(cls, row: Row) -> Session:
+    def from_row(cls: ty.Type[Session], row: Row) -> Session:
         return Session(
             id=row["session__id"],
             expiry=row["session__expiry"],
@@ -860,11 +867,13 @@ class UserLog:
         return self.related and self.related.get("source_id")  # type: ignore
 
     @staticmethod
-    def new(user_id: int, content: str, **related: ty.Any) -> UserLog:
+    def new(
+        user_id: int, content: str, **related: ty.Any  # noqa:ANN401
+    ) -> UserLog:
         return UserLog(user_id=user_id, content=content, related=related)
 
     @classmethod
-    def from_row(cls, row: Row) -> UserLog:
+    def from_row(cls: ty.Type[UserLog], row: Row) -> UserLog:
         return UserLog(
             user_id=row["user_logs__user_id"],
             content=row["user_logs__content"],
@@ -881,7 +890,9 @@ class UserLog:
         }
 
 
-def try_load_json(column: str, row: Row, default: ty.Any = None) -> ty.Any:
+def try_load_json(
+    column: str, row: Row, default: ty.Any = None  # noqa:ANN401
+) -> ty.Any:  # noqa:ANN401
     """
     Try load json object form database `row` object and `column`.
     If value is None - return default; if value is not string - return as is,
