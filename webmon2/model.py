@@ -826,7 +826,7 @@ class ScoringSett:
 
 @dataclass
 class Session:
-    id: int
+    id: str
     expiry: datetime | None
     data: bytes
 

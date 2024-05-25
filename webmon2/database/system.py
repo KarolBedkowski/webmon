@@ -66,13 +66,13 @@ where id = %s
 """
 
 
-def get_session(db: DB, session_id: int) -> model.Session | None:
+def get_session(db: DB, session_id: str) -> model.Session | None:
     with db.cursor_obj_row(model.Session.from_row) as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
         return ty.cast(model.Session, cur.fetchone())
 
 
-def delete_session(db: DB, session_id: int) -> None:
+def delete_session(db: DB, session_id: str) -> None:
     with db.cursor() as cur:
         cur.execute("delete from sessions where id=%s", (session_id,))
 
