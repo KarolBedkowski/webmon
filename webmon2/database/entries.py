@@ -624,6 +624,8 @@ def mark_read(
         ids: list of entries id to set
     Return:
         number of changed entries
+
+    TODO: split
     """
     if not user_id:
         raise ValueError("missing user_id")

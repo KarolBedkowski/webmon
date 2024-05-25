@@ -217,6 +217,19 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
         src.default_score = self.default_score
         return src
 
+    def update_settings(
+        self,
+        source: model.Source,
+        src: sources.AbstractSource,
+        user_settings: dict[str, ty.Any],
+    ) -> None:
+        self.settings = [
+            Field.from_input_params(
+                param, source.settings, "sett-", user_settings.get(param.name)
+            )
+            for param in src.params
+        ]
+
 
 @dataclass
 class GroupForm:

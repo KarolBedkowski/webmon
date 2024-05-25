@@ -63,51 +63,37 @@ def source_new() -> ty.Any:  # noqa: ANN401
 
 def _source_edit_post(
     db: database.DB,
-    source_form: forms.SourceForm,
-    source: model.Source,
     src: sources.AbstractSource,
-    source_id: int | None,
-    user_id: int,
-    user_settings: dict[str, ty.Any],
-) -> tuple[str, dict[str, str]]:
-    source_form.update_from_request(request.form)
-    errors = source_form.validate()
-    u_source = source_form.update_model(source)
-    assert u_source.settings is not None
-    errors.update(src.validate_conf(u_source.settings, user_settings))
+    source: model.Source,
+    u_source: model.Source,
+) -> str:
+    next_action = request.form.get("next_action")
+    if next_action == "save_activate":
+        u_source.status = model.SourceStatus.ACTIVE
 
-    if not errors:
-        next_action = request.form.get("next_action")
-        if next_action == "save_activate":
-            u_source.status = model.SourceStatus.ACTIVE
+    u_source = src.upgrade_conf(u_source)
+    u_source = database.sources.save(db, u_source)
 
-        u_source = src.upgrade_conf(u_source)
-        u_source = database.sources.save(db, u_source)
+    # adjust next check time when interval changed
+    if (
+        source.id
+        and source.interval != u_source.interval
+        and u_source.interval
+    ):
+        interval = common.parse_interval(u_source.interval)
+        assert source.state
+        source.state.adjust_next_update(interval)
+        database.sources.save_state(db, source.state, session["user"])
 
-        # adjust next check time when interval changed
-        if (
-            source_id
-            and source.interval != u_source.interval
-            and u_source.interval
-        ):
-            interval = common.parse_interval(u_source.interval)
-            assert source.state
-            source.state.adjust_next_update(interval)
-            database.sources.save_state(db, source.state, user_id)
+    db.commit()
+    flash(gettext("Source saved"))
+    if next_action == "edit_filters":
+        return ty.cast(
+            str,
+            redirect(url_for("source.source_filters", source_id=u_source.id)),
+        )
 
-        db.commit()
-        flash(gettext("Source saved"))
-        if next_action == "edit_filters":
-            return (
-                redirect(
-                    url_for("source.source_filters", source_id=u_source.id)
-                ),
-                errors,
-            )
-
-        return redirect(url_for("root.sources")), errors
-
-    return "", errors
+    return ty.cast(str, redirect(url_for("root.sources")))
 
 
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])  # type:ignore
@@ -136,23 +122,21 @@ def source_edit(
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
     source_form = forms.SourceForm.from_model(source)
-    source_form.settings = [
-        forms.Field.from_input_params(
-            param, source.settings, "sett-", user_settings.get(param.name)
-        )
-        for param in src.params
-    ]
+    source_form.update_settings(source, src, user_settings)
     errors: dict[str, str] = {}
     user_id = session["user"]
     entity_hash = str(hash(source))
 
     if request.method == "POST":
         if entity_hash == request.form["_entity_hash"]:
-            res, errors = _source_edit_post(
-                db, source_form, source, src, source_id, user_id, user_settings
-            )
-            if res:
-                return res
+            source_form.update_from_request(request.form)
+            errors = source_form.validate()
+            u_source = source_form.update_model(source)
+            assert u_source.settings is not None
+            errors.update(src.validate_conf(u_source.settings, user_settings))
+            if not errors:
+                return _source_edit_post(db, src, source, u_source)
+
         else:
             flash(gettext("Source changed somewhere else; reloading..."))
 

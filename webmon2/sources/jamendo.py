@@ -52,7 +52,32 @@ class JamendoAbstractSource(AbstractSource):
 
         return last_update
 
-    # pylint: disable=too-many-return-statements
+    def _make_request_get_resp(
+        self, response: requests.Response
+    ) -> tuple[int, ty.Any]:
+        if response.status_code == 304:  # noqa:PLR2004
+            return 304, None
+
+        if response.status_code != 200:  # noqa:PLR2004
+            msg = f"Response code: {response.status_code}"
+            if response.text:
+                msg += "\n" + response.text
+
+            return 500, msg
+
+        res = response.json()
+        try:
+            if res["headers"]["status"] != "success":
+                return 500, res["headers"]["error_message"]
+
+        except KeyError:
+            return 500, "wrong answer"
+
+        if not res["results"]:
+            return 304, None
+
+        return 200, res
+
     def _make_request(self, url: str) -> tuple[int, ty.Any]:
         self._log.debug("jamendo: make request", url=url)
         headers = {
@@ -60,6 +85,7 @@ class JamendoAbstractSource(AbstractSource):
             "Gecko/20100101 Firefox/45.0",
             "Connection": "close",
         }
+
         with requests.Session() as sess:
             response = None
             try:
@@ -70,33 +96,12 @@ class JamendoAbstractSource(AbstractSource):
                 if not response:
                     return 500, "No response"
 
-                if response.status_code == 304:  # noqa:PLR2004
-                    return 304, None
-
-                if response.status_code != 200:  # noqa:PLR2004
-                    msg = f"Response code: {response.status_code}"
-                    if response.text:
-                        msg += "\n" + response.text
-
-                    return 500, msg
-
-                res = response.json()
-                try:
-                    if res["headers"]["status"] != "success":
-                        return 500, res["headers"]["error_message"]
-
-                except KeyError:
-                    return 500, "wrong answer"
-
-                if not res["results"]:
-                    return 304, None
+                return self._make_request_get_resp(response)
 
             except requests.exceptions.ReadTimeout:
                 return 500, "timeout"
             except Exception as err:  # pylint: disable=broad-except
                 return 500, str(err)
-            else:
-                return 200, res
             finally:
                 if response:
                     response.close()

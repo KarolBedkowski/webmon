@@ -79,6 +79,32 @@ def default_conf() -> ConfigParser:
     return conf
 
 
+def _update_from_args_smtp(
+    conf: ConfigParser, args: argparse.Namespace
+) -> None:
+    if args.smtp_server_address:
+        conf.set("smtp", "address", args.smtp_server_address)
+        conf.set("smtp", "enabled", str(True))
+
+    if args.smtp_server_port:
+        conf.set("smtp", "port", str(args.smtp_server_port))
+
+    if args.smtp_server_ssl:
+        conf.set("smtp", "ssl", str(args.smtp_server_ssl))
+
+    if args.smtp_server_starttls:
+        conf.set("smtp", "starttls", str(args.smtp_server_starttls))
+
+    if args.smtp_server_from:
+        conf.set("smtp", "from", args.smtp_server_from)
+
+    if args.smtp_server_login:
+        conf.set("smtp", "login", args.smtp_server_login)
+
+    if args.smtp_server_password:
+        conf.set("smtp", "password", args.smtp_server_password)
+
+
 # pylint: disable=too-many-branches
 def update_from_args(
     conf: ConfigParser, args: argparse.Namespace
@@ -98,27 +124,7 @@ def update_from_args(
         if args.workers is not None:
             conf.set("main", "workers", str(args.workers))
 
-        if args.smtp_server_address:
-            conf.set("smtp", "address", args.smtp_server_address)
-            conf.set("smtp", "enabled", str(True))
-
-        if args.smtp_server_port:
-            conf.set("smtp", "port", str(args.smtp_server_port))
-
-        if args.smtp_server_ssl:
-            conf.set("smtp", "ssl", str(args.smtp_server_ssl))
-
-        if args.smtp_server_starttls:
-            conf.set("smtp", "starttls", str(args.smtp_server_starttls))
-
-        if args.smtp_server_from:
-            conf.set("smtp", "from", args.smtp_server_from)
-
-        if args.smtp_server_login:
-            conf.set("smtp", "login", args.smtp_server_login)
-
-        if args.smtp_server_password:
-            conf.set("smtp", "password", args.smtp_server_password)
+        _update_from_args_smtp(conf, args)
 
     return conf
 
