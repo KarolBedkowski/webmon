@@ -35,7 +35,7 @@ def _load_sources(filename: str) -> list[ty.Any] | None:
         with sfile.open(encoding="UTF-8") as fin:
             inps = [
                 doc
-                for doc in yaml.load_all(fin, Loader=None)
+                for doc in yaml.load_all(fin, Loader=yaml.Loader)
                 if doc and doc.get("enable", True)
             ]
             _LOG.debug("migrate: found %d enabled sources", len(inps))
