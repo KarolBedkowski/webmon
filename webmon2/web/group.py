@@ -55,7 +55,7 @@ def group_edit(group_id: int = 0) -> ty.Any:  # noqa: ANN401
     if group_id:
         try:
             sgroup = database.groups.get(db, group_id, user_id)
-        except database.NotFound:
+        except database.NotFoundError:
             return abort(404)
     else:
         sgroup = model.SourceGroup(user_id=user_id, name="")
@@ -94,7 +94,7 @@ def group_sources(group_id: int) -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     try:
         group = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     status = request.args.get("status", "all")
@@ -118,7 +118,7 @@ def group_entries(
     user_id = session["user"]
     try:
         sgroup = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     order = request.args.get("order", "updated")
@@ -215,7 +215,7 @@ def group_delete(group_id: int) -> ty.Any:  # noqa: ANN401
         db.commit()
         flash(gettext("Group deleted"))
 
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
     except common.OperationError as err:
         flash(gettext("Can't delete group: %(err)s", err=str(err)), "error")
@@ -239,7 +239,7 @@ def group_entry(
     user_id = session["user"]
     try:
         group = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     entry = database.entries.get(

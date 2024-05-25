@@ -223,11 +223,11 @@ def get(
         row = cur.fetchone()
 
     if row is None:
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
     source = model.Source.from_row(row)
     if user_id and user_id != source.user_id:
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
     if with_state:
         source.state = get_state(db, source.id)
@@ -307,7 +307,7 @@ def update_filter(
     """
     try:
         source = get(db, source_id, with_group=False)
-    except dbc.NotFound:
+    except dbc.NotFoundError:
         _LOG.warning(
             "db: update filter error: source not found", source_id=source_id
         )

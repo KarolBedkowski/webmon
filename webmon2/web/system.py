@@ -387,7 +387,7 @@ def sett_sys_user(user_id: int | None = None) -> ty.Any:  # noqa: ANN401
     if user_id:
         try:
             user = database.users.get(db, user_id)
-        except database.NotFound:
+        except database.NotFoundError:
             flash(gettext("User not found"))
             return redirect(url_for("system.sett_sys_users"))
     else:
@@ -430,7 +430,7 @@ def sett_sys_user_delete(user_id: int) -> ty.Any:  # noqa: ANN401
     try:
         # check is user exists
         database.users.get(db, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         flash(gettext("User not found"))
         return redirect(url_for("system.sett_sys_users"))
 

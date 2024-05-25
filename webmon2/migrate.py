@@ -126,7 +126,7 @@ def migrate(args: argparse.Namespace) -> None:
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=user_login)
-        except database.NotFound:
+        except database.NotFoundError:
             _LOG.error(
                 "migrate: error: users %r not found in database", user_login
             )

@@ -94,14 +94,14 @@ def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
     to `user_id`.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_SQL, (group_id, user_id))
         if row := cur.fetchone():
             return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
 
 _FIND_SQL = """
@@ -119,14 +119,14 @@ def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
     """Get group by `name` for `user_id`.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_FIND_SQL, (name, user_id))
         if row := cur.fetchone():
             return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
 
 _GET_BY_FEED_SQL = """
@@ -144,17 +144,17 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     """Get group by `feed` id.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     if feed == "off":
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
         if row := cur.fetchone():
             return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
 
 def get_last_update(db: DB, group_id: int) -> datetime | None:

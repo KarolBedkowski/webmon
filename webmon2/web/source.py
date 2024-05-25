@@ -47,7 +47,7 @@ def source_delete(source_id: int) -> ty.Any:  # noqa: ANN401
     try:
         # sanity check (source vs user)
         database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     database.sources.delete(db, source_id)
@@ -108,7 +108,7 @@ def source_edit(
             source = database.sources.get(
                 db, source_id, with_state=True, user_id=user_id
             )
-        except database.NotFound:
+        except database.NotFoundError:
             return abort(404)
 
         if source.user_id != user_id:
@@ -263,7 +263,7 @@ def source_filter_edit(
     user_id = session["user"]
     try:
         source = database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     is_new = idx == "new"
@@ -380,7 +380,7 @@ def source_entry(
     user_id = session["user"]
     try:
         src = database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     entry = database.entries.get(

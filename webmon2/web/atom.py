@@ -85,7 +85,7 @@ def group(key: str) -> Response:
 
     try:
         grp = database.groups.get_by_feed(db, key)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     assert grp and grp.id

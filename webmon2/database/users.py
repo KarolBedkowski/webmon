@@ -80,7 +80,7 @@ def get(
         login: user login; require if `id_` is not given
 
     Raises:
-        `NotFound`: user not found
+        `NotFoundError`: user not found
 
     Return:
         `User`
@@ -97,7 +97,7 @@ def get(
         if row := cur.fetchone():
             return ty.cast(model.User, row)
 
-    raise dbc.NotFound
+    raise dbc.NotFoundError
 
 
 _UPDATE_USER_SQL = """

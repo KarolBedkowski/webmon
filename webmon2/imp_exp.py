@@ -91,7 +91,7 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
     for group in data.get("groups") or []:
         try:
             grp = database.groups.find(db, user_id, group["name"])
-        except database.NotFound:
+        except database.NotFoundError:
             grp = model.SourceGroup(
                 user_id=user_id,
                 name=group["name"],

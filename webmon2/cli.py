@@ -73,7 +73,7 @@ def change_user_pass(args: argparse.Namespace) -> None:
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=login)
-        except database.NotFound:
+        except database.NotFoundError:
             print("user not found")
             return
 
@@ -91,7 +91,7 @@ def remove_user_totp(args: argparse.Namespace) -> None:
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=login)
-        except database.NotFound:
+        except database.NotFoundError:
             print("user not found")
             return
 

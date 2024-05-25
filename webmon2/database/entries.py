@@ -418,7 +418,7 @@ def get(
         entry = cur.fetchone()
 
     if not entry:
-        raise dbc.NotFound
+        raise dbc.NotFoundError
 
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)

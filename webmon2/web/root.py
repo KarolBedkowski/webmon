@@ -231,7 +231,7 @@ def binary(datahash: str) -> ty.Any:  # noqa: ANN401
         data_content_type = database.binaries.get(
             db, datahash, session["user"]
         )
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
     data, content_type = data_content_type
     resp = Response(data, mimetype=content_type)

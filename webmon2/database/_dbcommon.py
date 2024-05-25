@@ -10,7 +10,7 @@ from __future__ import annotations
 import typing as ty
 
 
-class NotFound(Exception):
+class NotFoundError(Exception):
     pass
 
 

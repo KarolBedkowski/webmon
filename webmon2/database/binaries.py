@@ -11,7 +11,7 @@ import typing as ty
 import psycopg
 import structlog
 
-from ._dbcommon import NotFound
+from ._dbcommon import NotFoundError
 
 if ty.TYPE_CHECKING:
     from ._db import DB
@@ -26,7 +26,7 @@ def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
         datahash: hash of binary
         user_id: user id
     Raises:
-        `NotFound`: binary not found
+        `NotFoundError`: binary not found
     Return:
         (binary data, content type)
     """
@@ -46,7 +46,7 @@ def get(db: DB, datahash: str, user_id: int) -> tuple[bytes, str]:
             if res:
                 return res
 
-    raise NotFound
+    raise NotFoundError
 
 
 def save(

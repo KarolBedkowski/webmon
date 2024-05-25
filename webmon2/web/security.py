@@ -45,7 +45,7 @@ def login() -> ty.Any:  # noqa: ANN401
         db = c.get_db()
         try:
             user = database.users.get(db, login=flogin)
-        except database.NotFound:
+        except database.NotFoundError:
             flash(gettext("Invalid user and/or password"))
             return render_template("login.html")
 
@@ -78,7 +78,7 @@ def login_totp() -> ty.Any:  # noqa: ANN401
         db = c.get_db()
         try:
             user = database.users.get(db, session["temp_user_id"])
-        except database.NotFound:
+        except database.NotFoundError:
             return render_template("login.totp.html")
 
         assert user.totp is not None
