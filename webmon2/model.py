@@ -176,7 +176,7 @@ class Source:  # pylint: disable=too-many-instance-attributes
         source.id = row["source__id"]
         source.interval = row["source__interval"]
         source.settings = try_load_json("source__settings", row)
-        source.filters = try_load_json("source__filters", row)
+        source.filters = try_load_json("source__filters", row) or []
         source.status = SourceStatus(row["source__status"])
         mail_report = row["source__mail_report"]
         if mail_report is None:
@@ -538,7 +538,7 @@ class Entry:  # pylint: disable=too-many-instance-attributes
     def for_source(source: Source) -> Entry:
         entry = Entry(source_id=source.id)
         entry.user_id = source.user_id
-        entry.score = source.default_score or 0
+        entry.score = source.default_score
         return entry
 
     def calculate_oid(self) -> str:

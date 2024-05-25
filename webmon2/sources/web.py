@@ -175,7 +175,7 @@ class WebSource(AbstractSource):
                     gettext("Permanently redirects: %(url)s", url=href),
                 )
                 self._update_source(new_url=href)
-                return ty.cast(str, href)
+                return href
 
         for hist in response.history:
             if hist.is_redirect and (href := hist.headers.get("Location")):
@@ -184,7 +184,7 @@ class WebSource(AbstractSource):
                     "info",
                     gettext("Temporary redirects: %(url)s", url=href),
                 )
-                return ty.cast(str, href)
+                return href
 
         new_state.del_prop("info")
         return None

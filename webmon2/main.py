@@ -128,11 +128,9 @@ def _parse_options() -> argparse.Namespace:
         required=True,
     )
 
-    parser_users = subparsers.add_parser("users", help="manage users")
-
-    parser_users_sc = parser_users.add_subparsers(
-        help="user commands", dest="subcmd", required=True
-    )
+    parser_users_sc = subparsers.add_parser(
+        "users", help="manage users"
+    ).add_subparsers(help="user commands", dest="subcmd", required=True)
 
     parser_users_add = parser_users_sc.add_parser("add", help="add user")
     parser_users_add.add_argument("-l", "--login", required=True)

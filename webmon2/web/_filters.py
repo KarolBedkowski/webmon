@@ -30,12 +30,12 @@ def _age_filter(date: datetime.datetime | None) -> str:
         return "<1m"
 
     if diff < 3_600:  # < 1h  # noqa: PLR2004
-        return str(int(diff // 60)) + "m"
+        return str(diff // 60) + "m"
 
     if diff < 86_400:  # < 1d # noqa: PLR2004
-        return str(int(diff // 3600)) + "h"
+        return str(diff // 3600) + "h"
 
-    return str(int(diff // 86400)) + "d"
+    return str(diff // 86400) + "d"
 
 
 def _format_date(date: ty.Any) -> str:  # noqa:ANN401

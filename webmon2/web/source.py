@@ -255,9 +255,7 @@ def source_filters(source_id: int) -> ty.Any:  # noqa: ANN401
         filters=source.filters,
         source_id=source_id,
     )
-    filter_fields = [
-        forms.Filter(fltr["name"]) for fltr in source.filters or []
-    ]
+    filter_fields = [forms.Filter(fltr["name"]) for fltr in source.filters]
     return render_template(
         "source_filters.html", source=source, filters=filter_fields
     )
@@ -287,7 +285,7 @@ def source_filter_edit(
     is_new = idx == "new"
     if not is_new:
         sfidx = int(idx)
-        is_new = sfidx < 0 or sfidx >= len(source.filters or [])
+        is_new = sfidx < 0 or sfidx >= len(source.filters)
 
     if is_new:  # new filter
         name = request.args.get("name")

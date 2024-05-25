@@ -184,12 +184,12 @@ class SourceForm:  # pylint: disable=too-many-instance-attributes
             id=source.id,
             group_id=source.group_id,
             kind=source.kind,
-            name=source.name or "",
+            name=source.name,
             interval=source.interval or "",
             filters=source.filters,
             status=source.status.value,
             mail_report=source.mail_report.value,
-            default_score=source.default_score or 0,
+            default_score=source.default_score,
         )
 
     def update_from_request(self, form: Form) -> None:

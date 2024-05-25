@@ -24,13 +24,13 @@ from werkzeug.datastructures import CallbackDict
 from webmon2 import database, model
 
 
-class DBSession(CallbackDict[str, ty.Any], SessionMixin):
+class DBSession(CallbackDict[str, ty.Any], SessionMixin):  # type: ignore
     """Server-side sessions."""
 
     def __init__(
         self,
         initial: str | None = None,
-        sid: int | None = None,
+        sid: str | None = None,
         permanent: bool | None = None,
     ) -> None:
 
@@ -45,7 +45,7 @@ class DBSession(CallbackDict[str, ty.Any], SessionMixin):
         CallbackDict.__init__(self, initial, on_update)
 
 
-class DBSessionInterface(FlaskSessionInterface):
+class DBSessionInterface(FlaskSessionInterface):  # type: ignore
     """Uses database as a session backend.
 
     :param use_signer: Whether to sign the session id cookie or not.

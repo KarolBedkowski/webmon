@@ -38,7 +38,7 @@ class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
 
     # pylint: disable=too-few-public-methods
-    params = (
+    params: tuple[common.SettingDef, ...] = (
         common.SettingDef(
             "project",
             lazy_gettext("Project ID; i.e. user/project"),
@@ -173,6 +173,7 @@ class GitLabCommits(AbstractGitLabSource):
         " For work required configured GitLab account with token."
     )
     params = (
+        *AbstractGitLabSource.params,
         common.SettingDef(
             "short_list",
             lazy_gettext("Show commits as short list"),
@@ -402,6 +403,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
         " For work required configured GitLab account with token."
     )
     params = (
+        *AbstractGitLabSource.params,
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of tags to load"),

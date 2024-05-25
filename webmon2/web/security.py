@@ -106,7 +106,7 @@ def logout() -> ty.Any:  # noqa: ANN401
 
 def _after_login(user: model.User) -> None:
     session["user"] = user.id
-    session["user_admin"] = bool(user.admin)
+    session["user_admin"] = user.admin
 
     db = c.get_db()
     user_id: int = session["user"]
