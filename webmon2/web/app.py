@@ -5,6 +5,7 @@
 """
 Web gui application
 """
+
 from __future__ import annotations
 
 import secrets
@@ -112,9 +113,11 @@ def _before_request() -> ty.Any:  # noqa:ANN401
     path = request.path
     # pages that not need valid user and don't need additional data like
     # locale setting
-    if path == "/favicon.ico" or path.startswith(
-        ("/metrics", "/atom", "/health")
-    ):
+    if path == "/favicon.ico" or path.startswith((
+        "/metrics",
+        "/atom",
+        "/health",
+    )):
         return None
 
     structlog.contextvars.clear_contextvars()

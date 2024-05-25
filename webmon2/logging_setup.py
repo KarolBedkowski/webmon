@@ -16,9 +16,7 @@ DEBUG = False
 SILENT = False
 
 
-class NoMetricsLogFilter(
-    logging.Filter
-):  # pylint: disable=too-few-public-methods
+class NoMetricsLogFilter(logging.Filter):  # pylint: disable=too-few-public-methods
     def filter(self, record: logging.LogRecord) -> bool:
         """Filter that remove successful request to /metrics endpoint"""
         return (
@@ -78,16 +76,14 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.contextvars.merge_contextvars,
         structlog.processors.UnicodeDecoder(),
-        structlog.processors.CallsiteParameterAdder(
-            {
-                # structlog.processors.CallsiteParameter.FILENAME,
-                # structlog.processors.CallsiteParameter.FUNC_NAME,
-                # structlog.processors.CallsiteParameter.LINENO,
-                # structlog.processors.CallsiteParameter.PATHNAME,
-                # structlog.processors.CallsiteParameter.THREAD,
-                structlog.processors.CallsiteParameter.THREAD_NAME,
-            }
-        ),
+        structlog.processors.CallsiteParameterAdder({
+            # structlog.processors.CallsiteParameter.FILENAME,
+            # structlog.processors.CallsiteParameter.FUNC_NAME,
+            # structlog.processors.CallsiteParameter.LINENO,
+            # structlog.processors.CallsiteParameter.PATHNAME,
+            # structlog.processors.CallsiteParameter.THREAD,
+            structlog.processors.CallsiteParameter.THREAD_NAME,
+        }),
         structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
         structlog.processors.StackInfoRenderer(),
     ]

@@ -5,6 +5,7 @@
 """
 App security
 """
+
 import typing as ty
 
 from flask import (

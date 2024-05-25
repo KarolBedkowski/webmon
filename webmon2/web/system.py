@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import datetime
@@ -54,9 +55,9 @@ def sett_globals() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     settings = database.settings.get_all(db, user_id)
     settings = list(_translate_sett_descr(settings))
-    form = forms.FieldsForm(
-        [forms.Field.from_setting(sett, "sett-") for sett in settings]
-    )
+    form = forms.FieldsForm([
+        forms.Field.from_setting(sett, "sett-") for sett in settings
+    ])
     if request.method == "POST":
         if form.update_from_request(request.form):
             values = form.values_map()
@@ -376,9 +377,7 @@ def _sett_sys_user_post(
 
 
 @BP.route("/settings/system/users/new", methods=["GET", "POST"])  # type:ignore
-@BP.route(
-    "/settings/system/users/<int:user_id>", methods=["GET", "POST"]
-)  # type:ignore
+@BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])  # type:ignore
 def sett_sys_user(user_id: int | None = None) -> ty.Any:  # noqa: ANN401
     if not session["user_admin"]:
         abort(403)

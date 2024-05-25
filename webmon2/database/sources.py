@@ -5,6 +5,7 @@
 """
 Access & manage sources
 """
+
 from __future__ import annotations
 
 import json
@@ -140,7 +141,8 @@ def get_all(
         user_groups = {group_id: groups.get(db, group_id, user_id)}
     else:
         user_groups = {
-            grp.id: grp for grp in groups.get_all(db, user_id)  # type: ignore
+            grp.id: grp # type: ignore
+            for grp in groups.get_all(db, user_id)
         }
 
     args = {"user_id": user_id, "group_id": group_id}
@@ -179,7 +181,8 @@ def get_all_dict(
 
 
 def _build_source(
-    row: ty.Any, user_groups: dict[int, model.SourceGroup]  # noqa:ANN401
+    row: ty.Any,# noqa:ANN401
+    user_groups: dict[int, model.SourceGroup],
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
@@ -570,7 +573,7 @@ WHERE source_id=%(source_id)s
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read( # noqa: PLR0913
     db: DB,
     user_id: int,
     source_id: int,

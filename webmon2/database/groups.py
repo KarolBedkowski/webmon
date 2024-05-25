@@ -74,7 +74,8 @@ def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
                 sources_count=srcs_count,
                 mail_report=mail_report,
             )
-            for id_, name, user_id, feed, mail_report, unread, srcs_count in cur
+            for id_, name, user_id, feed, mail_report, unread, srcs_count
+            in cur
         ]
 
 
@@ -264,7 +265,7 @@ WHERE id=ANY(%(ids)s) AND read_mark=%(unread)s AND user_id=%(user_id)s
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read( # noqa: PLR0913
     db: DB,
     user_id: int,
     group_id: int,

@@ -5,6 +5,7 @@
 """
 Access & manage users in db
 """
+
 import typing as ty
 
 from webmon2 import model

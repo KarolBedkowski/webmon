@@ -6,7 +6,6 @@
 Filters that remove white spaces, empty lines etc
 """
 
-
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model

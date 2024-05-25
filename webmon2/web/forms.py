@@ -7,6 +7,7 @@ GUI forms
 
 TODO: Python3.10: use slots in dataclass
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -136,7 +137,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
         self.value = form_value
 
     def get_parameter(
-        self, key: str, default: ty.Any = None  # noqa: ANN401
+        self,
+        key: str,
+        default: ty.Any = None,  # noqa: ANN401
     ) -> ty.Any:  # noqa: ANN401
         if self.parameters:
             return self.parameters.get(key, default)

@@ -5,6 +5,7 @@
 """
 Definition of DB object
 """
+
 from __future__ import annotations
 
 import os.path
@@ -27,7 +28,7 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 @cache
 def create_object_row_maker(
-    from_row: ty.Callable[[dict[str, ty.Any]], T]
+    from_row: ty.Callable[[dict[str, ty.Any]], T],
 ) -> psycopg.rows.RowFactory[T]:
     """create RowMaker for `from_row` callable that create `T` objects."""
 

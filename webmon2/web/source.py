@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -253,12 +254,8 @@ def source_filter_add(source_id: int) -> ty.Any:  # noqa: ANN401
     )
 
 
-@BP.route(
-    "/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"]
-)  # type:ignore
-def source_filter_edit(
-    source_id: int, idx: int | str
-) -> ty.Any:  # noqa: ANN401
+@BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])  # type:ignore
+def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -296,12 +293,10 @@ def source_filter_edit(
         return _save_filter(db, source_id, sfidx, conf)
 
     errors = {}
-    form = forms.FieldsForm(
-        [
-            forms.Field.from_input_params(param, conf, prefix="sett-")
-            for param in fltr.params
-        ]
-    )
+    form = forms.FieldsForm([
+        forms.Field.from_input_params(param, conf, prefix="sett-")
+        for param in fltr.params
+    ])
 
     entity_hash = str(hash(source))
 
@@ -352,9 +347,7 @@ def _save_filter(
 
 
 @BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")  # type:ignore
-def source_filter_move(
-    source_id: int, idx: int, move: str
-) -> ty.Any:  # noqa: ANN401
+def source_filter_move(source_id: int, idx: int, move: str) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     database.sources.move_filter(db, user_id, source_id, idx, move)
@@ -372,9 +365,7 @@ def source_filter_delete(source_id: int, idx: int) -> ty.Any:  # noqa: ANN401
 
 
 @BP.route("/<int:source_id>/entry/<mode>/<int:entry_id>")  # type:ignore
-def source_entry(
-    source_id: int, mode: str, entry_id: int
-) -> ty.Any:  # noqa: ANN401
+def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:  # noqa: ANN401
     """Display entry with marking as read."""
     db = c.get_db()
     user_id = session["user"]

@@ -5,6 +5,7 @@
 """
 Common gui api functions
 """
+
 from __future__ import annotations
 
 import math

@@ -5,6 +5,7 @@
 """
 Text difference filters.
 """
+
 from __future__ import annotations
 
 import difflib

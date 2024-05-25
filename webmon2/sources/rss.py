@@ -5,6 +5,7 @@
 """
 RSS data loader
 """
+
 from __future__ import annotations
 
 import datetime

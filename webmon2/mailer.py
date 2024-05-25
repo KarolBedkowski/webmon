@@ -5,6 +5,7 @@
 """
 Sending reports by mail functions
 """
+
 from __future__ import annotations
 
 import email.message

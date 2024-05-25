@@ -1,4 +1,4 @@
-""" Web interface """
+"""Web interface"""
 
 from .app import start_app
 

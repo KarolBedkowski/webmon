@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import math
@@ -91,10 +92,7 @@ def entries_history() -> ty.Any:  # noqa: ANN401
     if not any(1 for id_, _ in sources if id_ == source_id):
         source_id = None
 
-    (
-        entries_,
-        total,
-    ) = database.entries.get_history(
+    entries_, total = database.entries.get_history(
         db,
         user_id,
         group_id=group_id,
@@ -171,16 +169,13 @@ def entries_search() -> str:
     query = request.args.get("query", "").strip()
     title_only = bool(request.args.get("title-only"))
     search_ctx = ""
-    source = _get_req_source(db, user_id)
     source_id, group_id = None, None
-    if source:
+    if source := _get_req_source(db, user_id):
         search_ctx = "in source: " + source.name
         source_id = source.id
-    else:
-        group = _get_req_group(db, user_id)
-        if group:
-            search_ctx = "in group: " + group.name
-            group_id = group.id
+    elif group := _get_req_group(db, user_id):
+        search_ctx = "in group: " + group.name
+        group_id = group.id
 
     entries_ = None
     error = None

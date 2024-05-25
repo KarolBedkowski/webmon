@@ -241,9 +241,10 @@ class SettingDef:
         self.global_param = global_param
 
     def get_parameter(
-        self, key: str, default: ty.Any = None  # noqa: ANN401
+        self,
+        key: str,
+        default: ty.Any = None,  # noqa: ANN401
     ) -> ty.Any:  # noqa: ANN401
-
         if self.parameters:
             return self.parameters.get(key, default)
 
@@ -279,9 +280,9 @@ def obj2str(obj: ty.Any) -> str:  # noqa: ANN401
     else:
         values = ((key, getattr(obj, key)) for key in obj.__slots__)
 
-    kvs = ", ".join(
-        [f"{key}={_val2str(val)}" for key, val in values if key[0] != "_"]
-    )
+    kvs = ", ".join([
+        f"{key}={_val2str(val)}" for key, val in values if key[0] != "_"
+    ])
 
     return f"<{obj.__class__.__name__} {kvs}>"
 

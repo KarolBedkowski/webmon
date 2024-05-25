@@ -5,6 +5,7 @@
 """
 Wrap entry content lines
 """
+
 import textwrap
 
 from flask_babel import lazy_gettext

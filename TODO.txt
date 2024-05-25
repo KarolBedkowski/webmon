@@ -1,0 +1,13 @@
+python3-flask-babel
+python3-html2text
+defusedxml
+python3-cssselect
+
+
+
+https://www.psycopg.org/psycopg3/docs/advanced/rows.html#row-factories
+
+
+SettingDef:
+    options vs parameters
+    global_param

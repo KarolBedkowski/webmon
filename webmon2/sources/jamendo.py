@@ -5,6 +5,7 @@
 """
 Jamendo input.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -273,13 +274,11 @@ def _jamendo_format_long_list(
         for album in result.get("albums") or []:
             yield _create_entry(
                 source,
-                " ".join(
-                    (
-                        album["releasedate"],
-                        album["name"],
-                        _jamendo_album_to_url(album["id"]),
-                    )
-                ),
+                " ".join((
+                    album["releasedate"],
+                    album["name"],
+                    _jamendo_album_to_url(album["id"]),
+                )),
                 _get_release_date(album, log),
             )
 
@@ -382,13 +381,11 @@ def _jamendo_track_format(
             yield _create_entry(
                 source,
                 "\n".join(
-                    " ".join(
-                        (
-                            track["releasedate"],
-                            track["name"],
-                            _jamendo_track_to_url(track["id"]),
-                        )
-                    )
+                    " ".join((
+                        track["releasedate"],
+                        track["name"],
+                        _jamendo_track_to_url(track["id"]),
+                    ))
                     for track in tracks
                 ),
                 max(_get_release_date(trc, log) for trc in tracks),

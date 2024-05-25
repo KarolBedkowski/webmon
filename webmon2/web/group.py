@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -227,9 +228,7 @@ def group_delete(group_id: int) -> ty.Any:  # noqa: ANN401
 
 
 @BP.route("/<int:group_id>/entry/<mode>/<int:entry_id>")  # type:ignore
-def group_entry(
-    group_id: int, mode: str, entry_id: int
-) -> ty.Any:  # noqa: ANN401
+def group_entry(group_id: int, mode: str, entry_id: int) -> ty.Any:  # noqa: ANN401
     """Get entry by group view.
     Mark displayed items as manually read.
 

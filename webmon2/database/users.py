@@ -5,6 +5,7 @@
 """
 Access & manage users in db
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -202,7 +203,10 @@ DO UPDATE SET value=EXCLUDED.value
 
 
 def set_state(
-    db: DB, user_id: int, key: str, value: ty.Any  # noqa:ANN401
+    db: DB,
+    user_id: int,
+    key: str,
+    value: ty.Any,  # noqa:ANN401
 ) -> None:
     """Update / store state value for `user_id` and `key`."""
     with db.cursor() as cur:
@@ -229,7 +233,10 @@ def save_log(db: DB, log: model.UserLog) -> None:
 
 
 def put_log(
-    db: DB, user_id: int, content: str, **related: ty.Any  # noqa:ANN401
+    db: DB,
+    user_id: int,
+    content: str,
+    **related: ty.Any,  # noqa:ANN401
 ) -> None:
     """Add entry to user log."""
     log = model.UserLog(user_id=user_id, content=content, related=related)

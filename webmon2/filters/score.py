@@ -5,6 +5,7 @@
 """
 Select entries by matching text.
 """
+
 from __future__ import annotations
 
 import re

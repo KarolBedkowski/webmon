@@ -5,6 +5,7 @@
 """
 Dummy source; generate random data
 """
+
 from __future__ import annotations
 
 import datetime

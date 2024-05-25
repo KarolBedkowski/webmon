@@ -5,6 +5,7 @@
 """
 Access to entries in db.
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -60,22 +61,21 @@ def _build_find_sql(args: dict[str, ty.Any]) -> str:
 
     """
     query = dbc.Query(_GET_ENTRIES_SQL_MAIN_COLS, "entries e")
-    query.add_where("e.user_id = %(user_id)s")
+    if args.get("user_id"):
+        query.add_where("e.user_id = %(user_id)s")
+
     query.order = args.get("order")
     query.limit = args.get("limit") is not None
     query.offset = args.get("offset") is not None
 
-    source_id = args.get("source_id")
-    if source_id:
+    if args.get("source_id"):
         query.add_where("AND e.source_id = %(source_id)s")
 
-    group_id = args.get("group_id")
-    if group_id:
+    if args.get("group_id"):
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    read = args.get("read")
-    if read is not None:
+    if (read:= args.get("read")) is not None:
         query.add_where(f"AND read_mark = {read}")
 
     if args.get("star") is not None:
@@ -121,7 +121,7 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
         yield from _yield_entries(cur, user_sources)
 
 
-def get_history(  # pylint: disable=too-many-arguments
+def get_history(  # pylint: disable=too-many-arguments  # noqa:PLR0913
     db: DB,
     user_id: int,
     source_id: int | None,
@@ -257,7 +257,7 @@ def _get_order_sql(order: str | None) -> str:
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def find(
+def find(  # noqa: PLR0913
     db: DB,
     user_id: int,
     source_id: int | None = None,
@@ -309,7 +309,7 @@ def find(
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def find_fulltext(
+def find_fulltext( # noqa:PLR0913
     db: DB,
     user_id: int,
     query: str,
@@ -599,7 +599,7 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read( # noqa: PLR0913
     db: DB,
     user_id: int,
     entry_id: int | None = None,

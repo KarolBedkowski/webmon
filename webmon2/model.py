@@ -6,6 +6,7 @@
 """
 Models
 """
+
 from __future__ import annotations
 
 import base64
@@ -308,7 +309,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         return state
 
     def new_error(
-        self, error: str, **props: ty.Any  # noqa:ANN401
+        self,
+        error: str,
+        **props: ty.Any,  # noqa:ANN401
     ) -> SourceState:
         """
         Create new `SourceState` with statue = `ERROR` and copy basic data from
@@ -341,7 +344,9 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
             self.props[key] = value
 
     def get_prop(
-        self, key: str, default: ty.Any = None  # noqa:ANN401
+        self,
+        key: str,
+        default: ty.Any = None,  # noqa:ANN401
     ) -> ty.Any:  # noqa:ANN401
         """
         Get props value for `key`, return `default` if `key` is not found.
@@ -868,7 +873,9 @@ class UserLog:
 
     @staticmethod
     def new(
-        user_id: int, content: str, **related: ty.Any  # noqa:ANN401
+        user_id: int,
+        content: str,
+        **related: ty.Any,  # noqa:ANN401
     ) -> UserLog:
         return UserLog(user_id=user_id, content=content, related=related)
 
@@ -891,7 +898,9 @@ class UserLog:
 
 
 def try_load_json(
-    column: str, row: Row, default: ty.Any = None  # noqa:ANN401
+    column: str,
+    row: Row,
+    default: ty.Any = None,  # noqa:ANN401
 ) -> ty.Any:  # noqa:ANN401
     """
     Try load json object form database `row` object and `column`.

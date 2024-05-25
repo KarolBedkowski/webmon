@@ -30,9 +30,13 @@ class AbstractFilter(abc.ABC):
         )
 
     def __str__(self) -> str:
-        return " ".join(
-            ("<", self.__class__.__name__, self.name, repr(self._conf), ">")
-        )
+        return " ".join((
+            "<",
+            self.__class__.__name__,
+            self.name,
+            repr(self._conf),
+            ">",
+        ))
 
     def validate(self) -> None:
         """Validate filter parameters"""

@@ -5,6 +5,7 @@
 """
 Convert html to text.
 """
+
 import re
 import typing as ty
 from urllib.parse import urljoin

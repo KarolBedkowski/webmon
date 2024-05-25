@@ -5,6 +5,7 @@
 """
 Load data from webpage
 """
+
 from __future__ import annotations
 
 import datetime
@@ -199,9 +200,13 @@ class WebSource(AbstractSource):
         self, url: str, session: requests.Session
     ) -> tuple[str, bytes] | None:
         url_splited = urlsplit(url)
-        favicon_url = urlunsplit(
-            (url_splited[0], url_splited[1], "favicon.ico", "", "")
-        )
+        favicon_url = urlunsplit((
+            url_splited[0],
+            url_splited[1],
+            "favicon.ico",
+            "",
+            "",
+        ))
         if favicon_url:
             return self._load_binary(favicon_url, session=session)
 

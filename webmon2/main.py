@@ -255,7 +255,7 @@ def _load_user_classes() -> None:
                 )
 
 
-def _check_libraries() -> None:  # noqa: PLR0912
+def _check_libraries() -> None:
     # pylint: disable=unused-import,import-outside-toplevel
     # pylint: disable=c-extension-no-member
     try:
