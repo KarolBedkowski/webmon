@@ -21,6 +21,8 @@ check:
 	bandit -c pyproject.toml  -r webmon2 || true
 	refurb --enable-all --python-version 3.11 webmon2 || true
 	mypy webmon2 || true
+	tach check || true
+	deptry .  || true
 
 
 .PHONY: clean
@@ -41,6 +43,7 @@ clean:
 .PHONY: format
 ## Format files using black & isort
 format:
+	ruff check --select I --fix .
 	ruff  format .
 #	black .
 
