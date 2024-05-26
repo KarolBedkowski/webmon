@@ -6,8 +6,6 @@
 Import/export data in opml format.
 """
 
-# TODO: propagate errors to user
-
 import itertools
 import operator
 import typing as ty
@@ -94,7 +92,7 @@ def _load(
                         yield (group or "", source)
 
                 except NotImplementedError:
-                    pass
+                    _LOG.warning("opml: import %s not supported", ntype)
 
                 except ValueError as err:
                     _LOG.info(
