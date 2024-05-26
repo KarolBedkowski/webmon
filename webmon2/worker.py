@@ -5,6 +5,7 @@
 """
 Background workers
 """
+
 from __future__ import annotations
 
 import datetime
@@ -15,7 +16,6 @@ import re
 import threading
 import time
 import typing as ty
-from configparser import ConfigParser
 from contextlib import suppress
 
 import structlog
@@ -27,6 +27,9 @@ with suppress(ImportError):
     import setproctitle
 
 from . import common, database, filters, formatters, mailer, model, sources
+
+if ty.TYPE_CHECKING:
+    from configparser import ConfigParser
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SOURCES_PROCESSED = Counter(
@@ -63,7 +66,10 @@ def _create_app() -> Flask:
 
 class CheckWorker(threading.Thread):
     def __init__(
-        self, conf: ConfigParser, debug: bool = False, sdn: ty.Any = None
+        self,
+        conf: ConfigParser,
+        debug: bool = False,
+        sdn: ty.Any = None,  # noqa: ANN401
     ) -> None:
         threading.Thread.__init__(
             self, daemon=True, name="webmon2.checkworker"
@@ -128,14 +134,14 @@ class CheckWorker(threading.Thread):
 
                     self._log.debug("CheckWorker check done")
                     self._notify("STATUS=mailing")
-                    _send_mails(db, self._conf)
+                    _send_mails(db, self._conf, self._app)
                 except Exception as err:  # pylint: disable=broad-except
                     self._log.exception("CheckWorker thread error", error=err)
 
             _WORKER_PROCESSING_TIME.inc(time.time() - start)
 
             gc_cntr += 1
-            if gc_cntr == 30:
+            if gc_cntr == 30:  # noqa:PLR2004
                 gc.collect()
                 gc_cntr = 0
 
@@ -155,7 +161,7 @@ class FetchWorker(threading.Thread):
         idx: str,
         todo_queue: queue.Queue[int],
         conf: ConfigParser,
-        app: ty.Any,
+        app: ty.Any,  # noqa: ANN401
     ) -> None:
         threading.Thread.__init__(self, name=f"webmon2.fetchworker.{idx}")
         # id of thread
@@ -231,16 +237,17 @@ class FetchWorker(threading.Thread):
         # get source object; errors are propagated upwards
         try:
             src = self._get_src(source, sys_settings)
-        except sources.UnknownInputException as err:
-            raise ValueError(f"unsupported input {source.kind}") from err
+        except sources.UnknownInputError as err:
+            errmsg = f"unsupported input {source.kind}"
+            raise ValueError(errmsg) from err
 
         assert source.state and src
 
-        with self._app.test_request_context():
-            with force_locale(sys_settings.get("locale", "en")):
-                new_state, loaded = self._load_data(
-                    db, source, src, sys_settings
-                )
+        with (
+            self._app.test_request_context(),
+            force_locale(sys_settings.get("locale", "en") or "en"),
+        ):
+            new_state, loaded = self._load_data(db, source, src, sys_settings)
 
         if not new_state:
             return
@@ -252,8 +259,7 @@ class FetchWorker(threading.Thread):
         )
         database.sources.save_state(db, new_state, source.user_id)
         # if source was updated - save new version
-        updated_source = src.updated_source
-        if updated_source:
+        if updated_source := src.updated_source:
             _LOG.debug("worker: source updated")
             database.sources.save(db, updated_source)
 
@@ -417,6 +423,7 @@ class FetchWorker(threading.Thread):
                     re.IGNORECASE | re.MULTILINE | re.DOTALL,
                 )
                 yield (cre, scs.score_change)
+
             except re.error as err:
                 _LOG.warning(
                     "worker: compile scoring pattern error: %s",
@@ -463,6 +470,7 @@ def _delete_old_entries(db: database.DB) -> None:
             )
             if not keep_days:
                 continue
+
             max_datetime = datetime.datetime.now(
                 datetime.UTC
             ) - datetime.timedelta(days=keep_days)
@@ -508,6 +516,7 @@ def _delete_old_entries(db: database.DB) -> None:
         _CLEAN_COUNTER.labels("", "bin_states").inc(states)
         _CLEAN_COUNTER.labels("", "bin_entries").inc(entries)
         db.commit()
+
     except Exception as err:  # pylint: disable=broad-except
         db.rollback()
         _LOG.warning("worker: clean binaries error", error=err)
@@ -519,7 +528,7 @@ def _delete_old_entries(db: database.DB) -> None:
     db.commit()
 
 
-def _send_mails(db: database.DB, conf: ConfigParser) -> None:
+def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
     """
     For each user search and send reports by mail.
 
@@ -534,7 +543,14 @@ def _send_mails(db: database.DB, conf: ConfigParser) -> None:
         _LOG.debug("worker: send mail for user %d: start", user.id)
         db.begin()
         try:
-            if mailer.process(db, user, conf):
+            sys_settings = database.settings.get_dict(db, user.id)
+            with (
+                app.test_request_context(),
+                force_locale(sys_settings.get("locale", "en") or "en"),
+            ):
+                send_ok = mailer.process(db, user, conf)
+
+            if send_ok:
                 database.users.put_log(db, user.id, "send mail success")
 
         except Exception as err:  # pylint: disable=broad-except

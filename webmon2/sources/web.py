@@ -5,6 +5,7 @@
 """
 Load data from webpage
 """
+
 from __future__ import annotations
 
 import datetime
@@ -17,7 +18,7 @@ from flask_babel import gettext, lazy_gettext
 from lxml.html import clean
 
 from webmon2 import common, model
-from webmon2.filters.fix_urls import FixHtmlUrls
+from webmon2.filters import FixHtmlUrls
 
 from .abstract import AbstractSource
 
@@ -28,7 +29,7 @@ class WebSource(AbstractSource):
     name = "url"
     short_info = lazy_gettext("Web page")
     long_info = lazy_gettext("Load data form web page pointed by URL.")
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
         common.SettingDef(
             "timeout", lazy_gettext("Loading timeout"), default=30
@@ -44,7 +45,7 @@ class WebSource(AbstractSource):
             default="",
             multiline=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -72,40 +73,50 @@ class WebSource(AbstractSource):
 
         return new_state, entries
 
+    def _load_data(
+        self, state: model.SourceState, session: requests.Session
+    ) -> tuple[requests.Response, None] | tuple[None, model.SourceState]:
+        url = self._conf["url"]
+        headers = _prepare_headers(state, self._conf)
+        response = session.request(
+            url=url,
+            method="GET",
+            headers=headers,
+            timeout=self._conf["timeout"],
+            allow_redirects=True,
+        )
+
+        if response is None:
+            return None, state.new_error("no result")
+
+        if response.status_code == 304:  # noqa: PLR2004
+            new_state = state.new_not_modified()
+            if not new_state.icon:
+                new_state.set_icon(self._load_image(url, session))
+
+            return None, new_state
+
+        if response.status_code != 200:  # noqa: PLR2004
+            msg = gettext("Response code: %(code)s", code=response.status_code)
+            if response.text:
+                msg += "\n" + self._clean_content(response.text)
+
+            return None, state.new_error(msg)
+
+        return response, None
+
     def _load(
         self, state: model.SourceState, session: requests.Session
     ) -> tuple[model.SourceState, model.Entries]:
         url = self._conf["url"]
-        headers = _prepare_headers(state, self._conf)
-        self._log.debug("web source: load start", headers=headers)
+        self._log.debug("web source: load start")
         response = None
         try:
-            response = session.request(
-                url=url,
-                method="GET",
-                headers=headers,
-                timeout=self._conf["timeout"],
-                allow_redirects=True,
-            )
-
-            if response is None:
-                return state.new_error("no result"), []
-
-            if response.status_code == 304:
-                new_state = state.new_not_modified()
-                if not new_state.icon:
-                    new_state.set_icon(self._load_image(url, session))
-
+            response, new_state = self._load_data(state, session)
+            if not response:
+                # failed load data
+                assert new_state
                 return new_state, []
-
-            if response.status_code != 200:
-                msg = gettext(
-                    "Response code: %(code)s", code=response.status_code
-                )
-                if response.text:
-                    msg += "\n" + self._clean_content(response.text)
-
-                return state.new_error(msg), []
 
             new_state = state.new_ok(
                 etag=response.headers.get("ETag"),
@@ -133,14 +144,15 @@ class WebSource(AbstractSource):
                 new_state.next_update = expires
                 new_state.set_prop("expires", str(expires))
 
-            return new_state, [entry]
-
         except requests.exceptions.RequestException as err:
             return state.new_error(f"request error: {err}"), []
 
         except Exception as err:  # pylint: disable=broad-except
             self._log.exception("web source: load error", error=err)
             return state.new_error(str(err)), []
+
+        else:
+            return new_state, [entry]
 
         finally:
             if response:
@@ -156,26 +168,24 @@ class WebSource(AbstractSource):
             return None
 
         for hist in response.history:
-            if hist.is_permanent_redirect:
-                href = hist.headers.get("Location")
-                if href:
-                    new_state.set_prop(
-                        "info",
-                        gettext("Permanently redirects: %(url)s", url=href),
-                    )
-                    self._update_source(new_url=href)
-                    return href
+            if hist.is_permanent_redirect and (
+                href := hist.headers.get("Location")
+            ):
+                new_state.set_prop(
+                    "info",
+                    gettext("Permanently redirects: %(url)s", url=href),
+                )
+                self._update_source(new_url=href)
+                return href
 
         for hist in response.history:
-            if hist.is_redirect:
-                href = hist.headers.get("Location")
-                if href:
-                    self._update_source(new_url=href)
-                    new_state.set_prop(
-                        "info",
-                        gettext("Temporary redirects: %(url)s", url=href),
-                    )
-                    return href
+            if hist.is_redirect and (href := hist.headers.get("Location")):
+                self._update_source(new_url=href)
+                new_state.set_prop(
+                    "info",
+                    gettext("Temporary redirects: %(url)s", url=href),
+                )
+                return href
 
         new_state.del_prop("info")
         return None
@@ -191,7 +201,13 @@ class WebSource(AbstractSource):
     ) -> tuple[str, bytes] | None:
         url_splited = urlsplit(url)
         favicon_url = urlunsplit(
-            (url_splited[0], url_splited[1], "favicon.ico", "", "")
+            (
+                url_splited[0],
+                url_splited[1],
+                "favicon.ico",
+                "",
+                "",
+            )
         )
         if favicon_url:
             return self._load_binary(favicon_url, session=session)
@@ -199,7 +215,9 @@ class WebSource(AbstractSource):
         return None
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -210,7 +228,9 @@ class WebSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -231,8 +251,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        content = clean.autolink_html(cleaner.clean_html(content))
-        return content
+        return ty.cast(str, clean.autolink_html(cleaner.clean_html(content)))
 
 
 def _prepare_headers(
@@ -251,16 +270,15 @@ def _prepare_headers(
             state.last_update.timestamp()
         )
 
-    if state.props:
-        if etag := state.props.get("etag"):
-            headers["If-None-Match"] = etag
+    if state.props and (etag := state.props.get("etag")):
+        headers["If-None-Match"] = etag
 
     headers.update(common.parse_str_to_headers(conf.get("http_headers")))
 
     if not headers.get("Accept"):
-        headers[
-            "Accept"
-        ] = "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
+        headers["Accept"] = (
+            "text/html, application/xhtml+xml;q=0.9, text/plain, */*;q=0.8"
+        )
 
     # if not already, set accept-language locale to user locale
     if not headers.get("Accept-Language"):

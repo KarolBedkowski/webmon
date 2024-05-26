@@ -5,6 +5,7 @@
 """
 App security
 """
+
 import typing as ty
 
 from flask import (
@@ -26,8 +27,8 @@ from . import _commons as c
 BP = Blueprint("sec", __name__, url_prefix="/sec")
 
 
-@BP.route("/login", methods=["POST", "GET"])
-def login() -> ty.Any:
+@BP.route("/login", methods=["POST", "GET"])  # type:ignore
+def login() -> ty.Any:  # noqa: ANN401
     if "temp_user_id" in session:
         del session["temp_user_id"]
 
@@ -45,7 +46,7 @@ def login() -> ty.Any:
         db = c.get_db()
         try:
             user = database.users.get(db, login=flogin)
-        except database.NotFound:
+        except database.NotFoundError:
             flash(gettext("Invalid user and/or password"))
             return render_template("login.html")
 
@@ -69,8 +70,8 @@ def login() -> ty.Any:
     return render_template("login.html")
 
 
-@BP.route("/login/totp", methods=["POST", "GET"])
-def login_totp() -> ty.Any:
+@BP.route("/login/totp", methods=["POST", "GET"])  # type:ignore
+def login_totp() -> ty.Any:  # noqa: ANN401
     # regenerate new csrf token
     c.generate_csrf_token()
 
@@ -78,7 +79,7 @@ def login_totp() -> ty.Any:
         db = c.get_db()
         try:
             user = database.users.get(db, session["temp_user_id"])
-        except database.NotFound:
+        except database.NotFoundError:
             return render_template("login.totp.html")
 
         assert user.totp is not None
@@ -97,8 +98,8 @@ def login_totp() -> ty.Any:
     return render_template("login.totp.html")
 
 
-@BP.route("/logout")
-def logout() -> ty.Any:
+@BP.route("/logout")  # type:ignore
+def logout() -> ty.Any:  # noqa: ANN401
     session.clear()
     session.modified = True
     return redirect(url_for("root.index"))
@@ -106,7 +107,7 @@ def logout() -> ty.Any:
 
 def _after_login(user: model.User) -> None:
     session["user"] = user.id
-    session["user_admin"] = bool(user.admin)
+    session["user_admin"] = user.admin
 
     db = c.get_db()
     user_id: int = session["user"]

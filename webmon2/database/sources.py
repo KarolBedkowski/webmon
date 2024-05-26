@@ -5,12 +5,11 @@
 """
 Access & manage sources
 """
+
 from __future__ import annotations
 
 import json
 import typing as ty
-from collections import namedtuple
-from datetime import datetime
 from itertools import starmap
 
 import structlog
@@ -18,7 +17,11 @@ import structlog
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, groups
-from ._db import DB
+
+if ty.TYPE_CHECKING:
+    from datetime import datetime
+
+    from ._db import DB
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
@@ -138,7 +141,8 @@ def get_all(
         user_groups = {group_id: groups.get(db, group_id, user_id)}
     else:
         user_groups = {
-            grp.id: grp for grp in groups.get_all(db, user_id)  # type: ignore
+            grp.id: grp  # type: ignore
+            for grp in groups.get_all(db, user_id)
         }
 
     args = {"user_id": user_id, "group_id": group_id}
@@ -177,7 +181,8 @@ def get_all_dict(
 
 
 def _build_source(
-    row: ty.Any, user_groups: dict[int, model.SourceGroup]
+    row: ty.Any,  # noqa:ANN401
+    user_groups: dict[int, model.SourceGroup],
 ) -> model.Source:
     source = model.Source.from_row(row)
     source.state = model.SourceState.from_row(row)
@@ -221,11 +226,11 @@ def get(
         row = cur.fetchone()
 
     if row is None:
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
     source = model.Source.from_row(row)
     if user_id and user_id != source.user_id:
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
     if with_state:
         source.state = get_state(db, source.id)
@@ -289,7 +294,7 @@ def delete(db: DB, source_id: int) -> int:
         number of deleted sources (should be 1)"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 def update_filter(
@@ -305,7 +310,7 @@ def update_filter(
     """
     try:
         source = get(db, source_id, with_group=False)
-    except dbc.NotFound:
+    except dbc.NotFoundError:
         _LOG.warning(
             "db: update filter error: source not found", source_id=source_id
         )
@@ -421,7 +426,7 @@ def get_state(db: DB, source_id: int) -> model.SourceState | None:
     """Get state for given source"""
     with db.cursor_obj_row(model.SourceState.from_row) as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
-        return cur.fetchone()
+        return ty.cast(model.SourceState, cur.fetchone())
 
 
 _INSERT_STATE_SQL = """
@@ -530,9 +535,7 @@ def refresh(
                 "active": model.SourceStatus.ACTIVE,
             },
         )
-        updated = cur.rowcount
-
-    return updated
+        return ty.cast(int, cur.rowcount)
 
 
 _REFRESH_ERRORS_SQL = """
@@ -549,7 +552,7 @@ def refresh_errors(db: DB, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id, model.SourceStatus.ACTIVE))
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 _MARK_READ_SQL = """
@@ -570,7 +573,7 @@ WHERE source_id=%(source_id)s
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read(  # noqa: PLR0913
     db: DB,
     user_id: int,
     source_id: int,
@@ -594,7 +597,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 def get_filter_state(
@@ -712,7 +715,7 @@ def randomize_next_check(db: DB, user_id: int) -> int:
     """Add random (0-60minutes) to next check for all user sources."""
     with db.cursor() as cur:
         cur.execute(_RANDOMIZE_NEXT_CHECK_SQL, (user_id,))
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 _ERRORS_FOR_USER_SQL = """
@@ -733,9 +736,12 @@ WHERE
 	AND ss.last_error > %(min_ts)s
 """
 
-ErrorInfo = namedtuple(
-    "ErrorInfo", ["group_name", "name", "last_error", "error"]
-)
+
+class ErrorInfo(ty.NamedTuple):
+    group_name: str
+    source_name: str
+    last_error: datetime
+    error: str
 
 
 def get_errors_for_user(

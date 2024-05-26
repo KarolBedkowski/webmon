@@ -5,13 +5,15 @@
 """
 Database routines to system related objects
 """
+
 from __future__ import annotations
 
 import typing as ty
 
 from webmon2 import model
 
-from ._db import DB
+if ty.TYPE_CHECKING:
+    from ._db import DB
 
 _GET_DB_TAB_SIZESSQL = """
 SELECT relname AS "tables",
@@ -31,31 +33,31 @@ def get_sysinfo(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
 
     with db.cursor() as cur:
         cur.execute("SELECT 'Total entries', count(*) FROM entries")
-        yield from cur  # type: ignore
+        yield from cur
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT 'Entries with read_mark=' || read_mark, count(*) "
             "FROM entries GROUP BY read_mark"
         )
-        yield from cur  # type: ignore
+        yield from cur
 
     with db.cursor() as cur:
         cur.execute("SELECT 'Total sources', count(*) FROM sources")
-        yield from cur  # type: ignore
+        yield from cur
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT 'Sources with status=' || status, count(*) "
             "FROM sources GROUP BY status"
         )
-        yield from cur  # type: ignore
+        yield from cur
 
 
 def get_table_sizes(db: DB) -> ty.Iterable[tuple[str, ty.Any]]:
     with db.cursor() as cur:
         cur.execute(_GET_DB_TAB_SIZESSQL)
-        yield from cur  # type: ignore
+        yield from cur
 
 
 _GET_SESSION_SQL = """
@@ -65,13 +67,13 @@ where id = %s
 """
 
 
-def get_session(db: DB, session_id: int) -> model.Session | None:
+def get_session(db: DB, session_id: str) -> model.Session | None:
     with db.cursor_obj_row(model.Session.from_row) as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
-        return cur.fetchone()
+        return ty.cast(model.Session, cur.fetchone())
 
 
-def delete_session(db: DB, session_id: int) -> None:
+def delete_session(db: DB, session_id: str) -> None:
     with db.cursor() as cur:
         cur.execute("delete from sessions where id=%s", (session_id,))
 
@@ -94,7 +96,7 @@ def save_session(db: DB, session: model.Session) -> None:
 def delete_expired_sessions(db: DB) -> int:
     with db.cursor() as cur:
         cur.execute("delete from sessions where expiry <= now()")
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 def ping(db: DB) -> bool:

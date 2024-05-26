@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.9.2 2024-05-26
+
+### Bug Fixes
+
+- Fix urls for groups and sources
+- Add missing itsdangerous to deps
+- Fix compatibility with Flask 2.3.0
+- Fix babel.conf
+- Fix source_name name field in ErrorInfo
+- Fix session id type
+- Fix sessions deleting
+
+### Features
+
+- Localized mail reports
+
+### Refactor
+
+- Code cleanup
+
+
+
 ## 2.9.1 2023-10-27
 
 ### Bug Fixes

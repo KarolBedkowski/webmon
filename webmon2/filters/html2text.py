@@ -5,7 +5,9 @@
 """
 Convert html to text.
 """
+
 import re
+import typing as ty
 from urllib.parse import urljoin
 
 import html2text as h2t
@@ -25,11 +27,11 @@ class Html2Text(AbstractFilter):
         "Try convert html content do plain text; remove all "
         "formatting, images etc."
     )
-    params = [
+    params = (
         common.SettingDef(
             "width", lazy_gettext("Max line width"), default=999999
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def validate(self) -> None:
         super().validate()
@@ -52,7 +54,7 @@ class Html2Text(AbstractFilter):
 def _convert(content: str, bodywidth: int) -> str:
     conv = h2t.HTML2Text(bodywidth=bodywidth)
     conv.protect_links = True
-    return conv.handle(content)
+    return ty.cast(str, conv.handle(content))
 
 
 _RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.IGNORECASE)

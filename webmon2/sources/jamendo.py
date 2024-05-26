@@ -5,6 +5,7 @@
 """
 Jamendo input.
 """
+
 from __future__ import annotations
 
 import datetime
@@ -15,12 +16,14 @@ import typing as ty
 import urllib.parse
 
 import requests
-import structlog
 from flask_babel import gettext, lazy_gettext
 
 from webmon2 import common, model
 
 from .abstract import AbstractSource
+
+if ty.TYPE_CHECKING:
+    import structlog
 
 # from urllib3 import poolmanager
 
@@ -50,7 +53,32 @@ class JamendoAbstractSource(AbstractSource):
 
         return last_update
 
-    # pylint: disable=too-many-return-statements
+    def _make_request_get_resp(
+        self, response: requests.Response
+    ) -> tuple[int, ty.Any]:
+        if response.status_code == 304:  # noqa:PLR2004
+            return 304, None
+
+        if response.status_code != 200:  # noqa:PLR2004
+            msg = f"Response code: {response.status_code}"
+            if response.text:
+                msg += "\n" + response.text
+
+            return 500, msg
+
+        res = response.json()
+        try:
+            if res["headers"]["status"] != "success":
+                return 500, res["headers"]["error_message"]
+
+        except KeyError:
+            return 500, "wrong answer"
+
+        if not res["results"]:
+            return 304, None
+
+        return 200, res
+
     def _make_request(self, url: str) -> tuple[int, ty.Any]:
         self._log.debug("jamendo: make request", url=url)
         headers = {
@@ -58,6 +86,7 @@ class JamendoAbstractSource(AbstractSource):
             "Gecko/20100101 Firefox/45.0",
             "Connection": "close",
         }
+
         with requests.Session() as sess:
             response = None
             try:
@@ -66,30 +95,10 @@ class JamendoAbstractSource(AbstractSource):
                 response.raise_for_status()
 
                 if not response:
-                    raise ConnectionError("No response")
+                    return 500, "No response"
 
-                if response.status_code == 304:
-                    return 304, None
+                return self._make_request_get_resp(response)
 
-                if response.status_code != 200:
-                    msg = f"Response code: {response.status_code}"
-                    if response.text:
-                        msg += "\n" + response.text
-
-                    return 500, msg
-
-                res = response.json()
-                try:
-                    if res["headers"]["status"] != "success":
-                        return 500, res["headers"]["error_message"]
-
-                except KeyError:
-                    return 500, "wrong answer"
-
-                if not res["results"]:
-                    return 304, None
-
-                return 200, res
             except requests.exceptions.ReadTimeout:
                 return 500, "timeout"
             except Exception as err:  # pylint: disable=broad-except
@@ -111,27 +120,33 @@ class JamendoAbstractSource(AbstractSource):
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
         if source.settings:
             conf = source.settings
-            conf[
-                "url"
-            ] = f"https://www.jamendo.com/artist/{conf['artist_id']}/"
+            conf["url"] = (
+                f"https://www.jamendo.com/artist/{conf['artist_id']}/"
+            )
         return source
 
 
-def _build_request_url(url: str, **params: ty.Any) -> str:
+def _build_request_url(url: str, **params: ty.Any) -> str:  # noqa: ANN401
     return url + "&".join(
         key + "=" + urllib.parse.quote_plus(str(val))
         for key, val in params.items()
@@ -140,15 +155,11 @@ def _build_request_url(url: str, **params: ty.Any) -> str:
 
 
 def _jamendo_track_to_url(track_id: int) -> str:
-    if not track_id:
-        return ""
-    return f"https://www.jamendo.com/track/{track_id}/"
+    return f"https://www.jamendo.com/track/{track_id}/" if track_id else ""
 
 
 def _jamendo_album_to_url(album_id: int) -> str:
-    if not album_id:
-        return ""
-    return f"https://www.jamendo.com/album/{album_id}/"
+    return f"https://www.jamendo.com/album/{album_id}/" if album_id else ""
 
 
 def _create_entry(
@@ -173,7 +184,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         "Either artist ID or name must be configured; also source "
         "require configured 'Jamendo client ID'"
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("artist_id", lazy_gettext("Artist ID")),
         common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
@@ -182,7 +193,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -205,12 +216,12 @@ class JamendoAlbumsSource(JamendoAbstractSource):
         self._log.debug("jamendo albums: load", url=url)
 
         status, res = self._make_request(url)
-        if status == 304:
+        if status == 304:  # noqa:PLR2004
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_JAMENDO_ICON))
             return new_state, []
-        if status != 200:
+        if status != 200:  # noqa:PLR2004
             return state.new_error(res), []
 
         new_state = state.new_ok()
@@ -228,7 +239,7 @@ class JamendoAlbumsSource(JamendoAbstractSource):
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
@@ -238,12 +249,16 @@ class JamendoAlbumsSource(JamendoAbstractSource):
             yield ("artist_id", "artist name or id is required")
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _jamendo_format_long_list(
@@ -255,13 +270,8 @@ def _jamendo_format_long_list(
         for album in result.get("albums") or []:
             yield _create_entry(
                 source,
-                " ".join(
-                    (
-                        album["releasedate"],
-                        album["name"],
-                        _jamendo_album_to_url(album["id"]),
-                    )
-                ),
+                f'{album["releasedate"]} {album["name"]} '
+                f'{_jamendo_album_to_url(album["id"])}',
                 _get_release_date(album, log),
             )
 
@@ -276,7 +286,7 @@ class JamendoTracksSource(JamendoAbstractSource):
         "Either artist ID or name must be configured; also source "
         "require configured 'Jamendo client ID'"
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("artist_id", lazy_gettext("Artist ID")),
         common.SettingDef("artist", lazy_gettext("Artist name")),
         common.SettingDef(
@@ -285,7 +295,7 @@ class JamendoTracksSource(JamendoAbstractSource):
             required=True,
             global_param=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -306,14 +316,14 @@ class JamendoTracksSource(JamendoAbstractSource):
         )
 
         status, res = self._make_request(url)
-        if status == 304:
+        if status == 304:  # noqa:PLR2004
             new_state = state.new_not_modified()
             if not new_state.icon:
                 new_state.set_icon(self._load_binary(_JAMENDO_ICON))
 
             return new_state, []
 
-        if status != 200:
+        if status != 200:  # noqa:PLR2004
             return state.new_error(res), []
 
         new_state = state.new_ok()
@@ -331,7 +341,7 @@ class JamendoTracksSource(JamendoAbstractSource):
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration."""
         yield from super().validate_conf(*confs)
@@ -341,12 +351,23 @@ class JamendoTracksSource(JamendoAbstractSource):
             yield ("artist_id", gettext("artist name or id is required"))
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
+
+
+def _track_to_content_line(track: dict[str, ty.Any]) -> str:
+    return (
+        f"{track['releasedate']} {track['name']} "
+        f"{_jamendo_track_to_url(track['id'])}"
+    )
 
 
 def _jamendo_track_format(
@@ -355,20 +376,10 @@ def _jamendo_track_format(
     log: structlog.stdlib.BoundLogger,
 ) -> model.Entries:
     for result in results:
-        tracks = result.get("tracks")
-        if tracks:
+        if tracks := result.get("tracks"):
             yield _create_entry(
                 source,
-                "\n".join(
-                    " ".join(
-                        (
-                            track["releasedate"],
-                            track["name"],
-                            _jamendo_track_to_url(track["id"]),
-                        )
-                    )
-                    for track in tracks
-                ),
+                "\n".join(map(_track_to_content_line, tracks)),
                 max(_get_release_date(trc, log) for trc in tracks),
             )
 
@@ -381,8 +392,6 @@ def _get_release_date(
         if not releasedate.tzinfo:
             releasedate = releasedate.replace(tzinfo=datetime.UTC)
 
-        return releasedate
-
     except ValueError:
         log.debug("jamendo: wrong releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
@@ -390,6 +399,9 @@ def _get_release_date(
     except KeyError:
         log.debug("jamendo: missing releasedate", data=data)
         return datetime.datetime.now(datetime.UTC)
+
+    else:
+        return releasedate
 
 
 # class ForceTLSV1Adapter(requests.adapters.HTTPAdapter):

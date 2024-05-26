@@ -5,6 +5,7 @@
 """
 Dummy source; generate random data
 """
+
 from __future__ import annotations
 
 import datetime
@@ -22,7 +23,7 @@ class DymmySource(AbstractSource):
     """Dummy data generator"""
 
     name = "dummy"
-    params = AbstractSource.params + []
+    params = AbstractSource.params
     short_info = lazy_gettext("Dummy source for development")
     long_info = ""
 
@@ -71,7 +72,9 @@ class DymmySource(AbstractSource):
         return new_state, entries
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         return {
             "text": source.name,
             "title": source.name,
@@ -81,7 +84,9 @@ class DymmySource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         name = opml_node.get("text") or opml_node["title"]
         if not name:
             raise ValueError("missing text/title")

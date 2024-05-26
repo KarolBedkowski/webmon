@@ -23,10 +23,10 @@ class Sort(AbstractFilter):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
-        curr_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
+        curr_state: model.SourceState,  # noqa:ARG002
     ) -> model.Entries:
         return sorted(entries, key=lambda e: (e.title, e.content))
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError

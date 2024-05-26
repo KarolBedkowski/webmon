@@ -26,7 +26,7 @@ def _get_elements_by_xpath(
     document = lxml.html.fromstring(entry.content)
     for elem in document.xpath(expression):
         # pylint: disable=protected-access
-        if isinstance(elem, etree._Element):
+        if isinstance(elem, etree._Element):  # noqa:SLF001
             content = etree.tostring(elem).decode("utf-8")
         else:
             content = str(elem)
@@ -42,13 +42,13 @@ class GetElementsByCss(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract element from content by given CSS query"
     )
-    params = [
+    params = (
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
-    def __init__(self, config: model.ConfDict):
+    def __init__(self, config: model.ConfDict) -> None:
         super().__init__(config)
         self._expression: str = ""
 
@@ -72,11 +72,11 @@ class GetElementsByXpath(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract elements from html/xml content by given xpath"
     )
-    params = [
+    params = (
         common.SettingDef(
             "xpath", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
     stop_change_content = True
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -91,11 +91,11 @@ class GetElementsById(AbstractFilter):
     long_info = lazy_gettext(
         "Search and extract element from html content by given ID"
     )
-    params = [
+    params = (
         common.SettingDef(
             "sel", lazy_gettext("Selector"), required=True, multiline=True
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if not entry.content:
@@ -104,10 +104,10 @@ class GetElementsById(AbstractFilter):
         document = lxml.html.fromstring(entry.content)
         for elem in document.xpath(".//*[@id=$id]", id=self._conf["sel"]):
             # pylint: disable=protected-access
-            if isinstance(elem, etree._Element):
-                text = etree.tostring(elem).decode("utf-8")
-                if text:
+            if isinstance(elem, etree._Element):  # noqa: SLF001
+                if text := etree.tostring(elem).decode("utf-8"):
                     yield _new_entry(entry, text)
+
             else:
                 yield _new_entry(entry, str(elem))
 

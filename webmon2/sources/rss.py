@@ -5,6 +5,7 @@
 """
 RSS data loader
 """
+
 from __future__ import annotations
 
 import datetime
@@ -36,7 +37,7 @@ class RssSource(AbstractSource):
     long_info = lazy_gettext(
         "Load data form RSS/Atom channel. Require define URL."
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef("url", lazy_gettext("RSS XML URL"), required=True),
         common.SettingDef(
             "max_items",
@@ -51,7 +52,7 @@ class RssSource(AbstractSource):
         common.SettingDef(
             "load_article", lazy_gettext("Load article"), default=False
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -115,7 +116,7 @@ class RssSource(AbstractSource):
                 _filter_entries_updated(entries, state.last_update.timestamp())
             )
 
-        if status == 304 or not entries:
+        if status == 304 or not entries:  # noqa:PLR2004
             new_state = state.new_not_modified(etag=doc.get("etag"))
             if not new_state.icon:
                 new_state.set_icon(self._load_image(doc))
@@ -133,12 +134,12 @@ class RssSource(AbstractSource):
             new_state.next_update = expires
             new_state.set_prop("expires", str(expires))
 
-        if status == 301:  # permanent redirects
+        if status == 301:  # permanent redirects # noqa:PLR2004
             new_state.set_prop(
                 "info", gettext("Permanently redirects: %(url)s", url=doc.href)
             )
             self._update_source(new_url=doc.href)
-        elif status == 302:
+        elif status == 302:  # noqa:PLR2004
             new_state.set_prop(
                 "info", gettext("Temporary redirects: %(url)s", url=doc.href)
             )
@@ -158,11 +159,10 @@ class RssSource(AbstractSource):
         return new_state, items
 
     def _limit_items(self, entries: list[model.Entry]) -> list[model.Entry]:
-        max_items = self._conf.get("max_items")
-        if max_items:
-            max_items = int(max_items)
-            if max_items and len(entries) > max_items:
-                entries = entries[:max_items]
+        if (max_items := int(self._conf.get("max_items") or "0")) and len(
+            entries
+        ) > max_items:
+            entries = entries[:max_items]
 
         return entries
 
@@ -180,6 +180,7 @@ class RssSource(AbstractSource):
         result.updated = _get_val_dt(entry, "updated_parsed", now)
         result.created = _get_val_dt(entry, "published_parsed", now)
         result.status = model.EntryStatus.NEW
+
         if load_article:
             result = self._load_article(result, sess)
         elif load_content:
@@ -197,6 +198,7 @@ class RssSource(AbstractSource):
     ) -> model.Entry:
         if not entry.url:
             return entry
+
         response = None
         try:
             response = sess.request(
@@ -207,7 +209,7 @@ class RssSource(AbstractSource):
             )
             if response:
                 response.raise_for_status()
-                if response.status_code == 200:
+                if response.status_code == 200:  # noqa:PLR2004
                     content_type = response.headers["content-type"]
                     if content_type.startswith("text/"):
                         entry.content = response.text
@@ -232,7 +234,9 @@ class RssSource(AbstractSource):
         return entry
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -242,7 +246,9 @@ class RssSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         url = opml_node["xmlUrl"]
         if not url:
             raise ValueError("missing xmlUrl")
@@ -261,14 +267,11 @@ class RssSource(AbstractSource):
         self._log.debug("rss source: load image: start")
         feed = doc.feed
         image_href = None
-        image = feed.get("image")
-        if image:
+        if image := feed.get("image"):
             image_href = image.get("href") or image.get("url")
 
-        if not image_href:
-            link = feed.get("link")
-            if link:
-                image_href = urljoin(link, "favicon.ico")
+        if (not image_href) and (link := feed.get("link")):
+            image_href = urljoin(link, "favicon.ico")
 
         return self._load_binary(image_href) if image_href else None
 
@@ -331,11 +334,10 @@ def _fail_error(
 def _get_val_str(
     entry: dict[str, ty.Any], key: str, default: str | None = None
 ) -> str | None:
-    val = entry.get(key)
-    if val is None:
-        return default
+    if (val := entry.get(key)) is not None:
+        return str(val).strip()
 
-    return str(val).strip()
+    return default
 
 
 def _get_val_dt(

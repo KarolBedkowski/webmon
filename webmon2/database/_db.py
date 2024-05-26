@@ -5,6 +5,7 @@
 """
 Definition of DB object
 """
+
 from __future__ import annotations
 
 import os.path
@@ -17,6 +18,9 @@ import psycopg
 import psycopg_pool as pool
 import structlog
 
+if ty.TYPE_CHECKING:
+    import types
+
 T = ty.TypeVar("T")
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
@@ -24,7 +28,7 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 @cache
 def create_object_row_maker(
-    from_row: ty.Callable[[dict[str, ty.Any]], T]
+    from_row: ty.Callable[[dict[str, ty.Any]], T],
 ) -> psycopg.rows.RowFactory[T]:
     """create RowMaker for `from_row` callable that create `T` objects."""
 
@@ -34,7 +38,7 @@ def create_object_row_maker(
         fields = [c.name for c in cursor.description or ()]
 
         def make_row(values: ty.Sequence[ty.Any]) -> T:
-            data = dict(zip(fields, values))
+            data = dict(zip(fields, values, strict=True))
             return from_row(data)
 
         return make_row
@@ -43,7 +47,7 @@ def create_object_row_maker(
 
 
 class DB:
-    POOL: pool.ConnectionPool = None  # type: ignore
+    POOL: pool.ConnectionPool = None
 
     __slots__ = ("_conn", "_log")
 
@@ -61,7 +65,7 @@ class DB:
             raise RuntimeError("no database connection")
 
     @classmethod
-    def get(cls) -> DB:
+    def get(cls: ty.Type[DB]) -> DB:
         return DB()
 
     def cursor_dict_row(self) -> psycopg.Cursor[dict[str, ty.Any]]:
@@ -103,7 +107,11 @@ class DB:
 
     @classmethod
     def initialize(
-        cls, conn_str: str, update_schema: bool, min_conn: int, max_conn: int
+        cls: ty.Type[DB],
+        conn_str: str,
+        update_schema: bool,
+        min_conn: int,
+        max_conn: int,
     ) -> None:
         cls.POOL = pool.ConnectionPool(
             conn_str,
@@ -117,14 +125,17 @@ class DB:
             if update_schema:
                 db.update_schema()
 
-    def __enter__(self) -> DB:
+    def __enter__(self) -> ty.Self:
         return self
 
     def __exit__(
-        self, type_: ty.Any, value: ty.Any, traceback: ty.Any
-    ) -> bool:
+        self,
+        exc_type: ty.Type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> bool | None:
         self.close()
-        return isinstance(value, TypeError)
+        return isinstance(exc, TypeError)
 
     def close(self) -> None:
         assert self.POOL
@@ -164,11 +175,12 @@ class DB:
         schema_files = Path(__file__).parent.joinpath("..", "schema")
         log.debug("db.update_schema: schema_dir: %s", schema_files)
         for fname in sorted(os.listdir(schema_files)):
-            if not fname.endswith(".sql"):
+            file = Path(fname)
+            if file.suffix != ".sql":
                 continue
 
             try:
-                version = int(os.path.splitext(fname)[0])
+                version = int(file.stem)
                 log.debug("db.update_schema: found update %r", version)
                 if version <= schema_ver:
                     continue

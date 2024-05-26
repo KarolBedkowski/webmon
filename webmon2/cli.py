@@ -8,16 +8,19 @@ command line commands
 
 import argparse
 import configparser
-import os
 import sys
 import typing as ty
+from pathlib import Path
 
 from webmon2 import model
 
 from . import common, conf, database, filters, security, sources
 
 
-def _show_abilities_cls(title: str, base_cls: ty.Any) -> None:
+def _show_abilities_cls(
+    title: str,
+    base_cls: ty.Type[sources.AbstractSource | filters.AbstractFilter],
+) -> None:
     print(title)
     for name, cls in common.get_subclasses_with_name(base_cls):
         print("  -", name)
@@ -70,7 +73,7 @@ def change_user_pass(args: argparse.Namespace) -> None:
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=login)
-        except database.NotFound:
+        except database.NotFoundError:
             print("user not found")
             return
 
@@ -85,10 +88,11 @@ def remove_user_totp(args: argparse.Namespace) -> None:
     if not login:
         print("missing login arguments for remove totp")
         return
+
     with database.DB.get() as db:
         try:
             user = database.users.get(db, login=login)
-        except database.NotFound:
+        except database.NotFoundError:
             print("user not found")
             return
 
@@ -106,17 +110,17 @@ def write_config_file(
         print("missing destination filename", file=sys.stderr)
         return
 
-    filename = os.path.expanduser(filename)
+    cfgfile = Path(filename).expanduser()
 
-    if os.path.isfile(filename):
+    if cfgfile.is_file():
         print(f"missing file '{filename}' already exists", file=sys.stderr)
         return
 
     try:
-        conf.save_conf(app_conf, filename)
+        conf.save_conf(app_conf, cfgfile)
     except Exception as err:  # pylint: disable=broad-except
         print(
-            f"write config file to '{filename}' error: {err}", file=sys.stderr
+            f"write config file to '{cfgfile}' error: {err}", file=sys.stderr
         )
     else:
         print("Done")
@@ -133,9 +137,9 @@ def shell(
         print("IPython not available", file=sys.stderr)
         return
 
-    from webmon2.web import app as web_app
+    from webmon2.web import create_app
 
-    app = web_app.create_app(args, app_conf)
+    app = create_app(args, app_conf)
     config = load_default_config()
     IPython.start_ipython(
         user_ns=app.make_shell_context(),
@@ -147,30 +151,31 @@ def shell(
 def process_cli(
     args: argparse.Namespace, app_conf: configparser.ConfigParser
 ) -> bool:
-    if args.cmd == "users":
-        if args.subcmd == "add":
-            add_user(args)
-        elif args.subcmd == "passwd":
-            change_user_pass(args)
-        elif args.subcmd == "remove_totp":
-            remove_user_totp(args)
+    match args.cmd:
+        case "users":
+            match args.subcmd:
+                case "add":
+                    add_user(args)
+                case "passwd":
+                    change_user_pass(args)
+                case "remove_totp":
+                    remove_user_totp(args)
+                case _:
+                    print("unknown sub command", file=sys.stderr)
 
-        print("unknown sub command", file=sys.stderr)
-        return True
+        case "migrate":
+            # pylint: disable=import-outside-toplevel
+            from . import migrate
 
-    if args.cmd == "migrate":
-        # pylint: disable=import-outside-toplevel
-        from . import migrate
+            migrate.migrate(args)
 
-        migrate.migrate(args)
-        return True
+        case "write-config":
+            write_config_file(args, app_conf)
 
-    if args.cmd == "write-config":
-        write_config_file(args, app_conf)
-        return True
+        case "shell":
+            shell(args, app_conf)
 
-    if args.cmd == "shell":
-        shell(args, app_conf)
-        return True
+        case _:
+            return False
 
-    return False
+    return True

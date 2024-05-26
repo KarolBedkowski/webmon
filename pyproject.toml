@@ -4,9 +4,7 @@ build-backend = "hatchling.build"
 
 
 [project]
-authors = [
-{name = "Karol Będkowski <karol.bedkowski@gmail.com>"},
-]
+authors = [{ name = "Karol Będkowski <karol.bedkowski@gmail.com>" }]
 classifiers = [
   "Development Status :: 4 - Beta",
   "License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)",
@@ -17,7 +15,7 @@ classifiers = [
   "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
 ]
 description = ""
-license = {text = "GPL-3.0-or-later"}
+license = { text = "GPL-3.0-or-later" }
 name = "webmon2"
 readme = "README.rst"
 dynamic = ["version"]
@@ -48,25 +46,11 @@ dependencies = [
 
 
 [project.optional-dependencies]
-extra = [
-  "setproctitle",
-]
-sdnotify = [
-  "sdnotify",
-]
-minify = [
-  "Flask-Minify>=0.32",
-]
-otp = [
-  "pyotp>=2.6",
-  "PyQRCode",
-]
-dev = [
-  "pre-commit>=2.15.0",
-  "stackprinter",
-  "freezegun",
-  "pip-tools>=7.0.0",
-]
+extra = ["setproctitle"]
+sdnotify = ["sdnotify"]
+minify = ["Flask-Minify>=0.32"]
+otp = ["pyotp>=2.6", "PyQRCode"]
+dev = ["pre-commit>=2.15.0", "stackprinter", "freezegun", "pip-tools>=7.0.0"]
 
 [project.scripts]
 webmon2 = "webmon2.main:main"
@@ -77,7 +61,7 @@ path = "webmon2/__init__.py"
 
 
 [tool.black]
-line-length = 79
+line-length = 78
 
 
 [tool.isort]
@@ -94,9 +78,7 @@ skips = ["B101", "B410", "B303", "B110", "B404", "B311", "B405", "B201"]
 [tool.mypy]
 python_version = 3.11
 strict = true
-exclude = [
-  '.*_test\.py$'
-]
+exclude = ['.*_test\.py$']
 allow_untyped_defs = true
 allow_untyped_calls = true
 ignore_missing_imports = true
@@ -110,15 +92,29 @@ builtins = "_"
 
 
 [tool.pylint.main]
-ignore=["build", "dist", "tmp", "doc"]
-jobs=4
-extension-pkg-allow-list="lxml"
-extension-pkg-whitelist="lxml"
+ignore = ["build", "dist", "tmp", "doc"]
+jobs = 4
+extension-pkg-allow-list = "lxml"
+extension-pkg-whitelist = "lxml"
 py-version = [3, 9]
 disable = ["missing-docstring", "format", "unused-argument"]
 
 [tool.pylint.basic]
-good-names=["i", "j", "k", "ex", "Run", "_", "db", "err", "ok", "x", "y", "id", "ts"]
+good-names = [
+  "i",
+  "j",
+  "k",
+  "ex",
+  "Run",
+  "_",
+  "db",
+  "err",
+  "ok",
+  "x",
+  "y",
+  "id",
+  "ts",
+]
 
 #[tool.pylint.exceptions]
 #overgeneral-exceptions = [""]
@@ -131,15 +127,58 @@ max-attributes = 10
 additional-builtins = ["_", "ngettext", "ic"]
 
 
-
 [tool.ruff]
 builtins = ["_", "ic", "ic_stack", "ngettext"]
 extend-exclude = ["*_test.py"]
 output-format = "full"
 line-length = 79
-[tool.ruff.lint]
-  select = ["E", "F", "I", "W"]
-  fixable = ["I"]
+lint.select = ["E", "F", "I", "W", "C"]
+lint.fixable = ["I"]
+lint.extend-select = [
+  "N",
+  "ANN",
+  "FBT",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  "EM",
+  "ISC",
+  "ICN",
+  "LOG",
+  "G",
+  "PIE",
+  "PYI",
+  "Q",
+  "RSE",
+  "RET",
+  "SLF",
+  "SLOT",
+  "SIM",
+  "TID",
+  "TCH",
+  "ARG",
+  "PTH",
+  "FIX",
+  "PL",
+  "R",
+  "TRY",
+  "PERF",
+  "RUF",
+]
+lint.ignore = [
+  "ANN101",
+  "COM812",
+  "EM101",
+  "TRY003",
+  "FBT001",
+  "FBT002",
+  "FBT003",
+  "ISC001",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/*_test.py" = ["ANN", "PTH", "DTZ", 'SLF001', "ARG"]
 
 
 [tool.ruff.lint.isort]

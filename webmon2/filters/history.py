@@ -25,7 +25,7 @@ class History(AbstractFilter):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
         curr_state: model.SourceState,
     ) -> model.Entries:
         assert self.db
@@ -35,8 +35,7 @@ class History(AbstractFilter):
             return
 
         oids = [entry.calculate_oid() for entry in entries]
-        new_oids: set[str] = set()
-        new_oids = database.entries.check_oids(
+        new_oids: set[str] = database.entries.check_oids(
             self.db, oids, curr_state.source_id
         )
         for entry in entries:
@@ -44,4 +43,4 @@ class History(AbstractFilter):
                 yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError

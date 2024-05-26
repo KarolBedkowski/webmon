@@ -8,11 +8,13 @@ Database-based server-side session storage.
 Based on flask-session.
 
 """
+
 import pickle  # nosec
 import typing as ty
 from datetime import datetime, timezone
 from uuid import uuid4
 
+import flask
 from flask.sessions import (
     SessionInterface as FlaskSessionInterface,
     SessionMixin,
@@ -23,12 +25,17 @@ from werkzeug.datastructures import CallbackDict
 from webmon2 import database, model
 
 
-class DBSession(CallbackDict[str, ty.Any], SessionMixin):
+class DBSession(CallbackDict[str, ty.Any], SessionMixin):  # type: ignore
     """Server-side sessions."""
 
-    def __init__(self, initial=None, sid=None, permanent=None):
-        def on_update(self):
-            self.modified = True
+    def __init__(
+        self,
+        initial: str | None = None,
+        sid: str | None = None,
+        permanent: bool | None = None,
+    ) -> None:
+        def on_update(obj: DBSession) -> None:
+            obj.modified = True
 
         self.sid = sid
         self.modified = False
@@ -38,19 +45,23 @@ class DBSession(CallbackDict[str, ty.Any], SessionMixin):
         CallbackDict.__init__(self, initial, on_update)
 
 
-class DBSessionInterface(FlaskSessionInterface):
+class DBSessionInterface(FlaskSessionInterface):  # type: ignore
     """Uses database as a session backend.
 
     :param use_signer: Whether to sign the session id cookie or not.
     :param permanent: Whether to use permanent session or not.
     """
 
-    def __init__(self, use_signer=False, permanent=True):
+    def __init__(
+        self, use_signer: bool = False, permanent: bool = True
+    ) -> None:
         self.use_signer = use_signer
         self.permanent = permanent
         self.has_same_site_capability = hasattr(self, "get_cookie_samesite")
 
-    def open_session(self, app, request):
+    def open_session(
+        self, app: flask.Flask, request: flask.request
+    ) -> DBSession | None:
         sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
         if not sid:
             return DBSession(sid=_generate_sid(), permanent=self.permanent)
@@ -87,20 +98,32 @@ class DBSessionInterface(FlaskSessionInterface):
         except pickle.UnpicklingError:
             return DBSession(sid=sid, permanent=self.permanent)
 
-    def save_session(self, app, session, response):
-        domain = self.get_cookie_domain(app)
-        path = self.get_cookie_path(app)
+    def _delete_session(
+        self,
+        db: database.DB,
+        app: flask.Flask,
+        session: DBSession,
+        response: flask.Response,
+    ) -> None:
+        if session.modified and session.sid:
+            database.system.delete_session(db, session.sid)
+            response.delete_cookie(
+                app.config["SESSION_COOKIE_NAME"],
+                domain=self.get_cookie_domain(app),
+                path=self.get_cookie_path(app),
+            )
+
+    def save_session(
+        self, app: flask.Flask, session: DBSession, response: flask.Response
+    ) -> None:
         with database.DB.get() as db:
             if not session:
-                if session.modified:
-                    database.system.delete_session(db, session.sid)
-                    db.commit()
-                    response.delete_cookie(
-                        app.config["SESSION_COOKIE_NAME"],
-                        domain=domain,
-                        path=path,
-                    )
+                self._delete_session(db, app, session, response)
+                db.commit()
                 return
+
+            if not session.sid:
+                session.sid = _generate_sid()
 
             saved_session = database.system.get_session(db, session.sid)
             expires = self.get_expiration_time(app, session)
@@ -109,6 +132,7 @@ class DBSessionInterface(FlaskSessionInterface):
                 saved_session.data = val
                 if expires:
                     saved_session.expiry = expires
+
             elif not session.modified:
                 db.commit()
                 return
@@ -119,7 +143,9 @@ class DBSessionInterface(FlaskSessionInterface):
             db.commit()
 
         if self.use_signer:
-            session_id = _get_signer(app).sign(want_bytes(session.sid))
+            signer = _get_signer(app)
+            assert signer
+            session_id = signer.sign(want_bytes(session.sid))
         else:
             session_id = session.sid
 
@@ -134,18 +160,18 @@ class DBSessionInterface(FlaskSessionInterface):
             session_id.decode(),
             expires=expires,
             httponly=self.get_cookie_httponly(app),
-            domain=domain,
-            path=path,
+            domain=self.get_cookie_domain(app),
+            path=self.get_cookie_path(app),
             secure=self.get_cookie_secure(app),
             **conditional_cookie_kwargs,
         )
 
 
-def _generate_sid():
+def _generate_sid() -> str:
     return str(uuid4())
 
 
-def _get_signer(app):
+def _get_signer(app: flask.Flask) -> Signer | None:
     if not app.secret_key:
         return None
 

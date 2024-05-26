@@ -5,6 +5,7 @@
 """
 Select entries by matching text.
 """
+
 from __future__ import annotations
 
 import re
@@ -24,7 +25,7 @@ class Grep(AbstractFilter):
     long_info = lazy_gettext(
         "Select elements matching or not matching to given pattern."
     )
-    params = [
+    params = (
         common.SettingDef(
             "pattern",
             lazy_gettext("Regular expression"),
@@ -34,7 +35,7 @@ class Grep(AbstractFilter):
         common.SettingDef(
             "invert", lazy_gettext("Accept items not matching"), default=False
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
@@ -50,8 +51,8 @@ class Grep(AbstractFilter):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
-        curr_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
+        curr_state: model.SourceState,  # noqa:ARG002
     ) -> model.Entries:
         if not self._re:
             return entries
@@ -66,4 +67,4 @@ class Grep(AbstractFilter):
         return filter(lambda x: x.content and rep.match(x.content), entries)
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError

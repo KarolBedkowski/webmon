@@ -1,11 +1,12 @@
 """
 Main functions.
 
-Copyright (c) Karol Będkowski, 2016-2022
+Copyright (c) Karol Będkowski, 2016-2024
 
 This file is part of webmon.
 Licence: GPLv2+
 """
+
 from __future__ import annotations
 
 import argparse
@@ -15,7 +16,6 @@ import os.path
 import signal
 import sys
 import typing as ty
-from configparser import ConfigParser
 from contextlib import suppress
 from pathlib import Path
 
@@ -61,9 +61,8 @@ from . import (
     worker,
 )
 
-__author__ = "Karol Będkowski"
-__copyright__ = "Copyright (c) Karol Będkowski, 2016-2022"
-_ = ty
+if ty.TYPE_CHECKING:
+    from configparser import ConfigParser
 
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger("main")
@@ -129,11 +128,9 @@ def _parse_options() -> argparse.Namespace:
         required=True,
     )
 
-    parser_users = subparsers.add_parser("users", help="manage users")
-
-    parser_users_sc = parser_users.add_subparsers(
-        help="user commands", dest="subcmd", required=True
-    )
+    parser_users_sc = subparsers.add_parser(
+        "users", help="manage users"
+    ).add_subparsers(help="user commands", dest="subcmd", required=True)
 
     parser_users_add = parser_users_sc.add_parser("add", help="add user")
     parser_users_add.add_argument("-l", "--login", required=True)
@@ -230,8 +227,8 @@ def _parse_options() -> argparse.Namespace:
 
 
 def _load_user_classes() -> None:
-    users_scripts_dir = os.path.expanduser("~/.local/share/" + APP_NAME)
-    if not Path(users_scripts_dir).is_dir():
+    users_scripts_dir = Path("~/.local/share/", APP_NAME).expanduser()
+    if not users_scripts_dir.is_dir():
         return
 
     for fname in os.listdir(users_scripts_dir):
@@ -328,7 +325,7 @@ def _check_libraries() -> None:
         _LOG.info("main: missing optional flask_minify library")
 
 
-def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:
+def _sd_watchdog(_signal: ty.Any, _frame: ty.Any) -> None:  # noqa: ANN401
     assert _SDN
     _SDN.notify("WATCHDOG=1")
     signal.alarm(_SDN_WATCHDOG_INTERVAL)

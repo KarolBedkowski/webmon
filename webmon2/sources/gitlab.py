@@ -5,6 +5,7 @@
 """
 Inputs related to gitlab
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -38,7 +39,7 @@ class AbstractGitLabSource(AbstractSource):
     """Support functions for GitLab"""
 
     # pylint: disable=too-few-public-methods
-    params = AbstractSource.params + [
+    params: tuple[common.SettingDef, ...] = (
         common.SettingDef(
             "project",
             lazy_gettext("Project ID; i.e. user/project"),
@@ -55,7 +56,7 @@ class AbstractGitLabSource(AbstractSource):
             required=True,
             global_param=True,
         ),
-    ]
+    )
 
     def __init__(
         self, source: model.Source, sys_settings: model.ConfDict
@@ -97,14 +98,12 @@ class AbstractGitLabSource(AbstractSource):
         token = conf.get("gitlab_token")
         if url and token:
             try:
-                gitl = gitlab.Gitlab(url, token)  # type: ignore
-                return gitl.projects.get(conf["project"])  # type: ignore
+                gitl = gitlab.Gitlab(url, token)
+                return gitl.projects.get(conf["project"])
 
             except Exception as err:
-                raise common.InputError(
-                    self,
-                    gettext("Connection error: %(err)s", err=err),
-                )
+                errmsg = gettext("Connection error: %(err)s", err=err)
+                raise common.InputError(self, errmsg) from err
 
         return None
 
@@ -140,12 +139,16 @@ class AbstractGitLabSource(AbstractSource):
         self.__class__.upgrade_conf(self._updated_source)
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _build_entry(
@@ -170,7 +173,8 @@ class GitLabCommits(AbstractGitLabSource):
         "Source load commits history from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
+        *AbstractGitLabSource.params,
         common.SettingDef(
             "short_list",
             lazy_gettext("Show commits as short list"),
@@ -181,7 +185,7 @@ class GitLabCommits(AbstractGitLabSource):
             lazy_gettext("Show commits whole commit body"),
             default=False,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -235,7 +239,9 @@ class GitLabCommits(AbstractGitLabSource):
         return new_state, [entry]
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -247,12 +253,16 @@ class GitLabCommits(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _format_gl_commit_short(
@@ -289,13 +299,13 @@ class GitLabTagsSource(AbstractGitLabSource):
         "Source load tags from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of tags to load"),
             default=5,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -329,7 +339,7 @@ class GitLabTagsSource(AbstractGitLabSource):
             content = "\n\n".join(filter(None, map(_format_gl_tag, tags)))
         except Exception as err:
             self._log.exception("gitlab tags: load error", error=err)
-            raise common.InputError(self, str(err))
+            raise common.InputError(self, str(err)) from err
 
         new_state = state.new_ok()
         self._state_update_icon(new_state)
@@ -346,7 +356,9 @@ class GitLabTagsSource(AbstractGitLabSource):
             new_state.set_icon(self._load_binary(self._get_favicon()))
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -358,18 +370,21 @@ class GitLabTagsSource(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _format_gl_tag(tag: gobj.tags.ProjectTag) -> str:
     res: str = tag.name
-    commit_date = tag.commit.get("committed_date")
-    if commit_date:
+    if commit_date := tag.commit.get("committed_date"):
         res += " " + commit_date
 
     if tag.message:
@@ -387,13 +402,14 @@ class GitLabReleasesSource(AbstractGitLabSource):
         "Source load releases history from configured repository."
         " For work required configured GitLab account with token."
     )
-    params = AbstractGitLabSource.params + [
+    params = (
+        *AbstractGitLabSource.params,
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of tags to load"),
             value_type=int,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def load(
         self, state: model.SourceState
@@ -445,7 +461,9 @@ class GitLabReleasesSource(AbstractGitLabSource):
         return new_state, entries
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update configuration before save; apply some additional data.
         """
@@ -457,12 +475,16 @@ class GitLabReleasesSource(AbstractGitLabSource):
         return source
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
-        raise NotImplementedError()
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
+        raise NotImplementedError
 
 
 def _build_gl_release_entry(
@@ -479,11 +501,11 @@ def _build_gl_release_entry(
         gettext("Date: "),
         release.created_at,
     ]
-    links = release.attributes.get("_links")
-    if links:
-        slink = links.get("self")
-        if slink:
-            res.extend(("\n", slink))
+
+    if (links := release.attributes.get("_links")) and (
+        slink := links.get("self")
+    ):
+        res.extend(("\n", slink))
 
     if release.description:
         res.append("\n")

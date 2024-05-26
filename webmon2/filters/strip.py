@@ -6,7 +6,6 @@
 Filters that remove white spaces, empty lines etc
 """
 
-
 from flask_babel import lazy_gettext
 
 from webmon2 import common, model
@@ -22,7 +21,6 @@ class Strip(AbstractFilter):
     long_info = lazy_gettext(
         "Remove white characters from beginning and end of content"
     )
-    params = []  # type: list[common.SettingDef]
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -53,13 +51,13 @@ class Head(AbstractFilter):
     name = "head"
     short_info = lazy_gettext("Get only first lines")
     long_info = lazy_gettext("Get defined number top lines from content")
-    params = [
+    params = (
         common.SettingDef(
             "count",
             lazy_gettext("Maximum number of lines"),
             default=20,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:

@@ -5,6 +5,7 @@
 """
 Data sources
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -16,13 +17,13 @@ from webmon2 import common, model
 from .abstract import AbstractSource
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
-__all__ = (
+__all__ = [
     "AbstractSource",
-    "UnknownInputException",
+    "UnknownInputError",
     "get_source",
     "sources_info",
     "sources_name",
-)
+]
 
 
 def _load_plugins() -> None:
@@ -49,7 +50,7 @@ def _load_plugins() -> None:
 _load_plugins()
 
 
-class UnknownInputException(Exception):
+class UnknownInputError(Exception):
     pass
 
 
@@ -57,17 +58,14 @@ def get_source(
     source: model.Source, sys_settings: model.ConfDict
 ) -> AbstractSource:
     """Get input class according to configuration"""
-    scls = common.find_subclass(AbstractSource, source.kind)
-    if scls:
-        src = scls(source, sys_settings)
-        return src  # type: ignore
+    if scls := common.find_subclass(AbstractSource, source.kind):
+        return scls(source, sys_settings)  # type: ignore
 
-    raise UnknownInputException()
+    raise UnknownInputError
 
 
 def get_source_class(kind: str) -> ty.Type[AbstractSource] | None:
-    scls = common.find_subclass(AbstractSource, kind)
-    return scls
+    return common.find_subclass(AbstractSource, kind)
 
 
 def sources_name() -> list[str]:

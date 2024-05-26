@@ -1,10 +1,11 @@
 # Copyright © 2019 Karol Będkowski
 #
 # Distributed under terms of the GPLv3 license.
-
+# ruff: noqa: ANN401
 """
 Import/Export sources & groups.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,10 +18,10 @@ def dump_object(
     obj: ty.Any, attrs: ty.Iterable[str] | None = None
 ) -> dict[str, ty.Any]:
     if not attrs and hasattr(obj, "__slots__"):
-        attrs = getattr(obj, "__slots__")
+        attrs = obj.__slots__
 
     if not attrs and hasattr(obj, "__dataclass_fields__"):
-        attrs = getattr(obj, "__dataclass_fields__")
+        attrs = obj.__dataclass_fields__
 
     if not attrs:
         return {}
@@ -72,7 +73,7 @@ def fill_object(
     attrs: ty.Iterable[str] | None = None,
 ) -> None:
     if not attrs:
-        attrs = getattr(obj, "__slots__")
+        attrs = obj.__slots__
 
     if not attrs:
         return
@@ -91,7 +92,7 @@ def dump_import(db: database.DB, user_id: int, data_str: str) -> None:
     for group in data.get("groups") or []:
         try:
             grp = database.groups.find(db, user_id, group["name"])
-        except database.NotFound:
+        except database.NotFoundError:
             grp = model.SourceGroup(
                 user_id=user_id,
                 name=group["name"],

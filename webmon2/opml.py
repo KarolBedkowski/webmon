@@ -6,8 +6,6 @@
 Import/export data in opml format.
 """
 
-# TODO: propagate errors to user
-
 import itertools
 import operator
 import typing as ty
@@ -15,7 +13,7 @@ from contextlib import suppress
 from xml.etree.ElementTree import Element
 
 import structlog
-from defusedxml import ElementTree as etree
+from defusedxml import ElementTree as etree  # noqa: N813
 from lxml.builder import E  # pylint: disable=no-name-in-module
 
 from webmon2 import database, model, sources
@@ -23,7 +21,7 @@ from webmon2 import database, model, sources
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
 
-class InvalidFile(RuntimeError):
+class InvalidFileError(RuntimeError):
     pass
 
 
@@ -32,7 +30,7 @@ def load_opml(
 ) -> ty.Iterable[ty.Tuple[str, ty.Iterable[ty.Tuple[str, model.Source]]]]:
     root = etree.XML(content)
     if root.tag != "opml":
-        raise InvalidFile("content is not opml")
+        raise InvalidFileError("content is not opml")
 
     body = root.find("body")
     data = sorted(_load(body), key=lambda x: x[0] or "")
@@ -43,7 +41,7 @@ def load_data(db: database.DB, content: bytes, user_id: int) -> None:
     for group_name, items in load_opml(content):
         try:
             group = database.groups.find(db, user_id, group_name)
-        except database.NotFound:
+        except database.NotFoundError:
             group = model.SourceGroup(name=group_name, user_id=user_id)
             group = database.groups.save(db, group)
             _LOG.debug("opml: new group: %s", group)
@@ -53,8 +51,8 @@ def load_data(db: database.DB, content: bytes, user_id: int) -> None:
         for _, source in items:
             source.group_id = group_id
             source.user_id = user_id
-            source = database.sources.save(db, source)
-            _LOG.debug("opml: new source: %s", source)
+            src = database.sources.save(db, source)
+            _LOG.debug("opml: new source: %s", src)
 
 
 def dump_data(db: database.DB, user_id: int) -> str:
@@ -65,21 +63,19 @@ def dump_data(db: database.DB, user_id: int) -> str:
             _dump_source(source)
             for source in database.sources.get_all(db, user_id, group.id)
         )
-        items_filtered = list(filter(lambda x: x is not None, items))
-        if items_filtered:
+        if items_filtered := list(filter(lambda x: x is not None, items)):
             gnodes.append(
                 E.outline(*items_filtered, text=group.name, title=group.name)
             )
+
     root = E.opml(E.head(E.title("subscriptions")), E.body(*gnodes))
     return etree.tostring(root)  # type: ignore
 
 
 def _dump_source(source: model.Source) -> ty.Optional[Element]:
-    scls = sources.get_source_class(source.kind)
-    if scls:
+    if scls := sources.get_source_class(source.kind):
         with suppress(NotImplementedError):
-            data = scls.to_opml(source)
-            if data:
+            if data := scls.to_opml(source):
                 return E.outline(**data)  # type: ignore
 
     return None
@@ -89,17 +85,14 @@ def _load(
     node: Element, group: ty.Optional[str] = None
 ) -> ty.Iterator[ty.Tuple[str, model.Source]]:
     for snode in node.findall("outline"):
-        ntype = snode.attrib.get("type")
-        if ntype:
-            scls = sources.get_source_class(ntype)
-            if scls:
+        if ntype := snode.attrib.get("type"):
+            if scls := sources.get_source_class(ntype):
                 try:
-                    source = scls.from_opml(snode.attrib)
-                    if source:
+                    if source := scls.from_opml(snode.attrib):
                         yield (group or "", source)
 
                 except NotImplementedError:
-                    pass
+                    _LOG.warning("opml: import %s not supported", ntype)
 
                 except ValueError as err:
                     _LOG.info(
@@ -110,6 +103,5 @@ def _load(
 
             continue
 
-        ntitle = snode.attrib.get("title")
-        if ntitle:
+        if ntitle := snode.attrib.get("title"):
             yield from _load(snode, ntitle)

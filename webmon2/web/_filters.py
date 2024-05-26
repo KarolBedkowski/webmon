@@ -5,6 +5,7 @@
 """
 Template filters
 """
+
 from __future__ import annotations
 
 import datetime
@@ -26,19 +27,19 @@ def _age_filter(date: datetime.datetime | None) -> str:
         return ""
 
     diff = int((datetime.datetime.now(datetime.UTC) - date).total_seconds())
-    if diff < 60:
+    if diff < 60:  # noqa: PLR2004
         return "<1m"
 
-    if diff < 3600:  # < 1h
-        return str(int(diff // 60)) + "m"
+    if diff < 3_600:  # < 1h  # noqa: PLR2004
+        return str(diff // 60) + "m"
 
-    if diff < 86400:  # < 1d
-        return str(int(diff // 3600)) + "h"
+    if diff < 86_400:  # < 1d # noqa: PLR2004
+        return str(diff // 3600) + "h"
 
-    return str(int(diff // 86400)) + "d"
+    return str(diff // 86400) + "d"
 
 
-def _format_date(date: ty.Any) -> str:
+def _format_date(date: ty.Any) -> str:  # noqa:ANN401
     if date is None:
         return gettext("none")  # type: ignore
 
@@ -52,18 +53,18 @@ def _format_date(date: ty.Any) -> str:
 
 
 def _absoute_url(url: str) -> str:
-    return urllib.parse.urljoin(request.url_root, url)
+    return ty.cast(str, urllib.parse.urljoin(request.url_root, url))
 
 
 def _entry_score_class(score: int) -> str:
     """Get class name for entry score."""
-    if score < -5:
+    if score < -5:  # noqa: PLR2004
         return "prio-lowest"
 
     if score < 0:
         return "prio-low"
 
-    if score > 5:
+    if score > 5:  # noqa: PLR2004
         return "prio-highest"
 
     if score > 0:
@@ -86,21 +87,20 @@ def _create_proxy_url(url: str, entry_url: str | None = None) -> str:
         return ""
 
     if url.startswith(("http://", "https://")):
-        return url_for("proxy.proxy", path=url)
+        return ty.cast(str, url_for("proxy.proxy", path=url))
 
     # handle related urls
     if not entry_url:
         return url
 
     url = urljoin(entry_url, url)
-    return url_for("proxy.proxy", path=url)
+    return ty.cast(str, url_for("proxy.proxy", path=url))
 
 
 def _extract_prefix_postfix(instr: str) -> tuple[str, int, int]:
     prefix = len(instr)
 
     for num, char in enumerate(instr):
-        print(2, num, repr(char))
         if char != " ":
             prefix = num
             break
@@ -138,8 +138,8 @@ def _create_proxy_urls_srcset(
             yield ""
             continue
 
-        part, prefix, postfix = _extract_prefix_postfix(part)
-        url, sep, size = part.partition(" ")
+        upart, prefix, postfix = _extract_prefix_postfix(part)
+        url, sep, size = upart.partition(" ")
         url = _create_proxy_url(url, entry_url)
         url = _apply_prefix_postfix(url, prefix, postfix)
         yield f"{url}{sep}{size}"
@@ -195,4 +195,4 @@ def register(app: Flask) -> None:
     if app_conf.getboolean("web", "proxy_media"):
         app.jinja_env.filters["proxy_links"] = _proxy_links
     else:
-        app.jinja_env.filters["proxy_links"] = lambda x, y=None: x
+        app.jinja_env.filters["proxy_links"] = lambda x, _y=None: x

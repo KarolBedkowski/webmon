@@ -19,8 +19,8 @@ class AbstractSource(abc.ABC):
     """Abstract/Base class for all sources"""
 
     # name used in configuration
-    name = None  # type: ty.Optional[str]
-    params = []  # type: list[common.SettingDef]
+    name: str | None = None
+    params: tuple[common.SettingDef, ...] = ()
     short_info = ""
     long_info = ""
 
@@ -47,19 +47,12 @@ class AbstractSource(abc.ABC):
         self._log.debug("source: configuration", conf=self._conf)
 
     def __str__(self) -> str:
-        return " ".join(
-            (
-                "<",
-                self.__class__.__name__,
-                str(self._source),
-                repr(self._conf),
-                ">",
-            )
-        )
+        return f"<{self.__class__.__name__} {self._source} {self._conf!r}>"
 
     def validate(self) -> None:
         for name, error in self.validate_conf(self._conf):
-            raise common.ParamError(f"parameter {name} error {error}")
+            errmsg = f"parameter {name} error {error}"
+            raise common.ParamError(errmsg)
 
     @property
     def updated_source(self) -> ty.Optional[model.Source]:
@@ -70,7 +63,7 @@ class AbstractSource(abc.ABC):
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
@@ -93,7 +86,9 @@ class AbstractSource(abc.ABC):
                 )
 
     @classmethod
-    def upgrade_conf(cls, source: model.Source) -> model.Source:
+    def upgrade_conf(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> model.Source:
         """
         Update source configuration; apply some additional data.
         `upgrade_conf` is launched before save source and may be run on source
@@ -106,7 +101,7 @@ class AbstractSource(abc.ABC):
         self, state: model.SourceState
     ) -> tuple[model.SourceState, model.Entries]:
         """Load data; return list of items (Result)."""
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def _load_binary(
         self,
@@ -149,7 +144,7 @@ class AbstractSource(abc.ABC):
             )
             if response:
                 response.raise_for_status()
-                if response.status_code == 200:
+                if response.status_code == 200:  # noqa:PLR2004
                     if only_images and not _check_content_type(
                         response, _IMAGE_TYPES
                     ):
@@ -180,22 +175,24 @@ class AbstractSource(abc.ABC):
         return None
 
     @classmethod
-    def get_param_types(cls) -> dict[str, str]:
+    def get_param_types(cls: ty.Type[ty.Self]) -> dict[str, str]:
         return {param.name: param.type for param in cls.params}  # type: ignore
 
     @classmethod
-    def get_param_defaults(cls) -> dict[str, ty.Any]:
+    def get_param_defaults(cls: ty.Type[ty.Self]) -> dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
-        raise NotImplementedError()
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
+        raise NotImplementedError
 
     @classmethod
     def from_opml(
-        cls, opml_node: dict[str, ty.Any]
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
     ) -> ty.Optional[model.Source]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 _IMAGE_TYPES = {

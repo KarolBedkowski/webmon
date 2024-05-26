@@ -5,10 +5,10 @@
 """
 Access to entries in db.
 """
+
 from __future__ import annotations
 
 import typing as ty
-from datetime import date, datetime
 
 import psycopg.errors
 import structlog
@@ -17,7 +17,11 @@ from psycopg import Cursor
 from webmon2 import model
 
 from . import _dbcommon as dbc, binaries, sources
-from ._db import DB
+
+if ty.TYPE_CHECKING:
+    from datetime import date, datetime
+
+    from ._db import DB
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
@@ -57,22 +61,21 @@ def _build_find_sql(args: dict[str, ty.Any]) -> str:
 
     """
     query = dbc.Query(_GET_ENTRIES_SQL_MAIN_COLS, "entries e")
-    query.add_where("e.user_id = %(user_id)s")
+    if args.get("user_id"):
+        query.add_where("e.user_id = %(user_id)s")
+
     query.order = args.get("order")
     query.limit = args.get("limit") is not None
     query.offset = args.get("offset") is not None
 
-    source_id = args.get("source_id")
-    if source_id:
+    if args.get("source_id"):
         query.add_where("AND e.source_id = %(source_id)s")
 
-    group_id = args.get("group_id")
-    if group_id:
+    if args.get("group_id"):
         query.add_from("JOIN sources s ON s.id = e.source_id")
         query.add_where("AND s.group_id = %(group_id)s")
 
-    read = args.get("read")
-    if read is not None:
+    if (read := args.get("read")) is not None:
         query.add_where(f"AND read_mark = {read}")
 
     if args.get("star") is not None:
@@ -118,7 +121,7 @@ def get_starred(db: DB, user_id: int) -> model.Entries:
         yield from _yield_entries(cur, user_sources)
 
 
-def get_history(  # pylint: disable=too-many-arguments
+def get_history(  # pylint: disable=too-many-arguments  # noqa:PLR0913
     db: DB,
     user_id: int,
     source_id: int | None,
@@ -254,7 +257,7 @@ def _get_order_sql(order: str | None) -> str:
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def find(
+def find(  # noqa: PLR0913
     db: DB,
     user_id: int,
     source_id: int | None = None,
@@ -306,7 +309,7 @@ def find(
 
 
 # pylint: disable=too-many-arguments,too-many-locals
-def find_fulltext(
+def find_fulltext(  # noqa:PLR0913
     db: DB,
     user_id: int,
     query: str,
@@ -353,7 +356,7 @@ def find_fulltext(
                 user_id=user_id,
                 group_id=group_id,
             )
-            raise dbc.QuerySyntaxError() from err
+            raise dbc.QuerySyntaxError from err
 
         yield from _yield_entries(cur, user_sources)
 
@@ -415,12 +418,12 @@ def get(
         entry = cur.fetchone()
 
     if not entry:
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)
 
-    return entry
+    return ty.cast(model.Entry, entry)
 
 
 _INSERT_ENTRY_SQL = """
@@ -557,7 +560,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         changed = cur.rowcount
 
     log.debug("db: mark entries star finished; changed: %d", changed)
-    return changed
+    return ty.cast(int, changed)
 
 
 def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
@@ -570,7 +573,7 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
     result: set[str] = set()
     with db.cursor() as cur:
         for idx in range(0, len(oids), 100):
-            part_oids = list(oids[idx : idx + 100])
+            part_oids = oids[idx : idx + 100]
             cur.execute(
                 "SELECT oid FROM history_oids "
                 "WHERE source_id=%s AND oid = ANY(%s)",
@@ -596,7 +599,7 @@ def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read(  # noqa: PLR0913
     db: DB,
     user_id: int,
     entry_id: int | None = None,
@@ -621,6 +624,8 @@ def mark_read(
         ids: list of entries id to set
     Return:
         number of changed entries
+
+    TODO: split
     """
     if not user_id:
         raise ValueError("missing user_id")
@@ -653,9 +658,7 @@ def mark_read(
                 "WHERE id<=%s AND id>=%s AND user_id=%s",
                 (read.value, max_id, min_id or 0, user_id),
             )
-        changed = cur.rowcount
-
-    return changed
+        return ty.cast(int, cur.rowcount)
 
 
 def mark_all_read(
@@ -695,7 +698,7 @@ def mark_all_read(
                 ),
             )
 
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 _GET_RELATED_RM_ENTRY_SQL = """

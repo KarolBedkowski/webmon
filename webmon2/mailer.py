@@ -5,6 +5,7 @@
 """
 Sending reports by mail functions
 """
+
 from __future__ import annotations
 
 import email.message
@@ -14,7 +15,6 @@ import smtplib
 import subprocess
 import tempfile
 import typing as ty
-from configparser import ConfigParser
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
@@ -24,9 +24,13 @@ from zoneinfo import ZoneInfo
 
 import html2text as h2t
 import structlog
+from flask_babel import format_datetime, gettext
 from prometheus_client import Counter
 
 from webmon2 import common, database, formatters, logging_setup, model
+
+if ty.TYPE_CHECKING:
+    from configparser import ConfigParser
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 _SENT_MAIL_COUNT = Counter("webmon2_mails_count", "Mail sent count")
@@ -71,10 +75,7 @@ def process(db: database.DB, user: model.User, app_conf: ConfigParser) -> bool:
             _LOG.debug("mailer: still waiting for send mail")
             return False
 
-    ctx = Ctx(
-        user_id=user.id,
-        conf=conf,
-    )
+    ctx = Ctx(user_id=user.id, conf=conf)
     if tzone := conf.get("timezone"):
         ctx.timezone = ZoneInfo(tzone)
 
@@ -184,11 +185,8 @@ def _proces_source(
         return
 
     assert entries[0].source
-    source_name = entries[0].source.name
-    yield source_name
+    yield from _gen_header(entries[0].source.name)
     yield "\n"
-    yield "-" * len(source_name)
-    yield "\n\n"
 
     for entry in entries:
         structlog.contextvars.bind_contextvars(entry_id=entry.id)
@@ -216,12 +214,7 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
     If entry content type is not plain or markdown try convert it to plain
     text.
     """
-    updated = entry.updated
-    assert updated
-    if tzone := ctx.timezone:
-        updated = updated.astimezone(tzone)
-
-    title = (entry.title or "") + " " + updated.strftime("%x %X")
+    title = entry.title or gettext("<no title>")
 
     yield "### "
     yield _get_entry_score_mark(entry)
@@ -235,6 +228,8 @@ def _render_entry_plain(ctx: Ctx, entry: model.Entry) -> ty.Iterator[str]:
         yield title
 
     yield "\n"
+    yield from _gen_dt_header(ctx, entry.updated)
+
     if entry.content:
         content_type = entry.content_type
         if content_type in ("plain", "markdown"):
@@ -320,15 +315,14 @@ def _send_mail(
         if app_conf.getboolean("smtp", "starttls") and not ssl:
             smtp.starttls()
 
-        login = app_conf.get("smtp", "login")
-        if login:
+        if login := app_conf.get("smtp", "login"):
             smtp.login(login, app_conf.get("smtp", "password"))
 
         smtp.sendmail(msg["From"], [mail_to], msg.as_string())
         log.debug("mailer: mail send")
 
     except (smtplib.SMTPServerDisconnected, ConnectionRefusedError) as err:
-        log.error("mailer: smtp connection error", error=err)
+        log.exception("mailer: smtp connection error", error=err)
         return False
 
     except Exception as err:  # pylint: disable=broad-except
@@ -336,7 +330,7 @@ def _send_mail(
         return False
 
     finally:
-        with suppress():
+        with suppress(Exception):
             smtp.quit()
 
     return True
@@ -381,14 +375,18 @@ def __do_encrypt(args: list[str], message: str) -> str:
 
 
 def _get_entry_score_mark(entry: model.Entry) -> str:
-    if entry.score < -5:
+    if entry.score < -5:  # noqa: PLR2004
         return "▼▼ "
+
     if entry.score < 0:
         return "▼ "
-    if entry.score > 5:
+
+    if entry.score > 5:  # noqa: PLR2004
         return "▲▲ "
+
     if entry.score > 0:
         return "▲ "
+
     return ""
 
 
@@ -413,13 +411,17 @@ def _is_silent_hour(conf: dict[str, ty.Any]) -> bool:
     if begin > end:  # ie 22 - 6
         if hour >= begin or hour < end:
             return True
-    else:  # ie 0-6
-        if begin <= hour <= end:
-            return True
+
+        # ie 0-6
+    elif begin <= hour <= end:
+        return True
 
     _LOG.debug("mailer: not in silent hours")
 
     return False
+
+
+_MAX_ERROR_LEN: ty.Final[int] = 1000
 
 
 def _process_errors(
@@ -433,27 +435,40 @@ def _process_errors(
     if not errors:
         return
 
-    title = "Errors"  # TODO: translate
-    yield title
+    yield from _gen_header(gettext("Errors"), "=")
     yield "\n"
-    yield "==" * len(title)
-    yield "\n\n"
 
     for error in errors:
-        head = f"{error.group_name} - {error.name}"
-        yield head
-        yield "\n"
-        yield "-" * len(head)
-        yield "\n"
-        yield error.last_error.strftime("%x %X")
+        yield from _gen_header(f"{error.group_name} / {error.source_name}")
+
+        yield from _gen_dt_header(ctx, error.last_error)
         yield "\n"
         conv = h2t.HTML2Text(bodywidth=74)
         conv.protect_links = True
         content = conv.handle(error.error).strip()
-        if len(content) > 1000:
-            content = content[:1000]
-            if (ridx := content.rfind("\n")) > 100:
+        if len(content) > _MAX_ERROR_LEN:
+            content = content[:_MAX_ERROR_LEN]
+            if (ridx := content.rfind("\n")) > 100:  # noqa: PLR2004
                 content = content[:ridx].rstrip()
 
         yield content
         yield "\n"
+
+
+def _gen_dt_header(ctx: Ctx, ts: datetime | None) -> ty.Iterator[str]:
+    if not ts:
+        return
+
+    if tzone := ctx.timezone:
+        ts = ts.astimezone(tzone)
+
+    yield "@ "
+    yield format_datetime(ts, format="medium")
+    yield "\n"
+
+
+def _gen_header(instr: str, character: str = "-") -> ty.Iterator[str]:
+    yield instr
+    yield "\n"
+    yield character * len(instr)
+    yield "\n"

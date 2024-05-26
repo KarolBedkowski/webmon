@@ -5,6 +5,7 @@
 """
 Local file source
 """
+
 from __future__ import annotations
 
 import datetime
@@ -27,11 +28,11 @@ class FileSource(AbstractSource):
     long_info = lazy_gettext(
         'Source check local, text file defined by "Full file patch" setting'
     )
-    params = AbstractSource.params + [
+    params = (
         common.SettingDef(
             "filename", lazy_gettext("Full file patch"), required=True
         ),
-    ]
+    )
 
     def load(
         self, state: model.SourceState
@@ -40,12 +41,13 @@ class FileSource(AbstractSource):
 
         fname = self._conf["filename"]
         self._log.debug("file source: load start", file=fname)
+        ifile = pathlib.Path(fname)
 
-        if not os.path.isfile(fname):
+        if not ifile.is_file():
             return state.new_error("no file"), []
 
         if state.last_update:
-            fid = os.open(fname, os.O_RDONLY)
+            fid = os.open(ifile, os.O_RDONLY)
             stat = os.fstat(fid)
             file_change = stat.st_mtime
             os.close(fid)
@@ -54,7 +56,7 @@ class FileSource(AbstractSource):
                 return state.new_not_modified(), []
 
         try:
-            content = pathlib.Path(fname).read_text(encoding="UTF-8")
+            content = ifile.read_text(encoding="UTF-8")
 
             self._log.debug("file source: content loaded", content=content)
 
@@ -76,12 +78,15 @@ class FileSource(AbstractSource):
             ) + datetime.timedelta(
                 seconds=common.parse_interval(self._source.interval)
             )
-            return new_state, [entry]
         except OSError as err:
             return state.new_error(str(err)), []
+        else:
+            return new_state, [entry]
 
     @classmethod
-    def to_opml(cls, source: model.Source) -> dict[str, ty.Any]:
+    def to_opml(
+        cls: ty.Type[ty.Self], source: model.Source
+    ) -> dict[str, ty.Any]:
         assert source.settings is not None
         return {
             "text": source.name,
@@ -92,7 +97,9 @@ class FileSource(AbstractSource):
         }
 
     @classmethod
-    def from_opml(cls, opml_node: dict[str, ty.Any]) -> model.Source | None:
+    def from_opml(
+        cls: ty.Type[ty.Self], opml_node: dict[str, ty.Any]
+    ) -> model.Source | None:
         url = opml_node.get("htmlUrl") or opml_node["xmlUrl"]
         if not url or not url.startswith("file://"):
             raise ValueError("missing xmlUrl")

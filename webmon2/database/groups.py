@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+import typing as ty
 from datetime import datetime
 
 import structlog
@@ -12,7 +13,9 @@ import structlog
 from webmon2 import common, model
 
 from . import _dbcommon as dbc
-from ._db import DB
+
+if ty.TYPE_CHECKING:
+    from ._db import DB
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 
@@ -61,9 +64,9 @@ def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
             _GET_SOURCE_GROUPS_SQL,
             {"user_id": user_id, "read_mark": model.EntryReadMark.UNREAD},
         )
-        groups = [
+        return [
             model.SourceGroup(
-                id=id,
+                id=id_,
                 name=name,
                 user_id=user_id,
                 feed=feed,
@@ -71,10 +74,8 @@ def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
                 sources_count=srcs_count,
                 mail_report=mail_report,
             )
-            for id, name, user_id, feed, mail_report, unread, srcs_count in cur
+            for id_, name, user_id, feed, mail_report, unread, srcs_count in cur
         ]
-
-        return groups
 
 
 _GET_SQL = """
@@ -93,14 +94,14 @@ def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
     to `user_id`.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_SQL, (group_id, user_id))
         if row := cur.fetchone():
-            return row
+            return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
 
 _FIND_SQL = """
@@ -118,14 +119,14 @@ def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
     """Get group by `name` for `user_id`.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_FIND_SQL, (name, user_id))
         if row := cur.fetchone():
-            return row
+            return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
 
 _GET_BY_FEED_SQL = """
@@ -143,17 +144,17 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     """Get group by `feed` id.
 
     Raises:
-        `NotFound`: group not found
+        `NotFoundError`: group not found
     """
     if feed == "off":
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
         if row := cur.fetchone():
-            return row
+            return ty.cast(model.SourceGroup, row)
 
-        raise dbc.NotFound()
+        raise dbc.NotFoundError
 
 
 def get_last_update(db: DB, group_id: int) -> datetime | None:
@@ -204,7 +205,7 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     with db.cursor() as cur:
         if group.id is None:
             cur.execute(_INSERT_GROUP_SQL, row)
-            group.id = cur.fetchone()[0]  # type: ignore
+            group.id = cur.fetchone()[0]
         else:
             cur.execute(_UPDATE_GROUP_SQL, row)
 
@@ -263,7 +264,7 @@ WHERE id=ANY(%(ids)s) AND read_mark=%(unread)s AND user_id=%(user_id)s
 
 
 # pylint: disable=too-many-arguments
-def mark_read(
+def mark_read(  # noqa: PLR0913
     db: DB,
     user_id: int,
     group_id: int,
@@ -306,7 +307,7 @@ def mark_read(
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)
 
 
 def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
@@ -382,14 +383,14 @@ def delete(db: DB, user_id: int, group_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if not cur.fetchone()[0]:  # type: ignore
+        if not cur.fetchone()[0]:
             raise common.OperationError("can't delete last group")
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT count(1) FROM sources WHERE group_id=%s", (group_id,)
         )
-        if cur.fetchone()[0]:  # type: ignore
+        if cur.fetchone()[0]:
             # there are sources in group find destination group
             dst_group_id = _find_dst_group(db, user_id, group_id)
             cur.execute(

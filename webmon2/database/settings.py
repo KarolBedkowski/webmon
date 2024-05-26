@@ -5,13 +5,15 @@
 """
 Access to settings in db
 """
+
 from __future__ import annotations
 
 import typing as ty
 
 from webmon2 import model
 
-from ._db import DB
+if ty.TYPE_CHECKING:
+    from ._db import DB
 
 _GET_ALL_SQL = """
 SELECT s.key AS setting__key,
@@ -48,7 +50,7 @@ def get(db: DB, key: str, user_id: int) -> model.Setting | None:
     """Get one setting for given user"""
     with db.cursor_obj_row(model.Setting.from_row) as cur:
         cur.execute(_GET_SQL, (user_id, key))
-        return cur.fetchone()
+        return ty.cast(model.Setting, cur.fetchone())
 
 
 _INSERT_SQL = """

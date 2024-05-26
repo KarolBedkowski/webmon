@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import functools
@@ -38,8 +39,8 @@ from . import _commons as c
 BP = Blueprint("root", __name__, url_prefix="/")
 
 
-@BP.route("/")
-def index() -> ty.Any:
+@BP.route("/")  # type:ignore
+def index() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     if database.settings.get_value(
@@ -48,12 +49,14 @@ def index() -> ty.Any:
         group_id = database.groups.get_next_unread_group(db, user_id)
         if group_id:
             return redirect(url_for("group.group_entries", group_id=group_id))
+
         flash(gettext("No more unread groups..."))
+
     return redirect(url_for("entries.entries", mode="unread"))
 
 
-@BP.route("/sources")
-def sources() -> ty.Any:
+@BP.route("/sources")  # type:ignore
+def sources() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     status = request.args.get("status", "all")
@@ -68,8 +71,8 @@ def sources() -> ty.Any:
     )
 
 
-@BP.route("/sources/refresh")
-def sources_refresh() -> ty.Any:
+@BP.route("/sources/refresh")  # type:ignore
+def sources_refresh() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     updated = database.sources.refresh(db, session["user"])
     db.commit()
@@ -84,8 +87,8 @@ def sources_refresh() -> ty.Any:
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
-@BP.route("/sources/refresh/errors")
-def sources_refresh_err() -> ty.Any:
+@BP.route("/sources/refresh/errors")  # type:ignore
+def sources_refresh_err() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     updated = database.sources.refresh_errors(db, session["user"])
     db.commit()
@@ -100,8 +103,8 @@ def sources_refresh_err() -> ty.Any:
     return redirect(request.headers.get("Referer") or url_for("root.sources"))
 
 
-@BP.route("/groups")
-def groups() -> ty.Any:
+@BP.route("/groups")  # type:ignore
+def groups() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     return render_template(
@@ -115,10 +118,11 @@ def _metrics_accesslist() -> (
 ):
     conf = current_app.config["app_conf"]
     networks = []
-    for addr in conf.get("metrics", "allow_from", fallback="").split(","):
-        addr = addr.strip()
+    for a in conf.get("metrics", "allow_from", fallback="").split(","):
+        addr = a.strip()
         if "/" not in addr:
             addr = addr + "/32"
+
         networks.append(ipaddress.ip_network(addr, strict=False))
 
     return networks
@@ -136,8 +140,8 @@ def _is_address_allowed() -> bool:
     return True
 
 
-@BP.route("/metrics")
-def metrics() -> ty.Any:
+@BP.route("/metrics")  # type:ignore
+def metrics() -> ty.Any:  # noqa: ANN401
     if not _is_address_allowed():
         abort(401)
 
@@ -147,13 +151,13 @@ def metrics() -> ty.Any:
     )
 
 
-@BP.route("/health")
-def health() -> ty.Any:
+@BP.route("/health")  # type:ignore
+def health() -> ty.Any:  # noqa: ANN401
     return "ok"
 
 
-@BP.route("/health/live")
-def health_live() -> ty.Any:
+@BP.route("/health/live")  # type:ignore
+def health_live() -> ty.Any:  # noqa: ANN401
     if not _is_address_allowed():
         abort(401)
 
@@ -165,8 +169,8 @@ def health_live() -> ty.Any:
     return abort(500)
 
 
-@BP.route("/favicon.ico")
-def favicon() -> ty.Any:
+@BP.route("/favicon.ico")  # type:ignore
+def favicon() -> ty.Any:  # noqa: ANN401
     return send_from_directory(
         Path(current_app.root_path, "static"),
         "favicon.ico",
@@ -213,25 +217,26 @@ def _build_manifest() -> str:
             },
         ],
     }
-    return json.dumps(manifest)
+    return ty.cast(str, json.dumps(manifest))
 
 
-@BP.route("/manifest.json")
+@BP.route("/manifest.json")  # type:ignore
 def manifest_json() -> Response:
     return Response(
         _build_manifest(), mimetype="application/manifest+json; charset=UTF-8"
     )
 
 
-@BP.route("/binary/<datahash>")
-def binary(datahash: str) -> ty.Any:
+@BP.route("/binary/<datahash>")  # type:ignore
+def binary(datahash: str) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     try:
         data_content_type = database.binaries.get(
             db, datahash, session["user"]
         )
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
+
     data, content_type = data_content_type
     resp = Response(data, mimetype=content_type)
     resp.headers["Cache-Control"] = "max-age=31536000, public, immutable"

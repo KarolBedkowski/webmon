@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import datetime
@@ -43,13 +44,13 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("system", __name__, url_prefix="/system")
 
 
-@BP.route("/settings/", methods=["POST", "GET"])
-def sett_index() -> ty.Any:
+@BP.route("/settings/", methods=["POST", "GET"])  # type:ignore
+def sett_index() -> ty.Any:  # noqa: ANN401
     return redirect(url_for("system.sett_user"))
 
 
-@BP.route("/settings/globals", methods=["POST", "GET"])
-def sett_globals() -> ty.Any:
+@BP.route("/settings/globals", methods=["POST", "GET"])  # type:ignore
+def sett_globals() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     settings = database.settings.get_all(db, user_id)
@@ -63,17 +64,19 @@ def sett_globals() -> ty.Any:
             for sett in settings:
                 sett.value = values[sett.key]
                 sett.user_id = user_id
+
             database.settings.save_all(db, settings)
             db.commit()
             flash("Settings saved")
             return redirect(url_for("system.sett_globals"))
+
         flash(gettext("There are errors in form"), "error")
 
     return render_template("system/globals.html", form=form)
 
 
-@BP.route("/settings/user", methods=["POST", "GET"])
-def sett_user() -> ty.Any:
+@BP.route("/settings/user", methods=["POST", "GET"])  # type:ignore
+def sett_user() -> ty.Any:  # noqa: ANN401
     """
     Edit current user profile.
     """
@@ -114,8 +117,8 @@ def sett_user() -> ty.Any:
     )
 
 
-@BP.route("/settings/user/totp/remove", methods=["GET", "POST"])
-def sett_user_totp_del() -> ty.Any:
+@BP.route("/settings/user/totp/remove", methods=["GET", "POST"])  # type:ignore
+def sett_user_totp_del() -> ty.Any:  # noqa: ANN401
     if not security.otp_available():
         return abort(404)
 
@@ -128,8 +131,8 @@ def sett_user_totp_del() -> ty.Any:
     return redirect(url_for("system.sett_user"))
 
 
-@BP.route("/settings/user/totp", methods=["GET"])
-def sett_user_totp_get() -> ty.Any:
+@BP.route("/settings/user/totp", methods=["GET"])  # type:ignore
+def sett_user_totp_get() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     totp = session.get("temp_totp")
@@ -148,8 +151,8 @@ def sett_user_totp_get() -> ty.Any:
     )
 
 
-@BP.route("/settings/user/totp", methods=["POST"])
-def sett_user_totp_post() -> ty.Any:
+@BP.route("/settings/user/totp", methods=["POST"])  # type:ignore
+def sett_user_totp_post() -> ty.Any:  # noqa: ANN401
     if not security.otp_available():
         return abort(404)
 
@@ -175,13 +178,13 @@ def sett_user_totp_post() -> ty.Any:
     return redirect(url_for("system.sett_user_totp_get"))
 
 
-@BP.route("/settings/data")
-def sett_data() -> ty.Any:
+@BP.route("/settings/data")  # type:ignore
+def sett_data() -> ty.Any:  # noqa: ANN401
     return render_template("system/data.html")
 
 
-@BP.route("/settings/data/export")
-def sett_data_export() -> ty.Any:
+@BP.route("/settings/data/export")  # type:ignore
+def sett_data_export() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     content = imp_exp.dump_export(db, user_id)
@@ -189,8 +192,8 @@ def sett_data_export() -> ty.Any:
     return make_response((content, headers))
 
 
-@BP.route("/settings/data/export/opml")
-def sett_data_export_opml() -> ty.Any:
+@BP.route("/settings/data/export/opml")  # type:ignore
+def sett_data_export_opml() -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     content = opml.dump_data(db, user_id)
@@ -198,8 +201,8 @@ def sett_data_export_opml() -> ty.Any:
     return make_response((content, headers))
 
 
-@BP.route("/settings/data/import", methods=["POST"])
-def sett_data_import() -> ty.Any:
+@BP.route("/settings/data/import", methods=["POST"])  # type:ignore
+def sett_data_import() -> ty.Any:  # noqa: ANN401
     if "file" not in request.files:
         flash("No file to import")
         return redirect(url_for("system.sett_data"))
@@ -223,8 +226,8 @@ def sett_data_import() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
-@BP.route("/settings/data/import/opml", methods=["POST"])
-def sett_data_import_opml() -> ty.Any:
+@BP.route("/settings/data/import/opml", methods=["POST"])  # type:ignore
+def sett_data_import_opml() -> ty.Any:  # noqa: ANN401
     if "file" not in request.files:
         flash(gettext("No file to import"))
         return redirect(url_for("system.sett_data"))
@@ -248,8 +251,8 @@ def sett_data_import_opml() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
-@BP.route("/settings/data/manipulation/mark_all_read")
-def sett_data_mark_all_read() -> ty.Any:
+@BP.route("/settings/data/manipulation/mark_all_read")  # type:ignore
+def sett_data_mark_all_read() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     db = c.get_db()
     updated = database.entries.mark_all_read(db, user_id)
@@ -265,8 +268,8 @@ def sett_data_mark_all_read() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
-@BP.route("/settings/data/manipulation/mark_all_read_y")
-def sett_data_mark_all_old_read() -> ty.Any:
+@BP.route("/settings/data/manipulation/mark_all_read_y")  # type:ignore
+def sett_data_mark_all_old_read() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     db = c.get_db()
     max_date = datetime.date.today() - datetime.timedelta(days=1)
@@ -283,8 +286,8 @@ def sett_data_mark_all_old_read() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
-@BP.route("/settings/data/manipulation/randomize_next_check")
-def sett_data_randomize_next_check() -> ty.Any:
+@BP.route("/settings/data/manipulation/randomize_next_check")  # type:ignore
+def sett_data_randomize_next_check() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     db = c.get_db()
     updated = database.sources.randomize_next_check(db, user_id)
@@ -300,8 +303,8 @@ def sett_data_randomize_next_check() -> ty.Any:
     return redirect(url_for("system.sett_data"))
 
 
-@BP.route("/settings/scoring", methods=["GET", "POST"])
-def sett_scoring() -> ty.Any:
+@BP.route("/settings/scoring", methods=["GET", "POST"])  # type:ignore
+def sett_scoring() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     db = c.get_db()
     if request.method == "POST":
@@ -327,16 +330,16 @@ def sett_scoring() -> ty.Any:
     return render_template("system/scoring.html", rules=rules)
 
 
-@BP.route("/settings/logs")
-def sett_logs() -> ty.Any:
+@BP.route("/settings/logs")  # type:ignore
+def sett_logs() -> ty.Any:  # noqa: ANN401
     user_id = session["user"]
     db = c.get_db()
     logs = database.users.get_logs(db, user_id)
     return render_template("system/logs.html", logs=logs)
 
 
-@BP.route("/settings/system/users", methods=["GET"])
-def sett_sys_users() -> ty.Any:
+@BP.route("/settings/system/users", methods=["GET"])  # type:ignore
+def sett_sys_users() -> ty.Any:  # noqa: ANN401
     if not session["user_admin"]:
         abort(403)
 
@@ -345,9 +348,39 @@ def sett_sys_users() -> ty.Any:
     return render_template("system/sys_users.html", users=users)
 
 
-@BP.route("/settings/system/users/new", methods=["GET", "POST"])
-@BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])
-def sett_sys_user(user_id: int | None = None) -> ty.Any:
+def _sett_sys_user_post(
+    db: database.DB,
+    form: forms.UserForm,
+    user: model.User,
+    user_id: int | None,
+) -> tuple[str, dict[str, str]]:
+    form.update_from_request(request.form)
+    errors = form.validate()
+
+    if session["user"] == user_id and not form.active and user.active:
+        errors["active"] = "Can't deactivate current user"
+
+    if not errors:
+        uuser = form.update_model(user)  # type: model.User
+        if form.password1:
+            uuser.password = security.hash_password(form.password1)
+
+        _LOG.info("web system: save user", user=uuser, user_id=uuser.id)
+        try:
+            database.users.save(db, uuser)
+        except database.users.LoginAlreadyExistsError:
+            errors["login"] = "Login already exists"
+        else:
+            db.commit()
+            flash("User saved")
+            return redirect(url_for("system.sett_sys_users")), {}
+
+    return "", errors
+
+
+@BP.route("/settings/system/users/new", methods=["GET", "POST"])  # type:ignore
+@BP.route("/settings/system/users/<int:user_id>", methods=["GET", "POST"])  # type:ignore
+def sett_sys_user(user_id: int | None = None) -> ty.Any:  # noqa: ANN401
     if not session["user_admin"]:
         abort(403)
 
@@ -355,40 +388,21 @@ def sett_sys_user(user_id: int | None = None) -> ty.Any:
     if user_id:
         try:
             user = database.users.get(db, user_id)
-        except database.NotFound:
+        except database.NotFoundError:
             flash(gettext("User not found"))
             return redirect(url_for("system.sett_sys_users"))
     else:
         user = model.User(active=True)
 
-    errors = {}
+    errors: dict[str, str] = {}
     form = forms.UserForm.from_model(user)
     entity_hash = str(hash(user))
 
     if request.method == "POST":
         if entity_hash == request.form["_entity_hash"]:
-            form.update_from_request(request.form)
-            errors = form.validate()
-
-            if session["user"] == user_id and not form.active and user.active:
-                errors["active"] = "Can't deactivate current user"
-
-            if not errors:
-                uuser = form.update_model(user)  # type: model.User
-                if form.password1:
-                    uuser.password = security.hash_password(form.password1)
-
-                _LOG.info(
-                    "web system: save user", user=uuser, user_id=uuser.id
-                )
-                try:
-                    database.users.save(db, uuser)
-                except database.users.LoginAlreadyExistsError:
-                    errors["login"] = "Login already exists"
-                else:
-                    db.commit()
-                    flash("User saved")
-                    return redirect(url_for("system.sett_sys_users"))
+            res, errors = _sett_sys_user_post(db, form, user, user_id)
+            if res:
+                return res
 
             flash(gettext("There are errors in form"), "error")
         else:
@@ -402,10 +416,10 @@ def sett_sys_user(user_id: int | None = None) -> ty.Any:
     )
 
 
-@BP.route(
+@BP.route(  # type:ignore
     "/settings/system/users/<int:user_id>/delete", methods=["GET", "POST"]
 )
-def sett_sys_user_delete(user_id: int) -> ty.Any:
+def sett_sys_user_delete(user_id: int) -> ty.Any:  # noqa: ANN401
     if not session["user_admin"]:
         abort(403)
 
@@ -417,7 +431,7 @@ def sett_sys_user_delete(user_id: int) -> ty.Any:
     try:
         # check is user exists
         database.users.get(db, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         flash(gettext("User not found"))
         return redirect(url_for("system.sett_sys_users"))
 
@@ -428,8 +442,8 @@ def sett_sys_user_delete(user_id: int) -> ty.Any:
     return redirect(url_for("system.sett_sys_users"))
 
 
-@BP.route("/qrcode")
-def sys_qrcode() -> ty.Any:
+@BP.route("/qrcode")  # type:ignore
+def sys_qrcode() -> ty.Any:  # noqa: ANN401
     if not _HAS_PYQRCODE:
         return abort(404)
 
@@ -449,8 +463,8 @@ def sys_qrcode() -> ty.Any:
     )
 
 
-@BP.route("/settings/system/info")
-def sys_info() -> ty.Any:
+@BP.route("/settings/system/info")  # type:ignore
+def sys_info() -> ty.Any:  # noqa: ANN401
     if not session["user_admin"]:
         abort(403)
 

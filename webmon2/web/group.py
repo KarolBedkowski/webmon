@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -30,8 +31,8 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("group", __name__, url_prefix="/group")
 
 
-@BP.route("/<int:group_id>/refresh")
-def refresh_group(group_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/refresh")  # type:ignore
+def refresh_group(group_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     marked = database.sources.refresh(db, user_id, group_id=group_id)
@@ -47,15 +48,15 @@ def refresh_group(group_id: int) -> ty.Any:
     return redirect(request.headers.get("Referer") or url_for("root.groups"))
 
 
-@BP.route("/new", methods=["GET", "POST"])
-@BP.route("/<int:group_id>", methods=["GET", "POST"])
-def group_edit(group_id: int = 0) -> ty.Any:
+@BP.route("/new", methods=["GET", "POST"])  # type:ignore
+@BP.route("/<int:group_id>", methods=["GET", "POST"])  # type:ignore
+def group_edit(group_id: int = 0) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     if group_id:
         try:
             sgroup = database.groups.get(db, group_id, user_id)
-        except database.NotFound:
+        except database.NotFoundError:
             return abort(404)
     else:
         sgroup = model.SourceGroup(user_id=user_id, name="")
@@ -88,13 +89,13 @@ def group_edit(group_id: int = 0) -> ty.Any:
     )
 
 
-@BP.route("/<int:group_id>/sources")
-def group_sources(group_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/sources")  # type:ignore
+def group_sources(group_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
         group = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     status = request.args.get("status", "all")
@@ -108,17 +109,17 @@ def group_sources(group_id: int) -> ty.Any:
     )
 
 
-@BP.route("/<int:group_id>/entries")
-@BP.route("/<int:group_id>/entries/<mode>")
-@BP.route("/<int:group_id>/entries/<mode>/<int:page>")
+@BP.route("/<int:group_id>/entries")  # type:ignore
+@BP.route("/<int:group_id>/entries/<mode>")  # type:ignore
+@BP.route("/<int:group_id>/entries/<mode>/<int:page>")  # type:ignore
 def group_entries(
     group_id: int, mode: str = "unread", page: int = 0
-) -> ty.Any:
+) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
         sgroup = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     order = request.args.get("order", "updated")
@@ -147,8 +148,8 @@ def group_entries(
     )
 
 
-@BP.route("/<int:group_id>/mark/read", methods=["POST"])
-def group_mark_read(group_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/mark/read", methods=["POST"])  # type:ignore
+def group_mark_read(group_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     max_id = int(request.args.get("max_id", -1))
     min_id = int(request.args.get("min_id", -1))
@@ -189,8 +190,8 @@ def group_mark_read(group_id: int) -> ty.Any:
     return {"url": dst, "marked": marked}
 
 
-@BP.route("/<int:group_id>/next_unread")
-def group_next_unread(group_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/next_unread")  # type:ignore
+def group_next_unread(group_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     # go to next unread group
     next_group_id = database.groups.get_next_unread_group(db, session["user"])
@@ -204,8 +205,8 @@ def group_next_unread(group_id: int) -> ty.Any:
     return redirect(url_for("root.groups"))
 
 
-@BP.route("/<int:group_id>/delete")
-def group_delete(group_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/delete")  # type:ignore
+def group_delete(group_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
@@ -215,7 +216,7 @@ def group_delete(group_id: int) -> ty.Any:
         db.commit()
         flash(gettext("Group deleted"))
 
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
     except common.OperationError as err:
         flash(gettext("Can't delete group: %(err)s", err=str(err)), "error")
@@ -226,8 +227,8 @@ def group_delete(group_id: int) -> ty.Any:
     return redirect(request.headers.get("Referer") or url_for("root.groups"))
 
 
-@BP.route("/<int:group_id>/entry/<mode>/<int:entry_id>")
-def group_entry(group_id: int, mode: str, entry_id: int) -> ty.Any:
+@BP.route("/<int:group_id>/entry/<mode>/<int:entry_id>")  # type:ignore
+def group_entry(group_id: int, mode: str, entry_id: int) -> ty.Any:  # noqa: ANN401
     """Get entry by group view.
     Mark displayed items as manually read.
 
@@ -237,7 +238,7 @@ def group_entry(group_id: int, mode: str, entry_id: int) -> ty.Any:
     user_id = session["user"]
     try:
         group = database.groups.get(db, group_id, user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     entry = database.entries.get(

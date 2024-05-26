@@ -7,6 +7,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -38,10 +39,10 @@ def add_subelement_with_text(
 
 # pylint: disable=unused-argument
 def gen_item(
-    title: str | None = None,
-    link: str | None = None,
-    description: str | None = None,
-    comments: str | None = None,
+    title: str | None = None,  # noqa:ARG001
+    link: str | None = None,  # noqa:ARG001
+    description: str | None = None,  # noqa:ARG001
+    comments: str | None = None,  # noqa:ARG001
     args: dict[str, ty.Any] | None = None,
 ) -> ItemElement:
     args = args or {}
@@ -76,7 +77,7 @@ def start_rss(
     return rss
 
 
-@BP.route("/group/<key>")
+@BP.route("/group/<key>")  # type:ignore
 def group(key: str) -> Response:
     if key == "off":
         return abort(404)
@@ -85,7 +86,7 @@ def group(key: str) -> Response:
 
     try:
         grp = database.groups.get_by_feed(db, key)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     assert grp and grp.id

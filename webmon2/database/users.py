@@ -5,6 +5,7 @@
 """
 Access & manage users in db
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -12,7 +13,9 @@ import typing as ty
 from webmon2 import model
 
 from . import _dbcommon as dbc
-from ._db import DB
+
+if ty.TYPE_CHECKING:
+    from ._db import DB
 
 
 class LoginAlreadyExistsError(Exception):
@@ -78,7 +81,7 @@ def get(
         login: user login; require if `id_` is not given
 
     Raises:
-        `NotFound`: user not found
+        `NotFoundError`: user not found
 
     Return:
         `User`
@@ -93,9 +96,9 @@ def get(
             raise AttributeError("missing id or login")
 
         if row := cur.fetchone():
-            return row
+            return ty.cast(model.User, row)
 
-    raise dbc.NotFound()
+    raise dbc.NotFoundError
 
 
 _UPDATE_USER_SQL = """
@@ -130,11 +133,11 @@ def save(db: DB, user: model.User) -> model.User:
         with db.cursor() as cur:
             cur.execute("SELECT 1 FROM users WHERE login=%s", (user.login,))
             if cur.fetchone():
-                raise LoginAlreadyExistsError()
+                raise LoginAlreadyExistsError
 
         with db.cursor() as cur:
             cur.execute(_INSERT_USER_SQL, user.to_row())
-            user_id = cur.fetchone()[0]  # type: ignore
+            user_id = cur.fetchone()[0]
             user.id = user_id
 
         _create_new_user_data(db, user_id)
@@ -148,7 +151,7 @@ def _create_new_user_data(db: DB, user_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if cur.fetchone()[0]:  # type: ignore
+        if cur.fetchone()[0]:
             return
 
     with db.cursor() as cur:
@@ -199,7 +202,12 @@ DO UPDATE SET value=EXCLUDED.value
 """
 
 
-def set_state(db: DB, user_id: int, key: str, value: ty.Any) -> None:
+def set_state(
+    db: DB,
+    user_id: int,
+    key: str,
+    value: ty.Any,  # noqa:ANN401
+) -> None:
     """Update / store state value for `user_id` and `key`."""
     with db.cursor() as cur:
         cur.execute(_SET_STATE_SQL, (user_id, key, value))
@@ -224,7 +232,12 @@ def save_log(db: DB, log: model.UserLog) -> None:
         cur.execute(_PUT_LOG_SQL, log.to_row())
 
 
-def put_log(db: DB, user_id: int, content: str, **related: ty.Any) -> None:
+def put_log(
+    db: DB,
+    user_id: int,
+    content: str,
+    **related: ty.Any,  # noqa:ANN401
+) -> None:
     """Add entry to user log."""
     log = model.UserLog(user_id=user_id, content=content, related=related)
     with db.cursor() as cur:
@@ -258,4 +271,4 @@ def delete_old_log(db: DB, user_id: int) -> int:
     """Delete all user logs older than 7 days."""
     with db.cursor() as cur:
         cur.execute(_DELETE_OLD_LOGS_SQL, (user_id,))
-        return cur.rowcount
+        return ty.cast(int, cur.rowcount)

@@ -20,7 +20,7 @@ class AbstractFilter(abc.ABC):
     name: str = None  # type: ignore
     short_info = ""
     long_info = ""
-    params: list[common.SettingDef] = []
+    params: tuple[common.SettingDef, ...] = ()
 
     def __init__(self, config: model.ConfDict) -> None:
         super().__init__()
@@ -30,18 +30,17 @@ class AbstractFilter(abc.ABC):
         )
 
     def __str__(self) -> str:
-        return " ".join(
-            ("<", self.__class__.__name__, self.name, repr(self._conf), ">")
-        )
+        return f"<{self.__class__.__name__} {self.name} {self._conf!r}>"
 
     def validate(self) -> None:
         """Validate filter parameters"""
         for name, error in self.validate_conf(self._conf):
-            raise common.ParamError(f"parameter {name} error {error}")
+            errmsg = f"parameter {name} error {error}"
+            raise common.ParamError(errmsg)
 
     @classmethod
     def validate_conf(
-        cls, *confs: model.ConfDict
+        cls: ty.Type[ty.Self], *confs: model.ConfDict
     ) -> ty.Iterable[tuple[str, str]]:
         """Validate input configuration.
         Returns  iterable of (<parameter>, <error>)
@@ -65,20 +64,20 @@ class AbstractFilter(abc.ABC):
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
-        curr_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
+        curr_state: model.SourceState,  # noqa:ARG002
     ) -> model.Entries:
         for entry in entries:
             yield from self._filter(entry)
 
     @abc.abstractmethod
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     @classmethod
-    def get_param_types(cls) -> dict[str, ty.Type[ty.Any]]:
+    def get_param_types(cls: ty.Type[ty.Self]) -> dict[str, ty.Type[ty.Any]]:
         return {param.name: param.type for param in cls.params}
 
     @classmethod
-    def get_param_defaults(cls) -> dict[str, ty.Any]:
+    def get_param_defaults(cls: ty.Type[ty.Self]) -> dict[str, ty.Any]:
         return {param.name: param.default for param in cls.params}

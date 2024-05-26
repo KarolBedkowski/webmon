@@ -5,16 +5,18 @@
 """
 Application configuration.
 """
+
 from __future__ import annotations
 
-import argparse
 import ipaddress
-import os
 import typing as ty
 from configparser import ConfigParser
 from pathlib import Path
 
 import structlog
+
+if ty.TYPE_CHECKING:
+    import argparse
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger("conf")
 
@@ -58,15 +60,15 @@ def load_conf(fileobj: ty.Iterable[str]) -> ConfigParser:
 
 
 def try_load_user_conf() -> ConfigParser | None:
-    user_conf = os.path.expanduser("~/.config/webmon2/webmon2.ini")
+    user_conf = Path("~/.config/webmon2/webmon2.ini").expanduser()
     if Path(user_conf).is_file():
         try:
             _LOG.info("conf: loading from %s", user_conf)
-            with open(user_conf, encoding="UTF-8") as fileobj:
+            with user_conf.open(encoding="UTF-8") as fileobj:
                 return load_conf(fileobj)
 
         # pylint: disable=broad-except
-        except Exception as err:  # noqa: E722
+        except Exception as err:
             _LOG.exception("conf: load file %s error", user_conf, error=err)
 
     return None
@@ -76,6 +78,32 @@ def default_conf() -> ConfigParser:
     conf = ConfigParser()
     conf.read_string(_DEFAULTS)
     return conf
+
+
+def _update_from_args_smtp(
+    conf: ConfigParser, args: argparse.Namespace
+) -> None:
+    if args.smtp_server_address:
+        conf.set("smtp", "address", args.smtp_server_address)
+        conf.set("smtp", "enabled", str(True))
+
+    if args.smtp_server_port:
+        conf.set("smtp", "port", str(args.smtp_server_port))
+
+    if args.smtp_server_ssl:
+        conf.set("smtp", "ssl", str(args.smtp_server_ssl))
+
+    if args.smtp_server_starttls:
+        conf.set("smtp", "starttls", str(args.smtp_server_starttls))
+
+    if args.smtp_server_from:
+        conf.set("smtp", "from", args.smtp_server_from)
+
+    if args.smtp_server_login:
+        conf.set("smtp", "login", args.smtp_server_login)
+
+    if args.smtp_server_password:
+        conf.set("smtp", "password", args.smtp_server_password)
 
 
 # pylint: disable=too-many-branches
@@ -97,27 +125,7 @@ def update_from_args(
         if args.workers is not None:
             conf.set("main", "workers", str(args.workers))
 
-        if args.smtp_server_address:
-            conf.set("smtp", "address", args.smtp_server_address)
-            conf.set("smtp", "enabled", str(True))
-
-        if args.smtp_server_port:
-            conf.set("smtp", "port", str(args.smtp_server_port))
-
-        if args.smtp_server_ssl:
-            conf.set("smtp", "ssl", str(args.smtp_server_ssl))
-
-        if args.smtp_server_starttls:
-            conf.set("smtp", "starttls", str(args.smtp_server_starttls))
-
-        if args.smtp_server_from:
-            conf.set("smtp", "from", args.smtp_server_from)
-
-        if args.smtp_server_login:
-            conf.set("smtp", "login", args.smtp_server_login)
-
-        if args.smtp_server_password:
-            conf.set("smtp", "password", args.smtp_server_password)
+        _update_from_args_smtp(conf, args)
 
     return conf
 
@@ -139,8 +147,7 @@ def _validate_web(conf: ConfigParser) -> bool:
         _LOG.error("conf: missing web root")
         valid = False
 
-    web_address = conf.get("web", "address")
-    if not web_address:
+    if not conf.get("web", "address"):
         _LOG.error("conf: missing web address")
         valid = False
 
@@ -150,7 +157,7 @@ def _validate_web(conf: ConfigParser) -> bool:
         _LOG.error("conf: invalid or missing web port", error=err)
         valid = False
     else:
-        if web_port < 1 or web_port > 65535:
+        if web_port < 1 or web_port > 65535:  # noqa:PLR2004
             _LOG.error("conf: invalid web port: %r", web_port)
             valid = False
 
@@ -165,9 +172,9 @@ def _validate_main(conf: ConfigParser) -> bool:
         valid = False
 
     try:
-        workers = int(conf.get("main", "workers"))
-        if workers < 1:
+        if (workers := int(conf.get("main", "workers"))) < 1:
             _LOG.warning("conf: number of workers: %r", workers)
+
     except ValueError as err:
         _LOG.error("conf: invalid workers parameter", error=err)
         valid = False
@@ -202,7 +209,7 @@ def _validate_smtp(conf: ConfigParser) -> bool:
             _LOG.error("conf: invalid SMTP port", error=err)
             valid = False
         else:
-            if port < 1 or port > 65535:
+            if port < 1 or port > 65535:  # noqa:PLR2004
                 _LOG.error("conf: invalid SMTP port: %r", port)
                 valid = False
 
@@ -216,8 +223,8 @@ def _validate_smtp(conf: ConfigParser) -> bool:
 def _validate_metrics(conf: ConfigParser) -> bool:
     valid = True
     if allow_from := conf.get("metrics", "allow_from"):
-        for addr in allow_from.split(","):
-            addr = addr.strip()
+        for a in allow_from.split(","):
+            addr = a.strip()
             try:
                 if "/" in addr:
                     ipaddress.ip_network(addr, strict=False)
@@ -239,10 +246,11 @@ def conf_items(conf: ConfigParser) -> ty.Iterator[str]:
     for sec in conf.sections():
         yield "[" + sec + "]"
         for key, val in conf.items(sec):
-            yield key + " = '" + val + "'"
+            yield f"{key} = '{val}'"
+
         yield ""
 
 
-def save_conf(conf: ConfigParser, filename: str) -> None:
-    with open(filename, "w", encoding="UTF-8") as ofile:
+def save_conf(conf: ConfigParser, cfgfile: Path) -> None:
+    with cfgfile.open(mode="w", encoding="UTF-8") as ofile:
         conf.write(ofile)

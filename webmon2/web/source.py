@@ -5,6 +5,7 @@
 """
 Web gui
 """
+
 from __future__ import annotations
 
 import typing as ty
@@ -30,8 +31,8 @@ _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("source", __name__, url_prefix="/source")
 
 
-@BP.route("/<int:source_id>/refresh")
-def source_refresh(source_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/refresh")  # type:ignore
+def source_refresh(source_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     database.sources.refresh(db, user_id, source_id=source_id)
@@ -40,14 +41,14 @@ def source_refresh(source_id: int) -> ty.Any:
     return redirect(request.args.get("back") or url_for("root.sources"))
 
 
-@BP.route("/<int:source_id>/delete")
-def source_delete(source_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/delete")  # type:ignore
+def source_delete(source_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
         # sanity check (source vs user)
         database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     database.sources.delete(db, source_id)
@@ -56,16 +57,51 @@ def source_delete(source_id: int) -> ty.Any:
     return redirect(request.args.get("back") or url_for("root.sources"))
 
 
-@BP.route("/new")
-def source_new() -> ty.Any:
+@BP.route("/new")  # type:ignore
+def source_new() -> ty.Any:  # noqa: ANN401
     return render_template("source_new.html", sources=sources.sources_info())
 
 
-@BP.route("/<int:source_id>/edit", methods=["POST", "GET"])
-@BP.route("/new/<kind>", methods=["POST", "GET"])
+def _source_edit_post(
+    db: database.DB,
+    src: sources.AbstractSource,
+    source: model.Source,
+    u_source: model.Source,
+) -> str:
+    next_action = request.form.get("next_action")
+    if next_action == "save_activate":
+        u_source.status = model.SourceStatus.ACTIVE
+
+    u_source = src.upgrade_conf(u_source)
+    u_source = database.sources.save(db, u_source)
+
+    # adjust next check time when interval changed
+    if (
+        source.id
+        and source.interval != u_source.interval
+        and u_source.interval
+    ):
+        interval = common.parse_interval(u_source.interval)
+        assert source.state
+        source.state.adjust_next_update(interval)
+        database.sources.save_state(db, source.state, session["user"])
+
+    db.commit()
+    flash(gettext("Source saved"))
+    if next_action == "edit_filters":
+        return ty.cast(
+            str,
+            redirect(url_for("source.source_filters", source_id=u_source.id)),
+        )
+
+    return ty.cast(str, redirect(url_for("root.sources")))
+
+
+@BP.route("/<int:source_id>/edit", methods=["POST", "GET"])  # type:ignore
+@BP.route("/new/<kind>", methods=["POST", "GET"])  # type:ignore
 def source_edit(
     source_id: int | None = None, kind: str | None = None
-) -> ty.Any:
+) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     if source_id:
@@ -73,7 +109,7 @@ def source_edit(
             source = database.sources.get(
                 db, source_id, with_state=True, user_id=user_id
             )
-        except database.NotFound:
+        except database.NotFoundError:
             return abort(404)
 
         if source.user_id != user_id:
@@ -87,13 +123,8 @@ def source_edit(
     src = sources.get_source(source, {})
     user_settings = database.settings.get_dict(db, source.user_id)
     source_form = forms.SourceForm.from_model(source)
-    source_form.settings = [
-        forms.Field.from_input_params(
-            param, source.settings, "sett-", user_settings.get(param.name)
-        )
-        for param in src.params
-    ]
-    errors = {}
+    source_form.update_settings(source, src, user_settings)
+    errors: dict[str, str] = {}
     user_id = session["user"]
     entity_hash = str(hash(source))
 
@@ -105,32 +136,8 @@ def source_edit(
             assert u_source.settings is not None
             errors.update(src.validate_conf(u_source.settings, user_settings))
             if not errors:
-                next_action = request.form.get("next_action")
-                if next_action == "save_activate":
-                    u_source.status = model.SourceStatus.ACTIVE
+                return _source_edit_post(db, src, source, u_source)
 
-                u_source = src.upgrade_conf(u_source)
-                u_source = database.sources.save(db, u_source)
-
-                # adjust next check time when interval changed
-                if (
-                    source_id
-                    and source.interval != u_source.interval
-                    and u_source.interval
-                ):
-                    interval = common.parse_interval(u_source.interval)
-                    assert source.state
-                    source.state.adjust_next_update(interval)
-                    database.sources.save_state(db, source.state, user_id)
-
-                db.commit()
-                flash(gettext("Source saved"))
-                if next_action == "edit_filters":
-                    return redirect(
-                        url_for("source.source_filters", source_id=u_source.id)
-                    )
-
-                return redirect(url_for("root.sources"))
         else:
             flash(gettext("Source changed somewhere else; reloading..."))
 
@@ -145,12 +152,12 @@ def source_edit(
     )
 
 
-@BP.route("/<int:source_id>/entries")
-@BP.route("/<int:source_id>/entries/<mode>")
-@BP.route("/<int:source_id>/entries/<mode>/<int:page>")
+@BP.route("/<int:source_id>/entries")  # type:ignore
+@BP.route("/<int:source_id>/entries/<mode>")  # type:ignore
+@BP.route("/<int:source_id>/entries/<mode>/<int:page>")  # type:ignore
 def source_entries(
     source_id: int, mode: str = "unread", page: int = 0
-) -> ty.Any:
+) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(
@@ -185,8 +192,8 @@ def source_entries(
     )
 
 
-@BP.route("/<int:source_id>/mark/read", methods=["POST"])
-def source_mark_read(source_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/mark/read", methods=["POST"])  # type:ignore
+def source_mark_read(source_id: int) -> ty.Any:  # noqa: ANN401
     """Mark all entries in source read."""
     db = c.get_db()
     min_id = int(request.args.get("min_id", -1))
@@ -220,8 +227,8 @@ def source_mark_read(source_id: int) -> ty.Any:
     return {"url": dst, "marked": marked}
 
 
-@BP.route("/<int:source_id>/filters")
-def source_filters(source_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/filters")  # type:ignore
+def source_filters(source_id: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     source = database.sources.get(db, source_id, user_id=user_id)
@@ -233,35 +240,33 @@ def source_filters(source_id: int) -> ty.Any:
         filters=source.filters,
         source_id=source_id,
     )
-    filter_fields = [
-        forms.Filter(fltr["name"]) for fltr in source.filters or []
-    ]
+    filter_fields = [forms.Filter(fltr["name"]) for fltr in source.filters]
     return render_template(
         "source_filters.html", source=source, filters=filter_fields
     )
 
 
-@BP.route("/<int:source_id>/filter/add")
-def source_filter_add(source_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/filter/add")  # type:ignore
+def source_filter_add(source_id: int) -> ty.Any:  # noqa: ANN401
     filters_info = filters.filters_info()
     return render_template(
         "filter_new.html", source_id=source_id, filters_info=filters_info
     )
 
 
-@BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])
-def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:
+@BP.route("/<int:source_id>/filter/<idx>/edit", methods=["GET", "POST"])  # type:ignore
+def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     try:
         source = database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     is_new = idx == "new"
     if not is_new:
         sfidx = int(idx)
-        is_new = sfidx < 0 or sfidx >= len(source.filters or [])
+        is_new = sfidx < 0 or sfidx >= len(source.filters)
 
     if is_new:  # new filter
         name = request.args.get("name")
@@ -336,15 +341,15 @@ def source_filter_edit(source_id: int, idx: int | str) -> ty.Any:
 
 def _save_filter(
     db: database.DB, source_id: int, idx: int, conf: model.ConfDict
-) -> ty.Any:
+) -> ty.Any:  # noqa: ANN401
     database.sources.update_filter(db, source_id, idx, conf)
     db.commit()
     flash("Filter saved")
     return redirect(url_for("source.source_filters", source_id=source_id))
 
 
-@BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")
-def source_filter_move(source_id: int, idx: int, move: str) -> ty.Any:
+@BP.route("/<int:source_id>/filter/<int:idx>/move/<move>")  # type:ignore
+def source_filter_move(source_id: int, idx: int, move: str) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     database.sources.move_filter(db, user_id, source_id, idx, move)
@@ -352,8 +357,8 @@ def source_filter_move(source_id: int, idx: int, move: str) -> ty.Any:
     return redirect(url_for("source.source_filters", source_id=source_id))
 
 
-@BP.route("/<int:source_id>/filter/<int:idx>/delete")
-def source_filter_delete(source_id: int, idx: int) -> ty.Any:
+@BP.route("/<int:source_id>/filter/<int:idx>/delete")  # type:ignore
+def source_filter_delete(source_id: int, idx: int) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
     user_id = session["user"]
     database.sources.delete_filter(db, user_id, source_id, idx)
@@ -361,14 +366,14 @@ def source_filter_delete(source_id: int, idx: int) -> ty.Any:
     return redirect(url_for("source.source_filters", source_id=source_id))
 
 
-@BP.route("/<int:source_id>/entry/<mode>/<int:entry_id>")
-def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:
+@BP.route("/<int:source_id>/entry/<mode>/<int:entry_id>")  # type:ignore
+def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:  # noqa: ANN401
     """Display entry with marking as read."""
     db = c.get_db()
     user_id = session["user"]
     try:
         src = database.sources.get(db, source_id, user_id=user_id)
-    except database.NotFound:
+    except database.NotFoundError:
         return abort(404)
 
     entry = database.entries.get(
@@ -405,13 +410,12 @@ def source_entry(source_id: int, mode: str, entry_id: int) -> ty.Any:
     )
 
 
-@BP.route("/<int:source_id>/next_unread")
+@BP.route("/<int:source_id>/next_unread")  # type:ignore
 def source_next_unread(
-    source_id: int,  # pylint: disable=unused-argument
-) -> ty.Any:
+    source_id: int,  # pylint: disable=unused-argument # noqa:ARG001
+) -> ty.Any:  # noqa: ANN401
     db = c.get_db()
-    n_source_id = database.sources.find_next_unread(db, session["user"])
-    if n_source_id:
+    if n_source_id := database.sources.find_next_unread(db, session["user"]):
         return redirect(
             url_for("source.source_entries", source_id=n_source_id)
         )

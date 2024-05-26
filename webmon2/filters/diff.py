@@ -5,6 +5,7 @@
 """
 Text difference filters.
 """
+
 from __future__ import annotations
 
 import difflib
@@ -27,7 +28,7 @@ class NDiff(AbstractFilter):
     long_info = lazy_gettext(
         "Compare current and previous content; show changed elements"
     )
-    params = [
+    params = (
         common.SettingDef(
             "threshold",
             lazy_gettext(
@@ -42,7 +43,7 @@ class NDiff(AbstractFilter):
             ),
             default=1,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def validate(self) -> None:
         super().validate()
@@ -52,12 +53,13 @@ class NDiff(AbstractFilter):
             or threshold < 0
             or threshold > 1
         ):
-            raise common.ParamError(f"invalid threshold : {threshold!r}")
+            errmsg = f"invalid threshold : {threshold!r}"
+            raise common.ParamError(errmsg)
 
     def filter(
         self,
         entries: model.Entries,
-        prev_state: model.SourceState,
+        prev_state: model.SourceState,  # noqa:ARG002
         curr_state: model.SourceState,
     ) -> model.Entries:
         assert self.db
@@ -116,7 +118,7 @@ class NDiff(AbstractFilter):
         yield entry
 
     def _filter(self, entry: model.Entry) -> model.Entries:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def _check_changes(

@@ -5,6 +5,7 @@
 """
 Select entries by matching text.
 """
+
 from __future__ import annotations
 
 import re
@@ -29,7 +30,7 @@ class Score(AbstractFilter):
     long_info = lazy_gettext(
         "Change element score according to matched patterns."
     )
-    params = [
+    params = (
         common.SettingDef(
             "patterns",
             lazy_gettext("Regular expressions separated by ';'"),
@@ -47,7 +48,7 @@ class Score(AbstractFilter):
             lazy_gettext("Change score on match every pattern"),
             default=True,
         ),
-    ]  # type: list[common.SettingDef]
+    )
 
     def __init__(self, conf: model.ConfDict) -> None:
         super().__init__(conf)
@@ -61,6 +62,7 @@ class Score(AbstractFilter):
                 for pattern in patterns.split(";")
             ]
             _LOG.debug("filters: score has %d patterns", len(self._re))
+
         else:
             self._re = []
             _LOG.warning("filters: score with no patterns!", conf=conf)
@@ -94,6 +96,7 @@ class Score(AbstractFilter):
                 entry.score,
             )
             entry.score += add
+
         except Exception as err:  # pylint: disable=broad-except
             _LOG.exception(
                 "filters: apply score for entry %r error", error=err

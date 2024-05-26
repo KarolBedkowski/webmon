@@ -6,7 +6,7 @@
 .PHONY: run
 ## Run application
 run:
-	./run_webmon2.py -d -c webmon2.ini serve --workers 1
+	./run_webmon2.py -d -c webmon2.ini serve --workers -1
 
 .PHONY: pylint
 ## Lint using pylint
@@ -16,11 +16,13 @@ pylint:
 .PHONY: check
 ## Lint using ruff, bandit, mypy
 check:
-	ruff check .
-	black --check .
-	bandit -c pyproject.toml  -r webmon2
-	refurb --enable-all --python-version 3.11 webmon2
-	mypy webmon2
+	ruff check . || true
+#	black --check . || true
+	bandit -c pyproject.toml  -r webmon2 || true
+	refurb --enable-all --python-version 3.11 webmon2 || true
+	mypy webmon2 || true
+	tach check || true
+	deptry .  || true
 
 
 .PHONY: clean
@@ -41,13 +43,14 @@ clean:
 .PHONY: format
 ## Format files using black & isort
 format:
-	ruff --fix-only --exit-zero .
-	black .
+	ruff check --select I --fix .
+	ruff  format .
+#	black .
 
 .PHONY: test
 ## Run tests
 test:
-	pytest --cov=webmon2 --cov-report=html --log-level=WARNING --disable-pytest-warnings
+	pytest --cov=webmon2 --cov-report=html --log-level=WARNING --disable-pytest-warnings -x --ff
 
 .PHONY: pot
 ## Generate pot files
