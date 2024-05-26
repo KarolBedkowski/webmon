@@ -14,16 +14,18 @@ import structlog
 from webmon2 import common, database, model
 
 from ._abstract import AbstractFilter
+from .fix_urls import FixHtmlUrls
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
-__all__ = (
+__all__ = [
     "UnknownFilterError",
     "get_filter",
     "filter_by",
     "filters_name",
     "filters_info",
     "AbstractFilter",
-)
+    "FixHtmlUrls",
+]
 
 
 def _load_filters() -> None:

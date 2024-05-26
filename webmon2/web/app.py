@@ -60,7 +60,7 @@ if ty.TYPE_CHECKING:
     from argparse import Namespace
     from configparser import ConfigParser
 
-__all__ = ("create_app", "start_app")
+__all__ = ["create_app", "start_app"]
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 

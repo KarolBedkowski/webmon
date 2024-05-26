@@ -137,9 +137,9 @@ def shell(
         print("IPython not available", file=sys.stderr)
         return
 
-    from webmon2.web import app as web_app
+    from webmon2.web import create_app
 
-    app = web_app.create_app(args, app_conf)
+    app = create_app(args, app_conf)
     config = load_default_config()
     IPython.start_ipython(
         user_ns=app.make_shell_context(),

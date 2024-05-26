@@ -18,7 +18,7 @@ from flask_babel import gettext, lazy_gettext
 from lxml.html import clean
 
 from webmon2 import common, model
-from webmon2.filters.fix_urls import FixHtmlUrls
+from webmon2.filters import FixHtmlUrls
 
 from .abstract import AbstractSource
 

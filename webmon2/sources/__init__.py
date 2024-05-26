@@ -17,13 +17,13 @@ from webmon2 import common, model
 from .abstract import AbstractSource
 
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
-__all__ = (
+__all__ = [
     "AbstractSource",
     "UnknownInputError",
     "get_source",
     "sources_info",
     "sources_name",
-)
+]
 
 
 def _load_plugins() -> None:
