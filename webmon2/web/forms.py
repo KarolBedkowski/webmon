@@ -39,7 +39,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     options: list[tuple[ty.Any, ty.Any]] | None = None
     # default value
     default_value: ty.Any = None
-    # error messge
+    # error message
     error: str | None = None
     # additional setting for field; i.e. multiline
     parameters: dict[str, ty.Any] | None = None

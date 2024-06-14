@@ -199,11 +199,11 @@ class WebSource(AbstractSource):
     def _load_image(
         self, url: str, session: requests.Session
     ) -> tuple[str, bytes] | None:
-        url_splited = urlsplit(url)
+        url_split = urlsplit(url)
         favicon_url = urlunsplit(
             (
-                url_splited[0],
-                url_splited[1],
+                url_split[0],
+                url_split[1],
                 "favicon.ico",
                 "",
                 "",

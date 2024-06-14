@@ -6,6 +6,6 @@
  */
 
 insert into settings (key, value, value_type, description)
-values ('minimal_score', '-20', 'int', 'Miminal score of entries to show.');
+values ('minimal_score', '-20', 'int', 'Minimal score of entries to show.');
 
 -- vim:et

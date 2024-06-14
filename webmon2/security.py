@@ -19,7 +19,7 @@ except ImportError:
     print("pyotp module not found - TOTP unavailable!")
 
 
-class NotAvaliableError(RuntimeError):
+class NotAvailableError(RuntimeError):
     pass
 
 
@@ -42,14 +42,14 @@ def otp_available() -> bool:
 
 def generate_totp() -> str:
     if not _HAS_PYOTP:
-        raise NotAvaliableError
+        raise NotAvailableError
 
     return str(pyotp.random_base32())
 
 
 def generate_totp_url(secret: str, name: str) -> str:
     if not _HAS_PYOTP:
-        raise NotAvaliableError
+        raise NotAvailableError
 
     issuer = "webmon2." + socket.gethostname()
     return str(
@@ -61,7 +61,7 @@ def generate_totp_url(secret: str, name: str) -> str:
 
 def verify_totp(secret: str, totp: str) -> bool:
     if not _HAS_PYOTP:
-        raise NotAvaliableError
+        raise NotAvailableError
 
     if not secret:
         return True

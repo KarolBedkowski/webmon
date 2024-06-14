@@ -17,7 +17,7 @@ from . import split_text
 
 
 class TestGetElementsByXpath(unittest.TestCase):
-    def test_fitler1(self):
+    def test_filter1(self):
         entry = model.Entry()
         entry.content = """<foo><bar>test1</bar><bar>test2</bar></foo>"""
 
@@ -30,7 +30,7 @@ class TestGetElementsByXpath(unittest.TestCase):
 
 
 class TestGetElementsByCss(unittest.TestCase):
-    def test_fitler1(self):
+    def test_filter1(self):
         entry = model.Entry()
         entry.content = (
             '<foo><bar id="a1">test1</bar><bar id="a2">test2</bar></foo>'
@@ -43,7 +43,7 @@ class TestGetElementsByCss(unittest.TestCase):
         self.assertEqual(len(elems), 1)
         self.assertEqual(elems[0].content, '<bar id="a2">test2</bar>')
 
-    def test_fitler2(self):
+    def test_filter2(self):
         entry = model.Entry()
         entry.content = (
             '<foo><bar id="a1">test1</bar><bar id="a2">test2</bar></foo>'
@@ -56,7 +56,7 @@ class TestGetElementsByCss(unittest.TestCase):
         self.assertEqual(len(elems), 1)
         self.assertEqual(elems[0].content, '<bar id="a2">test2</bar>')
 
-    def test_fitler3(self):
+    def test_filter3(self):
         entry = model.Entry()
         entry.content = (
             '<foo><bar id="a1">test1</bar><bar id="a2">test2</bar></foo>'

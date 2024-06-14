@@ -260,7 +260,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         # source updates status
         self.status: SourceStateStatus | None = None
         self.error: str | None = None
-        # additional informations stored by source loader
+        # additional information stored by source loader
         self.props: Props | None = None
         # icon hash
         self.icon: str | None = None

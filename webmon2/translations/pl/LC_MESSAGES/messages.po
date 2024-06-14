@@ -7,41 +7,39 @@ msgid ""
 msgstr ""
 "Project-Id-Version:  2.x\n"
 "Report-Msgid-Bugs-To: karol.bedkowski@gmail.com\n"
-"POT-Creation-Date: 2023-10-31 20:50+0100\n"
-"PO-Revision-Date: 2023-10-31 20:50+0100\n"
+"POT-Creation-Date: 2024-06-14 18:30+0200\n"
+"PO-Revision-Date: 2024-06-14 18:31+0200\n"
 "Last-Translator: Karol Będkowski <karol.bedkowski@gmail.com>\n"
 "Language: pl\n"
 "Language-Team: pl <->\n"
-"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
-"|| n%100>=20) ? 1 : 2);\n"
+"Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && "
+"(n%100<10 || n%100>=20) ? 1 : 2);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.10.3\n"
-"X-Generator: Gtranslator 42.0\n"
+"Generated-By: Babel 2.14.0\n"
 
-#: webmon2/mailer.py:441
+#: webmon2/mailer.py:217
+msgid "<no title>"
+msgstr "<brak tutułu>"
+
+#: webmon2/mailer.py:438
 msgid "Errors"
 msgstr "Błędy"
 
-#: webmon2/mailer.py:458 webmon2/sources/github.py:516
-#: webmon2/sources/gitlab.py:479
-msgid "Date: "
-msgstr "Data: "
-
-#: webmon2/filters/diff.py:26
+#: webmon2/filters/diff.py:27
 msgid "Diff with previous content"
 msgstr "Porównanie z poprzednią treścią"
 
-#: webmon2/filters/diff.py:27
+#: webmon2/filters/diff.py:28
 msgid "Compare current and previous content; show changed elements"
 msgstr "Porównuje obecną i poprzednią treść; pokazuje zmienione elementy"
 
-#: webmon2/filters/diff.py:33
+#: webmon2/filters/diff.py:34
 msgid "Skip elements when changes percent is below this level"
 msgstr "Pomiń elementy w których zmiana jest poniżej tego poziomu"
 
-#: webmon2/filters/diff.py:40
+#: webmon2/filters/diff.py:41
 msgid "Skip elements when changes lines is below this level"
 msgstr "Pomiń elementy gdy liczba zmienionych linii jest poniżej tego poziomu"
 
@@ -52,22 +50,22 @@ msgstr "Konwersja relatywnych URL-i"
 #: webmon2/filters/fix_urls.py:26
 msgid "Convert relative URLs to absolute when it possible in HTML results."
 msgstr ""
-"Konwertuje relatywne URL-e do absolutnych jeżeli jest to możliwe w treści "
-"HTML."
+"Konwertuje relatywne URL-e do absolutnych jeżeli jest to możliwe w treści"
+" HTML."
 
-#: webmon2/filters/grep.py:23
+#: webmon2/filters/grep.py:24
 msgid "Filter elements by regular expression"
 msgstr "Filtrowanie elementów przez wyrażenie regularne"
 
-#: webmon2/filters/grep.py:24
+#: webmon2/filters/grep.py:25
 msgid "Select elements matching or not matching to given pattern."
 msgstr "Wybiera elementy pasujące lub nie pasujące do podanego wzorca."
 
-#: webmon2/filters/grep.py:30
+#: webmon2/filters/grep.py:31
 msgid "Regular expression"
 msgstr "Wyrażenie regularne"
 
-#: webmon2/filters/grep.py:35
+#: webmon2/filters/grep.py:36
 msgid "Accept items not matching"
 msgstr "Akceptuj elementy nie pasujące"
 
@@ -79,48 +77,47 @@ msgstr "Usuwanie starych elementów"
 msgid "Remove elements already loaded in past by given source"
 msgstr "Usuwa elementy wcześniej wczytane przez dane źródło"
 
-#: webmon2/filters/html2text.py:23
+#: webmon2/filters/html2text.py:25
 msgid "Convert html to text"
 msgstr "Konwersja html do tekst"
 
-#: webmon2/filters/html2text.py:24
-msgid ""
-"Try convert html content do plain text; remove all formatting, images etc."
+#: webmon2/filters/html2text.py:26
+msgid "Try convert html content do plain text; remove all formatting, images etc."
 msgstr ""
-"Próbuje skonwertować treść html do czystego tekstu; usuwa całe formatowanie, "
-"obrazy itd"
+"Próbuje skonwertować treść html do czystego tekstu; usuwa całe "
+"formatowanie, obrazy itd"
 
-#: webmon2/filters/html2text.py:30 webmon2/filters/wrap.py:27
+#: webmon2/filters/html2text.py:32 webmon2/filters/wrap.py:28
 msgid "Max line width"
 msgstr "Maksymalna długość lini"
 
-#: webmon2/filters/join.py:52
+#: webmon2/filters/join.py:55
 msgid "Join elements"
 msgstr "Łączenie elementów"
 
-#: webmon2/filters/join.py:53
+#: webmon2/filters/join.py:56
 msgid "Join content from all elements loaded by source to one element"
 msgstr ""
-"Łączy treść wszystkich elementów wczytanych przez źródło do jednego elementu"
+"Łączy treść wszystkich elementów wczytanych przez źródło do jednego "
+"elementu"
 
-#: webmon2/filters/score.py:26
+#: webmon2/filters/score.py:27
 msgid "Change score of elements by defined regular expression"
-msgstr ""
-"Zmiana punktów elementów na podstawie zdefiniowane wyrażenia regularnego"
+msgstr "Zmiana punktów elementów na podstawie zdefiniowane wyrażenia regularnego"
 
-#: webmon2/filters/score.py:29
+#: webmon2/filters/score.py:30
 msgid "Change element score according to matched patterns."
 msgstr "Zmienia punty dla elementu na podstawie pasujących wzorców."
 
-#: webmon2/filters/score.py:35
+#: webmon2/filters/score.py:36
 msgid "Regular expressions separated by ';'"
 msgstr "Wyrażenia regularne rozdzielone przez ';'"
 
-#: webmon2/filters/score.py:41
+#: webmon2/filters/score.py:42
 msgid "Value added do score when match"
 msgstr "Wartość dodawana do punków przy dopasowaniu"
 
-#: webmon2/filters/score.py:47
+#: webmon2/filters/score.py:48
 msgid "Change score on match every pattern"
 msgstr "Zmiana punktów dla każdego pasującego wzorca"
 
@@ -132,21 +129,21 @@ msgstr "Sortowanie elementów"
 msgid "Sort elements by title and content"
 msgstr "Sortuje elementy na podstawie tytułu i zawartości"
 
-#: webmon2/filters/split_re.py:24
+#: webmon2/filters/split_re.py:25
 msgid "Extract elements by regular expression"
 msgstr "Wydobywanie elementów na podstawie wyrażenia regularnego"
 
-#: webmon2/filters/split_re.py:25
+#: webmon2/filters/split_re.py:26
 msgid ""
 "Search and extract element from content by given regular expression. "
-"Expression must contain at least one group; can also contain groups 'title' "
-"and 'content'."
+"Expression must contain at least one group; can also contain groups "
+"'title' and 'content'."
 msgstr ""
-"Szuka i wydobywa elementy z zawartości na podstawie wyrażenia regularnego. "
-"Wyrażenie musi zawierać co najmniej jedną grupę; może także zawierać grupy "
-"'title' i 'content'."
+"Szuka i wydobywa elementy z zawartości na podstawie wyrażenia "
+"regularnego. Wyrażenie musi zawierać co najmniej jedną grupę; może także "
+"zawierać grupy 'title' i 'content'."
 
-#: webmon2/filters/split_re.py:32 webmon2/filters/split_text.py:47
+#: webmon2/filters/split_re.py:33 webmon2/filters/split_text.py:47
 #: webmon2/filters/split_text.py:77 webmon2/filters/split_text.py:96
 msgid "Selector"
 msgstr "Wyrażenie"
@@ -157,8 +154,7 @@ msgstr "Wydobywanie elementów na podstawie wyrażenia CSS"
 
 #: webmon2/filters/split_text.py:42
 msgid "Search and extract element from content by given CSS query"
-msgstr ""
-"Szuka i wydobywa elementy z zawartości na podstawie podanego wyrażenia CSS"
+msgstr "Szuka i wydobywa elementy z zawartości na podstawie podanego wyrażenia CSS"
 
 #: webmon2/filters/split_text.py:71
 msgid "Extract elements by xpath"
@@ -167,8 +163,8 @@ msgstr "Wydobywanie elementów na podstawie xpath "
 #: webmon2/filters/split_text.py:72
 msgid "Search and extract elements from html/xml content by given xpath"
 msgstr ""
-"Szuka i wydobywa elementy z treści html/xml na podstawie danego wyrażenia "
-"xpath"
+"Szuka i wydobywa elementy z treści html/xml na podstawie danego wyrażenia"
+" xpath"
 
 #: webmon2/filters/split_text.py:90
 msgid "Extract elements by given ID"
@@ -178,321 +174,329 @@ msgstr "Wydobywanie elementów na podstawie ID"
 msgid "Search and extract element from html content by given ID"
 msgstr "Szuka i wydobywa elementy z treści html przez podane ID"
 
-#: webmon2/filters/strip.py:21
+#: webmon2/filters/strip.py:20
 msgid "Remove white characters"
 msgstr "Usuwanie białych znaków"
 
-#: webmon2/filters/strip.py:22
+#: webmon2/filters/strip.py:21
 msgid "Remove white characters from beginning and end of content"
 msgstr "Usuwa białe znaki z początku i końca treści"
 
-#: webmon2/filters/strip.py:38
+#: webmon2/filters/strip.py:36
 msgid "Remove duplicated empty lines"
 msgstr "Usuwanie zdublowanych pustych linii"
 
-#: webmon2/filters/strip.py:39
+#: webmon2/filters/strip.py:37
 msgid "Remove duplicated empty lines from content"
 msgstr "Usuwa zdublowane puste linie z zawartości"
 
-#: webmon2/filters/strip.py:54
+#: webmon2/filters/strip.py:52
 msgid "Get only first lines"
 msgstr "Wybranie tylko pierwszych linii"
 
-#: webmon2/filters/strip.py:55
+#: webmon2/filters/strip.py:53
 msgid "Get defined number top lines from content"
 msgstr "Wybiera zdefiniowaną liczbę pierwszych linii z treści"
 
-#: webmon2/filters/strip.py:59
+#: webmon2/filters/strip.py:57
 msgid "Maximum number of lines"
 msgstr "Maksymalna ilość linii"
 
-#: webmon2/filters/wrap.py:21
+#: webmon2/filters/wrap.py:22
 msgid "Wrap long lines"
 msgstr "Zawijanie długich linii"
 
-#: webmon2/filters/wrap.py:22
+#: webmon2/filters/wrap.py:23
 msgid ""
 "Wrap long content lines to given width; also allow limit total number of "
 "lines"
 msgstr ""
-"Zawiń długie linie do podanej długości; powala ograniczyć także całkowitą "
-"liczbę linii"
+"Zawiń długie linie do podanej długości; powala ograniczyć także całkowitą"
+" liczbę linii"
 
-#: webmon2/filters/wrap.py:29
+#: webmon2/filters/wrap.py:30
 msgid "Max number of lines"
 msgstr "Maksymalna ilość linii"
 
-#: webmon2/sources/dummy.py:26
+#: webmon2/sources/dummy.py:27
 msgid "Dummy source for development"
 msgstr "Sztuczne źródło na potrzeby dewelopmentu"
 
-#: webmon2/sources/dummy.py:56
+#: webmon2/sources/dummy.py:57
 #, python-format
 msgid "dummy entry %(idx)s on %(date)s"
 msgstr "sztunczny wpis %(idx)s o %(date)s"
 
-#: webmon2/sources/file_input.py:26
+#: webmon2/sources/file_input.py:27
 msgid "Data from local file"
 msgstr "Dane z lokalnego pliku"
 
-#: webmon2/sources/file_input.py:27
+#: webmon2/sources/file_input.py:28
 msgid "Source check local, text file defined by \"Full file patch\" setting"
 msgstr ""
 "Źródło sprawdza lokalny plik tekstowy okreslony przez \"Pełną ścieżka do "
 "pliku\""
 
-#: webmon2/sources/file_input.py:32
+#: webmon2/sources/file_input.py:33
 msgid "Full file patch"
 msgstr "Pałna ścieżka do pliku"
 
-#: webmon2/sources/github.py:74 webmon2/sources/github.py:173
-#: webmon2/sources/github.py:302 webmon2/sources/github.py:444
-#: webmon2/sources/gitlab.py:106
+#: webmon2/sources/github.py:75 webmon2/sources/github.py:178
+#: webmon2/sources/github.py:313 webmon2/sources/github.py:461
+#: webmon2/sources/gitlab.py:105
 #, python-format
 msgid "Connection error: %(err)s"
 msgstr "Błąd połączenia: %(err)s"
 
-#: webmon2/sources/github.py:115
+#: webmon2/sources/github.py:120
 msgid "Commit history from GitHub repository"
 msgstr "Historia zmian z repozytorium GitHub"
 
-#: webmon2/sources/github.py:116
+#: webmon2/sources/github.py:121
 msgid ""
-"Source load commits history from configured repository. For work required "
-"configured GitHub account with token."
+"Source load commits history from configured repository. For work required"
+" configured GitHub account with token."
 msgstr ""
-"Źródło wczytuje historię zmian ze skonfigurowanego repozytorium. Do pracy "
-"wymaga Skonfigurowanego konta GitHub z tokenem."
+"Źródło wczytuje historię zmian ze skonfigurowanego repozytorium. Do pracy"
+" wymaga Skonfigurowanego konta GitHub z tokenem."
 
-#: webmon2/sources/github.py:122 webmon2/sources/github.py:262
-#: webmon2/sources/github.py:401
+#: webmon2/sources/github.py:127 webmon2/sources/github.py:273
+#: webmon2/sources/github.py:418
 msgid "Repository owner"
 msgstr "Właściciel repozytorium"
 
-#: webmon2/sources/github.py:125 webmon2/sources/github.py:265
-#: webmon2/sources/github.py:404
+#: webmon2/sources/github.py:130 webmon2/sources/github.py:276
+#: webmon2/sources/github.py:421
 msgid "Repository name"
 msgstr "Nazwa repozytorium"
 
-#: webmon2/sources/github.py:129 webmon2/sources/github.py:269
-#: webmon2/sources/github.py:408
+#: webmon2/sources/github.py:134 webmon2/sources/github.py:280
+#: webmon2/sources/github.py:425
 msgid "User login"
 msgstr "Login użytkownika"
 
-#: webmon2/sources/github.py:135 webmon2/sources/github.py:275
-#: webmon2/sources/github.py:414 webmon2/sources/gitlab.py:54
+#: webmon2/sources/github.py:140 webmon2/sources/github.py:286
+#: webmon2/sources/github.py:431 webmon2/sources/gitlab.py:55
 msgid "User personal token"
 msgstr "Prywatny login użytkownika"
 
-#: webmon2/sources/github.py:141 webmon2/sources/gitlab.py:176
+#: webmon2/sources/github.py:146 webmon2/sources/gitlab.py:180
 msgid "Show commits as short list"
 msgstr "Wyświel zmiany jako krótką listę"
 
-#: webmon2/sources/github.py:146 webmon2/sources/gitlab.py:181
+#: webmon2/sources/github.py:151 webmon2/sources/gitlab.py:185
 msgid "Show commits whole commit body"
 msgstr "Wyświetl zmiany z treścią"
 
-#: webmon2/sources/github.py:241 webmon2/sources/gitlab.py:273
+#: webmon2/sources/github.py:252 webmon2/sources/gitlab.py:283
 #, python-format
 msgid "Author: %(author)s"
 msgstr "Autor: %(author)s"
 
-#: webmon2/sources/github.py:255
+#: webmon2/sources/github.py:266
 msgid "Tags from GitHub repository"
 msgstr "Tagi z repozytorium GitHub"
 
-#: webmon2/sources/github.py:256
+#: webmon2/sources/github.py:267
 msgid ""
-"Source load tags from configured repository. For work required configured "
-"GitHub account with token."
+"Source load tags from configured repository. For work required configured"
+" GitHub account with token."
 msgstr ""
 "Źródło wczytuje tagi ze skonfigurowanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta GitHub z tokenem."
 
-#: webmon2/sources/github.py:281 webmon2/sources/github.py:420
-#: webmon2/sources/gitlab.py:295 webmon2/sources/gitlab.py:393
+#: webmon2/sources/github.py:292 webmon2/sources/github.py:437
+#: webmon2/sources/gitlab.py:305 webmon2/sources/gitlab.py:409
 msgid "Maximal number of tags to load"
 msgstr "Maksymalna ilość tagów do wczytania"
 
-#: webmon2/sources/github.py:394
+#: webmon2/sources/github.py:411
 msgid "Releases from GitHub repository"
 msgstr "Wydania z repozytorium GitHub"
 
-#: webmon2/sources/github.py:395
+#: webmon2/sources/github.py:412
 msgid ""
-"Source load releases history from configured repository. For work required "
-"configured GitHub account with token."
+"Source load releases history from configured repository. For work "
+"required configured GitHub account with token."
 msgstr ""
 "Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta Github z tokenem."
 
-#: webmon2/sources/gitlab.py:44
+#: webmon2/sources/github.py:539 webmon2/sources/gitlab.py:501
+msgid "Date: "
+msgstr "Data: "
+
+#: webmon2/sources/gitlab.py:45
 msgid "Project ID; i.e. user/project"
 msgstr "ID projektu; na przykład użytkownik/projekt"
 
-#: webmon2/sources/gitlab.py:49
+#: webmon2/sources/gitlab.py:50
 msgid "GitLab URL"
 msgstr "URL instancji GitLab"
 
-#: webmon2/sources/gitlab.py:168
+#: webmon2/sources/gitlab.py:171
 msgid "Commit history from GitLab repository"
 msgstr "Historia zmian z repozytorium GitLab"
 
-#: webmon2/sources/gitlab.py:169
+#: webmon2/sources/gitlab.py:172
 msgid ""
-"Source load commits history from configured repository. For work required "
-"configured GitLab account with token."
+"Source load commits history from configured repository. For work required"
+" configured GitLab account with token."
 msgstr ""
 "Źródło wczytuje historię znian z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta GotLab z tokenem."
 
-#: webmon2/sources/gitlab.py:192
+#: webmon2/sources/gitlab.py:196
 msgid "Project not found"
 msgstr "NIe znaleznion projektu"
 
-#: webmon2/sources/gitlab.py:287
+#: webmon2/sources/gitlab.py:297
 msgid "Tags from GitLab repository"
 msgstr "Tagi z repozytorium GitLab"
 
-#: webmon2/sources/gitlab.py:288
+#: webmon2/sources/gitlab.py:298
 msgid ""
-"Source load tags from configured repository. For work required configured "
-"GitLab account with token."
+"Source load tags from configured repository. For work required configured"
+" GitLab account with token."
 msgstr ""
 "Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta GitLab z tokenem."
 
-#: webmon2/sources/gitlab.py:385
+#: webmon2/sources/gitlab.py:400
 msgid "Releases from GitLab repository"
 msgstr "Wydania z repozytorium GitLab"
 
-#: webmon2/sources/gitlab.py:386
+#: webmon2/sources/gitlab.py:401
 msgid ""
-"Source load releases history from configured repository. For work required "
-"configured GitLab account with token."
+"Source load releases history from configured repository. For work "
+"required configured GitLab account with token."
 msgstr ""
 "Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
 "skonfigurowanego konta GitLab z tokenem."
 
-#: webmon2/sources/jamendo.py:170
+#: webmon2/sources/jamendo.py:181
 msgid "Jamendo albums"
 msgstr "Albumy Jamendo"
 
-#: webmon2/sources/jamendo.py:171
+#: webmon2/sources/jamendo.py:182
 msgid ""
-"Check for new albums for given artist in Jamendo. Either artist ID or name "
-"must be configured; also source require configured 'Jamendo client ID'"
+"Check for new albums for given artist in Jamendo. Either artist ID or "
+"name must be configured; also source require configured 'Jamendo client "
+"ID'"
 msgstr ""
-"Sprawdza nowe albumy dla danego artysty w Jamendo. ID artysty lub jego nazwa "
-"musi zostać podano; wymaga także skonfigurowania 'ID clienta Jamendo'"
+"Sprawdza nowe albumy dla danego artysty w Jamendo. ID artysty lub jego "
+"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
+"Jamendo'"
 
-#: webmon2/sources/jamendo.py:177 webmon2/sources/jamendo.py:280
+#: webmon2/sources/jamendo.py:188 webmon2/sources/jamendo.py:290
 msgid "Artist ID"
 msgstr "ID artysty"
 
-#: webmon2/sources/jamendo.py:178 webmon2/sources/jamendo.py:281
+#: webmon2/sources/jamendo.py:189 webmon2/sources/jamendo.py:291
 msgid "Artist name"
 msgstr "Nazwa artysty"
 
-#: webmon2/sources/jamendo.py:181 webmon2/sources/jamendo.py:284
+#: webmon2/sources/jamendo.py:192 webmon2/sources/jamendo.py:294
 msgid "Jamendo client ID"
 msgstr "ID klienta Jamendo"
 
-#: webmon2/sources/jamendo.py:273
+#: webmon2/sources/jamendo.py:283
 msgid "Jamendo tracks"
 msgstr "Utwory Jamendo"
 
-#: webmon2/sources/jamendo.py:274
+#: webmon2/sources/jamendo.py:284
 msgid ""
-"Check for new tracks for given artist in Jamendo. Either artist ID or name "
-"must be configured; also source require configured 'Jamendo client ID'"
+"Check for new tracks for given artist in Jamendo. Either artist ID or "
+"name must be configured; also source require configured 'Jamendo client "
+"ID'"
 msgstr ""
-"Sprawdza nowe utwory dla danego artysty w Jamendo. ID artysty lub jego nazwa "
-"musi zostać podano; wymaga także skonfigurowania 'ID clienta Jamendo'"
+"Sprawdza nowe utwory dla danego artysty w Jamendo. ID artysty lub jego "
+"nazwa musi zostać podano; wymaga także skonfigurowania 'ID clienta "
+"Jamendo'"
 
-#: webmon2/sources/jamendo.py:341
+#: webmon2/sources/jamendo.py:351
 msgid "artist name or id is required"
 msgstr "nazwa artysty lub id są wymagane"
 
-#: webmon2/sources/rss.py:35
+#: webmon2/sources/rss.py:36
 msgid "RSS/Atom channel"
 msgstr "Kanał RSS/Atom"
 
-#: webmon2/sources/rss.py:36
+#: webmon2/sources/rss.py:37
 msgid "Load data form RSS/Atom channel. Require define URL."
 msgstr "Wczytanie danych z kanału RSS/Atom. Wymaga podania URL."
 
-#: webmon2/sources/rss.py:40
+#: webmon2/sources/rss.py:41
 msgid "RSS XML URL"
 msgstr "URL do RSS XML"
 
-#: webmon2/sources/rss.py:43
+#: webmon2/sources/rss.py:44
 msgid "Maximal number of articles to load"
 msgstr "Maksymalna ilość artykułów do wczytania"
 
-#: webmon2/sources/rss.py:48
+#: webmon2/sources/rss.py:49
 msgid "Load content of entries"
 msgstr "Wczytuj zawartość wpisów"
 
-#: webmon2/sources/rss.py:52
+#: webmon2/sources/rss.py:53
 msgid "Load article"
 msgstr "Wczytuj artykuły"
 
-#: webmon2/sources/rss.py:138 webmon2/sources/web.py:164
+#: webmon2/sources/rss.py:139 webmon2/sources/web.py:176
 #, python-format
 msgid "Permanently redirects: %(url)s"
 msgstr "Ostateczne przeniesienie: %(url)s"
 
-#: webmon2/sources/rss.py:143 webmon2/sources/web.py:176
+#: webmon2/sources/rss.py:144 webmon2/sources/web.py:186
 #, python-format
 msgid "Temporary redirects: %(url)s"
 msgstr "Tymczasowe przeniesienie: %(url)s"
 
-#: webmon2/sources/rss.py:216
+#: webmon2/sources/rss.py:218
 #, python-format
 msgid "Article not loaded because of content type: %(type)s"
 msgstr "Artykuł nie załadowany z powodu typu zawartości: %(type)s"
 
-#: webmon2/sources/rss.py:225
+#: webmon2/sources/rss.py:227
 #, python-format
 msgid "Loading article error: %(err)s"
 msgstr "Błąd ładowania artykułu: %(err)s"
 
-#: webmon2/sources/rss.py:324
+#: webmon2/sources/rss.py:327
 #, python-format
 msgid "Loading page error: %(status)s"
 msgstr "Błąd wczytywania strony: %(status)s"
 
-#: webmon2/sources/web.py:29
+#: webmon2/sources/web.py:30
 msgid "Web page"
 msgstr "Strona Web"
 
-#: webmon2/sources/web.py:30
+#: webmon2/sources/web.py:31
 msgid "Load data form web page pointed by URL."
 msgstr "Wczytuje dane ze strony web wskazanej przez URL."
 
-#: webmon2/sources/web.py:32
+#: webmon2/sources/web.py:33
 msgid "Web page URL"
 msgstr "URL strony"
 
-#: webmon2/sources/web.py:34
+#: webmon2/sources/web.py:35
 msgid "Loading timeout"
 msgstr "Maksymalny czas wczytywania"
 
-#: webmon2/sources/web.py:38
+#: webmon2/sources/web.py:39
 msgid "Fix URL-s"
 msgstr "Popraw URL-e"
 
-#: webmon2/sources/web.py:43
+#: webmon2/sources/web.py:44
 msgid "HTTP Headers"
 msgstr "Nagłówki HTTP"
 
-#: webmon2/sources/web.py:102
+#: webmon2/sources/web.py:100
 #, python-format
 msgid "Response code: %(code)s"
 msgstr "Kod odpowiedzi: %(code)s"
 
-#: webmon2/web/_filters.py:43
+#: webmon2/web/_filters.py:44
 msgid "none"
 msgstr "brak"
 
@@ -504,47 +508,47 @@ msgstr "Przeczytane"
 msgid "Unread"
 msgstr "Nieprzeczytane"
 
-#: webmon2/web/entry.py:110 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:108 webmon2/web/templates/_render_entry.html:29
 msgid "Star"
 msgstr "Zaznacz"
 
-#: webmon2/web/entry.py:110 webmon2/web/templates/_render_entry.html:29
+#: webmon2/web/entry.py:108 webmon2/web/templates/_render_entry.html:29
 msgid "Unstar"
 msgstr "Odznacz"
 
-#: webmon2/web/forms.py:168
+#: webmon2/web/forms.py:166
 msgid "Missing group"
 msgstr "Brak grupy"
 
-#: webmon2/web/forms.py:171 webmon2/web/forms.py:271
+#: webmon2/web/forms.py:169 webmon2/web/forms.py:279
 msgid "Missing name"
 msgstr "Brak nazwy"
 
-#: webmon2/web/forms.py:174
+#: webmon2/web/forms.py:172
 msgid "Missing source kind"
 msgstr "Brak rodzaju źródła"
 
-#: webmon2/web/forms.py:177
+#: webmon2/web/forms.py:174
 msgid "Unknown kind"
 msgstr "Nieznany rodzaj"
 
-#: webmon2/web/forms.py:183
+#: webmon2/web/forms.py:180
 msgid "Invalid interval"
 msgstr "Niewłaściwy interwał"
 
-#: webmon2/web/forms.py:322
+#: webmon2/web/forms.py:330
 msgid "Passwords not match"
 msgstr "Hasła nie pasują do siebie"
 
-#: webmon2/web/forms.py:325
+#: webmon2/web/forms.py:333
 msgid "Missing login"
 msgstr "Brak loginu"
 
-#: webmon2/web/forms.py:328
+#: webmon2/web/forms.py:336
 msgid "Password is required for new user"
 msgstr "Hasło jest wymagane dla nowego użytkownika"
 
-#: webmon2/web/group.py:40
+#: webmon2/web/group.py:41
 #, python-format
 msgid "One sources in group marked to refresh"
 msgid_plural "%(marked)s sources in group marked to refresh"
@@ -552,28 +556,28 @@ msgstr[0] "Jedno źródło w grupie zaznaczone do odświeżenia"
 msgstr[1] "%(marked)s źródła w grupie zaznaczono do odświeżenia"
 msgstr[2] "%(marked)s źródeł w grupie zaznaczono do odświeżenia"
 
-#: webmon2/web/group.py:75
+#: webmon2/web/group.py:76
 msgid "Group saved"
 msgstr "Zapisano grupę"
 
-#: webmon2/web/group.py:80
+#: webmon2/web/group.py:81
 msgid "Group changed somewhere else; reloading..."
 msgstr "Grupa zmieniona w tle; przeładowywanie..."
 
-#: webmon2/web/group.py:179 webmon2/web/group.py:203 webmon2/web/root.py:51
+#: webmon2/web/group.py:180 webmon2/web/group.py:204 webmon2/web/root.py:53
 msgid "No more unread groups..."
 msgstr "Brak nieprzeczytanych grup..."
 
-#: webmon2/web/group.py:216
+#: webmon2/web/group.py:217
 msgid "Group deleted"
 msgstr "Grupa usunięta"
 
-#: webmon2/web/group.py:221
+#: webmon2/web/group.py:222
 #, python-format
 msgid "Can't delete group: %(err)s"
 msgstr "Nie można usunąć grupy: %(err)s"
 
-#: webmon2/web/root.py:77 webmon2/web/root.py:93
+#: webmon2/web/root.py:80 webmon2/web/root.py:96
 #, python-format
 msgid "One source mark to refresh"
 msgid_plural "%(updated)s sources mark to refresh"
@@ -581,80 +585,80 @@ msgstr[0] "Jedno źródło zaznaczone do odświeżenia"
 msgstr[1] "%(updated)s źródła zaznaczono do odświeżenia"
 msgstr[2] "%(updated)s źródeł zaznaczono do odświeżenia"
 
-#: webmon2/web/security.py:49 webmon2/web/security.py:67
+#: webmon2/web/security.py:50 webmon2/web/security.py:68
 msgid "Invalid user and/or password"
 msgstr "Niewłaściwy użytkownik i/lub hasło"
 
-#: webmon2/web/security.py:95
+#: webmon2/web/security.py:96
 msgid "Invalid TOTP answer"
 msgstr "Niewłaściwa odpowiedź TOTP"
 
-#: webmon2/web/source.py:39
+#: webmon2/web/source.py:40
 msgid "Source mark to refresh"
 msgstr "Źródło zaznaczone do odświeżenia"
 
-#: webmon2/web/source.py:55
+#: webmon2/web/source.py:56
 msgid "Source deleted"
 msgstr "Źródło usunięte"
 
-#: webmon2/web/source.py:127
+#: webmon2/web/source.py:90
 msgid "Source saved"
 msgstr "Źródło zapisane"
 
-#: webmon2/web/source.py:135
+#: webmon2/web/source.py:142
 msgid "Source changed somewhere else; reloading..."
 msgstr "Źródło zmienione w tle, przeładowywanie..."
 
-#: webmon2/web/source.py:419
+#: webmon2/web/source.py:423
 msgid "No more unread sources..."
 msgstr "Brak nieprzeczytanych źródeł..."
 
-#: webmon2/web/system.py:70 webmon2/web/system.py:395
+#: webmon2/web/system.py:73 webmon2/web/system.py:407
 msgid "There are errors in form"
 msgstr "W formie występują błędy"
 
-#: webmon2/web/system.py:86 webmon2/web/system.py:397
+#: webmon2/web/system.py:89 webmon2/web/system.py:409
 msgid "User changed somewhere else; reloading..."
 msgstr "Użytkownik zmieniony w tle; przeładowywanie..."
 
-#: webmon2/web/system.py:88
+#: webmon2/web/system.py:91
 msgid "New passwords not match"
 msgstr "Nowe hasła nie pasują"
 
-#: webmon2/web/system.py:90
+#: webmon2/web/system.py:93
 msgid "Missing new password"
 msgstr "Brak nowego hasła"
 
-#: webmon2/web/system.py:92
+#: webmon2/web/system.py:95
 msgid "Missing current password"
 msgstr "Brak obecnego hasła"
 
-#: webmon2/web/system.py:103
+#: webmon2/web/system.py:106
 msgid "Password changed"
 msgstr "Hasło zmienione"
 
-#: webmon2/web/system.py:105
+#: webmon2/web/system.py:108
 msgid "Wrong current password"
 msgstr "Niewłaściwe aktualne hasło"
 
-#: webmon2/web/system.py:167
+#: webmon2/web/system.py:170
 msgid "TOTP saved"
 msgstr "Zapisano TOTP"
 
-#: webmon2/web/system.py:174
+#: webmon2/web/system.py:177
 msgid "Wrong TOTP response"
 msgstr "Błędna odpowiedź TOTP"
 
-#: webmon2/web/system.py:210 webmon2/web/system.py:230
-#: webmon2/web/system.py:236
+#: webmon2/web/system.py:212 webmon2/web/system.py:232
+#: webmon2/web/system.py:237
 msgid "No file to import"
 msgstr "Brak pliku do importu"
 
-#: webmon2/web/system.py:218 webmon2/web/system.py:244
+#: webmon2/web/system.py:220 webmon2/web/system.py:245
 msgid "Import completed"
 msgstr "Import zakończony"
 
-#: webmon2/web/system.py:260 webmon2/web/system.py:278
+#: webmon2/web/system.py:261 webmon2/web/system.py:279
 #, python-format
 msgid "One entry mark read"
 msgid_plural "%(updated)s entries mark read"
@@ -662,7 +666,7 @@ msgstr[0] "Jeden wpis zaznaczono jako przeczytany"
 msgstr[1] "%(updated)s wpisy zaznaczono jako przeczytany"
 msgstr[2] "%(updated)s wpisów zaznaczono jako przeczytane"
 
-#: webmon2/web/system.py:295
+#: webmon2/web/system.py:296
 #, python-format
 msgid "One source updated"
 msgid_plural "%(updated)s sources updated"
@@ -670,99 +674,99 @@ msgstr[0] "Jedno źródło zaktualizowane"
 msgstr[1] "%(updated)s źródła zaktualizowane"
 msgstr[2] "%(updated)s źródeł zaktualizowanych"
 
-#: webmon2/web/system.py:325
+#: webmon2/web/system.py:326
 msgid "Saved"
 msgstr "Zapisano"
 
-#: webmon2/web/system.py:361 webmon2/web/system.py:423
+#: webmon2/web/system.py:392 webmon2/web/system.py:435
 msgid "User not found"
 msgstr "Użytkownik nie znaleziony"
 
-#: webmon2/web/system.py:429
+#: webmon2/web/system.py:441
 msgid "User deleted"
 msgstr "Użytkownik usunięty"
 
-#: webmon2/web/system.py:484
+#: webmon2/web/system.py:496
 msgid "GitHub: user name"
 msgstr "Github: nazwa użytkownika"
 
-#: webmon2/web/system.py:485
+#: webmon2/web/system.py:497
 msgid "GitHub: access token"
 msgstr "GitHub: token dostępowy"
 
-#: webmon2/web/system.py:486
+#: webmon2/web/system.py:498
 msgid "Default refresh interval"
 msgstr "Domyślny interwał odświeżania"
 
-#: webmon2/web/system.py:487
+#: webmon2/web/system.py:499
 msgid "Jamendo: client ID"
 msgstr "Jamendo: id klienta"
 
-#: webmon2/web/system.py:488
+#: webmon2/web/system.py:500
 msgid "Keep read entries by given days"
 msgstr "Zachowaj przeczytane wpisy przez daną ilość dni"
 
-#: webmon2/web/system.py:489
+#: webmon2/web/system.py:501
 msgid "Email: enable email reports"
 msgstr "Email: włącz raporty email"
 
-#: webmon2/web/system.py:490
+#: webmon2/web/system.py:502
 msgid "Email: send email interval"
 msgstr "Email: interwał wysyłania emaili"
 
-#: webmon2/web/system.py:491
+#: webmon2/web/system.py:503
 msgid "Email: recipient"
 msgstr "Email: odbiorca"
 
-#: webmon2/web/system.py:492
+#: webmon2/web/system.py:504
 msgid "Email: subject"
 msgstr "Email: temat"
 
-#: webmon2/web/system.py:493
+#: webmon2/web/system.py:505
 msgid "Email: enable encryption"
 msgstr "Email: włącz szyfrowanie"
 
-#: webmon2/web/system.py:494
+#: webmon2/web/system.py:506
 msgid "Email: send miltipart email with html content"
 msgstr "Email: wysyłaj email wieloczęściowy z zawartością html"
 
-#: webmon2/web/system.py:495
+#: webmon2/web/system.py:507
 msgid "Email: mark reported entries read"
 msgstr "Email: zaznacz wysłane wpisy jako przeczytane"
 
-#: webmon2/web/system.py:496
+#: webmon2/web/system.py:508
 msgid "Start at first unread group"
 msgstr "Zaczynaj od pierwszej nieprzeczytanej grupy"
 
-#: webmon2/web/system.py:497
+#: webmon2/web/system.py:509
 msgid "GitLab: personal token"
 msgstr "GitLab: osobisty token"
 
-#: webmon2/web/system.py:498
+#: webmon2/web/system.py:510
 msgid "Silent hours: begin"
 msgstr "Ciche godziny: początek"
 
-#: webmon2/web/system.py:499
+#: webmon2/web/system.py:511
 msgid "Silent hours: end"
 msgstr "Ciche godziny: koniec"
 
-#: webmon2/web/system.py:500
+#: webmon2/web/system.py:512
 msgid "Minimal score of entries to show"
 msgstr "Minimalne ilość punktów wpisu aby go pokazać"
 
-#: webmon2/web/system.py:501
+#: webmon2/web/system.py:513
 msgid "User: default timezone"
 msgstr "Użytkownik: domyślna strefa czasowa"
 
-#: webmon2/web/system.py:502
+#: webmon2/web/system.py:514
 msgid "User: language"
 msgstr "Użytkownik: język"
 
-#: webmon2/web/system.py:503
+#: webmon2/web/system.py:515
 msgid "User GPG public key"
 msgstr "Klucz GPG użytkownika"
 
-#: webmon2/web/system.py:504
+#: webmon2/web/system.py:516
 msgid "Default HTTP headers"
 msgstr "Domyślne nagłówki HTTP"
 
@@ -1347,8 +1351,7 @@ msgstr "Zaznacz wszystko starsze niż dzień jako przeczytane"
 
 #: webmon2/web/templates/system/data.html:45
 msgid "Randomize next check time for all active sources"
-msgstr ""
-"Losowo zmień czas kolejnego sprawdzenia dla wszystkich aktywnych źródeł"
+msgstr "Losowo zmień czas kolejnego sprawdzenia dla wszystkich aktywnych źródeł"
 
 #: webmon2/web/templates/system/globals.html:14
 msgid "Default and global settings"
@@ -1371,7 +1374,7 @@ msgid "Add new rule"
 msgstr "Dodaj nową regułę"
 
 #: webmon2/web/templates/system/sys_info.html:22
-msgid "System informations"
+msgid "System information"
 msgstr "Informacje systemowe"
 
 #: webmon2/web/templates/system/sys_info.html:30
@@ -1495,30 +1498,36 @@ msgstr "Kod:"
 #~ msgstr "Historia zmian z reportorium Github"
 
 #~ msgid ""
-#~ "Source load commits history from configured repository. For work required "
+#~ "Source load commits history from "
+#~ "configured repository. For work required "
 #~ "configured Github account with token."
 #~ msgstr ""
-#~ "Źródło wczytuje historię zmian z podanego repozytorium. Do działania "
-#~ "wymaga skonfigurowanego konta Github z tokenem."
+#~ "Źródło wczytuje historię zmian z "
+#~ "podanego repozytorium. Do działania wymaga "
+#~ "skonfigurowanego konta Github z tokenem."
 
 #~ msgid "Tags from Github repository"
 #~ msgstr "Tagi z repozytorium Github"
 
 #~ msgid ""
-#~ "Source load tags from configured repository. For work required configured "
+#~ "Source load tags from configured "
+#~ "repository. For work required configured "
 #~ "Github account with token."
 #~ msgstr ""
-#~ "Źródło wczytuje tagi z podanego repozytorium. Do pracy wymaga "
-#~ "skonfigurowanego konta Github z tokenem."
+#~ "Źródło wczytuje tagi z podanego "
+#~ "repozytorium. Do pracy wymaga skonfigurowanego"
+#~ " konta Github z tokenem."
 
 #~ msgid "Releases from Github repository"
 #~ msgstr "Wydania z repozytorium Github"
 
 #~ msgid ""
-#~ "Source load releases history from configured repository. For work "
-#~ "required configured Github account with token."
+#~ "Source load releases history from "
+#~ "configured repository. For work required "
+#~ "configured Github account with token."
 #~ msgstr ""
-#~ "Źródło wczytuje historię wydań z podanego repozytorium. Do pracy wymaga "
+#~ "Źródło wczytuje historię wydań z "
+#~ "podanego repozytorium. Do pracy wymaga "
 #~ "skonfigurowanego konta Github z tokenem."
 
 #~ msgid "Github user name"
@@ -1571,3 +1580,4 @@ msgstr "Kod:"
 
 #~ msgid "Global parameters"
 #~ msgstr "Ustawienia globalne"
+

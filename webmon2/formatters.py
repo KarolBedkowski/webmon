@@ -3,7 +3,7 @@
 # Distributed under terms of the GPLv3 license.
 
 """
-Formating entry content functions
+Formatting entry content functions
 """
 
 from __future__ import annotations

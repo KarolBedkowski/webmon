@@ -49,7 +49,7 @@ def _join_entries(
 
 
 class Join(AbstractFilter):
-    """Join all entries into one conten"""
+    """Join all entries into one entry."""
 
     name = "join"
     short_info = lazy_gettext("Join elements")

@@ -149,14 +149,14 @@ def _process_group(
 
     for source in sources:
         structlog.contextvars.bind_contextvars(source_id=source.id)
-        yield from _proces_source(ctx, db, source.id)
+        yield from _process_source(ctx, db, source.id)
 
     structlog.contextvars.unbind_contextvars("source_id")
 
     yield "\n\n\n"
 
 
-def _proces_source(
+def _process_source(
     ctx: Ctx, db: database.DB, source_id: int
 ) -> ty.Iterator[str]:
     """

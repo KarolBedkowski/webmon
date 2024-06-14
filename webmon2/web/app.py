@@ -152,7 +152,7 @@ def _before_request() -> ty.Any:  # noqa:ANN401
     if path.startswith("/sec/login"):
         return None
 
-    # login is requred; redirect to login page
+    # login is required; redirect to login page
 
     # back url is registered only for get request to prevent bad request
     if request.method == "GET":
@@ -171,10 +171,10 @@ def _after_request(  # pylint: disable=unused-variable
         "application/atom+xml",
         "text/plain",
     ):
-        _set_cache_contol_no_cache(resp)
+        _set_cache_control_no_cache(resp)
 
     if cont_type == "text/html":
-        _set_cache_contol_no_cache(resp)
+        _set_cache_control_no_cache(resp)
         resp.headers["Content-Security-Policy"] = _CSP
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["X-Frame-Options"] = "DENY"
@@ -261,7 +261,7 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
     return app
 
 
-def _set_cache_contol_no_cache(resp: Response) -> None:
+def _set_cache_control_no_cache(resp: Response) -> None:
     if not resp.headers.get("Cache-Control"):
         resp.headers["Cache-Control"] = "no-cache, max-age=0"
 

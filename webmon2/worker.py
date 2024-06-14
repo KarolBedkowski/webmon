@@ -322,7 +322,7 @@ class FetchWorker(threading.Thread):
                 source.filters, entries, source.state, new_state, db
             )
 
-        # process entriec, calcuate oids, sanitize content
+        # process entries, calculate oids, sanitize content
         entries = self._final_filter_entries(entries)
         # calculate scoring & update entries state
         entries = self._score_entries(

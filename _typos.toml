@@ -1,0 +1,6 @@
+[type.po]
+extend-glob = ["*.po"]
+check-file = false
+
+[files]
+extend-exclude = ["webmon2/web/static/t_pl.js"]

@@ -52,7 +52,7 @@ def _format_date(date: ty.Any) -> str:  # noqa:ANN401
     return str(date)
 
 
-def _absoute_url(url: str) -> str:
+def _absolute_url(url: str) -> str:
     return ty.cast(str, urllib.parse.urljoin(request.url_root, url))
 
 
@@ -184,7 +184,7 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
     app.jinja_env.filters["format_date"] = _format_date
-    app.jinja_env.filters["absolute_url"] = _absoute_url
+    app.jinja_env.filters["absolute_url"] = _absolute_url
     app.jinja_env.filters["format_html"] = formatters.format_html
     app.jinja_env.filters["cleanup_html"] = formatters.cleanup_html
     app.jinja_env.filters["summary"] = formatters.entry_summary
