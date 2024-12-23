@@ -318,6 +318,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         current object. Increment error counter.
         """
         state = self.create_new(status=SourceStateStatus.ERROR, **props)
+        state.last_update = self.last_update
         state.error = error
         state.error_counter += 1
         state.last_error = datetime.now(timezone.utc)
