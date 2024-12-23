@@ -56,9 +56,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
     ) -> Field:
         if param.options:
             field_type = "select"
-        elif param.type == int:
+        elif param.type is int:
             field_type = "number"
-        elif param.type == bool:
+        elif param.type is bool:
             field_type = "checkbox"
         else:
             field_type = "str"
