@@ -19,15 +19,15 @@ from ._db import DB
 from ._dbcommon import NotFoundError, QuerySyntaxError
 
 __all__ = [
+    "DB",
     "NotFoundError",
     "QuerySyntaxError",
-    "DB",
-    "settings",
-    "users",
-    "groups",
-    "entries",
-    "sources",
     "binaries",
+    "entries",
+    "groups",
     "scoring",
+    "settings",
+    "sources",
     "system",
+    "users",
 ]
