@@ -113,9 +113,9 @@ def groups() -> ty.Any:  # noqa: ANN401
 
 
 @functools.cache
-def _metrics_accesslist() -> (
-    list[ipaddress.IPv4Network | ipaddress.IPv6Network]
-):
+def _metrics_accesslist() -> list[
+    ipaddress.IPv4Network | ipaddress.IPv6Network
+]:
     conf = current_app.config["app_conf"]
     networks = []
     for a in conf.get("metrics", "allow_from", fallback="").split(","):

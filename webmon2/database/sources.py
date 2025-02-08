@@ -628,8 +628,7 @@ def put_filter_state(
     """Save source filter state"""
     with db.cursor() as cur:
         cur.execute(
-            "DELETE FROM filters_state "
-            "WHERE source_id=%s AND filter_name=%s",
+            "DELETE FROM filters_state WHERE source_id=%s AND filter_name=%s",
             (source_id, filter_name),
         )
         if state is not None:

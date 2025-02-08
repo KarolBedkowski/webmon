@@ -243,6 +243,9 @@ class SettingDef:
 
         self.global_param = global_param
 
+    def __repr__(self) -> str:
+        return f"<SettingDef {self.__dict__}>"
+
     def get_parameter(
         self,
         key: str,

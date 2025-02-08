@@ -270,8 +270,8 @@ def _jamendo_format_long_list(
         for album in result.get("albums") or []:
             yield _create_entry(
                 source,
-                f'{album["releasedate"]} {album["name"]} '
-                f'{_jamendo_album_to_url(album["id"])}',
+                f"{album['releasedate']} {album['name']} "
+                f"{_jamendo_album_to_url(album['id'])}",
                 _get_release_date(album, log),
             )
 
