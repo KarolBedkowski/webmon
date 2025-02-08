@@ -38,7 +38,9 @@ class RssSource(AbstractSource):
         "Load data form RSS/Atom channel. Require define URL."
     )
     params = (
-        common.SettingDef("url", lazy_gettext("RSS XML URL"), required=True),
+        common.SettingDef(
+            "url", lazy_gettext("RSS XML URL"), required=True, input_type="url"
+        ),
         common.SettingDef(
             "max_items",
             lazy_gettext("Maximal number of articles to load"),

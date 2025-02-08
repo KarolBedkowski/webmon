@@ -30,7 +30,12 @@ class WebSource(AbstractSource):
     short_info = lazy_gettext("Web page")
     long_info = lazy_gettext("Load data form web page pointed by URL.")
     params = (
-        common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
+        common.SettingDef(
+            "url",
+            lazy_gettext("Web page URL"),
+            required=True,
+            input_type="url",
+        ),
         common.SettingDef(
             "timeout", lazy_gettext("Loading timeout"), default=30
         ),

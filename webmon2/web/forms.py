@@ -61,7 +61,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
         elif param.type is bool:
             field_type = "checkbox"
         else:
-            field_type = "str"
+            field_type = param.parameters.get("input_type", "str")
 
         return Field(
             name=param.name,
@@ -100,6 +100,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
             field_type = "str"
             field_type_class = str
             parameters = {"multiline": True}
+        elif setting.value_type == "url":
+            field_type = "url"
+            field_type_class = str
         else:
             field_type = "str"
             field_type_class = str
@@ -131,7 +134,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
             self.value = None
             return
 
-        if self.type == "str" and isinstance(form_value, str):
+        if self.type in ("str", "url") and isinstance(form_value, str):
             form_value = form_value.strip()
 
         if self.type_class:

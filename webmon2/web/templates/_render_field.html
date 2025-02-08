@@ -12,6 +12,11 @@
 				{% if field.default_value %}placeholder="{{ _("Default:") }} {{ field.default_value }}"{% endif %}
 			/>
 		{% endif %}
+	{% elif field.type == "url" %}
+		<input type="url" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
+			{% if field.required %}required="required"{% endif %}
+			{% if field.default_value %}placeholder="{{ _("Default:") }} {{ field.default_value }}"{% endif %}
+		/>
 	{% elif field.type == 'number' %}
 		<input type="number" name="{{ field.fieldname}}" value="{{ field.value or '' }}"
 			{% if field.required %}required="required"{% endif %} />
