@@ -131,6 +131,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
             self.value = None
             return
 
+        if self.type == "str" and isinstance(form_value, str):
+            form_value = form_value.strip()
+
         if self.type_class:
             form_value = self.type_class(form_value)
 
