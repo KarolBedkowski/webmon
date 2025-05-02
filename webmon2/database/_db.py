@@ -8,7 +8,6 @@ Definition of DB object
 
 from __future__ import annotations
 
-import os.path
 import sys
 import typing as ty
 from functools import cache
@@ -174,8 +173,7 @@ class DB:
 
         schema_files = Path(__file__).parent.joinpath("..", "schema")
         log.debug("db.update_schema: schema_dir: %s", schema_files)
-        for fname in sorted(os.listdir(schema_files)):
-            file = Path(fname)
+        for file in sorted(Path(schema_files).iterdir()):
             if file.suffix != ".sql":
                 continue
 
@@ -187,15 +185,14 @@ class DB:
 
             except ValueError as err:
                 log.warning(
-                    "db.update_schema: skipping file %r", fname, error=err
+                    "db.update_schema: skipping file %s", file, error=err
                 )
                 continue
 
-            log.info("db.update_schema: apply update from file %r", fname)
-            fpath = Path(schema_files, fname)
+            log.info("db.update_schema: apply update from file %r", file)
             try:
                 with self._conn.cursor() as cur:
-                    sql = fpath.read_text(encoding="UTF-8")
+                    sql = file.read_text(encoding="UTF-8")
                     log.debug("db.update_schema: execute query", sql=sql)
                     cur.execute(sql)
                     cur.execute(
@@ -207,7 +204,7 @@ class DB:
             except Exception as err:  # pylint: disable=broad-except
                 self._conn.rollback()
                 log.exception(
-                    "db.update_schema: execute file %r error", fpath, error=err
+                    "db.update_schema: execute file %r error", file, error=err
                 )
                 sys.exit(-1)
 
