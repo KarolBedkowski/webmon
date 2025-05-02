@@ -54,7 +54,7 @@ class Html2Text(AbstractFilter):
 def _convert(content: str, bodywidth: int) -> str:
     conv = h2t.HTML2Text(bodywidth=bodywidth)
     conv.protect_links = True
-    return ty.cast(str, conv.handle(content))
+    return ty.cast("str", conv.handle(content))
 
 
 _RE_LINKS = re.compile(r'\(<([^\'">\s]+)>\)', re.IGNORECASE)

@@ -217,7 +217,7 @@ def _build_manifest() -> str:
             },
         ],
     }
-    return ty.cast(str, json.dumps(manifest))
+    return ty.cast("str", json.dumps(manifest))
 
 
 @BP.route("/manifest.json")  # type:ignore

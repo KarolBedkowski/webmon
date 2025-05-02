@@ -294,7 +294,7 @@ def delete(db: DB, source_id: int) -> int:
         number of deleted sources (should be 1)"""
     with db.cursor() as cur:
         cur.execute("delete from sources where id=%s", (source_id,))
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 def update_filter(
@@ -426,7 +426,7 @@ def get_state(db: DB, source_id: int) -> model.SourceState | None:
     """Get state for given source"""
     with db.cursor_obj_row(model.SourceState.from_row) as cur:
         cur.execute(_GET_STATE_SQL, (source_id,))
-        return ty.cast(model.SourceState, cur.fetchone())
+        return ty.cast("model.SourceState", cur.fetchone())
 
 
 _INSERT_STATE_SQL = """
@@ -535,7 +535,7 @@ def refresh(
                 "active": model.SourceStatus.ACTIVE,
             },
         )
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 _REFRESH_ERRORS_SQL = """
@@ -552,7 +552,7 @@ def refresh_errors(db: DB, user_id: int) -> int:
     """Refresh all sources in error state for given user"""
     with db.cursor() as cur:
         cur.execute(_REFRESH_ERRORS_SQL, (user_id, model.SourceStatus.ACTIVE))
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 _MARK_READ_SQL = """
@@ -597,7 +597,7 @@ def mark_read(  # noqa: PLR0913
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 def get_filter_state(
@@ -714,7 +714,7 @@ def randomize_next_check(db: DB, user_id: int) -> int:
     """Add random (0-60minutes) to next check for all user sources."""
     with db.cursor() as cur:
         cur.execute(_RANDOMIZE_NEXT_CHECK_SQL, (user_id,))
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 _ERRORS_FOR_USER_SQL = """

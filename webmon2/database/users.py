@@ -96,7 +96,7 @@ def get(
             raise AttributeError("missing id or login")
 
         if row := cur.fetchone():
-            return ty.cast(model.User, row)
+            return ty.cast("model.User", row)
 
     raise dbc.NotFoundError
 
@@ -271,4 +271,4 @@ def delete_old_log(db: DB, user_id: int) -> int:
     """Delete all user logs older than 7 days."""
     with db.cursor() as cur:
         cur.execute(_DELETE_OLD_LOGS_SQL, (user_id,))
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)

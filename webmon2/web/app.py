@@ -231,12 +231,12 @@ def _create_app(debug: bool, web_root: str, conf: ConfigParser) -> Flask:
 
     def get_locale() -> str | None:
         return ty.cast(
-            str | None,
+            "str | None",
             request.accept_languages.best_match(app.config["LANGUAGES"]),
         )
 
     def get_timezone() -> str | None:
-        return ty.cast(str | None, session.get("_user_tz"))
+        return ty.cast("str | None", session.get("_user_tz"))
 
     app.session_interface = appsession.DBSessionInterface(True)
     if hasattr(flask_babel.Babel, "localeselector"):

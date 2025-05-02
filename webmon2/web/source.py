@@ -90,11 +90,11 @@ def _source_edit_post(
     flash(gettext("Source saved"))
     if next_action == "edit_filters":
         return ty.cast(
-            str,
+            "str",
             redirect(url_for("source.source_filters", source_id=u_source.id)),
         )
 
-    return ty.cast(str, redirect(url_for("root.sources")))
+    return ty.cast("str", redirect(url_for("root.sources")))
 
 
 @BP.route("/<int:source_id>/edit", methods=["POST", "GET"])  # type:ignore

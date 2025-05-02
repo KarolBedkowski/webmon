@@ -190,7 +190,7 @@ def entries_search() -> str:
             error = "Invalid query"
 
     return ty.cast(
-        str,
+        "str",
         render_template(
             "entries_search.html",
             entries=entries_,

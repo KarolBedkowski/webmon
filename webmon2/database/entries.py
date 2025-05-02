@@ -423,7 +423,7 @@ def get(
     if with_source:
         entry.source = sources.get(db, entry.source_id, with_group=with_group)
 
-    return ty.cast(model.Entry, entry)
+    return ty.cast("model.Entry", entry)
 
 
 _INSERT_ENTRY_SQL = """
@@ -560,7 +560,7 @@ def mark_star(db: DB, user_id: int, entry_id: int, star: bool = True) -> int:
         changed = cur.rowcount
 
     log.debug("db: mark entries star finished; changed: %d", changed)
-    return ty.cast(int, changed)
+    return ty.cast("int", changed)
 
 
 def check_oids(db: DB, oids: list[str], source_id: int) -> set[str]:
@@ -658,7 +658,7 @@ def mark_read(  # noqa: PLR0913
                 "WHERE id<=%s AND id>=%s AND user_id=%s",
                 (read.value, max_id, min_id or 0, user_id),
             )
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 def mark_all_read(
@@ -698,7 +698,7 @@ def mark_all_read(
                 ),
             )
 
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 _GET_RELATED_RM_ENTRY_SQL = """

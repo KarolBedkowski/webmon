@@ -53,7 +53,7 @@ def _format_date(date: ty.Any) -> str:  # noqa:ANN401
 
 
 def _absolute_url(url: str) -> str:
-    return ty.cast(str, urllib.parse.urljoin(request.url_root, url))
+    return ty.cast("str", urllib.parse.urljoin(request.url_root, url))
 
 
 def _entry_score_class(score: int) -> str:
@@ -87,14 +87,14 @@ def _create_proxy_url(url: str, entry_url: str | None = None) -> str:
         return ""
 
     if url.startswith(("http://", "https://")):
-        return ty.cast(str, url_for("proxy.proxy", path=url))
+        return ty.cast("str", url_for("proxy.proxy", path=url))
 
     # handle related urls
     if not entry_url:
         return url
 
     url = urljoin(entry_url, url)
-    return ty.cast(str, url_for("proxy.proxy", path=url))
+    return ty.cast("str", url_for("proxy.proxy", path=url))
 
 
 def _extract_prefix_postfix(instr: str) -> tuple[str, int, int]:

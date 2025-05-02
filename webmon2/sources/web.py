@@ -256,7 +256,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        return ty.cast(str, clean.autolink_html(cleaner.clean_html(content)))
+        return ty.cast("str", clean.autolink_html(cleaner.clean_html(content)))
 
 
 def _prepare_headers(
