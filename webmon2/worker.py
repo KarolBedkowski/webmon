@@ -18,6 +18,7 @@ import time
 import typing as ty
 from contextlib import suppress
 
+import requests
 import structlog
 from flask import Flask
 from flask_babel import Babel, force_locale
@@ -110,6 +111,7 @@ class CheckWorker(threading.Thread):
         while True:
             self._notify("STATUS=processing")
             start = time.time()
+            interval = self._work_interval
             with database.DB.get() as db:
                 try:
                     now = time.time()
@@ -123,18 +125,18 @@ class CheckWorker(threading.Thread):
                         self._todo_queue.put(id_)
 
                     if not self._todo_queue.empty():
-                        # some work to do; launch workers
-                        workers = [
-                            self._start_worker(idx)
-                            for idx in range(min(self.num_workers, len(ids)))
-                        ]
-                        # wait for work completed
-                        for worker in workers:
-                            worker.join()
+                        # check is internet available; if not
+                        if self._check_internet():
+                            # some work to do; launch workers
+                            self._start_workers_and_wait(len(ids))
+
+                        else:
+                            interval *= 2
 
                     self._log.debug("CheckWorker check done")
                     self._notify("STATUS=mailing")
                     _send_mails(db, self._conf, self._app)
+
                 except Exception as err:  # pylint: disable=broad-except
                     self._log.exception("CheckWorker thread error", error=err)
 
@@ -146,7 +148,17 @@ class CheckWorker(threading.Thread):
                 gc_cntr = 0
 
             self._notify("STATUS=running")
-            time.sleep(self._work_interval)
+            time.sleep(interval)
+
+    def _start_workers_and_wait(self, num_sources: int) -> None:
+        workers = [
+            self._start_worker(idx)
+            for idx in range(min(self.num_workers, num_sources))
+        ]
+
+        # wait for work completed
+        for worker in workers:
+            worker.join()
 
     def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf, self._app)
@@ -154,6 +166,19 @@ class CheckWorker(threading.Thread):
         self._log.debug("CheckWorker worker %s started", idx)
         return worker
 
+    def _check_internet(self) -> bool:
+        url = self._conf.get("main", "internet_check_url")
+        if not url:
+            return True
+
+        self._log.debug("CheckWorker check internet: %s", url)
+
+        r = requests.get(url, timeout=10)
+        if r and r.status_code < 400 : # noqa:PLR2004
+            return True
+
+        self._log.info("CheckWorker internet not available")
+        return False
 
 class FetchWorker(threading.Thread):
     def __init__(
