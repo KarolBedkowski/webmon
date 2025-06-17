@@ -173,12 +173,22 @@ class CheckWorker(threading.Thread):
 
         self._log.debug("CheckWorker check internet: %s", url)
 
-        r = requests.get(url, timeout=10)
-        if r and r.status_code < 400 : # noqa:PLR2004
-            return True
+        with (
+            suppress(requests.ConnectionError),
+            requests.get(url, timeout=10) as r,
+        ):
+            if r and r.status_code < 400:  # noqa:PLR2004
+                return True
 
-        self._log.info("CheckWorker internet not available")
+            self._log.info(
+                "CheckWorker internet not available; response: %d",
+                r.status_code,
+            )
+            return False
+
+        self._log.info("CheckWorker internet not available (conn. error)")
         return False
+
 
 class FetchWorker(threading.Thread):
     def __init__(
