@@ -46,7 +46,7 @@ def create_object_row_maker(
 
 
 class DB:
-    POOL: pool.ConnectionPool = None
+    POOL: pool.ConnectionPool
 
     __slots__ = ("_conn", "_log")
 

@@ -137,8 +137,11 @@ def save(db: DB, user: model.User) -> model.User:
 
         with db.cursor() as cur:
             cur.execute(_INSERT_USER_SQL, user.to_row())
-            user_id = cur.fetchone()[0]
-            user.id = user_id
+            res = cur.fetchone()
+            if not res or not res[0]:
+                raise RuntimeError
+
+            user.id = user_id = res[0]
 
         _create_new_user_data(db, user_id)
 
@@ -151,7 +154,11 @@ def _create_new_user_data(db: DB, user_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if cur.fetchone()[0]:
+        res = cur.fetchone()
+        if not res:
+            raise RuntimeError
+
+        if res[0]:
             return
 
     with db.cursor() as cur:

@@ -206,7 +206,11 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     with db.cursor() as cur:
         if group.id is None:
             cur.execute(_INSERT_GROUP_SQL, row)
-            group.id = cur.fetchone()[0]
+            res = cur.fetchone()
+            if not res:
+                raise RuntimeError
+
+            group.id = res[0]
         else:
             cur.execute(_UPDATE_GROUP_SQL, row)
 
@@ -384,14 +388,17 @@ def delete(db: DB, user_id: int, group_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if not cur.fetchone()[0]:
+        res = cur.fetchone()
+        if not res or not res[0]:
             raise common.OperationError("can't delete last group")
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT count(1) FROM sources WHERE group_id=%s", (group_id,)
         )
-        if cur.fetchone()[0]:
+        res = cur.fetchone()
+        assert res
+        if res[0]:
             # there are sources in group find destination group
             dst_group_id = _find_dst_group(db, user_id, group_id)
             cur.execute(

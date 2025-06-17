@@ -114,10 +114,7 @@ class CheckWorker(threading.Thread):
             interval = self._work_interval
             with database.DB.get() as db:
                 try:
-                    now = time.time()
-                    if now > self._next_cleanup_start:
-                        _delete_old_entries(db)
-                        self._next_cleanup_start = now + _CLEANUP_INTERVAL
+                    self._clean_old_entries(db)
 
                     self._log.debug("CheckWorker check start")
                     ids = database.sources.get_sources_to_fetch(db)
@@ -149,6 +146,12 @@ class CheckWorker(threading.Thread):
 
             self._notify("STATUS=running")
             time.sleep(interval)
+
+    def _clean_old_entries(self, db: database.DB) -> None:
+        now = time.time()
+        if now > self._next_cleanup_start:
+            _delete_old_entries(db)
+            self._next_cleanup_start = now + _CLEANUP_INTERVAL
 
     def _start_workers_and_wait(self, num_sources: int) -> None:
         workers = [
@@ -253,6 +256,7 @@ class FetchWorker(threading.Thread):
                             source_id=source_id,
                         )
                 finally:
+                    # commit also state changes when error
                     db.commit()
 
             structlog.contextvars.clear_contextvars()
@@ -493,8 +497,7 @@ def _delete_old_entries(db: database.DB) -> None:
         2. remove unused binaries
         3. remove old source states
     """
-    users = list(database.users.get_all(db))
-    for user in users:
+    for user in list(database.users.get_all(db)):
         assert user.id
         log = _LOG.bind(user_id=user.id)
         log.debug("worker: delete old entries start")
@@ -540,8 +543,8 @@ def _delete_old_entries(db: database.DB) -> None:
             db.rollback()
             log.warning("worker: delete old entries error", error=err)
 
-    db.begin()
     try:
+        db.begin()
         states, entries = database.binaries.clean_sources_entries(db)
         _LOG.info(
             "worker: cleaned %d source states and %d entries",
@@ -557,10 +560,15 @@ def _delete_old_entries(db: database.DB) -> None:
         _LOG.warning("worker: clean binaries error", error=err)
 
     # delete expired sessions
-    db.begin()
-    cnt = database.system.delete_expired_sessions(db)
-    _LOG.info("worker: deleted %d expired sessions", cnt)
-    db.commit()
+    try:
+        db.begin()
+        cnt = database.system.delete_expired_sessions(db)
+        _LOG.info("worker: deleted %d expired sessions", cnt)
+        db.commit()
+    except Exception as err:  # pylint: disable=broad-except
+        db.rollback()
+        _LOG.warning("worker: delete expired sessions error", error=err)
+
 
 
 def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
@@ -576,8 +584,8 @@ def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
     for user in users:
         assert user.id
         _LOG.debug("worker: send mail for user %d: start", user.id)
-        db.begin()
         try:
+            db.begin()
             sys_settings = database.settings.get_dict(db, user.id)
             with (
                 app.test_request_context(),
