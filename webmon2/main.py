@@ -1,4 +1,5 @@
 """
+
 Main functions.
 
 Copyright (c) Karol Będkowski, 2016-2024
@@ -87,7 +88,9 @@ def _parse_options() -> argparse.Namespace:
     parser.add_argument(
         "-d", "--debug", action="store_true", help="print debug information"
     )
-    parser.add_argument("--log-fmt", help="log format (console, logfmt)")
+    parser.add_argument(
+        "--log-fmt", help="log format (console, logfmt, logfmt_date)"
+    )
 
     parser.add_argument(
         "-c",
