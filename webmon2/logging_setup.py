@@ -161,7 +161,8 @@ class FilterWerkzeugLogs(logging.Filter):
     127.0.0.1 - - [2025-06-18 19:19:18] \"GET /webmon2/ HTTP/1.1\" ...
     """
     def filter(self, record: logging.LogRecord) -> bool:
-        if (idx := record.msg.find(' "')) and idx > 0:
-            record.msg = "werkzeug: " + record.msg[idx+1:]
+        msg = record.msg
+        if isinstance(msg, str) and (idx := record.msg.find(' "')) and idx > 0:
+                record.msg = "werkzeug: " + msg[idx+1:]
 
         return True
