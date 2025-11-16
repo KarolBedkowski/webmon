@@ -3,7 +3,7 @@
 exclude: 'COPYING'
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: mixed-line-ending
@@ -22,7 +22,7 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/myint/rstcheck
-    rev: v6.2.4
+    rev: v6.2.5
     hooks:
       - id: rstcheck
 
@@ -33,12 +33,12 @@ repos:
         args: ['--baseline', '.secrets.baseline']
 
   - repo: https://github.com/zricethezav/gitleaks
-    rev: v8.22.0
+    rev: v8.29.0
     hooks:
       - id: gitleaks
 
   - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.1.0
+    rev: v4.10.0
     hooks:
       - id: commitizen
         stages: [commit-msg]
