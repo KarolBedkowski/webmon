@@ -84,12 +84,16 @@ def body_format(body: str, content_type: str) -> str:
     return _clean_html_brutal(format_markdown(body))
 
 
-def sanitize_content(body: str, content_type: str) -> tuple[str, str]:
+def sanitize_content(
+    body: str, content_type: str | None
+) -> tuple[str, str | None]:
     if not body:
         return body, content_type
 
     result_type = content_type
-    if content_type == "html" or content_type.startswith("text/html"):
+    if not content_type:
+        pass
+    elif content_type == "html" or content_type.startswith("text/html"):
         body = format_html(body)
         body = _clean_html_brutal(body)
         result_type = "safe"
