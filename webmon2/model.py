@@ -858,11 +858,14 @@ class Session:
 UserSources = dict[int, Source]
 
 
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
 @dataclass
 class UserLog:
     user_id: int
     content: str
-    ts: datetime = field(default_factory=datetime.utcnow)
+    ts: datetime = field(default_factory=_now_utc)
     related: dict[str, ty.Any] | None = None
 
     def __str__(self) -> str:
