@@ -177,7 +177,9 @@ class CheckWorker(threading.Thread):
         self._log.debug("CheckWorker check internet: %s", url)
 
         with (
-            suppress(requests.ConnectionError),
+            suppress(
+                requests.ConnectionError, requests.exceptions.ReadTimeout
+            ),
             requests.get(url, timeout=10) as r,
         ):
             if r and r.status_code < 400:  # noqa:PLR2004
