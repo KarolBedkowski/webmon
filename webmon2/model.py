@@ -97,20 +97,20 @@ class SourceStatus(IntEnum):
 
 class Source:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
-        "id",
-        "group_id",
-        "kind",
-        "name",
-        "interval",
-        "settings",
-        "filters",
-        "user_id",
-        "group",
-        "state",
-        "unread",
-        "status",
-        "mail_report",
         "default_score",
+        "filters",
+        "group",
+        "group_id",
+        "id",
+        "interval",
+        "kind",
+        "mail_report",
+        "name",
+        "settings",
+        "state",
+        "status",
+        "unread",
+        "user_id",
     )
 
     def __init__(
@@ -229,18 +229,18 @@ IconData = tuple[str, bytes]
 
 class SourceState:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
-        "source_id",
-        "next_update",
-        "last_update",
-        "last_error",
-        "error_counter",
-        "success_counter",
-        "status",
         "error",
-        "props",
+        "error_counter",
         "icon",
         "icon_data",
         "last_check",
+        "last_error",
+        "last_update",
+        "next_update",
+        "props",
+        "source_id",
+        "status",
+        "success_counter",
     )
 
     def __init__(self) -> None:
@@ -260,7 +260,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         # source updates status
         self.status: SourceStateStatus | None = None
         self.error: str | None = None
-        # additional informations stored by source loader
+        # additional information stored by source loader
         self.props: Props | None = None
         # icon hash
         self.icon: str | None = None
@@ -318,6 +318,7 @@ class SourceState:  # pylint: disable=too-many-instance-attributes
         current object. Increment error counter.
         """
         state = self.create_new(status=SourceStateStatus.ERROR, **props)
+        state.last_update = self.last_update
         state.error = error
         state.error_counter += 1
         state.last_error = datetime.now(timezone.utc)
@@ -467,23 +468,23 @@ OptValue = ty.TypeVar("OptValue")
 
 class Entry:  # pylint: disable=too-many-instance-attributes
     __slots__ = (
-        "id",
-        "source_id",
-        "updated",
+        "content",
         "created",
+        "icon",
+        "icon_data",
+        "id",
+        "oid",
+        "opts",
         "read_mark",
+        "score",
+        "source",
+        "source_id",
         "star_mark",
         "status",
-        "oid",
         "title",
+        "updated",
         "url",
-        "content",
-        "opts",
-        "icon",
         "user_id",
-        "source",
-        "icon_data",
-        "score",
     )
 
     def __init__(
@@ -857,11 +858,15 @@ class Session:
 UserSources = dict[int, Source]
 
 
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
 @dataclass
 class UserLog:
     user_id: int
     content: str
-    ts: datetime = field(default_factory=datetime.utcnow)
+    ts: datetime = field(default_factory=_now_utc)
     related: dict[str, ty.Any] | None = None
 
     def __str__(self) -> str:

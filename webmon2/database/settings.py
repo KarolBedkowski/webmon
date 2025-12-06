@@ -50,7 +50,7 @@ def get(db: DB, key: str, user_id: int) -> model.Setting | None:
     """Get one setting for given user"""
     with db.cursor_obj_row(model.Setting.from_row) as cur:
         cur.execute(_GET_SQL, (user_id, key))
-        return ty.cast(model.Setting, cur.fetchone())
+        return ty.cast("model.Setting", cur.fetchone())
 
 
 _INSERT_SQL = """

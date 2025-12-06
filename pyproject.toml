@@ -167,7 +167,6 @@ lint.extend-select = [
   "RUF",
 ]
 lint.ignore = [
-  "ANN101",
   "COM812",
   "EM101",
   "TRY003",
@@ -175,6 +174,8 @@ lint.ignore = [
   "FBT002",
   "FBT003",
   "ISC001",
+  "PLC0415",
+  "E501",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -198,3 +199,33 @@ PyYAML = "yaml"
 python-dateutil = "dateutil"
 python-gitlab = "gitlab"
 readability-lxml = "readability"
+Flask = "flask"
+"github3.py" = "github3"
+"Werkzeug" = "werkzeug"
+"cssselect" = "cssselect"
+"defusedxml" = "defusedxml"
+"feedparser" = "feedparser"
+"gevent" = "gevent"
+"html2text" = "html2text"
+"lxml" = "lxml"
+"markdown2" = "markdown2"
+"prometheus-client" = "prometheus_client"
+"psycopg" = "psycopg"
+"psycopg_pool" = "psycopg_pool"
+"requests" = "requests"
+"flask-babel" = "flask_babel"
+"structlog" = "structlog"
+"itsdangerous" = "itsdangerous"
+"setproctitle" = "setproctitle"
+"sdnotify" = "sdnotify"
+"Flask-Minify" = "flask_minify"
+"pyotp" = "pyotp"
+"PyQRCode" = "pyqrcode"
+"pre-commit" = "pre_commit"
+"stackprinter" = "stackprinter"
+"freezegun" = "freezegun"
+"pip-tools" = "pip_tools"
+
+
+[tool.ty.rules]
+unresolved-import = "ignore"

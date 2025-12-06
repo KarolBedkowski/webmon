@@ -30,7 +30,12 @@ class WebSource(AbstractSource):
     short_info = lazy_gettext("Web page")
     long_info = lazy_gettext("Load data form web page pointed by URL.")
     params = (
-        common.SettingDef("url", lazy_gettext("Web page URL"), required=True),
+        common.SettingDef(
+            "url",
+            lazy_gettext("Web page URL"),
+            required=True,
+            input_type="url",
+        ),
         common.SettingDef(
             "timeout", lazy_gettext("Loading timeout"), default=30
         ),
@@ -199,11 +204,11 @@ class WebSource(AbstractSource):
     def _load_image(
         self, url: str, session: requests.Session
     ) -> tuple[str, bytes] | None:
-        url_splited = urlsplit(url)
+        url_split = urlsplit(url)
         favicon_url = urlunsplit(
             (
-                url_splited[0],
-                url_splited[1],
+                url_split[0],
+                url_split[1],
                 "favicon.ico",
                 "",
                 "",
@@ -251,7 +256,7 @@ class WebSource(AbstractSource):
             style=True,
             inline_style=False,
         )
-        return ty.cast(str, clean.autolink_html(cleaner.clean_html(content)))
+        return ty.cast("str", clean.autolink_html(cleaner.clean_html(content)))
 
 
 def _prepare_headers(

@@ -88,19 +88,7 @@ def get_subclasses_with_name(
     yield from find(base_class)
 
 
-def parse_interval(instr: str | float) -> int:
-    """Parse interval in human readable format and return interval in sec."""
-    if isinstance(instr, (int, float)):
-        if instr < 1:
-            errmsg = f"invalid interval '{instr!s}'"
-            raise ValueError(errmsg)
-
-        return int(instr)
-
-    instr = instr.strip()
-    if not instr:
-        raise ValueError("invalid interval")
-
+def _get_multipler(instr: str) -> tuple[str, int]:
     mplt = 1
     match instr[-1].lower():
         case "m":
@@ -114,6 +102,24 @@ def parse_interval(instr: str | float) -> int:
 
     if mplt != 1:
         instr = instr[:-1]
+
+    return instr, mplt
+
+
+def parse_interval(instr: str | float) -> int:
+    """Parse interval in human readable format and return interval in sec."""
+    if isinstance(instr, (int, float)):
+        if instr < 1:
+            errmsg = f"invalid interval '{instr!s}'"
+            raise ValueError(errmsg)
+
+        return int(instr)
+
+    instr = instr.strip()
+    if not instr:
+        raise ValueError("invalid interval")
+
+    instr, mplt = _get_multipler(instr)
 
     try:
         val = int(instr)
@@ -231,11 +237,14 @@ class SettingDef:
         self.type: ty.Type[ty.Any]
 
         if value_type is None:
-            self.type = str if default is None else type(default)  # type:ignore
+            self.type = str if default is None else type(default)
         else:
             self.type = value_type
 
         self.global_param = global_param
+
+    def __repr__(self) -> str:
+        return f"<SettingDef {self.__dict__}>"
 
     def get_parameter(
         self,
@@ -251,7 +260,7 @@ class SettingDef:
         if (
             self.required
             and self.default is None
-            and (value is None or self.type == str and not value)
+            and (value is None or (self.type is str and not value))
         ):
             return False
 

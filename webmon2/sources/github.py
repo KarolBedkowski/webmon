@@ -374,7 +374,7 @@ class GithubTagsSource(GitHubAbstractSource):
 def _filter_tags(
     tags: ty.Iterable[RepoTag], repository: Repository, min_date: datetime
 ) -> ty.Iterable[RepoTag]:
-    """For each tag in tags load commit informations from repo and compare
+    """For each tag in tags load commit information from repo and compare
     commit last update date with min_date; return only tags with date after
     than min_date"""
     for tag in tags:

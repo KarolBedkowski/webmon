@@ -27,6 +27,7 @@ database = postgresql://webmon2:webmon2@127.0.0.1:5432/webmon2
 db_pool_min = 2
 db_pool_max = 20
 work_interval = 300
+internet_check_url =
 
 [web]
 address = 127.0.0.1

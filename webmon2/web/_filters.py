@@ -52,8 +52,8 @@ def _format_date(date: ty.Any) -> str:  # noqa:ANN401
     return str(date)
 
 
-def _absoute_url(url: str) -> str:
-    return ty.cast(str, urllib.parse.urljoin(request.url_root, url))
+def _absolute_url(url: str) -> str:
+    return ty.cast("str", urllib.parse.urljoin(request.url_root, url))
 
 
 def _entry_score_class(score: int) -> str:
@@ -87,14 +87,14 @@ def _create_proxy_url(url: str, entry_url: str | None = None) -> str:
         return ""
 
     if url.startswith(("http://", "https://")):
-        return ty.cast(str, url_for("proxy.proxy", path=url))
+        return ty.cast("str", url_for("proxy.proxy", path=url))
 
     # handle related urls
     if not entry_url:
         return url
 
     url = urljoin(entry_url, url)
-    return ty.cast(str, url_for("proxy.proxy", path=url))
+    return ty.cast("str", url_for("proxy.proxy", path=url))
 
 
 def _extract_prefix_postfix(instr: str) -> tuple[str, int, int]:
@@ -184,7 +184,7 @@ def register(app: Flask) -> None:
     app.jinja_env.filters["format_markdown"] = formatters.format_markdown
     app.jinja_env.filters["age"] = _age_filter
     app.jinja_env.filters["format_date"] = _format_date
-    app.jinja_env.filters["absolute_url"] = _absoute_url
+    app.jinja_env.filters["absolute_url"] = _absolute_url
     app.jinja_env.filters["format_html"] = formatters.format_html
     app.jinja_env.filters["cleanup_html"] = formatters.cleanup_html
     app.jinja_env.filters["summary"] = formatters.entry_summary

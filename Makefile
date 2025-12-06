@@ -6,7 +6,7 @@
 .PHONY: run
 ## Run application
 run:
-	./run_webmon2.py -d -c webmon2.ini serve --workers -1
+	./run_webmon2.py -d -c webmon2.ini serve --workers 1
 
 .PHONY: pylint
 ## Lint using pylint
@@ -16,7 +16,7 @@ pylint:
 .PHONY: check
 ## Lint using ruff, bandit, mypy
 check:
-	ruff check . || true
+	ruff check webmon2 || true
 #	black --check . || true
 	bandit -c pyproject.toml  -r webmon2 || true
 	refurb --enable-all --python-version 3.11 webmon2 || true
@@ -44,7 +44,7 @@ clean:
 ## Format files using black & isort
 format:
 	ruff check --select I --fix .
-	ruff  format .
+	ruff format .
 #	black .
 
 .PHONY: test

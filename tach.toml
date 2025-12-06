@@ -1,0 +1,54 @@
+interfaces = []
+exclude = [
+    "docs",
+    "tests",
+]
+source_roots = [
+    ".",
+]
+ignore_type_checking_imports = false
+root_module = "allow"
+
+[[modules]]
+path = "<root>"
+depends_on = [
+    { path = "webmon2" },
+]
+
+[[modules]]
+path = "webmon2"
+depends_on = [
+    { path = "webmon2.database" },
+    { path = "webmon2.filters" },
+    { path = "webmon2.sources" },
+    { path = "webmon2.web" },
+]
+
+[[modules]]
+path = "webmon2.database"
+depends_on = [
+    { path = "webmon2" },
+]
+
+[[modules]]
+path = "webmon2.filters"
+depends_on = [
+    { path = "webmon2" },
+    { path = "webmon2.database" },
+]
+
+[[modules]]
+path = "webmon2.sources"
+depends_on = [
+    { path = "webmon2" },
+    { path = "webmon2.filters" },
+]
+
+[[modules]]
+path = "webmon2.web"
+depends_on = [
+    { path = "webmon2" },
+    { path = "webmon2.database" },
+    { path = "webmon2.filters" },
+    { path = "webmon2.sources" },
+]

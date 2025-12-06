@@ -18,6 +18,7 @@ import time
 import typing as ty
 from contextlib import suppress
 
+import requests
 import structlog
 from flask import Flask
 from flask_babel import Babel, force_locale
@@ -110,12 +111,10 @@ class CheckWorker(threading.Thread):
         while True:
             self._notify("STATUS=processing")
             start = time.time()
+            interval = self._work_interval
             with database.DB.get() as db:
                 try:
-                    now = time.time()
-                    if now > self._next_cleanup_start:
-                        _delete_old_entries(db)
-                        self._next_cleanup_start = now + _CLEANUP_INTERVAL
+                    self._clean_old_entries(db)
 
                     self._log.debug("CheckWorker check start")
                     ids = database.sources.get_sources_to_fetch(db)
@@ -123,18 +122,18 @@ class CheckWorker(threading.Thread):
                         self._todo_queue.put(id_)
 
                     if not self._todo_queue.empty():
-                        # some work to do; launch workers
-                        workers = [
-                            self._start_worker(idx)
-                            for idx in range(min(self.num_workers, len(ids)))
-                        ]
-                        # wait for work completed
-                        for worker in workers:
-                            worker.join()
+                        # check is internet available; if not
+                        if self._check_internet():
+                            # some work to do; launch workers
+                            self._start_workers_and_wait(len(ids))
+
+                        else:
+                            interval *= 2
 
                     self._log.debug("CheckWorker check done")
                     self._notify("STATUS=mailing")
                     _send_mails(db, self._conf, self._app)
+
                 except Exception as err:  # pylint: disable=broad-except
                     self._log.exception("CheckWorker thread error", error=err)
 
@@ -146,13 +145,54 @@ class CheckWorker(threading.Thread):
                 gc_cntr = 0
 
             self._notify("STATUS=running")
-            time.sleep(self._work_interval)
+            time.sleep(interval)
+
+    def _clean_old_entries(self, db: database.DB) -> None:
+        now = time.time()
+        if now > self._next_cleanup_start:
+            _delete_old_entries(db)
+            self._next_cleanup_start = now + _CLEANUP_INTERVAL
+
+    def _start_workers_and_wait(self, num_sources: int) -> None:
+        workers = [
+            self._start_worker(idx)
+            for idx in range(min(self.num_workers, num_sources))
+        ]
+
+        # wait for work completed
+        for worker in workers:
+            worker.join()
 
     def _start_worker(self, idx: int) -> FetchWorker:
         worker = FetchWorker(str(idx), self._todo_queue, self._conf, self._app)
         worker.start()
         self._log.debug("CheckWorker worker %s started", idx)
         return worker
+
+    def _check_internet(self) -> bool:
+        url = self._conf.get("main", "internet_check_url")
+        if not url:
+            return True
+
+        self._log.debug("CheckWorker check internet: %s", url)
+
+        with (
+            suppress(
+                requests.ConnectionError, requests.exceptions.ReadTimeout
+            ),
+            requests.get(url, timeout=10) as r,
+        ):
+            if r and r.status_code < 400:  # noqa:PLR2004
+                return True
+
+            self._log.info(
+                "CheckWorker internet not available; response: %d",
+                r.status_code,
+            )
+            return False
+
+        self._log.info("CheckWorker internet not available (conn. error)")
+        return False
 
 
 class FetchWorker(threading.Thread):
@@ -218,6 +258,7 @@ class FetchWorker(threading.Thread):
                             source_id=source_id,
                         )
                 finally:
+                    # commit also state changes when error
                     db.commit()
 
             structlog.contextvars.clear_contextvars()
@@ -322,7 +363,7 @@ class FetchWorker(threading.Thread):
                 source.filters, entries, source.state, new_state, db
             )
 
-        # process entriec, calcuate oids, sanitize content
+        # process entries, calculate oids, sanitize content
         entries = self._final_filter_entries(entries)
         # calculate scoring & update entries state
         entries = self._score_entries(
@@ -458,8 +499,7 @@ def _delete_old_entries(db: database.DB) -> None:
         2. remove unused binaries
         3. remove old source states
     """
-    users = list(database.users.get_all(db))
-    for user in users:
+    for user in list(database.users.get_all(db)):
         assert user.id
         log = _LOG.bind(user_id=user.id)
         log.debug("worker: delete old entries start")
@@ -505,8 +545,8 @@ def _delete_old_entries(db: database.DB) -> None:
             db.rollback()
             log.warning("worker: delete old entries error", error=err)
 
-    db.begin()
     try:
+        db.begin()
         states, entries = database.binaries.clean_sources_entries(db)
         _LOG.info(
             "worker: cleaned %d source states and %d entries",
@@ -522,10 +562,14 @@ def _delete_old_entries(db: database.DB) -> None:
         _LOG.warning("worker: clean binaries error", error=err)
 
     # delete expired sessions
-    db.begin()
-    cnt = database.system.delete_expired_sessions(db)
-    _LOG.info("worker: deleted %d expired sessions", cnt)
-    db.commit()
+    try:
+        db.begin()
+        cnt = database.system.delete_expired_sessions(db)
+        _LOG.info("worker: deleted %d expired sessions", cnt)
+        db.commit()
+    except Exception as err:  # pylint: disable=broad-except
+        db.rollback()
+        _LOG.warning("worker: delete expired sessions error", error=err)
 
 
 def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
@@ -541,8 +585,8 @@ def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
     for user in users:
         assert user.id
         _LOG.debug("worker: send mail for user %d: start", user.id)
-        db.begin()
         try:
+            db.begin()
             sys_settings = database.settings.get_dict(db, user.id)
             with (
                 app.test_request_context(),

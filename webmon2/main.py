@@ -1,4 +1,5 @@
 """
+
 Main functions.
 
 Copyright (c) Karol Będkowski, 2016-2024
@@ -12,7 +13,6 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import locale
-import os.path
 import signal
 import sys
 import typing as ty
@@ -88,7 +88,9 @@ def _parse_options() -> argparse.Namespace:
     parser.add_argument(
         "-d", "--debug", action="store_true", help="print debug information"
     )
-    parser.add_argument("--log-fmt", help="log format (console, logfmt)")
+    parser.add_argument(
+        "--log-fmt", help="log format (console, logfmt, logfmt_date)"
+    )
 
     parser.add_argument(
         "-c",
@@ -231,15 +233,14 @@ def _load_user_classes() -> None:
     if not users_scripts_dir.is_dir():
         return
 
-    for fname in os.listdir(users_scripts_dir):
-        fpath = Path(users_scripts_dir, fname)
+    for fpath in Path(users_scripts_dir).iterdir():
         if (
             fpath.is_file()
-            and fname.endswith(".py")
-            and not fname.startswith("_")
+            and fpath.suffix == ".py"
+            and not fpath.name.startswith("_")
         ):
             _LOG.info("main: loading user classes from %r", fpath)
-            modname = fname[:-3]
+            modname = fpath.name[:-3]
             try:
                 spec = importlib.util.spec_from_file_location(modname, fpath)
                 if spec:

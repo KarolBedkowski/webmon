@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import typing as ty
 import urllib
-import xml.etree.ElementTree
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
 import structlog
@@ -25,7 +25,7 @@ from . import _commons as c
 _LOG: structlog.stdlib.BoundLogger = structlog.getLogger(__name__)
 BP = Blueprint("atom", __name__, url_prefix="/atom")
 
-DEFAULT_ETREE = xml.etree.ElementTree
+DEFAULT_ETREE = ET
 ItemElement = ty.NewType("ItemElement", DEFAULT_ETREE.Element)
 
 
@@ -144,7 +144,7 @@ def group(key: str) -> Response:
     )
 
     response = Response(
-        xml.etree.ElementTree.tostring(rss_xml_element),
+        ET.tostring(rss_xml_element),
         mimetype="application/atom+xml",
     )
     response.headers["ETag"] = etag

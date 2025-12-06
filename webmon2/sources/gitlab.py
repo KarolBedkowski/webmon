@@ -49,6 +49,7 @@ class AbstractGitLabSource(AbstractSource):
             "gitlab_url",
             lazy_gettext("GitLab URL"),
             default=_GITLAB_DEFAULT_URL,
+            input_type="url",
         ),
         common.SettingDef(
             "gitlab_token",

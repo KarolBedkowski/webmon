@@ -70,44 +70,9 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
 
-    shared_processors = [
-        structlog.stdlib.add_logger_name,
-        structlog.stdlib.add_log_level,
-        structlog.stdlib.PositionalArgumentsFormatter(),
-        structlog.contextvars.merge_contextvars,
-        structlog.processors.UnicodeDecoder(),
-        structlog.processors.CallsiteParameterAdder(
-            {
-                # structlog.processors.CallsiteParameter.FILENAME,
-                # structlog.processors.CallsiteParameter.FUNC_NAME,
-                # structlog.processors.CallsiteParameter.LINENO,
-                # structlog.processors.CallsiteParameter.PATHNAME,
-                # structlog.processors.CallsiteParameter.THREAD,
-                structlog.processors.CallsiteParameter.THREAD_NAME,
-            }
-        ),
-        structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S"),
-        structlog.processors.StackInfoRenderer(),
-    ]
+    log_werkzeug.addFilter(FilterWerkzeugLogs())
 
-    if sys.stderr.isatty():
-        # console
-        if log_fmt == "logfmt":
-            processors = [
-                structlog.processors.format_exc_info,
-                structlog.processors.dict_tracebacks,
-                structlog.processors.LogfmtRenderer(),
-            ]
-        else:
-            processors = [structlog.dev.ConsoleRenderer(colors=True)]
-
-    elif log_fmt == "console":
-        processors = [structlog.dev.ConsoleRenderer(colors=False)]
-    else:
-        processors = [
-            structlog.processors.dict_tracebacks,
-            structlog.processors.LogfmtRenderer(),
-        ]
+    shared_processors, processors = _get_processors(log_fmt)
 
     structlog.configure(
         processors=[
@@ -140,3 +105,64 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
     structlog.get_logger("structlog").debug(
         "setup finished", log_fmt=log_fmt, debug=debug, silent=silent
     )
+
+
+def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
+    shared_processors = [
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.contextvars.merge_contextvars,
+        structlog.processors.UnicodeDecoder(),
+        structlog.processors.CallsiteParameterAdder(
+            {
+                # structlog.processors.CallsiteParameter.FILENAME,
+                # structlog.processors.CallsiteParameter.FUNC_NAME,
+                # structlog.processors.CallsiteParameter.LINENO,
+                # structlog.processors.CallsiteParameter.PATHNAME,
+                # structlog.processors.CallsiteParameter.THREAD,
+                structlog.processors.CallsiteParameter.THREAD_NAME,
+            }
+        ),
+        structlog.processors.StackInfoRenderer(),
+    ]
+
+    colors = sys.stderr.isatty()
+    if sys.stderr.isatty():
+        log_fmt = log_fmt or "console"  # default for tty
+    else:
+        log_fmt = log_fmt or "logfmt"  # default for non-tty ouput
+
+    # optionally add timestamp
+    if log_fmt == "console":
+        shared_processors.append(
+            structlog.processors.TimeStamper(fmt="%H:%M:%S")
+        )
+    elif log_fmt == "logfmt_date":
+        shared_processors.append(
+            structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
+        )
+
+    if log_fmt in ("logfmt", "logfmt_date"):
+        processors = [
+            structlog.processors.format_exc_info,
+            structlog.processors.dict_tracebacks,
+            structlog.processors.LogfmtRenderer(),
+        ]
+    else:
+        processors = [structlog.dev.ConsoleRenderer(colors=colors)]
+
+    return shared_processors, processors
+
+
+class FilterWerkzeugLogs(logging.Filter):
+    """Remove ip - date parts
+    127.0.0.1 - - [2025-06-18 19:19:18] \"GET /webmon2/ HTTP/1.1\" ...
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.msg
+        if isinstance(msg, str) and (idx := record.msg.find(' "')) and idx > 0:
+            record.msg = "werkzeug: " + msg[idx + 1 :]
+
+        return True

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.10.0 2025-12-06
+
+### Bug Fixes
+
+- Keep last update date on errors
+- Settings - Fix compare type
+- Settings - Strip spaces in text fields; use url input type
+
+### Feature
+
+- Option that enable Internet connection check before load data.
+
+### Refactor
+
+- Code cleanup; remove deprecated values
+- Update deps
+
+
+
 ## 2.9.2 2024-05-26
 
 ### Bug Fixes

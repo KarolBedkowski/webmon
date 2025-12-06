@@ -115,7 +115,7 @@ def remove_unused(db: DB, user_id: int) -> int:
 
     with db.cursor() as cur:
         cur.execute(_REMOVE_UNUSED_SQL, {"user_id": user_id})
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 _CLEAN_ENTRIES_SQL = """

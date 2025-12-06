@@ -39,7 +39,7 @@ class Field:  # pylint: disable=too-many-instance-attributes
     options: list[tuple[ty.Any, ty.Any]] | None = None
     # default value
     default_value: ty.Any = None
-    # error messge
+    # error message
     error: str | None = None
     # additional setting for field; i.e. multiline
     parameters: dict[str, ty.Any] | None = None
@@ -56,12 +56,12 @@ class Field:  # pylint: disable=too-many-instance-attributes
     ) -> Field:
         if param.options:
             field_type = "select"
-        elif param.type == int:
+        elif param.type is int:
             field_type = "number"
-        elif param.type == bool:
+        elif param.type is bool:
             field_type = "checkbox"
         else:
-            field_type = "str"
+            field_type = param.parameters.get("input_type", "str")
 
         return Field(
             name=param.name,
@@ -100,6 +100,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
             field_type = "str"
             field_type_class = str
             parameters = {"multiline": True}
+        elif setting.value_type == "url":
+            field_type = "url"
+            field_type_class = str
         else:
             field_type = "str"
             field_type_class = str
@@ -130,6 +133,9 @@ class Field:  # pylint: disable=too-many-instance-attributes
         if self.type == "number" and form_value == "":
             self.value = None
             return
+
+        if self.type in ("str", "url") and isinstance(form_value, str):
+            form_value = form_value.strip()
 
         if self.type_class:
             form_value = self.type_class(form_value)

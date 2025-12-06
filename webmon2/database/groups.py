@@ -74,7 +74,8 @@ def get_all(db: DB, user_id: int) -> list[model.SourceGroup]:
                 sources_count=srcs_count,
                 mail_report=mail_report,
             )
-            for id_, name, user_id, feed, mail_report, unread, srcs_count in cur
+            for id_, name, user_id, feed, mail_report, unread, srcs_count
+            in cur
         ]
 
 
@@ -99,7 +100,7 @@ def get(db: DB, group_id: int, user_id: int) -> model.SourceGroup:
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_SQL, (group_id, user_id))
         if row := cur.fetchone():
-            return ty.cast(model.SourceGroup, row)
+            return ty.cast("model.SourceGroup", row)
 
         raise dbc.NotFoundError
 
@@ -124,7 +125,7 @@ def find(db: DB, user_id: int, name: str) -> model.SourceGroup:
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_FIND_SQL, (name, user_id))
         if row := cur.fetchone():
-            return ty.cast(model.SourceGroup, row)
+            return ty.cast("model.SourceGroup", row)
 
         raise dbc.NotFoundError
 
@@ -152,7 +153,7 @@ def get_by_feed(db: DB, feed: str) -> model.SourceGroup:
     with db.cursor_obj_row(model.SourceGroup.from_row) as cur:
         cur.execute(_GET_BY_FEED_SQL, (feed,))
         if row := cur.fetchone():
-            return ty.cast(model.SourceGroup, row)
+            return ty.cast("model.SourceGroup", row)
 
         raise dbc.NotFoundError
 
@@ -205,7 +206,11 @@ def save(db: DB, group: model.SourceGroup) -> model.SourceGroup:
     with db.cursor() as cur:
         if group.id is None:
             cur.execute(_INSERT_GROUP_SQL, row)
-            group.id = cur.fetchone()[0]
+            res = cur.fetchone()
+            if not res:
+                raise RuntimeError
+
+            group.id = res[0]
         else:
             cur.execute(_UPDATE_GROUP_SQL, row)
 
@@ -307,7 +312,7 @@ def mark_read(  # noqa: PLR0913
         else:
             cur.execute(_MARK_READ_SQL, args)
 
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 def update_state(db: DB, group_id: int, last_modified: datetime) -> str:
@@ -383,14 +388,17 @@ def delete(db: DB, user_id: int, group_id: int) -> None:
         cur.execute(
             "SELECT count(1) FROM source_groups WHERE user_id=%s", (user_id,)
         )
-        if not cur.fetchone()[0]:
+        res = cur.fetchone()
+        if not res or not res[0]:
             raise common.OperationError("can't delete last group")
 
     with db.cursor() as cur:
         cur.execute(
             "SELECT count(1) FROM sources WHERE group_id=%s", (group_id,)
         )
-        if cur.fetchone()[0]:
+        res = cur.fetchone()
+        assert res
+        if res[0]:
             # there are sources in group find destination group
             dst_group_id = _find_dst_group(db, user_id, group_id)
             cur.execute(

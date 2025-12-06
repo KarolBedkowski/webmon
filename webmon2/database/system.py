@@ -70,7 +70,7 @@ where id = %s
 def get_session(db: DB, session_id: str) -> model.Session | None:
     with db.cursor_obj_row(model.Session.from_row) as cur:
         cur.execute(_GET_SESSION_SQL, (session_id,))
-        return ty.cast(model.Session, cur.fetchone())
+        return ty.cast("model.Session", cur.fetchone())
 
 
 def delete_session(db: DB, session_id: str) -> None:
@@ -96,7 +96,7 @@ def save_session(db: DB, session: model.Session) -> None:
 def delete_expired_sessions(db: DB) -> int:
     with db.cursor() as cur:
         cur.execute("delete from sessions where expiry <= now()")
-        return ty.cast(int, cur.rowcount)
+        return ty.cast("int", cur.rowcount)
 
 
 def ping(db: DB) -> bool:
