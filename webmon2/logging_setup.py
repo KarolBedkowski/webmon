@@ -70,7 +70,6 @@ def setup(log_fmt: str, debug: bool = False, silent: bool = False) -> None:
         logger.addFilter(NoMetricsLogFilter())
         log_werkzeug.addFilter(NoMetricsLogFilter())
 
-
     log_werkzeug.addFilter(FilterWerkzeugLogs())
 
     shared_processors, processors = _get_processors(log_fmt)
@@ -157,12 +156,13 @@ def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
 
 
 class FilterWerkzeugLogs(logging.Filter):
-    """ Remove ip - date parts
+    """Remove ip - date parts
     127.0.0.1 - - [2025-06-18 19:19:18] \"GET /webmon2/ HTTP/1.1\" ...
     """
+
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.msg
         if isinstance(msg, str) and (idx := record.msg.find(' "')) and idx > 0:
-                record.msg = "werkzeug: " + msg[idx+1:]
+            record.msg = "werkzeug: " + msg[idx + 1 :]
 
         return True

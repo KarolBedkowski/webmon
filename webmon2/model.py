@@ -861,6 +861,7 @@ UserSources = dict[int, Source]
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
+
 @dataclass
 class UserLog:
     user_id: int

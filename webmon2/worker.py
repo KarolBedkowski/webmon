@@ -572,7 +572,6 @@ def _delete_old_entries(db: database.DB) -> None:
         _LOG.warning("worker: delete expired sessions error", error=err)
 
 
-
 def _send_mails(db: database.DB, conf: ConfigParser, app: Flask) -> None:
     """
     For each user search and send reports by mail.
