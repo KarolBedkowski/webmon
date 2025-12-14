@@ -73,13 +73,15 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.error AS source_state__error,
     ss.props AS source_state__props,
     ss.icon AS source_state__icon,
-    (
-        SELECT count(1)
-        FROM entries
-        WHERE source_id=s.id AND read_mark=0
-    ) AS unread
+    ent.unread
 FROM sources s
 JOIN source_state ss ON ss.source_id = s.id
+JOIN (
+    SELECT source_id, count(1) AS unread, sum(score) AS score
+    FROM entries
+    WHERE read_mark=0
+    GROUP BY source_id
+) ent ON ent.source_id = s.id
 WHERE s.user_id=%(user_id)s"""
 
 
@@ -89,6 +91,7 @@ _ORDER_SQL_PART = {
     "update_desc": " ORDER BY ss.last_update DESC",
     "next_update": " ORDER BY ss.next_update",
     "next_update_desc": " ORDER BY ss.next_update DESC",
+    "score_desc": " ORDER BY ent.score DESC",
 }
 
 
@@ -105,6 +108,7 @@ _STATUS_SQL_PART = {
     "notconf": " AND s.status = 0",
     "error": " AND ss.status = 'error' AND s.status = 1",
     "notupdated": " AND ss.last_update is null",
+    "unread": " AND ent.unread > 0",
 }
 
 

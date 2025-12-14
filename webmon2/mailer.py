@@ -133,7 +133,9 @@ def _process_group(
     _LOG.debug("mailer: start processing group")
     sources = [
         source
-        for source in database.sources.get_all(db, ctx.user_id, group_id)
+        for source in database.sources.get_all(
+            db, ctx.user_id, group_id, status="unread", order="score_desc"
+        )
         if source.unread and source.mail_report != model.MailReportMode.NO_SEND
     ]
     if not sources:
@@ -170,6 +172,7 @@ def _process_source(
             db,
             ctx.user_id,
             source_id=source_id,
+            order="score_desc",
         )
         if model.MailReportMode.SEND
         in (entry.source.mail_report, entry.source.group.mail_report)
