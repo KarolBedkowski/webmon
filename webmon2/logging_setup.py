@@ -162,7 +162,7 @@ class FilterWerkzeugLogs(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.msg
-        if isinstance(msg, str) and (idx := record.msg.find(' "')) and idx > 0:
+        if isinstance(msg, str) and (idx := msg.find(' "')) and idx > 0:
             record.msg = "werkzeug: " + msg[idx + 1 :]
 
         return True
