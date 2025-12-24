@@ -11,7 +11,7 @@ Web gui
 from __future__ import annotations
 
 import typing as ty
-import urllib
+import urllib.parse
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 

@@ -273,12 +273,12 @@ def _prepare_msg(
         submsg1 = email.message.Message()
         submsg1.set_payload("Version: 1\n")
         submsg1.set_type("application/pgp-encrypted")
-        msg.attach(submsg1)
+        msg.attach(submsg1)  # type: ignore
 
         submsg2 = email.message.Message()
         submsg2.set_type("application/octet-stream")
         submsg2.set_payload(content)
-        msg.attach(submsg2)
+        msg.attach(submsg2)  # type: ignore
 
         msg.set_type("multipart/encrypted")
         msg.set_param("protocol", "application/pgp-encrypted")

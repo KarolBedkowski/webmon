@@ -191,8 +191,8 @@ pep621_dev_dependency_groups = ["dev"]
 extend_exclude = ["lint", ".+_test.py"]
 
 [tool.deptry.per_rule_ignores]
-DEP004 = ["stackprinter"]
-DEP001 = ["rich", "icecream", "IPython"]
+DEP004 = ["stackprinter", "guppy"]
+DEP001 = ["rich", "icecream", "IPython", "guppy"]
 
 [tool.deptry.package_module_name_map]
 PyYAML = "yaml"
