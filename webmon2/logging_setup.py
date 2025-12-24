@@ -116,9 +116,9 @@ def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
         structlog.processors.UnicodeDecoder(),
         structlog.processors.CallsiteParameterAdder(
             {
-                # structlog.processors.CallsiteParameter.FILENAME,
-                # structlog.processors.CallsiteParameter.FUNC_NAME,
-                # structlog.processors.CallsiteParameter.LINENO,
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+                structlog.processors.CallsiteParameter.LINENO,
                 # structlog.processors.CallsiteParameter.PATHNAME,
                 # structlog.processors.CallsiteParameter.THREAD,
                 structlog.processors.CallsiteParameter.THREAD_NAME,
