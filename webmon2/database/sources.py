@@ -73,10 +73,10 @@ SELECT s.id AS source__id, s.group_id AS source__group_id,
     ss.error AS source_state__error,
     ss.props AS source_state__props,
     ss.icon AS source_state__icon,
-    ent.unread
+    COALESCE(ent.unread, 0) as unread
 FROM sources s
 JOIN source_state ss ON ss.source_id = s.id
-JOIN (
+LEFT JOIN (
     SELECT source_id, count(1) AS unread, sum(score) AS score
     FROM entries
     WHERE read_mark=0
