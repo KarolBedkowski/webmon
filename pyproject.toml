@@ -187,7 +187,7 @@ combine-as-imports = true
 
 
 [tool.deptry]
-pep621_dev_dependency_groups = ["dev"]
+optional_dependencies_dev_groups = ["dev"]
 extend_exclude = ["lint", ".+_test.py"]
 
 [tool.deptry.per_rule_ignores]
