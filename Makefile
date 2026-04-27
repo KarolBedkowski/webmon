@@ -69,7 +69,10 @@ mo:
 
 
 requirements-dev.txt: pyproject.toml
-	pip-compile --generate-hashes --extra=dev --output-file=requirements-dev.txt pyproject.toml
+	pip-compile --generate-hashes \
+		--extra=dev \
+		--extra=sdnotify --extra=minify --extra=otp \
+		--output-file=requirements-dev.txt pyproject.toml
 
 requirements-extra.txt: pyproject.toml
 	pip-compile --generate-hashes \
