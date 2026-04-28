@@ -111,6 +111,9 @@ Start server
 
 Manage users
 ^^^^^^^^^^^^
+
+By default user 'admin' with password 'admin' is created.
+
 ::
 
    usage: webmon2.py users [-h] {add,passwd,remove_totp} ...

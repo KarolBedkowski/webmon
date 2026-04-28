@@ -1,0 +1,5 @@
+[[allowlists]]
+description = "global allow list"
+paths = [
+  '''\.secrets.baseline''',
+]
