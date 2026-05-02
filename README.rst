@@ -3,7 +3,8 @@ webmon ver 2.10.x
 
 Monitor changes on web pages, command results, GitHub & Gitlab repositories,
 Jamendo albums, RSS channels, custom user sources etc.
-With web ui and optionally sending report by mail.
+Web UI allow user to configure sources and browse gathered data.
+Collected data can be send via mail.
 
 Inspired by https://github.com/thp/urlwatch and http://miniflux.app/ (webmon2
 gui)
@@ -25,7 +26,7 @@ Dependences
 * readability-lxml
 * flask, Werkzeug, gevent and optional Flask_Minify
 * python-gitlab (for gitlab api; pip install python3-gitlab)
-* pyotp, pyqrcode for TOTP 2FA
+* pyotp, pyqrcode for TOTP 2FA (optional)
 * sdnotify (optional for systemd service)
 * setproctitle (optional; python3-setproctitle)
 
