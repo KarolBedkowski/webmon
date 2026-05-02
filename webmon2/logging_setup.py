@@ -131,7 +131,7 @@ def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
     if sys.stderr.isatty():
         log_fmt = log_fmt or "console"  # default for tty
     else:
-        log_fmt = log_fmt or "logfmt"  # default for non-tty ouput
+        log_fmt = log_fmt or "logfmt"  # default for non-tty output
 
     # optionally add timestamp
     if log_fmt == "console":

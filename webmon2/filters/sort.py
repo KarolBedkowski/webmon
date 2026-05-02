@@ -18,7 +18,7 @@ class Sort(AbstractFilter):
 
     name = "sort"
     short_info = lazy_gettext("Sort elements")
-    long_info = lazy_gettext("Sort elements by title and content")
+    long_info = lazy_gettext("Sort elements by their titles and contents")
 
     def filter(
         self,

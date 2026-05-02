@@ -38,9 +38,10 @@ class GetElementsByCss(AbstractFilter):
     """Extract elements from html/xml by css selector"""
 
     name = "get-elements-by-css"
-    short_info = lazy_gettext("Extract elements by CSS query")
+    short_info = lazy_gettext("Extract elements using a CSS query")
     long_info = lazy_gettext(
-        "Search and extract element from content by given CSS query"
+        "Extract elements from the content using specified "
+        "CSS query"
     )
     params = (
         common.SettingDef(
@@ -68,9 +69,10 @@ class GetElementsByXpath(AbstractFilter):
     """Extract elements from html/xml by xpath selector"""
 
     name = "get-elements-by-xpath"
-    short_info = lazy_gettext("Extract elements by xpath")
+    short_info = lazy_gettext("Extract elements using XPath")
     long_info = lazy_gettext(
-        "Search and extract elements from html/xml content by given xpath"
+        "Extract elements from the HTML/XML content using specified xpath "
+        "expression"
     )
     params = (
         common.SettingDef(
@@ -87,9 +89,9 @@ class GetElementsById(AbstractFilter):
     """Extract elements from html/xml by element id"""
 
     name = "get-elements-by-id"
-    short_info = lazy_gettext("Extract elements by given ID")
+    short_info = lazy_gettext("Extract elements with ID")
     long_info = lazy_gettext(
-        "Search and extract element from html content by given ID"
+        "Extract an element with specified ID from the HTML content"
     )
     params = (
         common.SettingDef(

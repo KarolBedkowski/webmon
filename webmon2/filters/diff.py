@@ -32,14 +32,14 @@ class NDiff(AbstractFilter):
         common.SettingDef(
             "threshold",
             lazy_gettext(
-                "Skip elements when changes percent is below this level"
+                "Skip elements when the changes percent is below this level"
             ),
             default=0.1,
         ),
         common.SettingDef(
             "min_changed",
             lazy_gettext(
-                "Skip elements when changes lines is below this level"
+                "Skip elements when the changes lines is below this level"
             ),
             default=1,
         ),

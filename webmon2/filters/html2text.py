@@ -22,10 +22,10 @@ class Html2Text(AbstractFilter):
     """Convert html to text using html2text module."""
 
     name = "html2text"
-    short_info = lazy_gettext("Convert html to text")
+    short_info = lazy_gettext("Convert HTML to plain text")
     long_info = lazy_gettext(
-        "Try convert html content do plain text; remove all "
-        "formatting, images etc."
+        "Attempt to convert HTML content do plain text; remove all "
+        "formatting and images, etc."
     )
     params = (
         common.SettingDef(

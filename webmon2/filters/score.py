@@ -28,7 +28,7 @@ class Score(AbstractFilter):
         "Change score of elements by defined regular expression"
     )
     long_info = lazy_gettext(
-        "Change element score according to matched patterns."
+        "Update the score of an element according to the patterns it matches"
     )
     params = (
         common.SettingDef(
@@ -45,7 +45,7 @@ class Score(AbstractFilter):
         ),
         common.SettingDef(
             "match_many",
-            lazy_gettext("Change score on match every pattern"),
+            lazy_gettext("Update the score for each pattern match"),
             default=True,
         ),
     )

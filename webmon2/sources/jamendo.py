@@ -180,8 +180,8 @@ class JamendoAlbumsSource(JamendoAbstractSource):
     name = "jamendo_albums"
     short_info = lazy_gettext("Jamendo albums")
     long_info = lazy_gettext(
-        "Check for new albums for given artist in Jamendo. "
-        "Either artist ID or name must be configured; also source "
+        "Check for new albums by the specified artist in Jamendo. "
+        "Either artist's ID or name must be provided. Source "
         "require configured 'Jamendo client ID'"
     )
     params = (
@@ -282,8 +282,8 @@ class JamendoTracksSource(JamendoAbstractSource):
     name = "jamendo_tracks"
     short_info = lazy_gettext("Jamendo tracks")
     long_info = lazy_gettext(
-        "Check for new tracks for given artist in Jamendo. "
-        "Either artist ID or name must be configured; also source "
+        "Check for new tracks by specified artist in Jamendo. "
+        "Either artist's ID or name must be provided. Source "
         "require configured 'Jamendo client ID'"
     )
     params = (

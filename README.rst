@@ -133,7 +133,7 @@ By default user 'admin' with password 'admin' is created.
 Database
 ^^^^^^^^
 
-Webmon2 requre Posrgresql database.
+Webmon2 require Posrgresql database.
 
 DATABASE - connection string in form:
 `postgresql://<user>:<pass>@<host>:<port>/<database>`

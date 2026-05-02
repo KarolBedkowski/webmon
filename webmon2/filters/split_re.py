@@ -24,9 +24,9 @@ class SelectByRE(AbstractFilter):
     name = "get-elements-by-re"
     short_info = lazy_gettext("Extract elements by regular expression")
     long_info = lazy_gettext(
-        "Search and extract element from content by given regular "
-        "expression. Expression must contain at least one group; can also "
-        "contain groups 'title' and 'content'."
+        "Extract an element from the content using specified "
+        "regular expression. Expression must include at least one group, and "
+        "may also contain groups 'title' and 'content'."
     )
     params = (
         common.SettingDef(

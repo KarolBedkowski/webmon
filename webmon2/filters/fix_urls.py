@@ -24,7 +24,7 @@ class FixHtmlUrls(AbstractFilter):
     name = "fix_urls"
     short_info = lazy_gettext("Convert relative URLs")
     long_info = lazy_gettext(
-        "Convert relative URLs to absolute when it possible in HTML results."
+        "Convert relative URLs to absolute when possible in HTML results."
     )
 
     def _filter(self, entry: model.Entry) -> model.Entries:

@@ -19,7 +19,8 @@ class History(AbstractFilter):
     name = "remove_visited"
     short_info = lazy_gettext("Remove old elements")
     long_info = lazy_gettext(
-        "Remove elements already loaded in past by given source"
+        "Remove elements that have been loaded previously by the specified "
+        "source"
     )
 
     def filter(

@@ -23,7 +23,7 @@ class Grep(AbstractFilter):
     name = "grep"
     short_info = lazy_gettext("Filter elements by regular expression")
     long_info = lazy_gettext(
-        "Select elements matching or not matching to given pattern."
+        "Select elements that match or do not match given pattern."
     )
     params = (
         common.SettingDef(
@@ -33,7 +33,7 @@ class Grep(AbstractFilter):
             multiline=True,
         ),
         common.SettingDef(
-            "invert", lazy_gettext("Accept items not matching"), default=False
+            "invert", lazy_gettext("Accept items that do not match"), default=False
         ),
     )
 
