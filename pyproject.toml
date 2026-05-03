@@ -33,12 +33,12 @@ dependencies = [
   "lxml>=4.3",
   "markdown2>=2.4",
   "prometheus-client>=0.11",
-  "psycopg>=3.1",
+  "psycopg[binary]>=3.1",
   "psycopg_pool>=3.1",
   "python-dateutil>=2.8",
   "python-gitlab>=2.10",
   "readability-lxml>=0.8",
-  "requests>=2.21.0",
+  "requests>=2.33.0",
   "flask-babel",
   "structlog>=23.1",
   "itsdangerous>=2.1.0",
@@ -187,12 +187,12 @@ combine-as-imports = true
 
 
 [tool.deptry]
-pep621_dev_dependency_groups = ["dev"]
+optional_dependencies_dev_groups = ["dev"]
 extend_exclude = ["lint", ".+_test.py"]
 
 [tool.deptry.per_rule_ignores]
-DEP004 = ["stackprinter"]
-DEP001 = ["rich", "icecream", "IPython"]
+DEP004 = ["stackprinter", "guppy"]
+DEP001 = ["rich", "icecream", "IPython", "guppy"]
 
 [tool.deptry.package_module_name_map]
 PyYAML = "yaml"

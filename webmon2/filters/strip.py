@@ -17,9 +17,9 @@ class Strip(AbstractFilter):
     """Strip characters from input"""
 
     name = "strip"
-    short_info = lazy_gettext("Remove white characters")
+    short_info = lazy_gettext("Strip white characters")
     long_info = lazy_gettext(
-        "Remove white characters from beginning and end of content"
+        "Trim whitespaces from beginning and end of content"
     )
 
     def _filter(self, entry: model.Entry) -> model.Entries:
@@ -33,8 +33,8 @@ class Compact(AbstractFilter):
     """Remove empty multiple lines characters from input"""
 
     name = "compact"
-    short_info = lazy_gettext("Remove duplicated empty lines")
-    long_info = lazy_gettext("Remove duplicated empty lines from content")
+    short_info = lazy_gettext("Remove duplicate empty lines")
+    long_info = lazy_gettext("Remove duplicate empty lines from content")
 
     def _filter(self, entry: model.Entry) -> model.Entries:
         if entry.content:
@@ -49,8 +49,9 @@ class Head(AbstractFilter):
     """Get given top lines from input"""
 
     name = "head"
-    short_info = lazy_gettext("Get only first lines")
-    long_info = lazy_gettext("Get defined number top lines from content")
+    short_info = lazy_gettext("Extract the first lines")
+    long_info = lazy_gettext(
+        "Extract a specified number of top lines from content")
     params = (
         common.SettingDef(
             "count",

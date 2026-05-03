@@ -34,7 +34,9 @@
 
 	{% if otp_available %}
 		<h3>{{ _("Two-Factor Authentication (2FA)") }}</h3>
-		{% if totp_enabled %}
+		{% if not totp_available %}
+			<p>{{ _("TOTP is not available") }}</p>
+		{% elif totp_enabled %}
 			<p>{{ _("TOTP enabled") }}</p>
 			<span><a href="{{ url_for("system.sett_user_totp_del") }}"
 					data-req-confirm="yes" data-question="{{ _("Really disable TOTP?") }}">✘ {{ _("Disable TOTP") }}</a></span>

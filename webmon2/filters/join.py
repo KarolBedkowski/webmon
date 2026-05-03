@@ -52,9 +52,10 @@ class Join(AbstractFilter):
     """Join all entries into one entry."""
 
     name = "join"
-    short_info = lazy_gettext("Join elements")
+    short_info = lazy_gettext("Join elements together")
     long_info = lazy_gettext(
-        "Join content from all elements loaded by source to one element"
+        "Combine the content of all elements loaded by a single source into "
+        "a single element"
     )
 
     def filter(

@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import datetime
 import typing as ty
-import urllib
 from urllib.parse import urljoin
 from zoneinfo import ZoneInfo
 
@@ -53,7 +52,7 @@ def _format_date(date: ty.Any) -> str:  # noqa:ANN401
 
 
 def _absolute_url(url: str) -> str:
-    return ty.cast("str", urllib.parse.urljoin(request.url_root, url))
+    return ty.cast("str", urljoin(request.url_root, url))
 
 
 def _entry_score_class(score: int) -> str:

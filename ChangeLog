@@ -1,5 +1,22 @@
 # Changelog
 
+## 2.10.1 2026-05-03
+
+### Bug Fixes
+
+- Fix display sources without unread entries
+- Fix edit user form
+
+### Refactor
+
+- Code cleanup
+- Update deps
+
+### Other
+
+- Fix typos
+
+
 ## 2.10.0 2025-12-06
 
 ### Bug Fixes
@@ -232,7 +249,7 @@
 - Fix Invalid csp
 - Fix not updating source last_update value
 - Fix broken mark all entries read in group
-- Web/rss fix save/clear redirect informations
+- Web/rss fix save/clear redirect information
 - Keep last_updated time when not_modified; remove duplicates
 - Fix labels in sources page
 - Fix show error in sources list
@@ -423,7 +440,7 @@
 
 - Allow define silent hours when mails is not send
 - Add configuration file for global settings
-- Add update-schema command; not update db automaticaly on start
+- Add update-schema command; not update db automatically on start
 
 ### Refactor
 

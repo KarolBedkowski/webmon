@@ -117,10 +117,10 @@ class GithubInput(GitHubAbstractSource):
     """Load last commits from GitHub."""
 
     name = "github_commits"
-    short_info = lazy_gettext("Commit history from GitHub repository")
+    short_info = lazy_gettext("Commit history from a GitHub repository")
     long_info = lazy_gettext(
         "Source load commits history from configured repository."
-        " For work required configured GitHub account with token."
+        " Requires configured GitHub account with token."
     )
     params = (
         common.SettingDef(
@@ -143,12 +143,12 @@ class GithubInput(GitHubAbstractSource):
         ),
         common.SettingDef(
             "short_list",
-            lazy_gettext("Show commits as short list"),
+            lazy_gettext("Display commits as a short list"),
             default=True,
         ),
         common.SettingDef(
             "full_message",
-            lazy_gettext("Show commits whole commit body"),
+            lazy_gettext("Display the full body of each commit."),
             default=False,
         ),
     )
@@ -263,10 +263,10 @@ class GithubTagsSource(GitHubAbstractSource):
     """Load last tags from github."""
 
     name = "github_tags"
-    short_info = lazy_gettext("Tags from GitHub repository")
+    short_info = lazy_gettext("Tags from a GitHub repository")
     long_info = lazy_gettext(
         "Source load tags from configured repository."
-        " For work required configured GitHub account with token."
+        " Requires configured GitHub account with token."
     )
     params = (
         common.SettingDef(
@@ -289,7 +289,7 @@ class GithubTagsSource(GitHubAbstractSource):
         ),
         common.SettingDef(
             "max_items",
-            lazy_gettext("Maximal number of tags to load"),
+            lazy_gettext("Maximum number of tags to load"),
             default=5,
         ),
     )
@@ -434,7 +434,7 @@ class GithubReleasesSource(GitHubAbstractSource):
         ),
         common.SettingDef(
             "max_items",
-            lazy_gettext("Maximal number of tags to load"),
+            lazy_gettext("Maximum number of tags to load"),
             value_type=int,
         ),
     )

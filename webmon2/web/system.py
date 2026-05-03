@@ -114,6 +114,7 @@ def sett_user() -> ty.Any:  # noqa: ANN401
         totp_enabled=totp_enabled,
         otp_available=otp_available,
         entity_hash=entity_hash,
+        totp_available=security.otp_available(),
     )
 
 
@@ -133,6 +134,9 @@ def sett_user_totp_del() -> ty.Any:  # noqa: ANN401
 
 @BP.route("/settings/user/totp", methods=["GET"])  # type:ignore
 def sett_user_totp_get() -> ty.Any:  # noqa: ANN401
+    if not security.otp_available():
+        return abort(404)
+
     db = c.get_db()
     user = database.users.get(db, id_=session["user"])
     totp = session.get("temp_totp")

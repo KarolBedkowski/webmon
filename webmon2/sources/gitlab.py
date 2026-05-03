@@ -172,7 +172,7 @@ class GitLabCommits(AbstractGitLabSource):
     short_info = lazy_gettext("Commit history from GitLab repository")
     long_info = lazy_gettext(
         "Source load commits history from configured repository."
-        " For work required configured GitLab account with token."
+        " Requires configured GitLab account with token."
     )
     params = (
         *AbstractGitLabSource.params,
@@ -401,7 +401,7 @@ class GitLabReleasesSource(AbstractGitLabSource):
     short_info = lazy_gettext("Releases from GitLab repository")
     long_info = lazy_gettext(
         "Source load releases history from configured repository."
-        " For work required configured GitLab account with token."
+        " Requires configured GitLab account with token."
     )
     params = (
         *AbstractGitLabSource.params,

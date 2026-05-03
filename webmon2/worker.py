@@ -268,7 +268,7 @@ class FetchWorker(threading.Thread):
         Process one source.
 
         Raises:
-            any exception - according to precessed source type.
+            any exception - according to processed source type.
         """
         _SOURCES_PROCESSED.inc()
         _LOG.debug("worker: start processing source")

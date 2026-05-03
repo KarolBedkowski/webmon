@@ -116,9 +116,9 @@ def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
         structlog.processors.UnicodeDecoder(),
         structlog.processors.CallsiteParameterAdder(
             {
-                # structlog.processors.CallsiteParameter.FILENAME,
-                # structlog.processors.CallsiteParameter.FUNC_NAME,
-                # structlog.processors.CallsiteParameter.LINENO,
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+                structlog.processors.CallsiteParameter.LINENO,
                 # structlog.processors.CallsiteParameter.PATHNAME,
                 # structlog.processors.CallsiteParameter.THREAD,
                 structlog.processors.CallsiteParameter.THREAD_NAME,
@@ -131,7 +131,7 @@ def _get_processors(log_fmt: str):  # type:ignore  #noqa:ANN202
     if sys.stderr.isatty():
         log_fmt = log_fmt or "console"  # default for tty
     else:
-        log_fmt = log_fmt or "logfmt"  # default for non-tty ouput
+        log_fmt = log_fmt or "logfmt"  # default for non-tty output
 
     # optionally add timestamp
     if log_fmt == "console":
@@ -162,7 +162,7 @@ class FilterWerkzeugLogs(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         msg = record.msg
-        if isinstance(msg, str) and (idx := record.msg.find(' "')) and idx > 0:
+        if isinstance(msg, str) and (idx := msg.find(' "')) and idx > 0:
             record.msg = "werkzeug: " + msg[idx + 1 :]
 
         return True

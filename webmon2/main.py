@@ -382,7 +382,14 @@ def _update_schema(app_conf: ConfigParser) -> None:
         _LOG.error("main: cannot update schema when running from reloader")
     else:
         _LOG.info("main: update schema starting...")
-        database.DB.initialize(app_conf.get("main", "database"), True, 1, 5)
+        if database.DB.initialize(
+            app_conf.get("main", "database"), True, 1, 5
+        ):
+            _LOG.info("main: update schema finished")
+            sys.exit(0)
+        else:
+            _LOG.error("main: update schema failed")
+            sys.exit(1)
 
 
 def main() -> None:

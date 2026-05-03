@@ -111,7 +111,7 @@ class DB:
         update_schema: bool,
         min_conn: int,
         max_conn: int,
-    ) -> None:
+    ) -> bool:
         cls.POOL = pool.ConnectionPool(
             conn_str,
             min_size=min_conn,
@@ -122,7 +122,9 @@ class DB:
         with DB() as db:
             db.check()
             if update_schema:
-                db.update_schema()
+                return db.update_schema()
+
+        return True
 
     def __enter__(self) -> ty.Self:
         return self
@@ -163,7 +165,7 @@ class DB:
             _dummy = cur.fetchone()
             self.rollback()
 
-    def update_schema(self) -> None:
+    def update_schema(self) -> bool:
         assert self._conn
         self._conn.autocommit = True
         log = _LOG.bind()
@@ -206,7 +208,9 @@ class DB:
                 log.exception(
                     "db.update_schema: execute file %r error", file, error=err
                 )
-                sys.exit(-1)
+                return False
+
+        return True
 
     def _get_schema_version(self) -> int:
         with self.cursor() as cur:
